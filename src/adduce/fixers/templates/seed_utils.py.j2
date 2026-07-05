@@ -1,0 +1,59 @@
+"""Seeding utilities covering every RNG source that affects results.
+
+Call ``set_all_seeds(seed)`` once at the top of every entrypoint, before any
+model, dataset, or DataLoader is constructed. For shuffling DataLoaders,
+pass ``generator=make_generator(seed)``; for loaders with ``num_workers > 0``,
+pass ``worker_init_fn=seed_worker``.
+"""
+
+from __future__ import annotations
+
+import os
+import random
+
+import numpy as np
+{% if torch %}import torch
+{% endif %}
+
+def set_all_seeds(seed: int, strict: bool = False) -> None:
+    """Seed python, numpy{% if torch %}, and torch (CPU and CUDA){% endif %}.
+
+    With ``strict=True``{% if torch %}, also force deterministic kernels
+    (``torch.use_deterministic_algorithms``), which may raise on operations
+    without a deterministic implementation and can be slower{% else %}, hash
+    randomisation is also fixed for the current process{% endif %}.
+    """
+    os.environ["PYTHONHASHSEED"] = str(seed)
+    random.seed(seed)
+    np.random.seed(seed)
+{% if torch %}    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+    if strict:
+        os.environ.setdefault("CUBLAS_WORKSPACE_CONFIG", ":4096:8")
+        torch.use_deterministic_algorithms(True)
+{% endif %}
+
+def seed_worker(worker_id: int) -> None:
+    """Reseed the RNGs inside a DataLoader worker process.
+
+    Workers inherit torch's per-worker seed but not numpy's or python's;
+    deriving both from the torch seed makes worker-side augmentation
+    deterministic.
+    """
+{% if torch %}    worker_seed = torch.initial_seed() % 2**32
+    np.random.seed(worker_seed)
+    random.seed(worker_seed)
+{% else %}    base = int(os.environ.get("PYTHONHASHSEED", "0"))
+    np.random.seed(base + worker_id)
+    random.seed(base + worker_id)
+{% endif %}
+
+{% if torch %}
+def make_generator(seed: int) -> torch.Generator:
+    """A seeded generator for shuffling DataLoaders and samplers."""
+    generator = torch.Generator()
+    generator.manual_seed(seed)
+    return generator
+{% endif %}

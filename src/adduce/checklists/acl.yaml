@@ -1,0 +1,44 @@
+name: "ACL Rolling Review Responsible Research Checklist (artifact items)"
+key: acl
+preamble: >
+  Draft answers derived from repository evidence. Complete and verify every
+  answer before submission; several items depend on the paper text and on
+  assets the tool cannot inspect.
+items:
+  - id: artifacts-released
+    question: "Did you release the code and models used in your work, with sufficient documentation to use them?"
+    rules: [R-EXEC-002, R-DOC-001, R-LIC-001, R-VER-001]
+    guidance: >
+      Reviewers expect a repository with install and usage documentation and
+      an explicit license.
+  - id: artifacts-cited
+    question: "Did you cite the creators of the artifacts (datasets, models, code) you used?"
+    rules: [R-LIC-002, R-LIC-003]
+    manual: true
+    guidance: >
+      Citation of third-party artifacts lives in the paper; the repository
+      side is a citation section, CITATION.cff, and stated asset licenses.
+  - id: reproducibility-parameters
+    question: "Did you report the number of parameters, total computational budget, and computing infrastructure used?"
+    rules: [R-DOC-001, R-PREC-005, R-RUN-003]
+    guidance: >
+      Add a hardware-and-runtime note to the README and mirror it in the
+      paper; SLURM scripts' resource requests should match.
+  - id: experimental-setup
+    question: "Did you discuss the experimental setup, including hyperparameter search and best-found hyperparameter values?"
+    rules: [R-DOC-002, R-DRIFT-001, R-DRIFT-002]
+    guidance: >
+      Committed config files per reported experiment are the strongest
+      supporting evidence; drift findings mean paper and configs disagree.
+  - id: descriptive-statistics
+    question: "Did you report descriptive statistics about your results (e.g., error bars, summary statistics over multiple runs)?"
+    rules: [R-RES-003]
+    guidance: >
+      Multi-seed run scripts and variance reporting are the repository-side
+      evidence.
+  - id: data-documentation
+    question: "Did you document the data you used or created, including how it can be obtained?"
+    rules: [R-DATA-001, R-DATA-002, R-DATA-003, R-DATA-005]
+    guidance: >
+      A download script or dataset DOI plus checksums makes data access
+      mechanical and verifiable.

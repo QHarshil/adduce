@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# One-command reproduction of the main results.
+# Fill in each stage with the exact commands used for the reported numbers.
+set -euo pipefail
+
+SEED="${SEED:-0}"
+
+echo "[1/3] Preparing data"
+# python scripts/download_data.py --output data/
+
+echo "[2/3] Training (seed=${SEED})"
+# python {{ entrypoint }} --seed "${SEED}" --config configs/main.yaml
+
+echo "[3/3] Evaluation"
+# python evaluate.py --checkpoint outputs/model.pt
+
+echo "Done. Compare the printed metrics against the 'Expected results' table in the README."

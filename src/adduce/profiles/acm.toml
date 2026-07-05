@@ -1,0 +1,21 @@
+name = "acm"
+description = "Weighted toward ACM artifact-badging criteria: availability (archival DOI), functionality, reusability, and documented setup."
+
+[weights]
+code_execution = 14
+environment = 12
+dependencies = 6
+data = 9
+documentation = 12
+determinism = 6
+precision = 2
+drift = 5
+results = 4
+run = 4
+checkpoint = 2
+notebook = 3
+portability = 5
+remote = 5
+versioning = 3
+access_legal = 4
+archival = 4

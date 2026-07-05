@@ -1,0 +1,7 @@
+- id: adduce
+  name: adduce artifact audit
+  description: Scan the repository for reproducibility gaps (diagnostic; does not fail the commit unless configured with --fail-under).
+  entry: adduce check
+  language: python
+  pass_filenames: false
+  always_run: true

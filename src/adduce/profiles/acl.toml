@@ -1,0 +1,21 @@
+name = "acl"
+description = "Weighted toward the ACL Rolling Review responsible-checklist items: artifacts, documentation, hyperparameters, data provenance, and compute."
+
+[weights]
+code_execution = 11
+environment = 8
+dependencies = 5
+data = 12
+documentation = 13
+determinism = 10
+precision = 3
+drift = 9
+results = 7
+run = 4
+checkpoint = 2
+notebook = 4
+portability = 3
+remote = 4
+versioning = 1
+access_legal = 3
+archival = 1

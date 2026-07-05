@@ -1,0 +1,21 @@
+name = "strict"
+description = "Everything weighted evenly and nothing forgiven; intended for internal lab standards."
+
+[weights]
+code_execution = 6
+environment = 6
+dependencies = 6
+data = 6
+documentation = 6
+determinism = 6
+precision = 6
+drift = 6
+results = 6
+run = 6
+checkpoint = 6
+notebook = 6
+portability = 6
+remote = 6
+versioning = 5
+access_legal = 5
+archival = 4

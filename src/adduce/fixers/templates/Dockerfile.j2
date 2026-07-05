@@ -1,0 +1,19 @@
+# Runtime environment for reproducing the experiments in this repository.
+# Pin the base image digest before publishing:
+#   docker pull python:{{ python_version }}-slim && docker inspect --format='{{ '{{' }}index .RepoDigests 0{{ '}}' }}' python:{{ python_version }}-slim
+FROM python:{{ python_version }}-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONHASHSEED=0
+
+WORKDIR /workspace
+
+{% if requirements_file %}COPY {{ requirements_file }} ./
+RUN pip install --no-cache-dir -r {{ requirements_file }}
+{% else %}# Declare dependencies in requirements.txt or pyproject.toml, then install them here.
+{% endif %}
+COPY . .
+
+# Replace with the exact command that reproduces the main results.
+CMD ["python", "{{ entrypoint }}"]

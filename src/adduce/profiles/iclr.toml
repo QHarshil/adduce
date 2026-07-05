@@ -1,0 +1,21 @@
+name = "iclr"
+description = "Weighted toward the ICLR code-of-ethics and reproducibility-statement expectations: runnable code, seeds, environment capture, and stated results."
+
+[weights]
+code_execution = 13
+environment = 10
+dependencies = 5
+data = 9
+documentation = 11
+determinism = 13
+precision = 5
+drift = 8
+results = 7
+run = 4
+checkpoint = 2
+notebook = 3
+portability = 3
+remote = 3
+versioning = 1
+access_legal = 2
+archival = 1

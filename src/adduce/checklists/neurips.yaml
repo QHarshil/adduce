@@ -1,0 +1,44 @@
+name: "NeurIPS Paper Checklist (reproducibility items)"
+key: neurips
+preamble: >
+  Draft answers derived from repository evidence. Every answer must be
+  reviewed and completed by the authors before submission: the tool sees the
+  repository, not the paper, and several checklist items depend on claims
+  made in the paper text.
+items:
+  - id: experimental-reproducibility
+    question: "Does the paper fully disclose all the information needed to reproduce the main experimental results?"
+    rules: [R-DOC-001, R-DOC-002, R-DOC-003, R-DET-001, R-EXEC-003]
+    guidance: >
+      Reviewers look for the experimental setup, hyperparameters, seeds, and
+      the mapping from commands to reported numbers.
+  - id: open-access-code-data
+    question: "Does the paper provide open access to the data and code, with sufficient instructions to faithfully reproduce the main experimental results?"
+    rules: [R-EXEC-002, R-ENV-001, R-DATA-001, R-DATA-002, R-DOC-001]
+    guidance: >
+      An anonymised repository URL with exact run commands and environment
+      specification is the expected supporting material.
+  - id: experimental-details
+    question: "Does the paper specify all the training and test details (data splits, hyperparameters, how they were chosen, optimizer)?"
+    rules: [R-DOC-002, R-DRIFT-001, R-DRIFT-003, R-DATA-001]
+    guidance: >
+      Point to the committed config files for each reported experiment; drift
+      findings indicate paper and configs disagree.
+  - id: error-bars
+    question: "Does the paper report error bars or other information about the statistical significance of the experiments?"
+    rules: [R-RES-003]
+    guidance: >
+      Multi-seed run scripts and variance reporting are the repository-side
+      evidence; the statistical claims themselves live in the paper.
+  - id: compute-resources
+    question: "Does the paper provide sufficient information on the computer resources (type of compute workers, memory, time of execution) needed to reproduce the experiments?"
+    rules: [R-DOC-001, R-PREC-005, R-RUN-003, R-DRIFT-005]
+    guidance: >
+      State GPU/CPU model, count, memory, and approximate wall-clock time per
+      experiment; precision settings (TF32/AMP) belong here too.
+  - id: code-of-ethics-license
+    question: "Are the creators or original owners of assets (code, data, models) properly credited, and are the license and terms of use explicitly mentioned and respected?"
+    rules: [R-LIC-001, R-LIC-002, R-LIC-003]
+    guidance: >
+      License the released code, provide citation metadata, and state the
+      licenses of datasets and pretrained assets you build on.

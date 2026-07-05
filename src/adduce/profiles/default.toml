@@ -1,0 +1,21 @@
+name = "default"
+description = "Balanced weighting across all categories. Categories with no applicable findings are excluded and the rest renormalise."
+
+[weights]
+code_execution = 12
+environment = 10
+dependencies = 6
+data = 10
+documentation = 10
+determinism = 12
+precision = 4
+drift = 8
+results = 6
+run = 4
+checkpoint = 3
+notebook = 3
+portability = 3
+remote = 4
+versioning = 2
+access_legal = 2
+archival = 1

@@ -1,0 +1,37 @@
+{% if include_title %}# {{ title }}
+
+One-paragraph description of what this repository implements and which paper or report it accompanies.
+{% endif %}{% if include_install %}
+## Installation
+
+```bash
+git clone {{ repository_url or "<repository-url>" }}
+cd {{ title }}
+pip install -r requirements.txt   # or: pip install -e .
+```
+{% endif %}{% if include_usage %}
+## Reproducing results
+
+```bash
+# Replace with the exact command that produces the main results.
+bash reproduce.sh
+```
+{% endif %}{% if include_data %}
+## Data
+
+Where the data comes from, how to download it, and its license. Prefer a
+script (`scripts/download_data.sh`) or a dataset DOI over prose.
+{% endif %}{% if include_results %}
+## Expected results
+
+| Experiment | Metric | Expected value | Command |
+|---|---|---|---|
+| main | TODO | TODO | `bash reproduce.sh` |
+
+Values within a small tolerance of the table indicate a successful reproduction.
+{% endif %}{% if include_hardware %}
+## Hardware and runtime
+
+Trained on: TODO (e.g. 1× NVIDIA A100 80 GB). Approximate runtime: TODO.
+Results were produced at commit `{{ commit or "TODO" }}`.
+{% endif %}

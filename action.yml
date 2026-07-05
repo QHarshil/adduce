@@ -1,0 +1,72 @@
+name: "adduce artifact audit"
+description: "Audit a research artifact: paper-code drift, seeds, dependencies, environment capture, data provenance, remote pinning, and documentation."
+branding:
+  icon: "check-circle"
+  color: "green"
+
+inputs:
+  path:
+    description: "Repository path to scan."
+    required: false
+    default: "."
+  profile:
+    description: "Scoring profile (default, neurips, acl, acm, strict)."
+    required: false
+    default: "default"
+  fail-under:
+    description: "Fail the job when the total score is below this value. 0 disables gating."
+    required: false
+    default: "0"
+  fail-on-regression:
+    description: "Fail the job when any rule regresses against the committed .adduce-baseline.json."
+    required: false
+    default: "false"
+  sarif-file:
+    description: "Also write a SARIF report to this path (upload it with github/codeql-action/upload-sarif)."
+    required: false
+    default: ""
+  report-file:
+    description: "Also write a Markdown report to this path (useful for PR comments and job summaries)."
+    required: false
+    default: ""
+  version:
+    description: "adduce version to install (a PyPI version specifier)."
+    required: false
+    default: ""
+
+outputs:
+  score:
+    description: "Total reproducibility score (0-100)."
+    value: ${{ steps.score.outputs.score }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install adduce
+      shell: bash
+      run: |
+        SPEC="adduce"
+        if [ -n "${{ inputs.version }}" ]; then SPEC="adduce==${{ inputs.version }}"; fi
+        python -m pip install --quiet "$SPEC"
+
+    - name: Run check
+      id: score
+      shell: bash
+      run: |
+        ARGS=("${{ inputs.path }}" --profile "${{ inputs.profile }}")
+        if [ "${{ inputs.fail-under }}" != "0" ]; then ARGS+=(--fail-under "${{ inputs.fail-under }}"); fi
+        if [ "${{ inputs.fail-on-regression }}" = "true" ]; then ARGS+=(--fail-on-regression); fi
+
+        adduce check "${{ inputs.path }}" --format json --output adduce-result.json
+        SCORE=$(python -c "import json; print(json.load(open('adduce-result.json'))['total'])")
+        echo "score=$SCORE" >> "$GITHUB_OUTPUT"
+
+        if [ -n "${{ inputs.sarif-file }}" ]; then
+          adduce check "${{ inputs.path }}" --format sarif --output "${{ inputs.sarif-file }}"
+        fi
+        if [ -n "${{ inputs.report-file }}" ]; then
+          adduce check "${{ inputs.path }}" --format markdown --output "${{ inputs.report-file }}"
+          cat "${{ inputs.report-file }}" >> "$GITHUB_STEP_SUMMARY"
+        fi
+
+        adduce check "${ARGS[@]}"

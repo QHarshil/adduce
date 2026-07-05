@@ -1,0 +1,21 @@
+name = "neurips"
+description = "Weighted toward the NeurIPS paper-checklist items: experimental reproducibility, open code and data, error bars, and compute disclosure."
+
+[weights]
+code_execution = 13
+environment = 9
+dependencies = 5
+data = 10
+documentation = 11
+determinism = 13
+precision = 5
+drift = 9
+results = 8
+run = 4
+checkpoint = 2
+notebook = 2
+portability = 3
+remote = 3
+versioning = 1
+access_legal = 1
+archival = 1
