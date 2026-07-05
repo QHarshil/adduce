@@ -1,0 +1,112 @@
+# Positive-control expectations for the synthetic corpus.
+#
+# Each case isolates one behaviour. `expect` maps rule id -> status that MUST
+# be observed; `forbid` maps rule id -> status that MUST NOT be observed.
+# tests/test_synthetic_corpus.py enforces both on every run — this file is
+# the permanent false-positive regression suite. Tune fixtures, not
+# expectations, unless the tool's behaviour is genuinely correct.
+
+- case: synthetic_lr_drift
+  expect:
+    R-DRIFT-001: fail
+  forbid:
+    R-DRIFT-001: pass
+
+- case: synthetic_lr_agreement
+  expect:
+    R-DRIFT-001: pass
+  forbid:
+    R-DRIFT-001: fail
+
+- case: synthetic_rounding_match
+  expect:
+    R-RES-001: pass
+    R-RES-002: pass
+  forbid:
+    R-RES-002: partial
+
+- case: synthetic_material_mismatch
+  expect:
+    R-RES-002: partial
+  forbid:
+    R-RES-002: pass
+
+- case: synthetic_seed_count
+  # "averaged over 3 seeds" is a count, not a seed value; it must not drift
+  # against the config's seed: 42.
+  expect:
+    R-DRIFT-001: not-applicable
+    R-RES-003: pass
+  forbid:
+    R-DRIFT-001: fail
+
+- case: synthetic_hydra_authority
+  # The materialised Hydra config (lr 0.0001, matching the paper) outranks
+  # the stale checked-in config (lr 0.001).
+  expect:
+    R-DRIFT-001: pass
+    R-RUN-002: partial
+  forbid:
+    R-DRIFT-001: fail
+    R-RUN-002: pass
+
+- case: synthetic_secret
+  expect:
+    R-PORT-004: fail
+  forbid:
+    R-PORT-004: pass
+
+- case: synthetic_tf32
+  # Precision rules warn about undocumented policy; they never fail.
+  expect:
+    R-PREC-001: partial
+  forbid:
+    R-PREC-001: fail
+
+- case: synthetic_ghost_dep
+  # Two ghosts (cv2, yaml) with numpy declared: the tool reports partial
+  # (fail is reserved for more than two ghosts). Pinned to observed behaviour.
+  expect:
+    R-DEP-010: partial
+  forbid:
+    R-DEP-010: pass
+
+- case: synthetic_unpinned_remote
+  expect:
+    R-REMOTE-001: fail
+  forbid:
+    R-REMOTE-001: pass
+
+- case: synthetic_docker_claim
+  # "Run with Docker" in README prose is a claim, not evidence.
+  expect:
+    R-ENV-003: fail
+  forbid:
+    R-ENV-003: pass
+
+- case: synthetic_seeds_claimed_not_set
+  expect:
+    R-DET-001: fail
+    # Paper prose is a claim to be corroborated, not evidence: "5 random
+    # seeds" in the .tex with no code-side seed sweep must draft as partial.
+    R-RES-003: partial
+  forbid:
+    R-DET-001: pass
+    R-RES-003: pass
+
+- case: synthetic_metric_unrelated_table
+  # The only 92.4 belongs to other methods in a related-work table and the
+  # repo logs nothing; no reconciliation rule may claim success.
+  expect:
+    R-RES-004: not-applicable
+  forbid:
+    R-RES-001: pass
+    R-RES-002: pass
+    R-RES-003: pass
+    R-RES-004: pass
+
+- case: synthetic_untied_config
+  expect:
+    R-DRIFT-001: not-applicable
+  forbid:
+    R-DRIFT-001: fail

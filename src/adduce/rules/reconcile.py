@@ -140,17 +140,28 @@ class SingleRunRule(Rule):
         return repo.frameworks.uses_any({"torch", "tensorflow", "sklearn", "jax", "lightning", "transformers"})
 
     def evaluate(self, ev: Evidence) -> Finding:
-        multiseed_signals: list[str] = []
-        if ev.latex.mentions_multiseed:
-            multiseed_signals.append("the paper reports multi-seed statistics")
+        # Paper prose is a claim to be corroborated, not evidence in itself:
+        # "averaged over 5 seeds" in the .tex must not pass this rule when
+        # nothing in the repository actually sweeps seeds.
+        corroborated: list[str] = []
         if any(len(c.seeds) > 1 for c in ev.manifest.claims):
-            multiseed_signals.append("the manifest records multiple seeds per claim")
+            corroborated.append("the manifest records multiple seeds per claim")
         seeds_in_commands = {s for c in ev.runs.commands for s in c.seeds}
         if len(seeds_in_commands) > 1:
-            multiseed_signals.append(f"run scripts sweep {len(seeds_in_commands)} seeds")
-        if multiseed_signals:
+            corroborated.append(f"run scripts sweep {len(seeds_in_commands)} seeds")
+        if corroborated:
+            if ev.latex.mentions_multiseed:
+                corroborated.append("matching multi-seed statistics in the paper")
             return self.finding(
-                Status.PASS, confidence=0.65, message="Multi-run evidence: " + "; ".join(multiseed_signals) + "."
+                Status.PASS, confidence=0.65, message="Multi-run evidence: " + "; ".join(corroborated) + "."
+            )
+        if ev.latex.mentions_multiseed:
+            return self.finding(
+                Status.PARTIAL,
+                confidence=0.6,
+                message="The paper reports multi-seed statistics, but nothing in the repository "
+                "corroborates it (no manifest seeds, no seed sweep in run scripts).",
+                remediation="Commit the seed-sweep script or record the seeds per claim in the manifest so the paper's claim is checkable.",
             )
         if not (ev.latex.has_paper or ev.manifest.claims or ev.runs.commands):
             return self.finding(

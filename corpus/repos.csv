@@ -1,1 +1,4 @@
-cohort,url,sha
+id,cohort,repo_url,commit_sha,badge_type,venue,year,framework,has_tex,notes
+nanogpt,stress,https://github.com/karpathy/nanoGPT,,none,,,pytorch,false,popular minimal GPT training repo; empty sha means HEAD
+mingpt,stress,https://github.com/karpathy/minGPT,,none,,,pytorch,false,educational GPT implementation; empty sha means HEAD
+vit-pytorch,stress,https://github.com/lucidrains/vit-pytorch,,none,,,pytorch,false,large collection of ViT variants; empty sha means HEAD
