@@ -4,6 +4,9 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 6 * * 1"
 
 jobs:
   test:
@@ -41,3 +44,16 @@ jobs:
         run: python -m pip install -e .
       - name: Run adduce on itself
         run: adduce check . --verbose
+
+  pypi-smoke:
+    # Verifies the published package (data files, templates, entry points),
+    # not the checkout. Runs on demand and on a weekly schedule.
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Smoke-test the PyPI release
+        run: bash scripts/smoke_install.sh
