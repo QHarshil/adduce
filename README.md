@@ -15,27 +15,47 @@ The north-star question: *for every number in the paper, can I point to the arti
 
 ## What it reports
 
+Real output (trimmed) from running `adduce check` on [nanoGPT](https://github.com/karpathy/nanoGPT), in under a second:
+
 ```
-╭─ adduce  ·  cinematch  ·  commit 3f9a1c2 ─────────────────────────────────────╮
-│ Reproducibility  78/100   Silver   ·   profile: default                       │
-╰────────────────────────────────────────────────────────────────────────────────╯
-Reviewer time to first result: 45–90 min (Risky)
+╭─ adduce  ·  nanoGPT  ·  commit 3adf61e ──────────────────────────────────────╮
+│ Reproducibility  54/100   Bronze   ·   profile: default                      │
+╰──────────────────────────────────────────────────────────────────────────────╯
+Reviewer time to first result: 23–83 min (Risky)
   - no one-command reproduction path
-  - expected runtime not documented
+  - environment must be assembled by hand (no container or conda env)
+  - no smoke/quick-run target for a minutes-scale sanity check
 
-  Category                 Score   Notes
-  Code & Execution         10/12   commands documented; no run script
-  Determinism & Model       8/12   seeds set; DataLoader workers unseeded
-  Paper & Artifact Consist. 4/8    learning_rate: paper says 0.0001, configs/main.yaml has 0.001
-  ...
+Category                        Score  Notes
+Environment & Tooling            1/10  No dependency manifest found
+                                       (requirements.txt, pyproject.toml, ...)
+Determinism & Model              3/12  Some RNG sources are seeded, but not all:
+                                       missing python (random.seed), numpy;
+                                       neither cudnn.deterministic=True nor ...
+Numerical Precision & Hardware   2/4   TF32 matmul precision control in use
+                                       (torch.backends.cuda.matmul.allow_tf32 =
+                                       True) but no precision policy documented
+Checkpoint & Experiment State    2/3   No torch.save site visibly includes
+                                       LR-scheduler state or epoch/step progress
 
+Top fixes (largest score gains first)
+ 1. Extend the seeding helper to cover: python (random.seed), numpy.
+      adduce fix --scaffold seeds
+ 2. Set cudnn.deterministic = True and cudnn.benchmark = False.
+      adduce fix --scaffold seeds
+ 3. Declare dependencies, then pin them (pip-compile, uv lock, poetry lock).
+ 4. Add revision="<commit-sha>" to each from_pretrained call.
+      adduce pin-remotes --diff
+```
+
+Every flagged line is anchored to real code — the TF32 finding above points at `train.py:107`, and the unpinned hub call at `model.py:238`. When a manifest declares claims, the report adds a per-claim trail:
+
+```
 Claim trails (manifest)
   Table 2  ·  "LambdaMART improves NDCG@10 to 0.814"
     metric      results/lambdamart_eval.csv  (found: 0.8127)   ~ rounding vs paper (0.814) ✓
     command     make eval-lambdamart
     config      configs/lambdamart.yaml ✓
-    data        data/splits/ml-25m/test.json ✓
-    env         uv.lock + Dockerfile ✓
     seeds       42, 43, 44
     status      PARTIAL
 ```
