@@ -1,6 +1,7 @@
 # R-EXEC-001 — Discoverable entrypoint
 
 **Category:** Code & Execution  
+**Severity:** high  
 **Weight:** 5
 
 ## Why it matters

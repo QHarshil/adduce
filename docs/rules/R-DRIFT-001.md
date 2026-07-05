@@ -1,6 +1,7 @@
 # R-DRIFT-001 — Paper hyperparameter differs from the authoritative code value
 
 **Category:** Paper & Artifact Consistency  
+**Severity:** high  
 **Weight:** 5
 
 ## Why it matters

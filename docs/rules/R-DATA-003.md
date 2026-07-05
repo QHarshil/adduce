@@ -1,6 +1,7 @@
 # R-DATA-003 — Data integrity verifiable (checksums)
 
 **Category:** Data  
+**Severity:** medium  
 **Weight:** 3
 
 ## Why it matters

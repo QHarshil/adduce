@@ -1,6 +1,7 @@
 # R-RES-004 — Reported metric has no corresponding logged result
 
 **Category:** Result Reconciliation  
+**Severity:** medium  
 **Weight:** 3
 
 ## Why it matters

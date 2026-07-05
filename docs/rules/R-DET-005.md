@@ -1,6 +1,7 @@
 # R-DET-005 — Multi-worker DataLoaders reseed worker RNGs
 
 **Category:** Determinism & Model  
+**Severity:** medium  
 **Weight:** 3
 
 ## Why it matters

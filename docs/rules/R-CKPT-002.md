@@ -1,6 +1,7 @@
 # R-CKPT-002 — Checkpoints include scheduler state
 
 **Category:** Checkpoint & Experiment State  
+**Severity:** low  
 **Weight:** 2
 
 ## Why it matters

@@ -1,6 +1,7 @@
 # R-ENV-005 — System toolchain (CUDA, native libraries) captured or documented
 
 **Category:** Environment & Tooling  
+**Severity:** medium  
 **Weight:** 3
 
 ## Why it matters

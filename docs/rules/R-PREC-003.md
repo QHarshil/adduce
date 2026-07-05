@@ -1,6 +1,7 @@
 # R-PREC-003 — FP16/BF16 computation without documented hardware
 
 **Category:** Numerical Precision & Hardware  
+**Severity:** medium  
 **Weight:** 3
 
 ## Why it matters

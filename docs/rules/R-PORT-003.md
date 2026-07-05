@@ -1,6 +1,7 @@
 # R-PORT-003 — No private buckets or drive links as data sources
 
 **Category:** Portability  
+**Severity:** medium  
 **Weight:** 3
 
 ## Why it matters

@@ -1,6 +1,7 @@
 # R-REMOTE-001 — Hugging Face references carry a revision pin
 
 **Category:** Remote Artifacts & Rot  
+**Severity:** medium  
 **Weight:** 4
 
 ## Why it matters

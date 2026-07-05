@@ -1,6 +1,7 @@
 # R-DRIFT-006 — Ablations mentioned without matching configs or commands
 
 **Category:** Paper & Artifact Consistency  
+**Severity:** low  
 **Weight:** 1
 
 ## Why it matters

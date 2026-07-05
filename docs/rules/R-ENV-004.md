@@ -1,6 +1,7 @@
 # R-ENV-004 — Python version specified
 
 **Category:** Environment & Tooling  
+**Severity:** medium  
 **Weight:** 3
 
 ## Why it matters

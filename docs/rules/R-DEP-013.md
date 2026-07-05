@@ -1,6 +1,7 @@
 # R-DEP-013 — System/native dependencies used but undocumented
 
 **Category:** Dependencies  
+**Severity:** low  
 **Weight:** 1
 
 ## Why it matters

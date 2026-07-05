@@ -206,3 +206,53 @@ def test_pin_revision_codemod():
     assert changes == 1
     assert f'revision="{sha}"' in new_source
     assert new_source.count("revision") == 2  # existing pin untouched
+
+
+def test_paper_option_enables_drift_from_external_sources(tmp_path):
+    code = tmp_path / "code"
+    paper = tmp_path / "paper"
+    code.mkdir()
+    paper.mkdir()
+    _write(code, {"configs/main.yaml": "lr: 0.001\n", "train.py": "import yaml\n"})
+    (paper / "main.tex").write_text(
+        "\\documentclass{article}\\begin{document}"
+        "We use a learning rate of 1e-4."
+        "\\end{document}",
+        encoding="utf-8",
+    )
+    without = runner.invoke(app, ["check", str(code), "--format", "json"])
+    with_paper = runner.invoke(
+        app, ["check", str(code), "--paper", str(paper), "--format", "json"]
+    )
+    drift_without = next(
+        f for f in json.loads(without.output)["findings"] if f["rule_id"] == "R-DRIFT-001"
+    )
+    drift_with = next(
+        f for f in json.loads(with_paper.output)["findings"] if f["rule_id"] == "R-DRIFT-001"
+    )
+    assert drift_without["status"] == "not-applicable"
+    assert drift_with["status"] == "fail"
+    assert "learning_rate" in drift_with["message"]
+
+
+def test_paper_option_missing_path_errors(tmp_path):
+    _write(tmp_path, BARE)
+    result = runner.invoke(app, ["check", str(tmp_path), "--paper", str(tmp_path / "nope")])
+    assert result.exit_code == 2
+
+
+def test_no_paper_notice_in_terminal(tmp_path):
+    _write(tmp_path, BARE)
+    result = runner.invoke(app, ["check", str(tmp_path)])
+    assert "repository-only audit" in plain(result.output)
+
+
+def test_findings_carry_severity(tmp_path):
+    files = dict(BARE)
+    files["config.yaml"] = "key: AKIAIOSFODNN7EXAMPLE\n"
+    _write(tmp_path, files)
+    result = runner.invoke(app, ["check", str(tmp_path), "--format", "json"])
+    findings = {f["rule_id"]: f for f in json.loads(result.output)["findings"]}
+    assert findings["R-PORT-004"]["severity"] == "high"  # explicit override
+    assert findings["R-DET-001"]["severity"] == "high"   # derived from weight 8
+    assert all("severity" in f for f in findings.values())

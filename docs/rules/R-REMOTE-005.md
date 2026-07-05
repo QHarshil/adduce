@@ -1,6 +1,7 @@
 # R-REMOTE-005 — Online resolution of remote references (opt-in)
 
 **Category:** Remote Artifacts & Rot  
+**Severity:** low  
 **Weight:** 1
 
 ## Why it matters

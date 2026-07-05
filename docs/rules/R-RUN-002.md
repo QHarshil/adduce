@@ -1,6 +1,7 @@
 # R-RUN-002 — Materialised run config disagrees with checked-in configs
 
 **Category:** Run Traceability  
+**Severity:** medium  
 **Weight:** 3
 
 ## Why it matters

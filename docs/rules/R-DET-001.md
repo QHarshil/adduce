@@ -1,6 +1,7 @@
 # R-DET-001 — Random seeds set across all RNG sources
 
 **Category:** Determinism & Model  
+**Severity:** high  
 **Weight:** 8
 
 ## Why it matters

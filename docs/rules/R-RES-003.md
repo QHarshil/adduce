@@ -1,6 +1,7 @@
 # R-RES-003 — Single-run results without variance reporting
 
 **Category:** Result Reconciliation  
+**Severity:** medium  
 **Weight:** 3
 
 ## Why it matters

@@ -1,6 +1,7 @@
 # R-RUN-001 — Reported results have recoverable run commands
 
 **Category:** Run Traceability  
+**Severity:** medium  
 **Weight:** 4
 
 ## Why it matters

@@ -1,6 +1,7 @@
 # R-PREC-005 — GPU code without documented hardware
 
 **Category:** Numerical Precision & Hardware  
+**Severity:** low  
 **Weight:** 2
 
 ## Why it matters

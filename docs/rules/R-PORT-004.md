@@ -1,6 +1,7 @@
 # R-PORT-004 — No hardcoded secrets or API keys
 
 **Category:** Portability  
+**Severity:** high  
 **Weight:** 3
 
 ## Why it matters

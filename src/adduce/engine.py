@@ -52,8 +52,15 @@ def run_check(
     exclude: tuple[str, ...] = (),
     include_plugins: bool = True,
     rules: list[Rule] | None = None,
+    paper: Path | None = None,
 ) -> CheckResult:
-    """Run the full pipeline against a repository root."""
+    """Run the full pipeline against a repository root.
+
+    ``paper`` points at LaTeX sources kept outside the repository (a common
+    layout: paper and code in separate repos). It may be a directory or a
+    ``.tex`` file; its extraction replaces whatever the repository itself
+    contains, and evidence locations are relative to the paper root.
+    """
     config = load_config(path)
     if profile_name:
         config.profile = profile_name
@@ -65,6 +72,11 @@ def run_check(
     profile: Profile = load_profile(config.profile)
     repo = scan_repository(path, exclude=config.exclude)
     evidence = collect(repo)
+    if paper is not None:
+        from .evidence.latex import collect_latex
+
+        paper_root = paper if paper.is_dir() else paper.parent
+        evidence.latex = collect_latex(scan_repository(paper_root))
 
     findings: list[Finding] = []
     for rule in rules if rules is not None else discover_rules(include_plugins=include_plugins):

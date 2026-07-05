@@ -1,6 +1,7 @@
 # R-CKPT-001 — Checkpoints include optimizer state
 
 **Category:** Checkpoint & Experiment State  
+**Severity:** medium  
 **Weight:** 3
 
 ## Why it matters

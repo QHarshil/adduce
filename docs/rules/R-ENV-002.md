@@ -1,6 +1,7 @@
 # R-ENV-002 — Lockfile capturing the transitive environment
 
 **Category:** Environment & Tooling  
+**Severity:** medium  
 **Weight:** 3
 
 ## Why it matters

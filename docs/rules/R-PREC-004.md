@@ -1,6 +1,7 @@
 # R-PREC-004 — set_float32_matmul_precision used but undocumented
 
 **Category:** Numerical Precision & Hardware  
+**Severity:** low  
 **Weight:** 2
 
 ## Why it matters

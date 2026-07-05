@@ -1,6 +1,7 @@
 # R-VER-003 — Exact revision referenced in README or manifest
 
 **Category:** Versioning  
+**Severity:** low  
 **Weight:** 2
 
 ## Why it matters

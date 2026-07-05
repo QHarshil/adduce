@@ -1,6 +1,7 @@
 # R-CKPT-005 — Checkpoints record config/commit provenance
 
 **Category:** Checkpoint & Experiment State  
+**Severity:** low  
 **Weight:** 2
 
 ## Why it matters

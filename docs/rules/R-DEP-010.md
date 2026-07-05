@@ -1,6 +1,7 @@
 # R-DEP-010 — Imported but undeclared (ghost) dependencies
 
 **Category:** Dependencies  
+**Severity:** medium  
 **Weight:** 4
 
 ## Why it matters

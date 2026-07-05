@@ -1,6 +1,7 @@
 # R-DRIFT-003 — Hyperparameter reported in the paper not found in code
 
 **Category:** Paper & Artifact Consistency  
+**Severity:** medium  
 **Weight:** 3
 
 ## Why it matters

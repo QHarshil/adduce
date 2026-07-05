@@ -1,6 +1,7 @@
 # R-DET-003 — Strict determinism controls (deterministic algorithms, hash seed, CUBLAS workspace)
 
 **Category:** Determinism & Model  
+**Severity:** low  
 **Weight:** 2
 
 ## Why it matters

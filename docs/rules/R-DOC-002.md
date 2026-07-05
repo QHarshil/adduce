@@ -1,6 +1,7 @@
 # R-DOC-002 — Hyperparameters recorded somewhere recoverable
 
 **Category:** Documentation  
+**Severity:** medium  
 **Weight:** 4
 
 ## Why it matters

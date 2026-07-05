@@ -1,6 +1,7 @@
 # R-REMOTE-003 — torch.hub.load pinned to a commit
 
 **Category:** Remote Artifacts & Rot  
+**Severity:** low  
 **Weight:** 2
 
 ## Why it matters

@@ -1,6 +1,7 @@
 # R-RES-002 — Reported metric materially differs from the logged value
 
 **Category:** Result Reconciliation  
+**Severity:** medium  
 **Weight:** 4
 
 ## Why it matters

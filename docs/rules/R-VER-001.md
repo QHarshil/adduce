@@ -1,6 +1,7 @@
 # R-VER-001 — Under version control
 
 **Category:** Versioning  
+**Severity:** medium  
 **Weight:** 3
 
 ## Why it matters

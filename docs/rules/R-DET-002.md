@@ -1,6 +1,7 @@
 # R-DET-002 — cuDNN determinism flags set
 
 **Category:** Determinism & Model  
+**Severity:** medium  
 **Weight:** 4
 
 ## Why it matters

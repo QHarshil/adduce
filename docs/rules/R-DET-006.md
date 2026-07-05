@@ -1,6 +1,7 @@
 # R-DET-006 — random_state set on scikit-learn estimators and splitters
 
 **Category:** Determinism & Model  
+**Severity:** medium  
 **Weight:** 4
 
 ## Why it matters

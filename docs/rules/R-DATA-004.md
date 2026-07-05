@@ -1,6 +1,7 @@
 # R-DATA-004 — Large binaries not committed raw into git
 
 **Category:** Data  
+**Severity:** medium  
 **Weight:** 4
 
 ## Why it matters

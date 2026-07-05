@@ -1,6 +1,7 @@
 # R-LIC-001 — License file present
 
 **Category:** Access & Legal  
+**Severity:** medium  
 **Weight:** 3
 
 ## Why it matters

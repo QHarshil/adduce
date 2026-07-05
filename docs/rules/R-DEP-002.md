@@ -1,6 +1,7 @@
 # R-DEP-002 — Broad version ranges on result-affecting libraries
 
 **Category:** Dependencies  
+**Severity:** low  
 **Weight:** 2
 
 ## Why it matters

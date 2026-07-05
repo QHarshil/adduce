@@ -1,6 +1,7 @@
 # R-DATA-001 — Data availability statement / provenance
 
 **Category:** Data  
+**Severity:** medium  
 **Weight:** 4
 
 ## Why it matters

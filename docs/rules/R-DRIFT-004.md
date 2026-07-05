@@ -1,6 +1,7 @@
 # R-DRIFT-004 — Dataset named in the paper not found in code or configs
 
 **Category:** Paper & Artifact Consistency  
+**Severity:** medium  
 **Weight:** 3
 
 ## Why it matters

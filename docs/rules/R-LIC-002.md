@@ -1,6 +1,7 @@
 # R-LIC-002 — Citation metadata provided
 
 **Category:** Access & Legal  
+**Severity:** low  
 **Weight:** 2
 
 ## Why it matters

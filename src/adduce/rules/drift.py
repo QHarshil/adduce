@@ -88,7 +88,10 @@ class HyperparameterDriftRule(Rule):
     weight = 5
 
     def applies_to(self, repo: Repo) -> bool:
-        return any(f.suffix == ".tex" for f in repo.files)
+        # Paper sources may live outside the repository (--paper); the
+        # evaluate methods degrade to not-applicable when nothing was
+        # extracted, so no tex-presence gate belongs here.
+        return True
 
     def evaluate(self, ev: Evidence) -> Finding:
         paper_values = ev.latex.hyperparameter_values()
@@ -147,7 +150,10 @@ class AmbiguousConfigRule(Rule):
     weight = 2
 
     def applies_to(self, repo: Repo) -> bool:
-        return any(f.suffix == ".tex" for f in repo.files)
+        # Paper sources may live outside the repository (--paper); the
+        # evaluate methods degrade to not-applicable when nothing was
+        # extracted, so no tex-presence gate belongs here.
+        return True
 
     def evaluate(self, ev: Evidence) -> Finding:
         paper_values = ev.latex.hyperparameter_values()
@@ -183,7 +189,10 @@ class MissingHyperparameterRule(Rule):
     weight = 3
 
     def applies_to(self, repo: Repo) -> bool:
-        return any(f.suffix == ".tex" for f in repo.files)
+        # Paper sources may live outside the repository (--paper); the
+        # evaluate methods degrade to not-applicable when nothing was
+        # extracted, so no tex-presence gate belongs here.
+        return True
 
     def evaluate(self, ev: Evidence) -> Finding:
         paper_values = ev.latex.hyperparameter_values()
@@ -213,7 +222,10 @@ class DatasetDriftRule(Rule):
     weight = 3
 
     def applies_to(self, repo: Repo) -> bool:
-        return any(f.suffix == ".tex" for f in repo.files)
+        # Paper sources may live outside the repository (--paper); the
+        # evaluate methods degrade to not-applicable when nothing was
+        # extracted, so no tex-presence gate belongs here.
+        return True
 
     def evaluate(self, ev: Evidence) -> Finding:
         mentioned = ev.latex.datasets_mentioned
@@ -275,7 +287,10 @@ class HardwareClaimRule(Rule):
     weight = 2
 
     def applies_to(self, repo: Repo) -> bool:
-        return any(f.suffix == ".tex" for f in repo.files)
+        # Paper sources may live outside the repository (--paper); the
+        # evaluate methods degrade to not-applicable when nothing was
+        # extracted, so no tex-presence gate belongs here.
+        return True
 
     def evaluate(self, ev: Evidence) -> Finding:
         paper_claims = ev.latex.mentions_hardware or ev.latex.mentions_runtime
@@ -310,7 +325,10 @@ class AblationTraceRule(Rule):
     weight = 1
 
     def applies_to(self, repo: Repo) -> bool:
-        return any(f.suffix == ".tex" for f in repo.files)
+        # Paper sources may live outside the repository (--paper); the
+        # evaluate methods degrade to not-applicable when nothing was
+        # extracted, so no tex-presence gate belongs here.
+        return True
 
     def evaluate(self, ev: Evidence) -> Finding:
         if not ev.latex.ablation_mentions:

@@ -1,6 +1,7 @@
 # R-REMOTE-004 — Raw URL / drive / bucket downloads carry integrity checks
 
 **Category:** Remote Artifacts & Rot  
+**Severity:** medium  
 **Weight:** 3
 
 ## Why it matters

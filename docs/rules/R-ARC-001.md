@@ -1,6 +1,7 @@
 # R-ARC-001 — Archival identifier (DOI / SWHID)
 
 **Category:** Archival Readiness  
+**Severity:** medium  
 **Weight:** 3
 
 ## Why it matters

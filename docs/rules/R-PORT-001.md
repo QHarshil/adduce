@@ -1,6 +1,7 @@
 # R-PORT-001 — No local absolute paths
 
 **Category:** Portability  
+**Severity:** medium  
 **Weight:** 3
 
 ## Why it matters

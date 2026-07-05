@@ -90,6 +90,7 @@ class SecretsRule(Rule):
     title = "No hardcoded secrets or API keys"
     rationale = "A committed key is a security incident and blocks publishing the artifact at all."
     weight = 3
+    severity = "high"  # a security incident regardless of its score weight
 
     def evaluate(self, ev: Evidence) -> Finding:
         hits = ev.portability.of_kind("secret")

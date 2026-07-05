@@ -1,6 +1,7 @@
 # R-PREC-001 — TF32 matmul enabled but undocumented
 
 **Category:** Numerical Precision & Hardware  
+**Severity:** medium  
 **Weight:** 3
 
 ## Why it matters

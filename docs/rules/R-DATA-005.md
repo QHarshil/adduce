@@ -1,6 +1,7 @@
 # R-DATA-005 — Data-access friction grade
 
 **Category:** Data  
+**Severity:** medium  
 **Weight:** 3
 
 ## Why it matters

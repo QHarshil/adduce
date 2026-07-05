@@ -1,6 +1,7 @@
 # R-ENV-001 — Dependencies declared and pinned
 
 **Category:** Environment & Tooling  
+**Severity:** high  
 **Weight:** 5
 
 ## Why it matters

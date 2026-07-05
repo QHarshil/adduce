@@ -1,6 +1,7 @@
 # R-CKPT-004 — Checkpoints capture RNG state
 
 **Category:** Checkpoint & Experiment State  
+**Severity:** low  
 **Weight:** 2
 
 ## Why it matters

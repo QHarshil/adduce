@@ -63,6 +63,14 @@ def _render_summary(result: CheckResult, console: Console) -> None:
     console.print(Text(result.reviewer_time.headline, style="bold"))
     for factor in result.reviewer_time.factors[:4]:
         console.print(Text(f"  - {factor}", style="dim"))
+    if not result.evidence.latex.has_paper and not result.evidence.manifest.claims:
+        console.print(
+            Text(
+                "No paper sources detected — repository-only audit "
+                "(point adduce at the LaTeX sources with --paper to enable drift checks).",
+                style="dim",
+            )
+        )
     console.print()
 
 

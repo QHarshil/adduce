@@ -1,6 +1,7 @@
 # R-DRIFT-002 — Multiple candidate configs; cannot resolve which backs the paper
 
 **Category:** Paper & Artifact Consistency  
+**Severity:** low  
 **Weight:** 2
 
 ## Why it matters

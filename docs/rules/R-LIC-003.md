@@ -1,6 +1,7 @@
 # R-LIC-003 — Third-party asset licenses stated
 
 **Category:** Access & Legal  
+**Severity:** low  
 **Weight:** 2
 
 ## Why it matters

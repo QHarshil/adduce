@@ -1,6 +1,7 @@
 # R-VER-002 — Tagged release marking the reported state
 
 **Category:** Versioning  
+**Severity:** low  
 **Weight:** 2
 
 ## Why it matters

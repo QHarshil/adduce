@@ -1,6 +1,7 @@
 # R-DATA-002 — Scripted or documented data-acquisition path
 
 **Category:** Data  
+**Severity:** medium  
 **Weight:** 4
 
 ## Why it matters

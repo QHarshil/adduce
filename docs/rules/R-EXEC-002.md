@@ -1,6 +1,7 @@
 # R-EXEC-002 — One-command execution path
 
 **Category:** Code & Execution  
+**Severity:** medium  
 **Weight:** 4
 
 ## Why it matters

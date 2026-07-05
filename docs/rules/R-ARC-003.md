@@ -1,6 +1,7 @@
 # R-ARC-003 — Machine-readable archival metadata (.zenodo.json / codemeta.json)
 
 **Category:** Archival Readiness  
+**Severity:** low  
 **Weight:** 1
 
 ## Why it matters

@@ -1,6 +1,7 @@
 # R-PORT-002 — No hardcoded localhost endpoints
 
 **Category:** Portability  
+**Severity:** low  
 **Weight:** 1
 
 ## Why it matters

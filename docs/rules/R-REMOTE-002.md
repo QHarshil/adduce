@@ -1,6 +1,7 @@
 # R-REMOTE-002 — Revision pins are commit SHAs, not branches or tags
 
 **Category:** Remote Artifacts & Rot  
+**Severity:** low  
 **Weight:** 2
 
 ## Why it matters

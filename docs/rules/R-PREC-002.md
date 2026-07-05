@@ -1,6 +1,7 @@
 # R-PREC-002 — Mixed precision (AMP/autocast) undocumented
 
 **Category:** Numerical Precision & Hardware  
+**Severity:** medium  
 **Weight:** 3
 
 ## Why it matters

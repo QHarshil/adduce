@@ -1,6 +1,7 @@
 # R-RES-001 — Reported metrics differ from logs only at rounding level
 
 **Category:** Result Reconciliation  
+**Severity:** low  
 **Weight:** 1
 
 ## Why it matters

@@ -1,6 +1,7 @@
 # R-ENV-003 — Container or reproducible environment definition
 
 **Category:** Environment & Tooling  
+**Severity:** medium  
 **Weight:** 4
 
 ## Why it matters

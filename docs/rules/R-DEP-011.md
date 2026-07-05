@@ -1,6 +1,7 @@
 # R-DEP-011 — Declared but apparently unused dependencies
 
 **Category:** Dependencies  
+**Severity:** low  
 **Weight:** 1
 
 ## Why it matters

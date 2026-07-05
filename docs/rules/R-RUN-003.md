@@ -1,6 +1,7 @@
 # R-RUN-003 — Batch-script resource requests undocumented for readers
 
 **Category:** Run Traceability  
+**Severity:** low  
 **Weight:** 2
 
 ## Why it matters

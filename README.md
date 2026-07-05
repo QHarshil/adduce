@@ -126,12 +126,16 @@ adduce check .                       # everything offline: report, claim trails,
 adduce check --mode reviewer         # skeptical framing: what could not be verified
 adduce check --mode ae-chair         # badge eligibility, blocking issues, burden headline
 adduce check -f json|sarif|markdown|badge|latex -o out
+adduce check ./code --paper ../paper       # paper and code kept in separate repositories
 adduce drift                         # paper ↔ code/config consistency + result reconciliation
 adduce precision                     # TF32/AMP/low-precision audit
 adduce deps                          # ghost/unused/notebook dependency analysis
 adduce manifest                      # scaffold/refresh .adduce/manifest.yaml
-adduce checklist --profile neurips   # filled reproducibility checklist (also: acl)
-adduce appendix                      # ACM Artifact Appendix draft
+adduce checklist --profile neurips   # filled reproducibility checklist (also: acl); --strict-evidence
+adduce appendix                      # ACM Artifact Appendix draft; --strict-evidence
+adduce package --profile neurips     # one-command submission bundle (checklist, appendix,
+                                     # manifest, ledger, checksums, RO-Crate) in adduce-submission/
+adduce audit-generated checklist.md  # audit a generated artifact against its evidence ledger
 adduce export ro-crate|croissant|codemeta|zenodo|checksums|software-heritage|all
 adduce badge --svg                   # committed-in-repo badge; no hosted endpoint
 adduce diff main...HEAD              # artifact regression: code changed, docs/manifest did not?
@@ -156,6 +160,8 @@ The score reframed into the currency a PI feels: `< 10 min` Excellent · `10–3
 ## Scoring, profiles, suppression
 
 Scoring is category-weighted and explainable — each category reports earned/possible with the findings that moved it; inapplicable categories drop out and the rest renormalise, so a scikit-learn repository is never scored against CUDA flags. Profiles: `default`, `neurips`, `iclr`, `acl`, `acm`, `strict`, or your own TOML.
+
+Every finding carries four separate dimensions — status, confidence, severity, and score weight — because a low-confidence high-severity issue (a possible committed secret) must not read the same as a high-confidence low-severity one (a missing `.zenodo.json`).
 
 ```python
 loader = DataLoader(ds, shuffle=True)  # adduce: ignore=R-DET-004
@@ -228,9 +234,20 @@ my_lab = "my_lab_rules"
 
 Installing the pack is all it takes.
 
+## Generation safety
+
+adduce generates artifacts that may enter real submissions, so every generated statement is an evidence-backed draft — never a final claim, never a substitute for author review. The full contract is in [docs/generation-safety.md](docs/generation-safety.md); the short version:
+
+- Generated answers use a fixed vocabulary — `yes` (direct, high-confidence evidence), `partial` (incomplete, inferred, or conflicting evidence), `not detected` (searched and absent, with the search scope recorded), `author input required` (depends on information outside the repository), `unknown` (too ambiguous to classify). There is no unsupported "yes."
+- Every checklist and appendix is written alongside `.adduce/evidence-ledger.json`: per-answer evidence with `file:line`, confidence, and evidence strength (direct / inferred / author-confirmed / online-resolved / dynamically-verified), plus generation provenance (version, command, profile, commit, timestamp). Generated text is downstream of deterministic evidence, not the source of truth.
+- `--strict-evidence` tightens generation for authors who want zero inference in the output.
+- Every generation command ends with a safety summary (evidence-backed vs. partial vs. author-input answers, conflicts, the ledger path) — a draft with open items is useful, but it is not submission-ready, and adduce says so.
+- `adduce audit-generated <artifact>` checks a generated artifact against its ledger before submission: unsupported claims, low-confidence yeses, execution wording without an actual `reproduce` run, unresolved placeholders, and drift since the ledger was produced.
+- No generated text may imply execution-based verification unless `adduce reproduce` actually ran; nothing is invented from context; conflicts are surfaced, never silently resolved; secrets are never echoed; source is never edited without an explicit `--write` after a shown diff.
+
 ## Optional LLM layer
 
-Strictly separated from checks and scoring, which stay deterministic and offline. With a configured provider (`ADDUCE_LLM_PROVIDER=openai|anthropic|ollama`, bring your own key or a local model), `adduce checklist --llm` drafts the free-text justification prose from the deterministic evidence. Without one, everything works identically. adduce ships no key and never calls a paid API on your behalf.
+Strictly separated from checks and scoring, which stay deterministic and offline. With a configured provider (`ADDUCE_LLM_PROVIDER=openai|anthropic|ollama`, bring your own key or a local model), `adduce checklist --llm` drafts the free-text justification prose from the deterministic evidence — it rephrases evidence-linked findings, never determines an answer, and the prose stays intentionally plain. Without a provider, everything works identically. adduce ships no key and never calls a paid API on your behalf.
 
 ## Honest limits
 

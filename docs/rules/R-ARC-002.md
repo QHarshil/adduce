@@ -1,6 +1,7 @@
 # R-ARC-002 — Repository archivable as-is
 
 **Category:** Archival Readiness  
+**Severity:** low  
 **Weight:** 1
 
 ## Why it matters

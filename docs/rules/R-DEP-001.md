@@ -1,6 +1,7 @@
 # R-DEP-001 — Individual dependencies left floating
 
 **Category:** Dependencies  
+**Severity:** medium  
 **Weight:** 3
 
 ## Why it matters

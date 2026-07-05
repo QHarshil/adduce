@@ -1,6 +1,7 @@
 # R-DOC-003 — Expected outputs and results stated
 
 **Category:** Documentation  
+**Severity:** medium  
 **Weight:** 4
 
 ## Why it matters

@@ -4,6 +4,39 @@ All notable changes to this project are documented in this file. The format
 follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Generation safety: the contract (docs/generation-safety.md), the evidence
+  ledger (`.adduce/evidence-ledger.json`) with answer levels, evidence
+  strengths, search scope, and generation provenance; `--strict-evidence` on
+  `checklist` and `appendix`; visible `[EVIDENCE: path:line]` anchors and
+  `[AUTHOR REVIEW REQUIRED]` markers; a safety summary after every
+  generation command; `adduce audit-generated` (R-GEN-001..005); and
+  `adduce package` for a one-command submission bundle.
+- Synthetic positive-control corpus: 14 planted-fault repositories with
+  pinned expectations, run as a permanent regression suite, including
+  red-team cases whose correct answer is not a confident one.
+- Corpus tooling: clone/run/summarize/sample/label scripts implementing the
+  three-layer validation protocol (synthetic controls, labelled cohorts,
+  unlabelled stress corpus).
+- `--paper` on `check`, `drift`, `manifest`, `checklist`, and `appendix` for
+  papers kept outside the code repository, plus an explicit repository-only
+  notice when no paper sources are detected.
+- A severity dimension on every rule and finding, separate from score
+  weight (a committed secret is high severity at modest weight).
+- Installation smoke test against the published PyPI package
+  (scripts/smoke_install.sh, run weekly in CI).
+
+### Changed
+
+- Repository-relative paths are normalised to POSIX form on every platform;
+  fixes Windows path-separator failures and prefix checks.
+- R-RES-003 no longer accepts paper prose alone as multi-run evidence: a
+  stated seed count must be corroborated by manifest seeds or a seed sweep
+  in run scripts, otherwise it drafts as partial.
+
 ## [0.1.0] - 2026-07-04
 
 First release: a local research-artifact auditor. Offline by default;

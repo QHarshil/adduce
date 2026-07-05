@@ -1,6 +1,7 @@
 # R-DOC-001 — README covers install, usage, and hardware/runtime
 
 **Category:** Documentation  
+**Severity:** high  
 **Weight:** 5
 
 ## Why it matters

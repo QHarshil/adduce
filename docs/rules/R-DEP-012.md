@@ -1,6 +1,7 @@
 # R-DEP-012 — Notebook imports missing from the dependency manifest
 
 **Category:** Dependencies  
+**Severity:** low  
 **Weight:** 2
 
 ## Why it matters

@@ -1,6 +1,7 @@
 # R-EXEC-003 — Exact reproduce command recorded
 
 **Category:** Code & Execution  
+**Severity:** medium  
 **Weight:** 3
 
 ## Why it matters

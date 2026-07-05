@@ -1,6 +1,7 @@
 # R-CKPT-003 — Checkpoints record epoch/step
 
 **Category:** Checkpoint & Experiment State  
+**Severity:** low  
 **Weight:** 2
 
 ## Why it matters

@@ -69,6 +69,7 @@ class Finding:
     message: str
     remediation: str
     weight: int
+    severity: str = "medium"
     locations: list[Location] = field(default_factory=list)
     fix_command: str | None = None
     suppressed: bool = False
@@ -80,6 +81,7 @@ class Finding:
             "title": self.title,
             "status": self.status.value,
             "confidence": self.confidence,
+            "severity": self.severity,
             "message": self.message,
             "remediation": self.remediation,
             "weight": self.weight,
@@ -103,7 +105,23 @@ class Rule:
     title: str = ""
     rationale: str = ""
     weight: int = 1
+    #: How much a violation matters, independent of how much this profile's
+    #: score penalises it. A low-confidence high-severity finding must not
+    #: read the same as a high-confidence low-severity one. When unset, a
+    #: default is derived from the weight; rules override it where the two
+    #: diverge (a committed secret is high severity at modest weight).
+    severity: str | None = None  # "low" | "medium" | "high"
     fix_command: str | None = None
+
+    @property
+    def effective_severity(self) -> str:
+        if self.severity is not None:
+            return self.severity
+        if self.weight >= 5:
+            return "high"
+        if self.weight >= 3:
+            return "medium"
+        return "low"
 
     def applies_to(self, repo: Repo) -> bool:
         return True
@@ -130,6 +148,7 @@ class Rule:
             message=message,
             remediation=remediation,
             weight=self.weight,
+            severity=self.effective_severity,
             locations=locations or [],
             fix_command=self.fix_command,
         )

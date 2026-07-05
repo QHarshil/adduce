@@ -1,6 +1,7 @@
 # R-DET-004 — Shuffling DataLoaders use a seeded generator
 
 **Category:** Determinism & Model  
+**Severity:** medium  
 **Weight:** 4
 
 ## Why it matters

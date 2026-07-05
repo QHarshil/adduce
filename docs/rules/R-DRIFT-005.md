@@ -1,6 +1,7 @@
 # R-DRIFT-005 — Paper's hardware/runtime claims absent from the artifact
 
 **Category:** Paper & Artifact Consistency  
+**Severity:** low  
 **Weight:** 2
 
 ## Why it matters

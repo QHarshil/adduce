@@ -1,6 +1,7 @@
 # R-DATA-006 — Raw vs processed data distinguished
 
 **Category:** Data  
+**Severity:** low  
 **Weight:** 1
 
 ## Why it matters
