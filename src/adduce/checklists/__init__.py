@@ -1,10 +1,13 @@
 """Conference checklist drafting from repository evidence.
 
 Each bundled checklist maps its items to rule IDs. Items are answered from
-finding statuses (all pass → Yes, mixed → Partial, all fail → No); items the
-repository cannot answer are marked for the authors explicitly. The output
-is a draft: honest wording about that is part of the design, not a
-disclaimer bolted on.
+finding statuses through the evidence-ledger policy (all pass with strong
+evidence → yes, mixed or weakly supported → partial, all fail → not
+detected); items the repository cannot answer are handed to the authors
+explicitly. Rendering returns the ledger alongside the markdown so every
+drafted answer stays traceable to the evidence it rests on. The output is a
+draft: honest wording about that is part of the design, not a disclaimer
+bolted on.
 """
 
 from __future__ import annotations
@@ -16,6 +19,14 @@ from pathlib import Path
 import yaml
 
 from ..engine import CheckResult
+from ..ledger import (
+    AnswerLevel,
+    Ledger,
+    LedgerEntry,
+    build_entry,
+    build_provenance,
+    sha256_text,
+)
 from ..rules.base import Finding, Status
 
 
@@ -74,35 +85,49 @@ def load_checklist(name_or_path: str) -> Checklist:
     )
 
 
-def _draft_answer(findings: list[Finding]) -> tuple[str, list[str]]:
-    """Derive a draft answer and its supporting evidence lines."""
-    scored = [f for f in findings if f.status.score_value is not None]
-    evidence = []
+_ANSWER_TEXT = {
+    AnswerLevel.YES: "Yes (draft)",
+    AnswerLevel.PARTIAL: "Partial (draft)",
+    AnswerLevel.NOT_DETECTED: "Not detected (draft)",
+    AnswerLevel.UNKNOWN: "Unknown (draft)",
+    AnswerLevel.AUTHOR_INPUT_REQUIRED: (
+        "[AUTHOR REVIEW REQUIRED] — depends on information outside the repository"
+    ),
+}
+
+
+def _evidence_lines(findings: list[Finding]) -> list[str]:
+    """Human-readable evidence bullets, one per consulted finding."""
+    lines = []
     for finding in findings:
         marker = {Status.PASS: "found", Status.PARTIAL: "partial", Status.FAIL: "missing"}.get(
             finding.status, "n/a"
         )
-        evidence.append(f"[{marker}] {finding.rule_id}: {finding.message}")
-    if not scored:
-        return "No repository evidence", evidence
-    values = [f.status.score_value for f in scored]
-    if all(v == 1.0 for v in values):
-        return "Yes (draft)", evidence
-    if all(v == 0.0 for v in values):
-        return "No (draft)", evidence
-    return "Partial (draft)", evidence
+        lines.append(f"[{marker}] {finding.rule_id}: {finding.message}")
+    return lines
+
+
+def _anchors(findings: list[Finding], cap: int = 4) -> list[str]:
+    """path:line anchors so a reviewer can jump from an answer to the source."""
+    return [str(loc) for finding in findings for loc in finding.locations][:cap]
 
 
 def render_markdown(
     checklist: Checklist,
     result: CheckResult,
     llm_drafts: dict[str, str] | None = None,
-) -> str:
-    """Render the filled checklist. ``llm_drafts`` optionally carries
-    LLM-phrased justification prose keyed by item id; the yes/no evidence
-    answers stay deterministic regardless."""
+    strict: bool = False,
+) -> tuple[str, Ledger]:
+    """Render the filled checklist and the evidence ledger behind it.
+
+    ``llm_drafts`` optionally carries LLM-phrased justification prose keyed by
+    item id; the evidence answers stay deterministic regardless. ``strict``
+    raises the evidence bar (see :func:`adduce.ledger.derive_answer`).
+    """
     llm_drafts = llm_drafts or {}
     findings_by_rule = {f.rule_id: f for f in result.card.findings}
+    manifest_backed = bool(result.evidence.manifest.claims)
+    entries: list[LedgerEntry] = []
     lines: list[str] = []
     lines.append(f"# {checklist.name}")
     lines.append("")
@@ -117,22 +142,30 @@ def render_markdown(
         lines.append(f"## {index}. {item.question}")
         lines.append("")
         item_findings = [findings_by_rule[r] for r in item.rules if r in findings_by_rule]
-        if item.manual:
-            lines.append("**Answer:** _requires author input — not derivable from the repository._")
-        else:
-            answer, _ = _draft_answer(item_findings)
-            lines.append(f"**Answer:** {answer}")
+        entry = build_entry(
+            item_id=item.id,
+            question=item.question,
+            findings=item_findings,
+            rule_ids=item.rules,
+            manifest_backed=manifest_backed,
+            strict=strict,
+            manual=item.manual,
+        )
+        entries.append(entry)
+        lines.append(f"**Answer:** {_ANSWER_TEXT[entry.answer]}")
+        anchors = _anchors(item_findings) if not item.manual else []
+        if anchors:
+            lines.append(f"[EVIDENCE: {', '.join(anchors)}]")
         lines.append("")
         if item.id in llm_drafts:
-            lines.append("**Draft justification** (LLM-phrased from the evidence below — verify):")
+            lines.append("**Draft justification** (LLM-phrased from the evidence below — check it):")
             lines.append("")
             lines.append(llm_drafts[item.id])
             lines.append("")
         if item_findings:
             lines.append("**Repository evidence:**")
             lines.append("")
-            _, evidence = _draft_answer(item_findings)
-            for line in evidence:
+            for line in _evidence_lines(item_findings):
                 lines.append(f"- {line}")
             lines.append("")
         if item.guidance:
@@ -146,4 +179,16 @@ def render_markdown(
         "paper before submission; answers about the paper text cannot be derived here."
     )
     lines.append("")
-    return "\n".join(lines)
+    markdown = "\n".join(lines)
+    ledger = Ledger(
+        artifact_path=f"checklist-{checklist.key}.md",
+        artifact_sha256=sha256_text(markdown),
+        provenance=build_provenance(
+            command="checklist",
+            profile=checklist.key,
+            mode="strict" if strict else "default",
+            repo_commit=result.repo.git.head_commit,
+        ),
+        entries=entries,
+    )
+    return markdown, ledger

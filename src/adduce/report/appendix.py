@@ -2,22 +2,60 @@
 
 Follows the standard artifact-appendix structure (abstract, checklist,
 description, installation, experiment workflow, expected results). Items the
-evidence cannot answer are marked for the author rather than guessed.
+evidence cannot answer are marked for the author rather than guessed, and the
+sections that state facts (A.2 check-list, A.6 expected results) are recorded
+in an evidence ledger so those statements stay traceable and auditable.
 """
 
 from __future__ import annotations
 
 from ..engine import CheckResult
+from ..ledger import Ledger, LedgerEntry, build_entry, build_provenance, sha256_text
+from ..rules.base import Finding
 
 _TODO = "_[author: complete]_"
+
+# The A.2 meta-information block states facts about documentation, the
+# environment, how to run, and licensing; A.6 states the expected numbers.
+# These rule sets are the evidence surfaces those statements rest on.
+_A2_RULES = ("R-DOC-001", "R-ENV-001", "R-EXEC-002", "R-LIC-001")
+_A6_RULES = ("R-RES-001", "R-RES-002", "R-RES-003")
 
 
 def _yes_no(condition: bool, detail: str = "") -> str:
     return f"Yes{f' — {detail}' if detail else ''}" if condition else "No"
 
 
-def render(result: CheckResult) -> str:
+def _anchor_line(findings: list[Finding], cap: int = 4) -> str | None:
+    anchors = [str(loc) for finding in findings for loc in finding.locations][:cap]
+    return f"[EVIDENCE: {', '.join(anchors)}]" if anchors else None
+
+
+def render(result: CheckResult, strict: bool = False) -> tuple[str, Ledger]:
     ev = result.evidence
+    findings_by_rule = {f.rule_id: f for f in result.card.findings}
+    a2_findings = [findings_by_rule[r] for r in _A2_RULES if r in findings_by_rule]
+    a6_findings = [findings_by_rule[r] for r in _A6_RULES if r in findings_by_rule]
+    claims_with_values = [c for c in ev.manifest.claims if c.value is not None]
+    entries: list[LedgerEntry] = [
+        build_entry(
+            item_id="A.2",
+            question="Artifact check-list (meta-information)",
+            findings=a2_findings,
+            rule_ids=_A2_RULES,
+            manifest_backed=bool(ev.manifest.claims),
+            strict=strict,
+        ),
+        build_entry(
+            item_id="A.6",
+            question="Evaluation and expected results",
+            findings=a6_findings,
+            rule_ids=_A6_RULES,
+            manifest_backed=bool(claims_with_values),
+            strict=strict,
+        ),
+    ]
+
     lines: list[str] = []
     title = ev.manifest.paper.title or ev.latex.title or result.repo.root.name
 
@@ -25,6 +63,9 @@ def render(result: CheckResult) -> str:
     lines += ["## A.1 Abstract", "", _TODO + " One paragraph: what the artifact contains and which claims it supports.", ""]
 
     lines += ["## A.2 Artifact check-list (meta-information)", ""]
+    a2_anchor = _anchor_line(a2_findings)
+    if a2_anchor:
+        lines += [a2_anchor, ""]
     frameworks = ", ".join(sorted(ev.repo.frameworks.detected - {"python"})) or "Python"
     total_mb = sum(f.size for f in ev.repo.files) / (1024 * 1024)
     runner = (
@@ -70,7 +111,7 @@ def render(result: CheckResult) -> str:
     lines += ["## A.4 Installation", ""]
     if ev.docs.has_section("install"):
         lines += ["See the README installation section. Summary:", ""]
-    lines += ["```bash", "# " + (_TODO if not ev.docs.has_section("install") else "verify against the README"),
+    lines += ["```bash", "# " + (_TODO if not ev.docs.has_section("install") else "check against the README"),
               "pip install -r requirements.txt" if ev.repo.exists("requirements.txt") else "pip install -e .",
               "```", ""]
 
@@ -82,7 +123,9 @@ def render(result: CheckResult) -> str:
         lines += [_TODO + " The exact command sequence from clean checkout to reported numbers.", ""]
 
     lines += ["## A.6 Evaluation and expected results", ""]
-    claims_with_values = [c for c in ev.manifest.claims if c.value is not None]
+    a6_anchor = _anchor_line(a6_findings)
+    if a6_anchor:
+        lines += [a6_anchor, ""]
     if claims_with_values:
         lines += ["| Claim | Metric | Expected value | Produced by |", "|---|---|---|---|"]
         for claim in claims_with_values[:10]:
@@ -97,5 +140,17 @@ def render(result: CheckResult) -> str:
 
     lines += ["## A.7 Notes", "",
               "Generated as a draft from repository evidence; every field marked for the author must be completed "
-              "and all others verified before submission.", ""]
-    return "\n".join(lines)
+              "and all others checked before submission.", ""]
+    markdown = "\n".join(lines)
+    ledger = Ledger(
+        artifact_path="artifact_appendix.md",
+        artifact_sha256=sha256_text(markdown),
+        provenance=build_provenance(
+            command="appendix",
+            profile=None,
+            mode="strict" if strict else "default",
+            repo_commit=result.repo.git.head_commit,
+        ),
+        entries=entries,
+    )
+    return markdown, ledger

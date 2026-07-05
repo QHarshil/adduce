@@ -7,13 +7,16 @@ is a separate, opt-in command and says so.
 
 from __future__ import annotations
 
+import contextlib
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Any
 
 import typer
+import yaml
 from rich.console import Console
 from rich.table import Table
 from rich.text import Text
@@ -28,6 +31,13 @@ from .engine import (
     run_check,
 )
 from .fixers import RULE_TO_SCAFFOLD, SCAFFOLDS
+from .ledger import (
+    LEDGER_DIR,
+    LEDGER_NAME,
+    Ledger,
+    sha256_file,
+    write_ledger,
+)
 from .manifest import write_manifest
 from .manifest_builder import scaffold_manifest
 from .modes import Mode
@@ -85,9 +95,13 @@ def _run(
     exclude: list[str] | None = None,
     only: list[str] | None = None,
     skip: list[str] | None = None,
+    paper: Path | None = None,
 ) -> CheckResult:
     if not path.is_dir():
         err_console.print(f"[red]error:[/red] {path} is not a directory")
+        raise typer.Exit(code=2)
+    if paper is not None and not paper.exists():
+        err_console.print(f"[red]error:[/red] --paper path {paper} does not exist")
         raise typer.Exit(code=2)
     rules = None
     if only or skip:
@@ -105,6 +119,7 @@ def _run(
             ignore=frozenset(ignore or []),
             exclude=tuple(exclude or []),
             rules=rules,
+            paper=paper,
         )
     except ValueError as exc:  # unknown profile, malformed config
         err_console.print(f"[red]error:[/red] {exc}")
@@ -118,6 +133,34 @@ def _write_or_print(rendered: str, output: Path | None) -> None:
         err_console.print(f"written to {output}")
     else:
         sys.stdout.write(rendered.rstrip("\n") + "\n")
+
+
+def _ledger_key(output: Path | None, root: Path, default: str) -> str:
+    """Ledger key for a generated artifact: root-relative when possible.
+
+    Root-relative keys let ``audit-generated`` find the record from the same
+    repository regardless of the working directory the artifact was made from.
+    """
+    if output is None:
+        return default
+    try:
+        return output.resolve().relative_to(root.resolve()).as_posix()
+    except ValueError:
+        return output.name
+
+
+def _print_generation_summary(counts: dict[str, int], ledger_path: Path) -> None:
+    """Summarise what the draft rests on — to stderr, never into the artifact."""
+    err_console.print(
+        "generation summary: "
+        f"{counts['evidence_backed']} evidence-backed, {counts['partial']} partial, "
+        f"{counts['author_input_required']} author input required, "
+        f"{counts['not_detected']} not detected, {counts['unknown']} unknown, "
+        f"{counts['conflicts']} conflict(s)"
+    )
+    err_console.print(f"ledger: {ledger_path}")
+    if counts["partial"] or counts["author_input_required"] or counts["conflicts"]:
+        err_console.print("Review required before submission — this draft is not submission-ready.")
 
 
 def _print_category_findings(result: CheckResult, categories: set[Category]) -> None:
@@ -174,6 +217,10 @@ def check(
     skip: Annotated[list[str] | None, typer.Option("--skip", help="Skip rules with this ID prefix (repeatable).")] = None,
     ignore: Annotated[list[str] | None, typer.Option("--ignore", help="Rule ID to suppress (repeatable).")] = None,
     exclude: Annotated[list[str] | None, typer.Option("--exclude", help="Directory name to skip while scanning (repeatable).")] = None,
+    paper: Annotated[
+        Path | None,
+        typer.Option("--paper", help="LaTeX sources kept outside this repository (a directory or a .tex file)."),
+    ] = None,
     verbose: Annotated[bool, typer.Option("--verbose", "-v", help="Show every finding, not just the summary.")] = False,
 ) -> None:
     """Scan a repository and report its reproducibility posture (offline)."""
@@ -181,7 +228,7 @@ def check(
         err_console.print(f"[red]error:[/red] unknown format '{output_format}'. Choose from: {', '.join(_FORMATS)}.")
         raise typer.Exit(code=2)
 
-    result = _run(path, profile, ignore, exclude, only, skip)
+    result = _run(path, profile, ignore, exclude, only, skip, paper=paper)
 
     if output_format == "terminal":
         terminal_report.render(result, console, verbose=verbose, mode=mode)
@@ -219,9 +266,15 @@ def check(
 
 
 @app.command()
-def drift(path: Annotated[Path, typer.Argument(help="Repository root to scan.")] = Path(".")) -> None:
+def drift(
+    path: Annotated[Path, typer.Argument(help="Repository root to scan.")] = Path("."),
+    paper: Annotated[
+        Path | None,
+        typer.Option("--paper", help="LaTeX sources kept outside this repository (a directory or a .tex file)."),
+    ] = None,
+) -> None:
     """Paper ↔ code/config consistency plus result reconciliation (offline)."""
-    result = _run(path)
+    result = _run(path, paper=paper)
     if not result.evidence.latex.has_paper and not result.evidence.manifest.claims:
         console.print("no .tex sources or manifest claims found; nothing to compare the artifact against.")
         raise typer.Exit()
@@ -257,9 +310,13 @@ def deps(path: Annotated[Path, typer.Argument(help="Repository root to scan.")] 
 def manifest(
     path: Annotated[Path, typer.Argument(help="Repository root.")] = Path("."),
     force: Annotated[bool, typer.Option(help="Rebuild draft sections even when a manifest exists.")] = False,
+    paper: Annotated[
+        Path | None,
+        typer.Option("--paper", help="LaTeX sources kept outside this repository (a directory or a .tex file)."),
+    ] = None,
 ) -> None:
     """Scaffold or refresh .adduce/manifest.yaml from detected evidence (offline)."""
-    result = _run(path)
+    result = _run(path, paper=paper)
     existing = result.evidence.manifest
     if existing.exists and not force:
         draft = scaffold_manifest(result.evidence)  # fills only empty sections
@@ -289,6 +346,17 @@ def checklist(
         bool,
         typer.Option(help="Draft free-text justifications with your configured LLM (BYO-key; evidence answers stay deterministic)."),
     ] = False,
+    strict_evidence: Annotated[
+        bool,
+        typer.Option(
+            "--strict-evidence",
+            help="Raise the evidence bar: a drafted yes needs stronger detected signals, and inferred-only items go back to the author.",
+        ),
+    ] = False,
+    paper: Annotated[
+        Path | None,
+        typer.Option("--paper", help="LaTeX sources kept outside this repository (a directory or a .tex file)."),
+    ] = None,
 ) -> None:
     """Draft a conference reproducibility checklist from repository evidence (offline unless --llm)."""
     try:
@@ -296,7 +364,7 @@ def checklist(
     except ValueError as exc:
         err_console.print(f"[red]error:[/red] {exc}")
         raise typer.Exit(code=2) from exc
-    result = _run(path)
+    result = _run(path, paper=paper)
     llm_drafts: dict[str, str] = {}
     if llm:
         from . import llm as llm_module
@@ -315,18 +383,254 @@ def checklist(
             except llm_module.LLMUnavailable as exc:
                 err_console.print(f"[yellow]LLM drafting skipped:[/yellow] {exc}")
                 break
-    rendered = render_markdown(selected, result, llm_drafts=llm_drafts)
+    rendered, ledger = render_markdown(selected, result, llm_drafts=llm_drafts, strict=strict_evidence)
     _write_or_print(rendered, output)
+    ledger.artifact_path = _ledger_key(output, path, ledger.artifact_path)
+    ledger_path = write_ledger(path, ledger)
+    _print_generation_summary(ledger.counts(), ledger_path)
 
 
 @app.command()
 def appendix(
     path: Annotated[Path, typer.Argument(help="Repository root to scan.")] = Path("."),
     output: Annotated[Path | None, typer.Option("--output", "-o", help="Write to a file instead of stdout.")] = None,
+    strict_evidence: Annotated[
+        bool,
+        typer.Option(
+            "--strict-evidence",
+            help="Raise the evidence bar: a drafted yes needs stronger detected signals, and inferred-only items go back to the author.",
+        ),
+    ] = False,
+    paper: Annotated[
+        Path | None,
+        typer.Option("--paper", help="LaTeX sources kept outside this repository (a directory or a .tex file)."),
+    ] = None,
 ) -> None:
     """Draft an ACM Artifact Appendix from repository evidence (offline)."""
+    result = _run(path, paper=paper)
+    rendered, ledger = appendix_report.render(result, strict=strict_evidence)
+    _write_or_print(rendered, output)
+    ledger.artifact_path = _ledger_key(output, path, ledger.artifact_path)
+    ledger_path = write_ledger(path, ledger)
+    _print_generation_summary(ledger.counts(), ledger_path)
+
+
+# --------------------------------------------------------------------------
+# generation safety: audit-generated / package
+# --------------------------------------------------------------------------
+
+_EXECUTION_CLAIM_RE = re.compile(
+    r"results reproduce|results were reproduced|verified by execution|runs agree",
+    re.IGNORECASE,
+)
+_PLACEHOLDERS = ("TODO", "_[author: complete]_", "[AUTHOR REVIEW REQUIRED]")
+
+
+def _load_ledger_records(root: Path, artifact: Path) -> tuple[dict[str, Any], bool]:
+    """Merge ledger records from the repository root and beside the artifact.
+
+    Packaged bundles carry their own ledger next to the artifact, so both
+    locations are legitimate sources of the record being audited.
+    """
+    records: dict[str, Any] = {}
+    found = False
+    for candidate in (root / LEDGER_DIR / LEDGER_NAME, artifact.parent / LEDGER_NAME):
+        if not candidate.is_file():
+            continue
+        found = True
+        try:
+            data = json.loads(candidate.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            continue
+        if isinstance(data, dict):
+            for key, value in data.items():
+                records.setdefault(key, value)
+    return records, found
+
+
+@app.command("audit-generated")
+def audit_generated(
+    artifact: Annotated[Path, typer.Argument(help="Generated artifact to audit, e.g. checklist.md.")],
+    root: Annotated[Path, typer.Argument(help="Repository root holding .adduce/evidence-ledger.json.")] = Path("."),
+) -> None:
+    """Audit a generated artifact against its evidence ledger (offline).
+
+    Flags answers without evidence, over-confident yeses, execution claims no
+    run backs, leftover placeholders, and post-generation edits."""
+    if not artifact.is_file():
+        err_console.print(f"[red]error:[/red] {artifact} is not a file")
+        raise typer.Exit(code=2)
+    records, found = _load_ledger_records(root, artifact)
+    if not found:
+        err_console.print(
+            f"[red]error:[/red] no evidence ledger found at {root / LEDGER_DIR / LEDGER_NAME}. "
+            "Generate the artifact with `adduce checklist` or `adduce appendix` so its evidence is recorded."
+        )
+        raise typer.Exit(code=2)
+    keys = [str(artifact)]
+    with contextlib.suppress(ValueError):
+        keys.append(artifact.resolve().relative_to(root.resolve()).as_posix())
+    keys.append(artifact.name)
+    record = next((records[k] for k in keys if k in records), None)
+    if record is None:  # fall back to a filename match across recorded paths
+        record = next((v for k, v in records.items() if Path(k).name == artifact.name), None)
+    if record is None:
+        err_console.print(
+            f"[red]error:[/red] the ledger has no record for {artifact.name}. "
+            "Regenerate the artifact so its evidence is recorded."
+        )
+        raise typer.Exit(code=2)
+
+    rows: list[tuple[str, str, str]] = []
+    entries = record.get("entries", [])
+    unbacked = [
+        e for e in entries
+        if e.get("answer") in ("yes", "partial") and not e.get("evidence")
+    ]
+    if unbacked:
+        rows.append((
+            "R-GEN-001",
+            "fail",
+            f"{len(unbacked)} answered item(s) rest on zero evidence items: "
+            + ", ".join(str(e.get("item_id", "?")) for e in unbacked[:5]),
+        ))
+    weak_yes = [
+        e for e in entries
+        if e.get("answer") == "yes"
+        and max((i.get("confidence", 0.0) for i in e.get("evidence", [])), default=0.0) < 0.85
+    ]
+    if weak_yes:
+        rows.append((
+            "R-GEN-002",
+            "fail",
+            "a drafted yes rests on evidence below 0.85 confidence: "
+            + ", ".join(str(e.get("item_id", "?")) for e in weak_yes[:5]),
+        ))
+    text = artifact.read_text(encoding="utf-8", errors="replace")
+    has_dynamic = any(
+        i.get("strength") == "dynamic_verified" for e in entries for i in e.get("evidence", [])
+    )
+    claim = _EXECUTION_CLAIM_RE.search(text)
+    if claim and not has_dynamic:
+        rows.append((
+            "R-GEN-003",
+            "fail",
+            f"the text claims execution ('{claim.group(0)}') but the ledger records no dynamic_verified evidence",
+        ))
+    placeholders = sum(text.count(marker) for marker in _PLACEHOLDERS)
+    if placeholders:
+        rows.append((
+            "R-GEN-004",
+            "info",
+            f"{placeholders} unresolved placeholder(s) remain — complete them before submission",
+        ))
+    recorded_sha = record.get("artifact_sha256", "")
+    if recorded_sha and sha256_file(artifact) != recorded_sha:
+        rows.append((
+            "R-GEN-005",
+            "fail",
+            "artifact content differs from the ledger record — it was edited after generation; "
+            "regenerate, or audit the edits against the evidence",
+        ))
+
+    if rows:
+        table = Table(box=None, pad_edge=False, header_style="bold dim")
+        table.add_column("Rule")
+        table.add_column("Level")
+        table.add_column("Detail", overflow="fold")
+        for rule_id, level, detail in rows:
+            style = {"fail": "red", "info": "dim"}.get(level, "")
+            table.add_row(rule_id, Text(level, style=style), detail)
+        console.print(table)
+    else:
+        console.print("no generation-safety findings detected.")
+    if any(level == "fail" for _, level, _ in rows):
+        raise typer.Exit(code=1)
+
+
+@app.command()
+def package(
+    path: Annotated[Path, typer.Argument(help="Repository root.")] = Path("."),
+    profile: Annotated[
+        str, typer.Option(help=f"Checklist: {', '.join(available_checklists())}, or a path to a checklist YAML.")
+    ] = "neurips",
+    strict_evidence: Annotated[
+        bool,
+        typer.Option(
+            "--strict-evidence",
+            help="Raise the evidence bar: a drafted yes needs stronger detected signals, and inferred-only items go back to the author.",
+        ),
+    ] = False,
+    force: Annotated[bool, typer.Option(help="Overwrite an existing adduce-submission/ directory.")] = False,
+) -> None:
+    """Assemble a draft submission bundle in adduce-submission/ (offline).
+
+    Checklist, artifact appendix, manifest copy or draft, evidence ledger,
+    checksums, citation metadata, and RO-Crate — every file is a draft."""
+    try:
+        selected = load_checklist(profile)
+    except ValueError as exc:
+        err_console.print(f"[red]error:[/red] {exc}")
+        raise typer.Exit(code=2) from exc
     result = _run(path)
-    _write_or_print(appendix_report.render(result), output)
+    package_dir = path / "adduce-submission"
+    if package_dir.exists() and not force:
+        err_console.print(
+            f"[red]error:[/red] {package_dir} already exists; rerun with --force to overwrite it."
+        )
+        raise typer.Exit(code=2)
+    package_dir.mkdir(parents=True, exist_ok=True)
+
+    def write_file(name: str, content: str) -> None:
+        (package_dir / name).write_text(content.rstrip("\n") + "\n", encoding="utf-8")
+        written.append(name)
+
+    written: list[str] = []
+    checklist_md, checklist_ledger = render_markdown(selected, result, strict=strict_evidence)
+    checklist_ledger.artifact_path = "checklist.md"
+    checklist_ledger.provenance["command"] = "package"
+    write_file("checklist.md", checklist_md)
+
+    appendix_md, appendix_ledger = appendix_report.render(result, strict=strict_evidence)
+    appendix_ledger.artifact_path = "artifact_appendix.md"
+    appendix_ledger.provenance["command"] = "package"
+    write_file("artifact_appendix.md", appendix_md)
+
+    # The manifest goes into the package only: this command never touches
+    # .adduce/, so a scaffolded draft cannot masquerade as author-confirmed.
+    existing_manifest = path / ".adduce" / "manifest.yaml"
+    if existing_manifest.is_file():
+        manifest_text = existing_manifest.read_text(encoding="utf-8")
+    else:
+        draft = scaffold_manifest(result.evidence)
+        manifest_text = yaml.safe_dump(draft.to_dict(), sort_keys=False, allow_unicode=True)
+    write_file("manifest.yaml", manifest_text)
+
+    ledgers: dict[str, Ledger] = {
+        checklist_ledger.artifact_path: checklist_ledger,
+        appendix_ledger.artifact_path: appendix_ledger,
+    }
+    write_file(
+        "evidence-ledger.json",
+        json.dumps({key: ledger.to_dict() for key, ledger in ledgers.items()}, indent=2),
+    )
+    write_file("checksums.txt", checksums_report.render(result))
+    for candidate in ("CITATION.cff", "citation.cff"):
+        source = path / candidate
+        if source.is_file():
+            write_file("citation.cff", source.read_text(encoding="utf-8"))
+            break
+    write_file("ro-crate-metadata.json", ro_crate_report.render(result))
+
+    combined = checklist_ledger.counts()
+    for key, value in appendix_ledger.counts().items():
+        combined[key] += value
+    _print_generation_summary(combined, package_dir / "evidence-ledger.json")
+    for name in written:
+        console.print(f"written: {package_dir / name}")
+    console.print(
+        "Every file is a draft; run `adduce audit-generated adduce-submission/checklist.md` before submitting."
+    )
 
 
 _EXPORTERS = {
@@ -683,12 +987,19 @@ def rules(
     table = Table(box=None, header_style="bold dim")
     table.add_column("ID")
     table.add_column("Category")
+    table.add_column("Severity")
     table.add_column("Weight", justify="right")
     table.add_column("Title")
     for rule_obj in discover_rules():
         if category and category.lower() not in rule_obj.category.value.lower():
             continue
-        table.add_row(rule_obj.id, rule_obj.category.value, str(rule_obj.weight), rule_obj.title)
+        table.add_row(
+            rule_obj.id,
+            rule_obj.category.value,
+            rule_obj.effective_severity,
+            str(rule_obj.weight),
+            rule_obj.title,
+        )
     console.print(table)
 
 
