@@ -17,7 +17,7 @@ from __future__ import annotations
 import ast
 import re
 from dataclasses import dataclass, field
-from pathlib import Path
+from pathlib import PurePosixPath
 
 from ..model import Repo
 
@@ -438,7 +438,7 @@ class _ModuleVisitor(ast.NodeVisitor):
                 )
 
 
-def _module_name_for(path: Path) -> str:
+def _module_name_for(path: PurePosixPath) -> str:
     """Dotted module name for a repo-relative path, stripping src/ prefixes."""
     parts = list(path.with_suffix("").parts)
     if parts and parts[0] in {"src", "lib"}:

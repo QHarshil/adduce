@@ -11,7 +11,7 @@ import fnmatch
 import subprocess
 from dataclasses import dataclass, field
 from functools import lru_cache
-from pathlib import Path
+from pathlib import Path, PurePath, PurePosixPath
 
 #: Directories never worth scanning. Matched against any path segment.
 DEFAULT_EXCLUDES: frozenset[str] = frozenset(
@@ -83,9 +83,14 @@ _FRAMEWORK_DISTS: dict[str, str] = {
 
 @dataclass(frozen=True)
 class FileEntry:
-    """One file in the repository, path relative to the repo root."""
+    """One file in the repository, path relative to the repo root.
 
-    path: Path
+    Stored as a PurePosixPath so path strings are /-separated on every
+    platform: findings, suppressions, manifests, and reports must render
+    and compare identically on Windows and POSIX.
+    """
+
+    path: PurePosixPath
     size: int
 
     @property
@@ -165,7 +170,7 @@ class Repo:
 
     # -- content ----------------------------------------------------------
 
-    def read_text(self, relative: str | Path) -> str | None:
+    def read_text(self, relative: str | PurePath) -> str | None:
         """Read a file as UTF-8 text, or None when missing or undecodable."""
         return self._read_cached(str(relative))
 
@@ -177,7 +182,7 @@ class Repo:
             return None
 
 
-def _is_excluded(path: Path, extra_excludes: frozenset[str]) -> bool:
+def _is_excluded(path: PurePosixPath, extra_excludes: frozenset[str]) -> bool:
     parts = set(path.parts)
     return bool(parts & DEFAULT_EXCLUDES) or bool(parts & extra_excludes)
 
@@ -222,7 +227,7 @@ def scan_repository(root: Path, exclude: tuple[str, ...] = ()) -> Repo:
     for path in sorted(root.rglob("*")):
         if not path.is_file() or path.is_symlink():
             continue
-        rel = path.relative_to(root)
+        rel = PurePosixPath(path.relative_to(root).as_posix())
         if _is_excluded(rel, extra):
             continue
         try:
