@@ -12,7 +12,26 @@ from dataclasses import dataclass, field
 
 from ..model import Repo
 
-_SCANNABLE_SUFFIXES = frozenset({".py", ".sh", ".bash", ".yaml", ".yml", ".json", ".cfg", ".ini", ".env", ".toml"})
+_SCANNABLE_SUFFIXES = frozenset(
+    {
+        ".py",
+        ".sh",
+        ".bash",
+        ".yaml",
+        ".yml",
+        ".json",
+        ".jsonl",
+        ".cfg",
+        ".ini",
+        ".env",
+        ".toml",
+        ".md",
+        ".rst",
+        ".tex",
+        ".txt",
+        ".ipynb",
+    }
+)
 _MAX_SCAN_BYTES = 2_000_000
 
 _ABS_PATH_RE = re.compile(
@@ -55,7 +74,7 @@ def collect_portability(repo: Repo) -> PortabilityEvidence:
         if entry.suffix not in _SCANNABLE_SUFFIXES or entry.size > _MAX_SCAN_BYTES:
             continue
         rel = str(entry.path)
-        if rel.startswith((".adduce/", "docs/")):
+        if rel.startswith(".adduce/cache/"):
             continue
         text = repo.read_text(rel)
         if text is None:

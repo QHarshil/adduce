@@ -12,13 +12,10 @@ def render(result: CheckResult) -> str:
     title = ev.manifest.paper.title or ev.latex.title or result.repo.root.name
     doc: dict = {
         "title": title,
-        "description": f"Research artifact for {title}: code, configuration, and instructions "
-        "to reproduce the reported results. Complete this description before depositing.",
+        "description": f"Research artifact for {title}. [AUTHOR REVIEW REQUIRED: describe the "
+        "artifact contents and the claims it supports before depositing.]",
         "upload_type": "software",
-        "creators": [{"name": "TODO Lastname, Firstname", "affiliation": "TODO"}],
+        "creators": [{"name": "[AUTHOR REVIEW REQUIRED: Lastname, Firstname]"}],
         "keywords": ["reproducibility", "research software"],
-        "access_right": "open",
     }
-    if ev.docs.license_file:
-        doc["license"] = "mit"  # set to the SPDX id matching LICENSE
     return json.dumps(doc, indent=2)

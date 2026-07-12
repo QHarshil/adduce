@@ -1,3 +1,3 @@
-"""adduce: a reproducibility self-check for ML and research repositories."""
+"""adduce: a local research-artifact auditor."""
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"

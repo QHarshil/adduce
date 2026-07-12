@@ -38,7 +38,7 @@ from .ledger import (
     sha256_file,
     write_ledger,
 )
-from .manifest import write_manifest
+from .manifest import write_manifest, write_manifest_proposal
 from .manifest_builder import scaffold_manifest
 from .modes import Mode
 from .profiles import available_profiles
@@ -129,7 +129,7 @@ def _run(
 def _write_or_print(rendered: str, output: Path | None) -> None:
     if output:
         output.parent.mkdir(parents=True, exist_ok=True)
-        output.write_text(rendered.rstrip("\n") + "\n", encoding="utf-8")
+        output.write_text(rendered.rstrip("\n") + "\n", encoding="utf-8", newline="\n")
         err_console.print(f"written to {output}")
     else:
         sys.stdout.write(rendered.rstrip("\n") + "\n")
@@ -236,7 +236,9 @@ def check(
         _write_or_print(RENDERERS[output_format](result), output)
 
     if online:
-        _resolve_and_print(result)
+        # Online diagnostics go to stderr so JSON/SARIF/Markdown written to
+        # stdout remain valid machine-readable documents.
+        _resolve_and_print(result, output_console=err_console)
 
     exit_code = 0
     threshold = fail_under if fail_under is not None else result.config.fail_under
@@ -309,7 +311,17 @@ def deps(path: Annotated[Path, typer.Argument(help="Repository root to scan.")] 
 @app.command()
 def manifest(
     path: Annotated[Path, typer.Argument(help="Repository root.")] = Path("."),
-    force: Annotated[bool, typer.Option(help="Rebuild draft sections even when a manifest exists.")] = False,
+    refresh: Annotated[
+        bool,
+        typer.Option(
+            "--refresh",
+            "--force",
+            help=(
+                "Write a proposed refresh beside an existing manifest for review; never overwrite it. "
+                "--force is retained as a deprecated compatibility alias."
+            )
+        ),
+    ] = False,
     paper: Annotated[
         Path | None,
         typer.Option("--paper", help="LaTeX sources kept outside this repository (a directory or a .tex file)."),
@@ -317,17 +329,19 @@ def manifest(
 ) -> None:
     """Scaffold or refresh .adduce/manifest.yaml from detected evidence (offline)."""
     result = _run(path, paper=paper)
-    existing = result.evidence.manifest
-    if existing.exists and not force:
-        draft = scaffold_manifest(result.evidence)  # fills only empty sections
+    if result.evidence.manifest.exists and not refresh:
+        console.print(
+            f"manifest already exists at {result.evidence.manifest.path}; left unchanged. "
+            "Use --refresh to write a separate proposal."
+        )
+        raise typer.Exit()
+    draft = scaffold_manifest(result.evidence, refresh=refresh)
+    if result.evidence.manifest.exists:
+        target = write_manifest_proposal(path, draft)
+        console.print(f"manifest refresh proposal written to {target}; the existing manifest was unchanged")
     else:
-        if force:
-            from .manifest import Manifest
-
-            result.evidence.manifest = Manifest()
-        draft = scaffold_manifest(result.evidence)
-    target = write_manifest(path, draft)
-    console.print(f"manifest written to {target}")
+        target = write_manifest(path, draft)
+        console.print(f"manifest written to {target}")
     console.print(
         f"  {len(draft.claims)} draft claim(s), {len(draft.datasets)} dataset(s), "
         f"{len(draft.remotes)} unpinned remote(s) recorded"
@@ -582,7 +596,7 @@ def package(
     package_dir.mkdir(parents=True, exist_ok=True)
 
     def write_file(name: str, content: str) -> None:
-        (package_dir / name).write_text(content.rstrip("\n") + "\n", encoding="utf-8")
+        (package_dir / name).write_text(content.rstrip("\n") + "\n", encoding="utf-8", newline="\n")
         written.append(name)
 
     written: list[str] = []
@@ -660,7 +674,7 @@ def export(
         if target.exists() and not force:
             console.print(f"skipped (exists): {target}")
             continue
-        target.write_text(renderer(result).rstrip("\n") + "\n", encoding="utf-8")
+        target.write_text(renderer(result).rstrip("\n") + "\n", encoding="utf-8", newline="\n")
         console.print(f"written: {target}")
     if what in ("croissant", "all"):
         documents = json.loads(croissant_report.render(result))
@@ -672,7 +686,7 @@ def export(
             if target.exists() and not force:
                 console.print(f"skipped (exists): {target}")
                 continue
-            target.write_text(json.dumps(document, indent=2) + "\n", encoding="utf-8")
+            target.write_text(json.dumps(document, indent=2) + "\n", encoding="utf-8", newline="\n")
             console.print(f"written: {target}")
     console.print("every export is a draft: fill the marked fields before depositing.")
 
@@ -704,7 +718,7 @@ def baseline(
     snapshot = baseline_snapshot(result.card)
     target = path / BASELINE_FILENAME
     target.parent.mkdir(parents=True, exist_ok=True)
-    target.write_text(json.dumps(snapshot, indent=2) + "\n", encoding="utf-8")
+    target.write_text(json.dumps(snapshot, indent=2) + "\n", encoding="utf-8", newline="\n")
     console.print(
         f"baseline written to {target} (score {result.card.total:.0f}/100, {len(snapshot['rules'])} rules recorded)"
     )
@@ -810,14 +824,18 @@ def archive_plan(path: Annotated[Path, typer.Argument(help="Repository root to s
 # --------------------------------------------------------------------------
 
 
-def _resolve_and_print(result: CheckResult) -> list[tuple[str, str | None]]:
+def _resolve_and_print(
+    result: CheckResult, output_console: Console = console
+) -> list[tuple[str, str | None]]:
     """Resolve detected remote references; returns (identifier, sha) pairs."""
     from .cache import Cache
     from .dynamic import resolve
 
     cache = Cache(result.repo.root)
     resolved: list[tuple[str, str | None]] = []
-    console.print("[bold]Online resolution[/bold] (public metadata, from this machine, cached in .adduce/cache)")
+    output_console.print(
+        "[bold]Online resolution[/bold] (public metadata, from this machine, cached in .adduce/cache)"
+    )
     seen: set[str] = set()
     for ref in result.evidence.remote.references:
         if ref.kind in {"hf", "sentence_transformers"}:
@@ -828,15 +846,15 @@ def _resolve_and_print(result: CheckResult) -> list[tuple[str, str | None]]:
             is_dataset = "load_dataset" in ref.spec
             outcome = resolve.resolve_hf(identifier, cache, dataset=is_dataset)
             status = f"[green]{outcome.sha[:12]}[/green]" if outcome.sha else f"[red]{outcome.detail}[/red]"
-            console.print(f"  {identifier}: {status}")
+            output_console.print(f"  {identifier}: {status}")
             resolved.append((identifier, outcome.sha))
         elif ref.kind == "url" and ref.spec.startswith("http") and ref.spec not in seen:
             seen.add(ref.spec)
             outcome = resolve.resolve_url(ref.spec, cache)
             color = "green" if outcome.ok else "red"
-            console.print(f"  {ref.spec[:70]}: [{color}]{outcome.detail}[/{color}]")
+            output_console.print(f"  {ref.spec[:70]}: [{color}]{outcome.detail}[/{color}]")
     if not seen:
-        console.print(Text("  no resolvable remote references detected", style="dim"))
+        output_console.print(Text("  no resolvable remote references detected", style="dim"))
     return resolved
 
 
@@ -883,7 +901,7 @@ def pin_remotes(
         total_changes += changes
         console.print(unified_diff(file, source, new_source))
         if write:
-            (path / file).write_text(new_source, encoding="utf-8")
+            (path / file).write_text(new_source, encoding="utf-8", newline="\n")
             console.print(f"[green]applied {changes} pin(s) to {file}[/green]")
     if total_changes and not write:
         console.print("apply with: adduce pin-remotes --write")
@@ -898,6 +916,20 @@ def pin_remotes(
 def reproduce(
     path: Annotated[Path, typer.Argument(help="Repository root.")] = Path("."),
     command: Annotated[str | None, typer.Option(help="Command to run twice (defaults to the manifest smoke target).")] = None,
+    expected_output: Annotated[
+        list[str] | None,
+        typer.Option(
+            "--expected-output",
+            help="Relative output file that both runs must produce identically (repeatable).",
+        ),
+    ] = None,
+    expected_metric: Annotated[
+        list[str] | None,
+        typer.Option(
+            "--expected-metric",
+            help="Named stdout metric that both runs must report identically (repeatable).",
+        ),
+    ] = None,
     seed: Annotated[int, typer.Option(help="Seed exported as PYTHONHASHSEED/ADDUCE_SEED for both runs.")] = 0,
     timeout_minutes: Annotated[int, typer.Option(help="Per-run timeout.")] = 30,
     yes: Annotated[bool, typer.Option("--yes", help="Confirm executing repository code.")] = False,
@@ -915,7 +947,18 @@ def reproduce(
             "Add a [smoke] block via `adduce manifest` or pass --command."
         )
         raise typer.Exit(code=2)
-    expected = smoke.expected_outputs if not command else []
+    if command:
+        expected_outputs = expected_output or []
+        expected_metrics = expected_metric or []
+    else:
+        expected_outputs = expected_output if expected_output is not None else smoke.expected_outputs
+        expected_metrics = expected_metric if expected_metric is not None else smoke.expected_metrics
+    if not expected_outputs and not expected_metrics:
+        err_console.print(
+            "[red]error:[/red] no comparable fingerprint configured. Add smoke.expected_outputs "
+            "or smoke.expected_metrics to the manifest, or pass --expected-output/--expected-metric."
+        )
+        raise typer.Exit(code=2)
     if not yes:
         err_console.print(
             f"about to execute repository code twice: `{chosen}`\n"
@@ -927,11 +970,20 @@ def reproduce(
     from .dynamic.reproduce import save_report
 
     console.print(f"run 1 and 2 of: {chosen}  (seed {seed}, timeout {timeout_minutes} min/run)")
-    report = run_reproduce(path, chosen, expected, seed=seed, timeout_minutes=timeout_minutes)
+    report = run_reproduce(
+        path,
+        chosen,
+        expected_outputs,
+        seed=seed,
+        timeout_minutes=timeout_minutes,
+        expected_metrics=expected_metrics,
+    )
     target = save_report(path, report)
     if report.agree:
-        console.print(f"[green]runs agree[/green]: {len(report.runs[0].output_hashes)} output(s) matched, "
-                      f"{len(report.runs[0].stdout_metrics)} stdout metric(s) identical.")
+        console.print(
+            f"[green]runs agree[/green]: {len(report.comparable_fingerprints)} "
+            "expected fingerprint(s) matched."
+        )
     else:
         console.print("[red]runs disagree:[/red]")
         for line in report.disagreements:
@@ -950,14 +1002,24 @@ def fix(
     path: Annotated[Path, typer.Argument(help="Repository root to scaffold into.")] = Path("."),
     scaffold: Annotated[str | None, typer.Option(help=f"Scaffold to generate: {', '.join(SCAFFOLDS)}.")] = None,
     rule: Annotated[str | None, typer.Option(help="Generate the scaffold that addresses this rule ID.")] = None,
-    force: Annotated[bool, typer.Option(help="Overwrite an existing file.")] = False,
+    force: Annotated[
+        bool,
+        typer.Option(
+            "--force",
+            help="Deprecated compatibility option; existing files are still never overwritten.",
+        ),
+    ] = False,
     list_scaffolds: Annotated[bool, typer.Option("--list", help="List available scaffolds and exit.")] = False,
 ) -> None:
-    """Generate the files the checks ask for (non-destructive; never overwrites without --force)."""
+    """Generate the files the checks ask for (non-destructive; existing files are skipped)."""
     if list_scaffolds:
         for key, (_, description) in SCAFFOLDS.items():
             console.print(f"  [bold]{key:<10}[/bold] {description}")
         raise typer.Exit()
+    if force:
+        err_console.print(
+            "[yellow]warning:[/yellow] --force is deprecated and does not overwrite existing files."
+        )
     if rule:
         scaffold = RULE_TO_SCAFFOLD.get(rule.upper())
         if scaffold is None:
@@ -973,10 +1035,10 @@ def fix(
         raise typer.Exit(code=2)
     result = _run(path)
     scaffold_fn, _ = SCAFFOLDS[scaffold]
-    outcome = scaffold_fn(result, force=force)
+    outcome = scaffold_fn(result)
     console.print(f"{outcome.action}: {outcome.path}")
     if outcome.action != "skipped (exists)":
-        console.print("review the generated file and adapt the TODO markers before committing.")
+        console.print("review every [AUTHOR REVIEW REQUIRED] marker before committing.")
 
 
 @app.command()

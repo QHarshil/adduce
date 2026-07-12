@@ -10,7 +10,7 @@ inputs:
     required: false
     default: "."
   profile:
-    description: "Scoring profile (default, neurips, acl, acm, strict)."
+    description: "Scoring profile (default, neurips, iclr, acl, acm, strict)."
     required: false
     default: "default"
   fail-under:
@@ -18,7 +18,7 @@ inputs:
     required: false
     default: "0"
   fail-on-regression:
-    description: "Fail the job when any rule regresses against the committed .adduce-baseline.json."
+    description: "Fail the job when any rule regresses against the committed .adduce/baseline.json."
     required: false
     default: "false"
   sarif-file:
@@ -30,9 +30,9 @@ inputs:
     required: false
     default: ""
   version:
-    description: "adduce version to install (a PyPI version specifier)."
+    description: "Exact adduce release version to install from PyPI (for example, 0.1.1)."
     required: false
-    default: ""
+    default: "0.1.1"
 
 outputs:
   score:
@@ -44,29 +44,45 @@ runs:
   steps:
     - name: Install adduce
       shell: bash
+      env:
+        ADDUCE_INPUT_VERSION: ${{ inputs.version }}
       run: |
         SPEC="adduce"
-        if [ -n "${{ inputs.version }}" ]; then SPEC="adduce==${{ inputs.version }}"; fi
+        if [ -n "$ADDUCE_INPUT_VERSION" ]; then SPEC="adduce==$ADDUCE_INPUT_VERSION"; fi
         python -m pip install --quiet "$SPEC"
 
     - name: Run check
       id: score
       shell: bash
+      env:
+        ADDUCE_INPUT_PATH: ${{ inputs.path }}
+        ADDUCE_INPUT_PROFILE: ${{ inputs.profile }}
+        ADDUCE_INPUT_FAIL_UNDER: ${{ inputs.fail-under }}
+        ADDUCE_INPUT_FAIL_ON_REGRESSION: ${{ inputs.fail-on-regression }}
+        ADDUCE_INPUT_SARIF_FILE: ${{ inputs.sarif-file }}
+        ADDUCE_INPUT_REPORT_FILE: ${{ inputs.report-file }}
       run: |
-        ARGS=("${{ inputs.path }}" --profile "${{ inputs.profile }}")
-        if [ "${{ inputs.fail-under }}" != "0" ]; then ARGS+=(--fail-under "${{ inputs.fail-under }}"); fi
-        if [ "${{ inputs.fail-on-regression }}" = "true" ]; then ARGS+=(--fail-on-regression); fi
+        BASE_ARGS=("$ADDUCE_INPUT_PATH" --profile "$ADDUCE_INPUT_PROFILE")
+        GATE_ARGS=("${BASE_ARGS[@]}")
+        RESULT_FILE="${RUNNER_TEMP:-.}/adduce-result-${GITHUB_RUN_ID:-local}-${GITHUB_RUN_ATTEMPT:-0}.json"
+        trap 'rm -f -- "$RESULT_FILE"' EXIT
+        if [ "$ADDUCE_INPUT_FAIL_UNDER" != "0" ]; then
+          GATE_ARGS+=(--fail-under "$ADDUCE_INPUT_FAIL_UNDER")
+        fi
+        if [ "$ADDUCE_INPUT_FAIL_ON_REGRESSION" = "true" ]; then
+          GATE_ARGS+=(--fail-on-regression)
+        fi
 
-        adduce check "${{ inputs.path }}" --format json --output adduce-result.json
-        SCORE=$(python -c "import json; print(json.load(open('adduce-result.json'))['total'])")
+        adduce check "${BASE_ARGS[@]}" --format json --output "$RESULT_FILE"
+        SCORE=$(python -c "import json, sys; print(json.load(open(sys.argv[1]))['total'])" "$RESULT_FILE")
         echo "score=$SCORE" >> "$GITHUB_OUTPUT"
 
-        if [ -n "${{ inputs.sarif-file }}" ]; then
-          adduce check "${{ inputs.path }}" --format sarif --output "${{ inputs.sarif-file }}"
+        if [ -n "$ADDUCE_INPUT_SARIF_FILE" ]; then
+          adduce check "${BASE_ARGS[@]}" --format sarif --output "$ADDUCE_INPUT_SARIF_FILE"
         fi
-        if [ -n "${{ inputs.report-file }}" ]; then
-          adduce check "${{ inputs.path }}" --format markdown --output "${{ inputs.report-file }}"
-          cat "${{ inputs.report-file }}" >> "$GITHUB_STEP_SUMMARY"
+        if [ -n "$ADDUCE_INPUT_REPORT_FILE" ]; then
+          adduce check "${BASE_ARGS[@]}" --format markdown --output "$ADDUCE_INPUT_REPORT_FILE"
+          cat -- "$ADDUCE_INPUT_REPORT_FILE" >> "$GITHUB_STEP_SUMMARY"
         fi
 
-        adduce check "${ARGS[@]}"
+        adduce check "${GATE_ARGS[@]}"

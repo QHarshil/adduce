@@ -96,6 +96,10 @@ def test_fix_scaffold_seeds(tmp_path):
     # Idempotent: second run refuses to overwrite.
     rerun = runner.invoke(app, ["fix", str(tmp_path), "--scaffold", "seeds"])
     assert "skipped" in rerun.output
+    forced = runner.invoke(app, ["fix", str(tmp_path), "--scaffold", "seeds", "--force"])
+    assert forced.exit_code == 0
+    assert "deprecated" in forced.output
+    assert "skipped" in forced.output
 
 
 def test_fix_by_rule_id(tmp_path):

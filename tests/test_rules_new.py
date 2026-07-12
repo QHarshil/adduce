@@ -62,10 +62,34 @@ def test_materialized_config_outranks_static(make_evidence):
             "paper/main.tex": _TEX_LR,
             "configs/main.yaml": "lr: 0.001\n",
             "outputs/run1/.hydra/config.yaml": "lr: 0.0001\n",
+            ".adduce/manifest.yaml": (
+                "schema: adduce/1\n"
+                "claims:\n"
+                "  - id: C1\n"
+                "    status: confirmed\n"
+                "    produced_by:\n"
+                "      config: outputs/run1/.hydra/config.yaml\n"
+            ),
             "train.py": "import yaml\n",
         }
     )
     assert HyperparameterDriftRule().evaluate(ev).status is Status.PASS
+
+
+def test_unlinked_materialized_config_does_not_override_committed_config(make_evidence):
+    ev = make_evidence(
+        {
+            "paper/main.tex": _TEX_LR,
+            "configs/main.yaml": "lr: 0.001\n",
+            "outputs/unrelated/.hydra/config.yaml": "lr: 0.0001\n",
+            "train.py": "import yaml\n",
+        }
+    )
+
+    finding = HyperparameterDriftRule().evaluate(ev)
+
+    assert finding.status is Status.FAIL
+    assert "configs/main.yaml" in finding.message
 
 
 def test_missing_hyperparameter_rule(make_evidence):
@@ -97,6 +121,29 @@ def test_reconcile_rounding_passes(make_evidence):
         }
     )
     assert MaterialDifferenceRule().evaluate(ev).status is Status.PASS
+
+
+def test_reconcile_uses_manifest_declared_log_not_closest_unrelated_run(make_evidence):
+    ev = make_evidence(
+        {
+            ".adduce/manifest.yaml": (
+                "schema: adduce/1\n"
+                "claims:\n"
+                "  - id: C1\n"
+                "    metric: accuracy\n"
+                "    value: 92.4\n"
+                "    produced_by:\n"
+                "      log: results/main.csv\n"
+            ),
+            "results/main.csv": "epoch,accuracy\n1,85.0\n",
+            "results/unrelated.csv": "epoch,accuracy\n1,92.4\n",
+        }
+    )
+
+    finding = MaterialDifferenceRule().evaluate(ev)
+
+    assert finding.status is Status.PARTIAL
+    assert "closest logged 85" in finding.message
 
 
 def test_unbacked_metric_na_without_results(make_evidence):

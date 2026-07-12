@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 
 from ..engine import CheckResult
+from ..model import sanitized_remote_url
 
 
 def render(result: CheckResult) -> str:
@@ -19,7 +20,7 @@ def render(result: CheckResult) -> str:
         "programmingLanguage": "Python",
     }
     if remotes:
-        doc["codeRepository"] = remotes[0]
+        doc["codeRepository"] = sanitized_remote_url(remotes[0])
     if ev.deps.python_version:
         doc["softwareRequirements"] = [f"Python {ev.deps.python_version}"]
     if result.repo.git.head_commit:

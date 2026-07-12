@@ -6,8 +6,8 @@ type: software
 {% for author in authors %}  - family-names: "{{ author.family }}"
     given-names: "{{ author.given }}"
 {% endfor %}{% else %}authors:
-  - family-names: "TODO"
-    given-names: "TODO"
+  - family-names: "[AUTHOR REVIEW REQUIRED]"
+    given-names: "[AUTHOR REVIEW REQUIRED]"
 {% endif %}{% if repository_url %}repository-code: "{{ repository_url }}"
 {% endif %}date-released: "{{ date }}"
 version: "{{ version }}"

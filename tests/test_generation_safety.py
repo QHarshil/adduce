@@ -14,6 +14,7 @@ from adduce.checklists import load_checklist, render_markdown
 from adduce.cli import app
 from adduce.engine import run_check
 from adduce.ledger import AnswerLevel, EvidenceStrength, derive_answer, load_ledger
+from adduce.report import appendix as appendix_report
 from adduce.rules.base import Category, Finding, Location, Status
 from tests.conftest import plain
 from tests.test_engine import BARE, WELL_FORMED, _write
@@ -65,6 +66,12 @@ def test_derive_answer_manifest_backing_substitutes_for_confidence():
     )
 
 
+def test_derive_answer_inferred_pass_cannot_become_yes():
+    answer, evidence = derive_answer([_finding(Status.PASS, 0.99)], False)
+    assert answer is AnswerLevel.PARTIAL
+    assert evidence and all(item.strength is EvidenceStrength.INFERRED for item in evidence)
+
+
 def test_derive_answer_partial_lower_boundary_at_050():
     answer, _ = derive_answer([_finding(Status.PASS, 0.50)], False)
     assert answer is AnswerLevel.PARTIAL
@@ -93,12 +100,41 @@ def test_derive_answer_strict_yes_boundary_at_090():
 def test_derive_answer_strict_inferred_only_goes_back_to_author():
     # High confidence but no source locations: inferred-only evidence.
     findings = [_finding(Status.PASS, 0.95)]
-    assert derive_answer(findings, False)[0] is AnswerLevel.YES
+    assert derive_answer(findings, False)[0] is AnswerLevel.PARTIAL
     answer, evidence = derive_answer(findings, False, strict=True)
     assert answer is AnswerLevel.AUTHOR_INPUT_REQUIRED
     assert all(item.strength is EvidenceStrength.INFERRED for item in evidence)
     # Manifest backing is author-confirmed, so strict does not bounce it back.
     assert derive_answer(findings, True, strict=True)[0] is AnswerLevel.YES
+
+
+def test_draft_manifest_claim_does_not_back_unrelated_checklist_items(tmp_path):
+    _write(tmp_path, WELL_FORMED)
+    manifest_dir = tmp_path / ".adduce"
+    manifest_dir.mkdir()
+    (manifest_dir / "manifest.yaml").write_text(
+        yaml.safe_dump(
+            {
+                "schema": "adduce/1",
+                "claims": [
+                    {
+                        "id": "C1",
+                        "status": "draft",
+                        "metric": "accuracy",
+                        "value": 92.1,
+                        "produced_by": {"command": "bash run.sh"},
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    result = run_check(tmp_path)
+    _, ledger = render_markdown(load_checklist("neurips"), result)
+    assert all(
+        not any(item.strength is EvidenceStrength.MANIFEST_AUTHOR_CONFIRMED for item in entry.evidence)
+        for entry in ledger.entries
+    )
 
 
 # -- checklist command: ledger, markers, anchors, summary ---------------------
@@ -250,9 +286,59 @@ def test_audit_generated_placeholders_are_informational(tmp_path):
     target = tmp_path / "appendix.md"
     assert runner.invoke(app, ["appendix", str(tmp_path), "-o", str(target)]).exit_code == 0
     result = runner.invoke(app, ["audit-generated", str(target), str(tmp_path)])
-    # The appendix keeps _[author: complete]_ markers: R-GEN-004 alone exits 0.
+    # The appendix keeps author-review markers: R-GEN-004 alone exits 0.
     assert result.exit_code == 0, result.output
     assert "R-GEN-004" in plain(result.output)
+
+
+def test_appendix_does_not_invent_access_installation_or_tolerance(tmp_path):
+    _write(tmp_path, WELL_FORMED)
+    _git(tmp_path, "init", "-q")
+    _git(tmp_path, "add", "-A")
+    _git(tmp_path, "commit", "-qm", "init")
+    target = tmp_path / "appendix.md"
+
+    generated = runner.invoke(app, ["appendix", str(tmp_path), "-o", str(target)])
+
+    assert generated.exit_code == 0, generated.output
+    text = target.read_text(encoding="utf-8")
+    assert "**Publicly available:** Yes" not in text
+    assert "Public git repository" not in text
+    assert "**Publicly available:** [AUTHOR REVIEW REQUIRED]" in text
+    assert "pip install -r requirements.txt" not in text
+    assert "a rerun should land within the stated tolerance" not in text
+    assert "[AUTHOR REVIEW REQUIRED] State the acceptable tolerance" in text
+
+
+def test_appendix_ledger_records_manifest_evidence_for_claim_table(tmp_path):
+    _write(tmp_path, WELL_FORMED)
+    manifest_dir = tmp_path / ".adduce"
+    manifest_dir.mkdir()
+    (manifest_dir / "manifest.yaml").write_text(
+        yaml.safe_dump(
+            {
+                "schema": "adduce/1",
+                "claims": [
+                    {
+                        "id": "C1",
+                        "status": "confirmed",
+                        "metric": "accuracy",
+                        "value": 92.1,
+                        "produced_by": {"command": "bash run.sh"},
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    _, ledger = appendix_report.render(run_check(tmp_path))
+    a6 = next(entry for entry in ledger.entries if entry.item_id == "A.6")
+
+    assert any(
+        item.kind == "manifest" and item.path == ".adduce/manifest.yaml"
+        for item in a6.evidence
+    )
 
 
 def test_audit_generated_without_ledger_errors(tmp_path):

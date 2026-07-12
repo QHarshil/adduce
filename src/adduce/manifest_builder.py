@@ -112,21 +112,101 @@ def _draft_claims(ev: Evidence) -> list[Claim]:
     return claims
 
 
-def scaffold_manifest(ev: Evidence) -> Manifest:
-    """Build a draft manifest from evidence, preserving any existing content."""
-    existing = ev.manifest
-    return Manifest(
-        paper=existing.paper if existing.paper.title or existing.paper.file else PaperInfo(
-            title=ev.latex.title,
-            file=ev.latex.main_file,
-        ),
-        environment=existing.environment
-        if any(
-            [existing.environment.python, existing.environment.container, existing.environment.hardware]
+def _merge_datasets(existing: list[DatasetInfo], detected: list[DatasetInfo]) -> list[DatasetInfo]:
+    """Add detected datasets and fill blanks without replacing author values."""
+    by_id = {dataset.id.casefold(): dataset for dataset in detected}
+    merged: list[DatasetInfo] = []
+    for dataset in existing:
+        candidate = by_id.pop(dataset.id.casefold(), None)
+        merged.append(
+            DatasetInfo(
+                id=dataset.id,
+                source=dataset.source or (candidate.source if candidate else None),
+                checksum=dataset.checksum or (candidate.checksum if candidate else None),
+                split=dataset.split or (candidate.split if candidate else None),
+                croissant=dataset.croissant or (candidate.croissant if candidate else None),
+                license=dataset.license or (candidate.license if candidate else None),
+            )
         )
-        else _draft_environment(ev),
-        datasets=existing.datasets or _draft_datasets(ev),
-        remotes=existing.remotes or _draft_remotes(ev),
-        claims=existing.claims or _draft_claims(ev),
+    merged.extend(by_id.values())
+    return merged
+
+
+def _merge_remotes(existing: list[RemoteInfo], detected: list[RemoteInfo]) -> list[RemoteInfo]:
+    """Add newly detected remotes while retaining confirmed revision pins."""
+    by_call = {remote.call: remote for remote in detected}
+    merged: list[RemoteInfo] = []
+    for remote in existing:
+        candidate = by_call.pop(remote.call, None)
+        merged.append(
+            RemoteInfo(
+                call=remote.call,
+                revision=remote.revision or (candidate.revision if candidate else None),
+            )
+        )
+    merged.extend(by_call.values())
+    return merged
+
+
+def _claim_key(claim: Claim) -> tuple[str | None, str | None, float | None]:
+    return claim.where, claim.metric, claim.value
+
+
+def _merge_claims(existing: list[Claim], detected: list[Claim]) -> list[Claim]:
+    """Append genuinely new draft claims without touching existing claims."""
+    merged = list(existing)
+    existing_keys = {_claim_key(claim) for claim in existing}
+    used_ids = {claim.id for claim in existing}
+    next_id = 1
+    for claim in detected:
+        if _claim_key(claim) in existing_keys:
+            continue
+        while f"C{next_id}" in used_ids:
+            next_id += 1
+        claim.id = f"C{next_id}"
+        used_ids.add(claim.id)
+        existing_keys.add(_claim_key(claim))
+        merged.append(claim)
+    return merged
+
+
+def scaffold_manifest(ev: Evidence, refresh: bool = False) -> Manifest:
+    """Build a draft manifest without replacing author-written values.
+
+    A normal scaffold fills empty fields and empty sections. ``refresh`` also
+    appends newly detected datasets, remotes, and claims to populated
+    sections. Neither mode removes an entry or replaces a non-empty value.
+    """
+    existing = ev.manifest
+    detected_paper = PaperInfo(title=ev.latex.title, file=ev.latex.main_file)
+    detected_environment = _draft_environment(ev)
+    detected_datasets = _draft_datasets(ev)
+    detected_remotes = _draft_remotes(ev)
+    detected_claims = _draft_claims(ev)
+
+    datasets = existing.datasets or detected_datasets
+    remotes = existing.remotes or detected_remotes
+    claims = existing.claims or detected_claims
+    if refresh:
+        datasets = _merge_datasets(existing.datasets, detected_datasets)
+        remotes = _merge_remotes(existing.remotes, detected_remotes)
+        claims = _merge_claims(existing.claims, detected_claims)
+
+    return Manifest(
+        paper=PaperInfo(
+            title=existing.paper.title or detected_paper.title,
+            file=existing.paper.file or detected_paper.file,
+        ),
+        environment=EnvironmentInfo(
+            python=existing.environment.python or detected_environment.python,
+            lockfile=existing.environment.lockfile or detected_environment.lockfile,
+            container=existing.environment.container or detected_environment.container,
+            hardware=existing.environment.hardware or detected_environment.hardware,
+            precision=existing.environment.precision or detected_environment.precision,
+            cuda=existing.environment.cuda or detected_environment.cuda,
+        ),
+        datasets=datasets,
+        remotes=remotes,
+        claims=claims,
         smoke=existing.smoke if existing.smoke.command else SmokeTarget(),
     )

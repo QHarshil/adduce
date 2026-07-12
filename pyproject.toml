@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "adduce"
-version = "0.1.0"
+version = "0.1.1"
 description = "A local research-artifact auditor: checks that a paper's claims, code, configs, data, and results still agree, and produces the artifacts reviewers ask for."
 readme = "README.md"
 license = { file = "LICENSE" }
@@ -71,7 +71,15 @@ Changelog = "https://github.com/QHarshil/adduce/blob/main/CHANGELOG.md"
 packages = ["src/adduce"]
 
 [tool.hatch.build.targets.sdist]
-include = ["src/adduce", "tests", "README.md", "LICENSE", "CHANGELOG.md"]
+include = [
+    "src/adduce",
+    "tests",
+    "corpus/synthetic",
+    "docs/generation-safety.md",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

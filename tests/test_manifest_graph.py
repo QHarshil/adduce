@@ -63,11 +63,73 @@ def test_manifest_round_trip(tmp_path):
     assert (tmp_path / ".adduce" / "manifest.json").is_file()
 
 
-def test_malformed_manifest_does_not_crash(tmp_path):
+def test_malformed_manifest_is_recorded_as_an_error(tmp_path):
     (tmp_path / ".adduce").mkdir()
     (tmp_path / ".adduce" / "manifest.yaml").write_text(":\n  - not valid: [", encoding="utf-8")
     manifest = load_manifest(tmp_path)
-    assert not manifest.exists
+    assert manifest.exists
+    assert manifest.error
+
+
+def test_check_rejects_malformed_manifest_structure(tmp_path):
+    import pytest
+
+    manifest_dir = tmp_path / ".adduce"
+    manifest_dir.mkdir()
+    (manifest_dir / "manifest.yaml").write_text(
+        "schema: adduce/1\npaper: malformed\n", encoding="utf-8"
+    )
+
+    with pytest.raises(ValueError, match="paper.*mapping"):
+        run_check(tmp_path)
+
+
+def test_manifest_command_refuses_to_overwrite_malformed_file(tmp_path):
+    from typer.testing import CliRunner
+
+    from adduce.cli import app
+
+    manifest_dir = tmp_path / ".adduce"
+    manifest_dir.mkdir()
+    target = manifest_dir / "manifest.yaml"
+    original = ":\n  - not valid: ["
+    target.write_text(original, encoding="utf-8")
+
+    result = CliRunner().invoke(app, ["manifest", str(tmp_path)])
+
+    assert result.exit_code == 2
+    assert "could not parse" in result.output
+    assert target.read_text(encoding="utf-8") == original
+
+
+def test_unsupported_manifest_schema_is_reported(tmp_path):
+    manifest_dir = tmp_path / ".adduce"
+    manifest_dir.mkdir()
+    (manifest_dir / "manifest.yaml").write_text("schema: adduce/99\n", encoding="utf-8")
+
+    manifest = load_manifest(tmp_path)
+
+    assert manifest.exists
+    assert manifest.error and "unsupported manifest schema" in manifest.error
+
+
+def test_manifest_refresh_writes_proposal_without_touching_author_file(tmp_path):
+    from typer.testing import CliRunner
+
+    from adduce.cli import app
+
+    _write(tmp_path, WELL_FORMED)
+    _write_manifest_file(tmp_path)
+    target = tmp_path / ".adduce" / "manifest.yaml"
+    original = target.read_text(encoding="utf-8") + "# author comment\n"
+    target.write_text(original, encoding="utf-8")
+
+    result = CliRunner().invoke(app, ["manifest", str(tmp_path), "--refresh"])
+
+    assert result.exit_code == 0, result.output
+    assert target.read_text(encoding="utf-8") == original
+    assert (tmp_path / ".adduce" / "manifest.proposed.yaml").is_file()
+    assert (tmp_path / ".adduce" / "manifest.proposed.json").is_file()
 
 
 def test_scaffold_manifest_from_evidence(tmp_path):
@@ -82,6 +144,27 @@ def test_scaffold_manifest_from_evidence(tmp_path):
     assert draft.environment.python is not None
 
 
+def test_manifest_refresh_preserves_author_content_and_appends_detected_entries(tmp_path):
+    files = dict(WELL_FORMED)
+    files["model.py"] = (
+        "from transformers import AutoModel\n"
+        "AutoModel.from_pretrained('bert-base-uncased')\n"
+    )
+    _write(tmp_path, files)
+    _write_manifest_file(tmp_path)
+    result = run_check(tmp_path)
+
+    refreshed = scaffold_manifest(result.evidence, refresh=True)
+
+    assert refreshed.paper.title == "Demo Paper"
+    assert refreshed.environment.hardware == "1x A100"
+    assert refreshed.claims[0].text == "Accuracy of 92.1"
+    assert refreshed.claims[0].produced_by.command == "bash run.sh"
+    assert refreshed.datasets[0].checksum == "sha256:abc"
+    assert refreshed.remotes[0].revision == "8" * 40
+    assert any("bert-base-uncased" in remote.call for remote in refreshed.remotes)
+
+
 def test_claim_graph_with_manifest(tmp_path):
     files = dict(WELL_FORMED)
     files["results/eval.csv"] = "epoch,accuracy\n1,92.07\n"
@@ -90,7 +173,8 @@ def test_claim_graph_with_manifest(tmp_path):
     result = run_check(tmp_path)
     assert result.graph.from_manifest
     trail = result.graph.trails[0]
-    assert trail.status in (TrailStatus.VERIFIED, TrailStatus.PARTIAL)
+    assert trail.status in (TrailStatus.SUPPORTED, TrailStatus.PARTIAL)
+    assert not trail.inferred
     labels = {entry.label for entry in trail.entries}
     assert {"metric", "config", "log", "seeds"} <= labels
     metric_entry = next(e for e in trail.entries if e.label == "metric")
@@ -114,7 +198,51 @@ def test_claim_graph_flags_broken_paths(tmp_path):
     trail = result.graph.trails[0]
     config_entry = next(e for e in trail.entries if e.label == "config")
     assert config_entry.resolved is False
-    assert trail.status is not TrailStatus.VERIFIED
+    assert trail.status is not TrailStatus.SUPPORTED
+
+
+def test_draft_manifest_claim_is_inferred(tmp_path):
+    files = dict(WELL_FORMED)
+    files["results/eval.csv"] = "epoch,accuracy\n1,92.07\n"
+    _write(tmp_path, files)
+    manifest = dict(_MANIFEST)
+    manifest["claims"] = [dict(_MANIFEST["claims"][0], status="draft")]
+    (tmp_path / ".adduce").mkdir(exist_ok=True)
+    (tmp_path / ".adduce" / "manifest.yaml").write_text(
+        yaml.safe_dump(manifest), encoding="utf-8"
+    )
+
+    trail = run_check(tmp_path).graph.trails[0]
+
+    assert trail.inferred
+    assert trail.status in (TrailStatus.SUPPORTED, TrailStatus.PARTIAL)
+
+
+def test_claim_graph_metric_source_matches_closest_value(tmp_path):
+    files = dict(WELL_FORMED)
+    files["results/main.csv"] = "epoch,accuracy\n1,92.07\n"
+    files["results/other.csv"] = "epoch,accuracy\n1,10.0\n"
+    _write(tmp_path, files)
+    manifest = dict(_MANIFEST)
+    manifest["claims"] = [
+        {
+            "id": "C1",
+            "metric": "accuracy",
+            "value": 92.1,
+            "produced_by": {"log": "results/main.csv"},
+        }
+    ]
+    (tmp_path / ".adduce").mkdir(exist_ok=True)
+    (tmp_path / ".adduce" / "manifest.yaml").write_text(
+        yaml.safe_dump(manifest), encoding="utf-8"
+    )
+
+    metric = next(
+        entry for entry in run_check(tmp_path).graph.trails[0].entries if entry.label == "metric"
+    )
+
+    assert "results/main.csv:accuracy" in metric.value
+    assert "results/other.csv" not in metric.value
 
 
 def test_reviewer_time_buckets(tmp_path):
@@ -141,4 +269,6 @@ def test_badge_eligibility_shapes(tmp_path):
     assert "ACM Artifacts Available" in labels
     assert all("Reproduced" not in label for label in labels)  # never claimed
     functional = next(a for a in assessments if "Functional" in a.label)
-    assert functional.eligible  # WELL_FORMED satisfies the functional gates
+    assert functional.eligible  # repository-side prerequisites pass
+    assert functional.manual_review
+    assert any("execution" in item for item in functional.manual_review)

@@ -1,7 +1,8 @@
-name: "ACL Rolling Review Responsible Research Checklist (artifact items)"
+name: "ACL artifact items — repository-evidence draft"
 key: acl
 preamble: >
-  Draft answers derived from repository evidence. Complete and verify every
+  This is a repository-observable subset, not a completed official venue
+  checklist. Draft answers are derived from repository evidence. Complete and verify every
   answer before submission; several items depend on the paper text and on
   assets the tool cannot inspect.
 items:

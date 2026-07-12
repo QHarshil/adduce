@@ -2,7 +2,7 @@
 
 All scaffolds are non-destructive. They write new files only; the README
 scaffold appends missing sections rather than rewriting existing content.
-Existing files are never overwritten unless ``force=True``.
+Existing files are never overwritten.
 """
 
 from __future__ import annotations
@@ -16,6 +16,7 @@ from pathlib import Path
 from jinja2 import Environment, PackageLoader, StrictUndefined
 
 from ..engine import CheckResult
+from ..model import sanitized_remote_url
 
 _env = Environment(
     loader=PackageLoader("adduce.fixers", "templates"),
@@ -33,7 +34,8 @@ class ScaffoldResult:
 def _git_remote_url(result: CheckResult) -> str | None:
     for remote in result.repo.git.remotes:
         if remote.startswith(("https://", "git@")):
-            return remote.replace("git@github.com:", "https://github.com/").removesuffix(".git")
+            cleaned = sanitized_remote_url(remote)
+            return cleaned.replace("git@github.com:", "https://github.com/").removesuffix(".git")
     return None
 
 
@@ -51,9 +53,9 @@ def _entrypoint(result: CheckResult) -> str:
     return guards[0] if guards else "main.py"
 
 
-def scaffold_seeds(result: CheckResult, force: bool = False) -> ScaffoldResult:
+def scaffold_seeds(result: CheckResult) -> ScaffoldResult:
     target = result.repo.root / "seed_utils.py"
-    if target.exists() and not force:
+    if target.exists():
         return ScaffoldResult(target, "skipped (exists)")
     content = _env.get_template("seed_utils.py.j2").render(
         torch=result.repo.frameworks.uses("torch"),
@@ -62,9 +64,9 @@ def scaffold_seeds(result: CheckResult, force: bool = False) -> ScaffoldResult:
     return ScaffoldResult(target, "created")
 
 
-def scaffold_citation(result: CheckResult, force: bool = False) -> ScaffoldResult:
+def scaffold_citation(result: CheckResult) -> ScaffoldResult:
     target = result.repo.root / "CITATION.cff"
-    if target.exists() and not force:
+    if target.exists():
         return ScaffoldResult(target, "skipped (exists)")
     content = _env.get_template("CITATION.cff.j2").render(
         title=result.repo.root.name,
@@ -77,9 +79,9 @@ def scaffold_citation(result: CheckResult, force: bool = False) -> ScaffoldResul
     return ScaffoldResult(target, "created")
 
 
-def scaffold_docker(result: CheckResult, force: bool = False) -> ScaffoldResult:
+def scaffold_docker(result: CheckResult) -> ScaffoldResult:
     target = result.repo.root / "Dockerfile"
-    if target.exists() and not force:
+    if target.exists():
         return ScaffoldResult(target, "skipped (exists)")
     version = result.evidence.deps.python_version or "3.11"
     match = re.search(r"(\d+\.\d+)", version)
@@ -93,9 +95,9 @@ def scaffold_docker(result: CheckResult, force: bool = False) -> ScaffoldResult:
     return ScaffoldResult(target, "created")
 
 
-def scaffold_runner(result: CheckResult, force: bool = False) -> ScaffoldResult:
+def scaffold_runner(result: CheckResult) -> ScaffoldResult:
     target = result.repo.root / "reproduce.sh"
-    if target.exists() and not force:
+    if target.exists():
         return ScaffoldResult(target, "skipped (exists)")
     content = _env.get_template("reproduce.sh.j2").render(entrypoint=_entrypoint(result))
     target.write_text(content, encoding="utf-8")
@@ -103,7 +105,7 @@ def scaffold_runner(result: CheckResult, force: bool = False) -> ScaffoldResult:
     return ScaffoldResult(target, "created")
 
 
-def scaffold_readme(result: CheckResult, force: bool = False) -> ScaffoldResult:
+def scaffold_readme(result: CheckResult) -> ScaffoldResult:
     """Create a README skeleton, or append only the sections that are missing."""
     docs = result.evidence.docs
     existing = result.repo.root / (docs.readme_path or "README.md")

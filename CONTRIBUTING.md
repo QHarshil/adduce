@@ -31,7 +31,7 @@ These are load-bearing; pull requests that violate them will be asked to change.
 4. **The default run is diagnostic.** Nothing in the default `adduce check`
    may fail a build; gating is opt-in (`--fail-under`, `--fail-on-regression`).
 5. **Scaffolds are non-destructive.** Fixers write new files or append
-   clearly separated sections; they never overwrite without `--force`.
+   clearly separated README sections; they skip existing files.
 
 ## Adding a rule
 

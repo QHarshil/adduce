@@ -14,11 +14,19 @@ from .base import Category, Finding, Rule, Status
 from .drift import values_match
 
 
-def _paper_metric_statements(ev: Evidence) -> list[tuple[str, float]]:
-    statements = [(m.name, m.value) for m in ev.latex.metrics]
+def _paper_metric_statements(ev: Evidence) -> list[tuple[str, float, str | None]]:
+    statements: list[tuple[str, float, str | None]] = []
+    manifest_pairs: set[tuple[str, float]] = set()
     for claim in ev.manifest.claims:
         if claim.metric and claim.value is not None:
-            statements.append((claim.metric, claim.value))
+            is_draft = (claim.status or "").strip().lower() == "draft"
+            statements.append(
+                (claim.metric, claim.value, None if is_draft else claim.produced_by.log)
+            )
+            manifest_pairs.add((claim.metric.casefold(), claim.value))
+    for metric in ev.latex.metrics:
+        if (metric.name.casefold(), metric.value) not in manifest_pairs:
+            statements.append((metric.name, metric.value, None))
     return statements
 
 
@@ -64,8 +72,8 @@ class RoundingDifferenceRule(_ReconcileBase):
         if gate:
             return gate
         rounded: list[str] = []
-        for name, paper_value in _paper_metric_statements(ev):
-            for source, values in ev.results.lookup_metric(name):
+        for name, paper_value, log_path in _paper_metric_statements(ev):
+            for source, values in ev.results.lookup_metric(name, path=log_path):
                 if any(values_match(paper_value, v) and paper_value != v for v in values):
                     rounded.append(f"{name}={paper_value:g} ≈ {source}")
                     break
@@ -97,8 +105,8 @@ class MaterialDifferenceRule(_ReconcileBase):
             return gate
         material: list[str] = []
         compared = 0
-        for name, paper_value in _paper_metric_statements(ev):
-            matches = ev.results.lookup_metric(name)
+        for name, paper_value, log_path in _paper_metric_statements(ev):
+            matches = ev.results.lookup_metric(name, path=log_path)
             if not matches:
                 continue
             compared += 1
@@ -191,7 +199,11 @@ class UnbackedMetricRule(_ReconcileBase):
             return self.finding(
                 Status.NOT_APPLICABLE, confidence=0.6, message="No metric statements extracted from paper or manifest."
             )
-        unbacked = [name for name, _ in statements if not ev.results.lookup_metric(name)]
+        unbacked = [
+            name
+            for name, _, log_path in statements
+            if not ev.results.lookup_metric(name, path=log_path)
+        ]
         unbacked = sorted(set(unbacked))
         if not unbacked:
             return self.finding(

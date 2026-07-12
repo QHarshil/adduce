@@ -12,6 +12,7 @@ import io
 import json
 import re
 from dataclasses import dataclass, field
+from pathlib import PurePosixPath
 
 from ..model import Repo
 
@@ -38,11 +39,19 @@ class ResultsEvidence:
     def present(self) -> bool:
         return bool(self.files) or self.has_tensorboard or self.has_wandb or self.has_mlflow
 
-    def lookup_metric(self, name: str) -> list[tuple[str, list[float]]]:
-        """Result columns whose normalised name matches the metric name."""
+    def lookup_metric(self, name: str, path: str | None = None) -> list[tuple[str, list[float]]]:
+        """Result columns matching a metric, optionally within one declared log.
+
+        Claim-scoped lookup is essential when a repository contains logs from
+        several experiments: an unrelated run must never be selected merely
+        because its value happens to be closest to the paper.
+        """
         wanted = _normalise(name)
+        wanted_path = _normalise_result_path(path) if path is not None else None
         matches = []
         for result in self.files:
+            if wanted_path is not None and _normalise_result_path(result.path) != wanted_path:
+                continue
             for column, values in result.metrics.items():
                 normalised = _normalise(column)
                 if wanted == normalised or wanted in normalised or normalised in wanted:
@@ -52,6 +61,11 @@ class ResultsEvidence:
 
 def _normalise(name: str) -> str:
     return re.sub(r"[^a-z0-9@]", "", name.lower())
+
+
+def _normalise_result_path(path: str) -> str:
+    """Normalise manifest paths to repository-relative POSIX spelling."""
+    return str(PurePosixPath(path.replace("\\", "/")))
 
 
 def _parse_csv(text: str, result: ResultFile) -> None:

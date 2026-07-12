@@ -90,6 +90,7 @@ class Manifest:
     claims: list[Claim] = field(default_factory=list)
     smoke: SmokeTarget = field(default_factory=SmokeTarget)
     path: Path | None = None  # where it was loaded from, if anywhere
+    error: str | None = None  # parse/schema problem; never overwrite this file silently
 
     @property
     def exists(self) -> bool:
@@ -184,6 +185,41 @@ def _parse_claim(raw: dict[str, Any]) -> Claim:
     )
 
 
+def _validate_manifest_data(data: dict[str, Any]) -> str | None:
+    """Validate container shapes before parsing user-authored YAML."""
+    for section in ("paper", "environment", "smoke"):
+        value = data.get(section)
+        if value is not None and not isinstance(value, dict):
+            return f"'{section}' must be a mapping"
+    for section in ("datasets", "remotes", "claims"):
+        value = data.get(section)
+        if value is not None and not isinstance(value, list):
+            return f"'{section}' must be a list"
+        if isinstance(value, list) and any(not isinstance(item, dict) for item in value):
+            return f"every '{section}' entry must be a mapping"
+    for index, dataset in enumerate(data.get("datasets") or []):
+        if not dataset.get("id"):
+            return f"datasets[{index}].id is required"
+    for index, remote in enumerate(data.get("remotes") or []):
+        if not remote.get("call"):
+            return f"remotes[{index}].call is required"
+    for index, claim in enumerate(data.get("claims") or []):
+        if not claim.get("id"):
+            return f"claims[{index}].id is required"
+        produced = claim.get("produced_by")
+        if produced is not None and not isinstance(produced, dict):
+            return f"claims[{index}].produced_by must be a mapping"
+        seeds = claim.get("seeds")
+        if seeds is not None and not isinstance(seeds, list):
+            return f"claims[{index}].seeds must be a list"
+    smoke = data.get("smoke") or {}
+    for key in ("expected_outputs", "expected_metrics"):
+        value = smoke.get(key)
+        if value is not None and not isinstance(value, list):
+            return f"smoke.{key} must be a list"
+    return None
+
+
 def load_manifest(root: Path) -> Manifest:
     """Load the manifest if present; otherwise an empty manifest (exists=False)."""
     target = root / MANIFEST_DIR / MANIFEST_NAME
@@ -191,10 +227,19 @@ def load_manifest(root: Path) -> Manifest:
         return Manifest()
     try:
         data = yaml.safe_load(target.read_text(encoding="utf-8")) or {}
-    except (yaml.YAMLError, OSError):
-        return Manifest()
+    except (yaml.YAMLError, OSError) as exc:
+        return Manifest(path=target, error=f"could not parse {target}: {exc}")
     if not isinstance(data, dict):
-        return Manifest()
+        return Manifest(path=target, error=f"{target} must contain a YAML mapping")
+    schema = data.get("schema")
+    if schema != SCHEMA:
+        rendered = "missing" if schema is None else repr(schema)
+        return Manifest(
+            path=target,
+            error=f"unsupported manifest schema {rendered}; expected {SCHEMA!r}",
+        )
+    if validation_error := _validate_manifest_data(data):
+        return Manifest(path=target, error=f"invalid manifest: {validation_error}")
 
     paper = data.get("paper") or {}
     env = data.get("environment") or {}
@@ -251,6 +296,36 @@ def write_manifest(root: Path, manifest: Manifest) -> Path:
     target.write_text(
         yaml.safe_dump(payload, sort_keys=False, allow_unicode=True), encoding="utf-8"
     )
-    (directory / "manifest.json").write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    (directory / "manifest.json").write_text(
+        json.dumps(payload, indent=2) + "\n", encoding="utf-8", newline="\n"
+    )
     manifest.path = target
+    manifest.error = None
+    return target
+
+
+def write_manifest_proposal(root: Path, manifest: Manifest) -> Path:
+    """Write a non-destructive refresh proposal beside an existing manifest.
+
+    YAML comments and unknown extension fields cannot be round-tripped safely
+    with the core parser. A refresh therefore never rewrites the author's
+    file; it writes a uniquely named proposal for manual review and merging.
+    """
+    import json
+
+    directory = root / MANIFEST_DIR
+    directory.mkdir(parents=True, exist_ok=True)
+    suffix = 1
+    while True:
+        stem = "manifest.proposed" if suffix == 1 else f"manifest.proposed-{suffix}"
+        target = directory / f"{stem}.yaml"
+        mirror = directory / f"{stem}.json"
+        if not target.exists() and not mirror.exists():
+            break
+        suffix += 1
+    payload = manifest.to_dict()
+    with target.open("x", encoding="utf-8", newline="\n") as handle:
+        handle.write(yaml.safe_dump(payload, sort_keys=False, allow_unicode=True))
+    with mirror.open("x", encoding="utf-8", newline="\n") as handle:
+        handle.write(json.dumps(payload, indent=2) + "\n")
     return target

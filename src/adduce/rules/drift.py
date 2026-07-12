@@ -58,6 +58,11 @@ def _numeric(value: Any) -> float | None:
 def _code_values(ev: Evidence) -> dict[str, list[_CodeValue]]:
     """All code-side hyperparameter values, ranked by authority."""
     found: dict[str, list[_CodeValue]] = {}
+    linked_run_configs = {
+        claim.produced_by.config
+        for claim in ev.manifest.claims
+        if claim.produced_by.config and (claim.status or "").strip().lower() != "draft"
+    }
 
     def add(name: str, value: Any, source: str, key: str, authority: int) -> None:
         number = _numeric(value)
@@ -66,7 +71,12 @@ def _code_values(ev: Evidence) -> dict[str, list[_CodeValue]]:
 
     for name, entries in ev.runs.hyperparameters().items():
         for value, path, key in entries:
-            add(name, value, path, key, authority=3)
+            # A materialised config represents an actual run, but it outranks
+            # committed configs only when an author-confirmed claim links to
+            # that exact run config. Otherwise it may belong to an unrelated
+            # experiment and is excluded from paper drift resolution.
+            if path in linked_run_configs:
+                add(name, value, path, key, authority=3)
     for name, entries in ev.config.hyperparameters().items():
         for value, path, key in entries:
             add(name, value, path, key, authority=2)
@@ -159,7 +169,10 @@ class AmbiguousConfigRule(Rule):
         paper_values = ev.latex.hyperparameter_values()
         if not paper_values:
             return self.finding(Status.NOT_APPLICABLE, confidence=0.6, message="No hyperparameter statements extracted from the paper.")
-        if any(c.produced_by.config for c in ev.manifest.claims):
+        if ev.manifest.claims and all(
+            c.produced_by.config and (c.status or "").strip().lower() != "draft"
+            for c in ev.manifest.claims
+        ):
             return self.finding(
                 Status.PASS, confidence=0.85, message="The manifest resolves which config backs each claim."
             )

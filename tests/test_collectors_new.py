@@ -164,6 +164,15 @@ def test_results_collector(make_evidence):
     assert results.lookup_metric("ndcg@10")
 
 
+def test_result_lookup_normalises_manifest_path_spelling(make_evidence):
+    results = make_evidence(
+        {"results/eval.csv": "epoch,accuracy\n1,0.9\n"}
+    ).results
+
+    assert results.lookup_metric("accuracy", path="./results/eval.csv")
+    assert results.lookup_metric("accuracy", path=r"results\eval.csv")
+
+
 def test_run_history_collector(make_evidence):
     ev = make_evidence(
         {
@@ -196,6 +205,20 @@ def test_portability_collector(make_evidence):
     assert kinds == {"abs_path", "localhost", "secret"}
     secret = ev.portability.of_kind("secret")[0]
     assert "AKIA" not in secret.detail  # never echo the value
+
+
+def test_secret_scanning_includes_documentation_and_manifest(make_evidence):
+    ev = make_evidence(
+        {
+            "README.md": "Example accidentally contains ghp_" + "a" * 36 + "\n",
+            ".adduce/manifest.yaml": "schema: adduce/1\ntoken: hf_" + "b" * 30 + "\n",
+        }
+    )
+
+    hits = ev.portability.of_kind("secret")
+
+    assert {hit.file for hit in hits} == {"README.md", ".adduce/manifest.yaml"}
+    assert all("ghp_" not in hit.detail and "hf_" not in hit.detail for hit in hits)
 
 
 def test_plural_keyword_is_a_count_not_a_value(make_evidence):

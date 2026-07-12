@@ -30,6 +30,20 @@ def test_manifest_command_scaffolds(tmp_path):
     assert (tmp_path / ".adduce" / "manifest.json").is_file()
 
 
+def test_manifest_force_alias_writes_non_destructive_proposal(tmp_path):
+    _write(tmp_path, WELL_FORMED)
+    first = runner.invoke(app, ["manifest", str(tmp_path)])
+    assert first.exit_code == 0, first.output
+    target = tmp_path / ".adduce" / "manifest.yaml"
+    original = target.read_text(encoding="utf-8")
+
+    refreshed = runner.invoke(app, ["manifest", str(tmp_path), "--force"])
+
+    assert refreshed.exit_code == 0, refreshed.output
+    assert target.read_text(encoding="utf-8") == original
+    assert (tmp_path / ".adduce" / "manifest.proposed.yaml").is_file()
+
+
 def test_manifest_preserves_author_content(tmp_path):
     _write(tmp_path, WELL_FORMED)
     (tmp_path / ".adduce").mkdir()
@@ -163,7 +177,8 @@ def test_check_modes_render(tmp_path):
     assert "Could not be verified" in plain(reviewer.output)
     chair = runner.invoke(app, ["check", str(tmp_path), "--mode", "ae-chair"])
     assert chair.exit_code == 0
-    assert "Badge eligibility" in plain(chair.output)
+    assert "Badge prerequisites" in plain(chair.output)
+    assert "never an award prediction" in plain(chair.output)
 
 
 def test_json_includes_reviewer_time_and_claims(tmp_path):
@@ -176,7 +191,17 @@ def test_json_includes_reviewer_time_and_claims(tmp_path):
 
 def test_reproduce_requires_confirmation(tmp_path):
     _write(tmp_path, WELL_FORMED)
-    result = runner.invoke(app, ["reproduce", str(tmp_path), "--command", "python -c 'print(1)'"])
+    result = runner.invoke(
+        app,
+        [
+            "reproduce",
+            str(tmp_path),
+            "--command",
+            "python -c 'print(1)'",
+            "--expected-metric",
+            "accuracy",
+        ],
+    )
     assert result.exit_code == 2
     assert "--yes" in plain(result.output)
 
@@ -188,11 +213,25 @@ def test_reproduce_smoke_run_agrees(tmp_path):
         "open('out.json','w')); print('accuracy: 0.5')\""
     )
     result = runner.invoke(
-        app, ["reproduce", str(tmp_path), "--command", command, "--yes", "--timeout-minutes", "1"]
+        app,
+        [
+            "reproduce",
+            str(tmp_path),
+            "--command",
+            command,
+            "--expected-metric",
+            "accuracy",
+            "--yes",
+            "--timeout-minutes",
+            "1",
+        ],
     )
     assert result.exit_code == 0, result.output
     assert "runs agree" in plain(result.output)
-    assert (tmp_path / ".adduce" / "reproduce-report.json").is_file()
+    report_path = tmp_path / ".adduce" / "reproduce-report.json"
+    assert report_path.is_file()
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    assert report["comparable_fingerprints"] == ["metric:accuracy"]
 
 
 def test_pin_revision_codemod():

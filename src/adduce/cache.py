@@ -41,4 +41,6 @@ class Cache:
     def put(self, key: str, value: Any) -> None:
         self.directory.mkdir(parents=True, exist_ok=True)
         entry = {"stored_at": time.time(), "value": value}
-        self._path_for(key).write_text(json.dumps(entry, indent=2), encoding="utf-8")
+        self._path_for(key).write_text(
+            json.dumps(entry, indent=2) + "\n", encoding="utf-8", newline="\n"
+        )

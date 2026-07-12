@@ -41,8 +41,8 @@
     R-DRIFT-001: fail
 
 - case: synthetic_hydra_authority
-  # The materialised Hydra config (lr 0.0001, matching the paper) outranks
-  # the stale checked-in config (lr 0.001).
+  # The manifest-linked materialised Hydra config (lr 0.0001, matching the
+  # paper) outranks the stale checked-in config (lr 0.001).
   expect:
     R-DRIFT-001: pass
     R-RUN-002: partial

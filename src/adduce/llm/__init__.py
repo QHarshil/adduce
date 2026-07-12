@@ -1,14 +1,13 @@
 """Optional LLM layer: prose only, never checks or scores.
 
 Strictly separated from the deterministic core. With no provider configured,
-every command works identically — the LLM only (a) drafts the free-text
-justification fields in checklists and appendices and (b) summarises a
-repository's posture for PR comments. Bring-your-own-key: adduce ships no
-key and never calls a paid API on your behalf.
+every command works identically—the provider integration only drafts optional
+free-text checklist justifications. Bring-your-own-key: adduce ships no key
+and never calls a paid API on your behalf.
 
 Configuration (environment):
     ADDUCE_LLM_PROVIDER   openai | anthropic | ollama
-    ADDUCE_LLM_MODEL      provider model name (defaults per provider)
+    ADDUCE_LLM_MODEL      provider model name (required for hosted providers)
     OPENAI_API_KEY / ANTHROPIC_API_KEY   for the hosted providers
     ADDUCE_OLLAMA_URL     defaults to http://localhost:11434
 """
@@ -22,11 +21,7 @@ import urllib.request
 
 _TIMEOUT_SECONDS = 60
 
-_DEFAULT_MODELS = {
-    "openai": "gpt-4o-mini",
-    "anthropic": "claude-sonnet-5",
-    "ollama": "llama3.1",
-}
+_DEFAULT_LOCAL_MODEL = "llama3.1"
 
 
 class LLMUnavailable(RuntimeError):
@@ -66,7 +61,14 @@ def complete(prompt: str, max_tokens: int = 500) -> str:
             "No LLM provider configured. Set ADDUCE_LLM_PROVIDER (openai|anthropic|ollama) "
             "and the matching API key; everything works without one."
         )
-    model = os.environ.get("ADDUCE_LLM_MODEL") or _DEFAULT_MODELS[provider]
+    model = os.environ.get("ADDUCE_LLM_MODEL")
+    if not model:
+        if provider == "ollama":
+            model = _DEFAULT_LOCAL_MODEL
+        else:
+            raise LLMUnavailable(
+                "Set ADDUCE_LLM_MODEL to an API model identifier supported by the configured provider."
+            )
 
     if provider == "openai":
         data = _post_json(

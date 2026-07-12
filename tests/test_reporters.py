@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 
 from adduce.engine import run_check
-from adduce.report import RENDERERS
+from adduce.report import RENDERERS, codemeta, software_heritage
 from tests.test_engine import BARE, WELL_FORMED, _write
 
 
@@ -68,3 +68,31 @@ def test_badge_color_tracks_score(tmp_path):
     bad_badge = json.loads(RENDERERS["badge"](run_check(bad_root)))
     assert good_badge["color"] in {"brightgreen", "green"}
     assert bad_badge["color"] in {"yellow", "orange"}
+
+
+def test_repository_exports_strip_remote_credentials(tmp_path):
+    import subprocess
+
+    _write(tmp_path, WELL_FORMED)
+    subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
+    secret = "ghp_" + "a" * 36
+    subprocess.run(
+        [
+            "git",
+            "remote",
+            "add",
+            "origin",
+            f"https://{secret}@github.com/example/project.git?token=also-secret",
+        ],
+        cwd=tmp_path,
+        check=True,
+    )
+    result = run_check(tmp_path)
+
+    codemeta_doc = json.loads(codemeta.render(result))
+    heritage_note = software_heritage.render(result)
+
+    assert codemeta_doc["codeRepository"] == "https://github.com/example/project.git"
+    assert "https://github.com/example/project.git" in heritage_note
+    assert secret not in heritage_note
+    assert "also-secret" not in heritage_note

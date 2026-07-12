@@ -233,9 +233,10 @@ def derive_answer(
 ) -> tuple[AnswerLevel, list[EvidenceItem]]:
     """Derive the strongest answer the evidence can honestly carry.
 
-    Default policy: yes only when every scored finding passes and either the
-    weakest confidence is >= 0.85 or the author-confirmed manifest backs the
-    item; mixed results or confidence in [0.5, 0.85) draft as partial; all
+    Default policy: yes only when every scored finding passes and each pass
+    has source-located evidence at confidence >= 0.85, or an explicitly
+    relevant author-confirmed manifest field backs the item. Mixed results,
+    inferred-only passes, or confidence in [0.5, 0.85) draft as partial; all
     failures draft as not detected; findings that carry no score leave the
     item unknown. Strict mode raises the yes bar to 0.90 and hands anything
     resting purely on inference back to the author.
@@ -248,11 +249,12 @@ def derive_answer(
     values = [f.status.score_value for f in scored]
     min_confidence = min(f.confidence for f in scored)
     yes_threshold = _STRICT_YES_MIN_CONFIDENCE if strict else _YES_MIN_CONFIDENCE
+    all_located = all(bool(finding.locations) for finding in scored)
 
     if all(v == 0.0 for v in values):
         answer = AnswerLevel.NOT_DETECTED
     elif all(v == 1.0 for v in values):
-        if manifest_backed or min_confidence >= yes_threshold:
+        if manifest_backed or (all_located and min_confidence >= yes_threshold):
             answer = AnswerLevel.YES
         elif min_confidence >= _PARTIAL_MIN_CONFIDENCE:
             answer = AnswerLevel.PARTIAL
@@ -276,6 +278,7 @@ def build_entry(
     findings: list[Finding],
     rule_ids: Sequence[str],
     manifest_backed: bool,
+    manifest_evidence: bool = False,
     strict: bool = False,
     manual: bool = False,
 ) -> LedgerEntry:
@@ -293,6 +296,16 @@ def build_entry(
         evidence: list[EvidenceItem] = []
     else:
         answer, evidence = derive_answer(findings, manifest_backed, strict)
+    if manifest_evidence and not manifest_backed:
+        evidence.append(
+            EvidenceItem(
+                kind="manifest",
+                path=f"{LEDGER_DIR}/manifest.yaml",
+                line=None,
+                confidence=1.0,
+                strength=EvidenceStrength.MANIFEST_AUTHOR_CONFIRMED,
+            )
+        )
     missing = [f.message for f in findings if f.status is Status.FAIL]
     conflicts = [
         f.message
@@ -322,7 +335,7 @@ def write_ledger(root: Path, ledger: Ledger) -> Path:
     target = directory / LEDGER_NAME
     records = load_ledger(root)
     records[ledger.artifact_path] = ledger.to_dict()
-    target.write_text(json.dumps(records, indent=2) + "\n", encoding="utf-8")
+    target.write_text(json.dumps(records, indent=2) + "\n", encoding="utf-8", newline="\n")
     return target
 
 

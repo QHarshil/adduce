@@ -6,6 +6,8 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-07-12
+
 ### Added
 
 - Generation safety: the contract (docs/generation-safety.md), the evidence
@@ -36,6 +38,26 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - R-RES-003 no longer accepts paper prose alone as multi-run evidence: a
   stated seed count must be corroborated by manifest seeds or a seed sweep
   in run scripts, otherwise it drafts as partial.
+- Static claim trails use `supported` rather than execution-implying
+  `verified`; draft manifest claims remain explicitly inferred.
+- Manifest refreshes are written as separate proposal files and never
+  overwrite author content. Fix scaffolds also skip existing files.
+- Checklist `yes` answers now require source-located high-confidence evidence
+  or a directly relevant confirmed manifest field.
+
+### Fixed
+
+- Hardened dynamic reproduction: isolated run workspaces, preserved original
+  outputs, explicit expected fingerprints, named metric comparison, and no
+  success from process exit codes alone.
+- Scoped result reconciliation to each claim's declared log and limited
+  materialised-config authority to author-linked run configs.
+- Removed unsupported public-access, installation, tolerance, license, and
+  badge-award assumptions from generated artifacts and chair-mode output.
+- Corrected GitHub Action profile propagation, baseline path, input handling,
+  temporary output handling, and release pinning.
+- Expanded secret scanning to documentation and manifests while continuing
+  to report only credential kind and location, never the value.
 
 ## [0.1.0] - 2026-07-04
 

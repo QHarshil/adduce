@@ -1,7 +1,8 @@
-name: "NeurIPS Paper Checklist (reproducibility items)"
+name: "NeurIPS reproducibility items — repository-evidence draft"
 key: neurips
 preamble: >
-  Draft answers derived from repository evidence. Every answer must be
+  This is a repository-observable subset, not a completed official venue
+  checklist. Draft answers are derived from repository evidence. Every answer must be
   reviewed and completed by the authors before submission: the tool sees the
   repository, not the paper, and several checklist items depend on claims
   made in the paper text.

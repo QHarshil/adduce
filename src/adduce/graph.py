@@ -2,8 +2,8 @@
 
 For every major claim, assemble the trail an artifact reviewer would build
 by hand: metric → producing script/command → config → data → environment →
-seeds → commit, with a status per edge. Manifest-declared edges are
-authoritative; inferred edges carry confidence and say so.
+seeds → commit, with a status per edge. Author-confirmed manifest edges are
+authoritative; scaffolded draft claims remain inferred.
 """
 
 from __future__ import annotations
@@ -18,7 +18,7 @@ from .rules.drift import values_match
 
 
 class TrailStatus(Enum):
-    VERIFIED = "verified"    # every recorded edge resolves
+    SUPPORTED = "supported"  # every statically checkable recorded edge resolves
     PARTIAL = "partial"      # some edges resolve, some missing
     UNLINKED = "unlinked"    # claim exists but nothing ties it to artifacts
 
@@ -51,10 +51,16 @@ class ClaimGraph:
     from_manifest: bool = False
 
 
-def _check_metric(claim: Claim, ev: Evidence, entries: list[TrailEntry]) -> bool | None:
+def _check_metric(
+    claim: Claim,
+    ev: Evidence,
+    entries: list[TrailEntry],
+    use_declared_log: bool,
+) -> bool | None:
     if not claim.metric or claim.value is None:
         return None
-    matches = ev.results.lookup_metric(claim.metric)
+    log_path = claim.produced_by.log if use_declared_log else None
+    matches = ev.results.lookup_metric(claim.metric, path=log_path)
     if not matches:
         entries.append(
             TrailEntry(
@@ -66,9 +72,8 @@ def _check_metric(claim: Claim, ev: Evidence, entries: list[TrailEntry]) -> bool
         )
         return False
     stated = claim.value
-    all_values = [v for _, values in matches for v in values]
-    closest = min(all_values, key=lambda v: abs(v - stated))
-    source = matches[0][0]
+    candidates = [(source, value) for source, values in matches for value in values]
+    source, closest = min(candidates, key=lambda item: abs(item[1] - stated))
     if values_match(stated, closest):
         note = "" if closest == stated else f"~ rounding vs paper ({stated:g})"
         entries.append(TrailEntry("metric", f"{source}  (found: {closest:g})", note, resolved=True))
@@ -100,7 +105,7 @@ def build_claim_trail(claim: Claim, ev: Evidence, inferred: bool) -> ClaimTrail:
 
     outcomes: list[bool] = []
 
-    metric_ok = _check_metric(claim, ev, entries)
+    metric_ok = _check_metric(claim, ev, entries, use_declared_log=not inferred)
     if metric_ok is not None:
         outcomes.append(metric_ok)
 
@@ -142,7 +147,7 @@ def build_claim_trail(claim: Claim, ev: Evidence, inferred: bool) -> ClaimTrail:
     if not linked and not checkable:
         trail.status = TrailStatus.UNLINKED
     elif checkable and all(checkable) and linked:
-        trail.status = TrailStatus.VERIFIED
+        trail.status = TrailStatus.SUPPORTED
     else:
         trail.status = TrailStatus.PARTIAL
     return trail
@@ -153,12 +158,11 @@ def build_graph(ev: Evidence) -> ClaimGraph:
     if ev.manifest.claims:
         graph.from_manifest = True
         claims = ev.manifest.claims
-        inferred = False
     else:
         # Best-effort: draft claims from evidence so the trail view exists
         # even before the author writes a manifest.
         claims = scaffold_manifest(ev).claims
-        inferred = True
     for claim in claims[:10]:
+        inferred = not graph.from_manifest or (claim.status or "").strip().lower() == "draft"
         graph.trails.append(build_claim_trail(claim, ev, inferred=inferred))
     return graph

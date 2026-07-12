@@ -1,0 +1,6 @@
+schema: adduce/1
+claims:
+  - id: C1
+    status: confirmed
+    produced_by:
+      config: outputs/run/.hydra/config.yaml

@@ -15,7 +15,11 @@ test run — this is the permanent false-positive regression suite. It proves
 the detectors fire (and stay silent) where designed; it says nothing about
 real-world rates.
 
-## Layer B — labelled real corpus (~50 repositories)
+## Layer B — labelled real corpus (planned target: ~50 repositories)
+
+This cohort is not populated yet. The protocol below defines the sampling
+and recording requirements that must be completed before any real-repository
+score-separation or false-positive claim is published.
 
 Rows live in `repos.csv` with the header:
 
@@ -23,8 +27,8 @@ Rows live in `repos.csv` with the header:
 id,cohort,repo_url,commit_sha,badge_type,venue,year,framework,has_tex,notes
 ```
 
-Cohorts (`commit_sha` empty means HEAD; the clone step records the resolved
-SHA in `corpus/clones/clones_manifest.json` so every run stays attributable):
+Planned cohorts (`commit_sha` empty means HEAD; the clone step records the
+resolved SHA in `corpus/clones/clones_manifest.json` so every run stays attributable):
 
 - **badged (~25 total)**, split so badge strength is visible instead of
   averaged away:
@@ -39,10 +43,10 @@ SHA in `corpus/clones/clones_manifest.json` so every run stays attributable):
   tutorial-style repos, older ML (pre-2020), and modern HF/PyTorch stacks.
   These stand in for the median artifact a reviewer actually receives.
 
-## Layer C — unlabelled stress corpus
+## Layer C — unlabelled stress corpus (in progress)
 
-50–100 popular or messy repositories (`cohort=stress`; seeded with nanoGPT,
-minGPT, vit-pytorch). Tracked measurements: crash rate, runtime, and the top
+The current seed list contains nanoGPT, minGPT, and vit-pytorch; the target is
+50–100 popular or messy repositories (`cohort=stress`). Tracked measurements: crash rate, runtime, and the top
 noisy rules. This layer exists to find robustness problems and chatty rules,
 **never** to back scoring claims — stress scores appear in no published
 number.

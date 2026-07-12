@@ -112,13 +112,39 @@ def _anchors(findings: list[Finding], cap: int = 4) -> list[str]:
     return [str(loc) for finding in findings for loc in finding.locations][:cap]
 
 
+def _manifest_supports(findings: list[Finding], result: CheckResult) -> bool:
+    """Whether confirmed manifest fields directly support every finding.
+
+    A manifest created by ``adduce manifest`` contains draft claims. Those
+    drafts must not be promoted to author-confirmed evidence merely because
+    the file now exists. Support is deliberately narrow: only fields the
+    scaffolder cannot safely invent, plus non-draft claim links, qualify.
+    """
+    if not findings or not result.evidence.manifest.exists:
+        return False
+    manifest = result.evidence.manifest
+    confirmed_claims = [
+        claim
+        for claim in manifest.claims
+        if (claim.status or "").strip().lower() != "draft"
+    ]
+    supported: set[str] = set()
+    if manifest.smoke.command or any(claim.produced_by.command for claim in confirmed_claims):
+        supported.update({"R-EXEC-002", "R-EXEC-003", "R-RUN-001"})
+    if any(claim.value is not None for claim in confirmed_claims):
+        supported.add("R-DOC-003")
+    if manifest.environment.hardware:
+        supported.update({"R-PREC-005", "R-DRIFT-005"})
+    return all(finding.rule_id in supported for finding in findings)
+
+
 def render_markdown(
     checklist: Checklist,
     result: CheckResult,
     llm_drafts: dict[str, str] | None = None,
     strict: bool = False,
 ) -> tuple[str, Ledger]:
-    """Render the filled checklist and the evidence ledger behind it.
+    """Render the checklist draft and the evidence ledger behind it.
 
     ``llm_drafts`` optionally carries LLM-phrased justification prose keyed by
     item id; the evidence answers stay deterministic regardless. ``strict``
@@ -126,7 +152,6 @@ def render_markdown(
     """
     llm_drafts = llm_drafts or {}
     findings_by_rule = {f.rule_id: f for f in result.card.findings}
-    manifest_backed = bool(result.evidence.manifest.claims)
     entries: list[LedgerEntry] = []
     lines: list[str] = []
     lines.append(f"# {checklist.name}")
@@ -147,7 +172,7 @@ def render_markdown(
             question=item.question,
             findings=item_findings,
             rule_ids=item.rules,
-            manifest_backed=manifest_backed,
+            manifest_backed=_manifest_supports(item_findings, result),
             strict=strict,
             manual=item.manual,
         )
@@ -156,6 +181,8 @@ def render_markdown(
         anchors = _anchors(item_findings) if not item.manual else []
         if anchors:
             lines.append(f"[EVIDENCE: {', '.join(anchors)}]")
+        if entry.conflicts:
+            lines.append("[AUTHOR REVIEW REQUIRED] — conflicting evidence must be resolved")
         lines.append("")
         if item.id in llm_drafts:
             lines.append("**Draft justification** (LLM-phrased from the evidence below — check it):")

@@ -27,7 +27,7 @@ _STATUS_STYLE = {
 }
 
 _TRAIL_STYLE = {
-    TrailStatus.VERIFIED: ("green", "VERIFIED"),
+    TrailStatus.SUPPORTED: ("green", "SUPPORTED"),
     TrailStatus.PARTIAL: ("yellow", "PARTIAL"),
     TrailStatus.UNLINKED: ("red", "UNLINKED"),
 }
@@ -101,11 +101,15 @@ def _render_trails(result: CheckResult, console: Console) -> None:
     trails = result.graph.trails
     if not trails:
         return
-    source = "manifest" if result.graph.from_manifest else "inferred from evidence — confirm via `adduce manifest`"
+    if result.graph.from_manifest:
+        source = "manifest; draft claims remain inferred until author-confirmed"
+    else:
+        source = "inferred from evidence — confirm via `adduce manifest`"
     console.print(f"[bold]Claim trails[/bold] [dim]({source})[/dim]")
     for trail in trails[:5]:
         style, label = _TRAIL_STYLE[trail.status]
-        console.print(Text.assemble("  ", (trail.headline, "bold")))
+        provenance = " [inferred draft]" if trail.inferred else ""
+        console.print(Text.assemble("  ", (trail.headline, "bold"), (provenance, "dim")))
         for entry in trail.entries:
             marker = "" if entry.resolved is None else (" ✓" if entry.resolved else " ✗")
             line = Text(f"    {entry.label:<12}{entry.value}")
@@ -153,12 +157,18 @@ def _render_reviewer_mode(result: CheckResult, console: Console) -> None:
 
 
 def _render_chair_mode(result: CheckResult, console: Console) -> None:
-    console.print("[bold]Badge eligibility[/bold] (static signals; execution-based badges are never assessed)")
+    console.print("[bold]Badge prerequisites[/bold] (static signals only; never an award prediction)")
     for assessment in badge_eligibility(result.card):
-        marker = Text(" likely eligible", style="green") if assessment.eligible else Text(" blocked", style="red")
+        marker = (
+            Text(" static prerequisites detected", style="green")
+            if assessment.eligible
+            else Text(" prerequisites incomplete", style="red")
+        )
         console.print(Text(f"  {assessment.label}:") + marker)
         for blocker in assessment.blocking[:4]:
             console.print(Text(f"      - {blocker}", style="dim"))
+        for item in assessment.manual_review:
+            console.print(Text(f"      - author/reviewer check: {item}", style="dim"))
     console.print()
     gates = blocking_issues(result.card)
     if gates:

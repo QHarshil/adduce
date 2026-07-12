@@ -14,12 +14,16 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import shutil
 import subprocess
+import tempfile
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
-_NUMBER_LINE_RE = re.compile(r"([A-Za-z][\w@/ .-]{0,40}?)[:=]\s*(-?\d+(?:\.\d+)?(?:[eE]-?\d+)?)")
+_NUMBER_LINE_RE = re.compile(
+    r"([A-Za-z][\w@/ .-]{0,40}?)[:=]\s*(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)"
+)
 
 
 @dataclass
@@ -37,12 +41,14 @@ class ReproduceReport:
     runs: list[RunFingerprint] = field(default_factory=list)
     agree: bool | None = None
     disagreements: list[str] = field(default_factory=list)
+    comparable_fingerprints: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict:
         return {
             "command": self.command,
             "agree": self.agree,
             "disagreements": self.disagreements,
+            "comparable_fingerprints": self.comparable_fingerprints,
             "runs": [
                 {
                     "exit_code": run.exit_code,
@@ -75,6 +81,58 @@ def _parse_stdout_metrics(stdout: str) -> dict[str, float]:
                 except ValueError:
                     continue
     return metrics
+
+
+def _validate_expected_outputs(expected_outputs: list[str]) -> list[str]:
+    """Return configuration errors for paths that must never escape a run workspace."""
+    errors: list[str] = []
+    for output in expected_outputs:
+        path = Path(output)
+        if not output.strip() or path.is_absolute() or path == Path(".") or ".." in path.parts:
+            errors.append(
+                f"{output or '<empty>'}: expected output must be a relative file path within the repository"
+            )
+    return errors
+
+
+def _remove_copied_outputs(workspace: Path, expected_outputs: list[str]) -> None:
+    """Remove only workspace copies so every attempt must generate fresh output."""
+    for output in expected_outputs:
+        target = workspace / output
+        if target.is_symlink() or target.is_file():
+            target.unlink()
+
+
+def _copy_ignore(directory: str, names: list[str]) -> set[str]:
+    """Skip local resolution cache and all symlinks in an isolated workspace.
+
+    Dereferencing a repository symlink could copy data from outside the
+    repository into the run workspace. Preserving it could let executed code
+    mutate the original target. Neither is acceptable for the fenced runner.
+    Other directories, including ``.git`` and repository-local environments,
+    are copied because smoke commands may legitimately depend on them.
+    """
+    parent = Path(directory)
+    ignored = {name for name in names if (parent / name).is_symlink()}
+    if parent.name == ".adduce":
+        ignored.add("cache")
+    return ignored
+
+
+def _metric_value(metrics: dict[str, float], expected_name: str) -> float | None:
+    """Resolve an explicitly named metric without treating arbitrary stdout as evidence."""
+    expected = expected_name.strip().lower()
+    if expected in metrics:
+        return metrics[expected]
+
+    # Frameworks commonly prefix metrics (for example ``validation accuracy``).
+    # Accept a suffix only when it identifies exactly one parsed metric.
+    candidates = [
+        value
+        for name, value in metrics.items()
+        if name.endswith(f" {expected}") or name.endswith(f"/{expected}")
+    ]
+    return candidates[0] if len(candidates) == 1 else None
 
 
 def _run_once(
@@ -126,16 +184,40 @@ def reproduce(
     expected_outputs: list[str],
     seed: int = 0,
     timeout_minutes: int = 30,
+    expected_metrics: list[str] | None = None,
 ) -> ReproduceReport:
-    """Run the command twice and compare fingerprints."""
+    """Run the command twice in clean copies of the repository and compare evidence.
+
+    A successful process exit is necessary but not sufficient. Agreement requires
+    at least one expected output hash or explicitly named metric that can be
+    compared across both attempts.
+    """
     report = ReproduceReport(command=command)
-    for _ in range(2):
-        # Remove prior expected outputs so each run must regenerate them.
-        for output in expected_outputs:
-            target = root / output
-            if target.is_file():
-                target.unlink()
-        report.runs.append(_run_once(command, root, seed, expected_outputs, timeout_minutes))
+    expected_metrics = expected_metrics or []
+    path_errors = _validate_expected_outputs(expected_outputs)
+    if path_errors:
+        report.agree = False
+        report.disagreements = path_errors
+        return report
+
+    root = root.resolve()
+    with tempfile.TemporaryDirectory(prefix="adduce-reproduce-") as temporary:
+        temporary_root = Path(temporary)
+        for attempt in range(2):
+            workspace = temporary_root / f"run-{attempt + 1}"
+            # Skip repository symlinks while copying so commands cannot modify
+            # original inputs through a link from the temporary workspace.
+            shutil.copytree(
+                root,
+                workspace,
+                symlinks=False,
+                ignore_dangling_symlinks=True,
+                ignore=_copy_ignore,
+            )
+            _remove_copied_outputs(workspace, expected_outputs)
+            report.runs.append(
+                _run_once(command, workspace, seed, expected_outputs, timeout_minutes)
+            )
 
     first, second = report.runs
     disagreements: list[str] = []
@@ -150,12 +232,24 @@ def reproduce(
             disagreements.append(f"{output}: not produced by both runs")
         elif hash_one != hash_two:
             disagreements.append(f"{output}: content differs between runs")
-    shared_metrics = set(first.stdout_metrics) & set(second.stdout_metrics)
-    for name in sorted(shared_metrics):
-        if abs(first.stdout_metrics[name] - second.stdout_metrics[name]) > 1e-9:
+        else:
+            report.comparable_fingerprints.append(f"output:{output}")
+    for name in expected_metrics:
+        value_one = _metric_value(first.stdout_metrics, name)
+        value_two = _metric_value(second.stdout_metrics, name)
+        if value_one is None or value_two is None:
+            disagreements.append(f"expected stdout metric '{name}': not reported by both runs")
+        elif abs(value_one - value_two) > 1e-9:
             disagreements.append(
-                f"stdout metric '{name}': {first.stdout_metrics[name]} vs {second.stdout_metrics[name]}"
+                f"stdout metric '{name}': {value_one} vs {value_two}"
             )
+        else:
+            report.comparable_fingerprints.append(f"metric:{name}")
+    if not report.comparable_fingerprints:
+        disagreements.append(
+            "no comparable fingerprints: declare an expected output or expected metric "
+            "that both runs produce"
+        )
     report.disagreements = disagreements
     report.agree = not disagreements
     return report

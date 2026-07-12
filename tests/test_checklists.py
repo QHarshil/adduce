@@ -29,10 +29,10 @@ def test_checklist_rule_ids_exist():
             assert not missing, f"{name}/{item.id} references unknown rules: {missing}"
 
 
-def test_good_repo_drafts_yes_answers(tmp_path):
+def test_manifest_claim_does_not_back_unrelated_answers(tmp_path):
     _write(tmp_path, WELL_FORMED)
-    # An author-confirmed manifest claim is what lifts all-pass items to a
-    # drafted yes under the evidence-ledger policy.
+    # A metric claim must not lift unrelated documentation, data, or licensing
+    # questions to a drafted yes.
     (tmp_path / ".adduce").mkdir()
     (tmp_path / ".adduce" / "manifest.yaml").write_text(
         yaml.safe_dump(
@@ -45,7 +45,8 @@ def test_good_repo_drafts_yes_answers(tmp_path):
     )
     result = run_check(tmp_path)
     output, _ = render_markdown(load_checklist("neurips"), result)
-    assert "Yes (draft)" in output
+    assert "Yes (draft)" not in output
+    assert "Partial (draft)" in output
     assert "Verify each answer" in output
 
 

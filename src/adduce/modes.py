@@ -2,7 +2,7 @@
 
 - author (default): friendly, fix-oriented.
 - reviewer: skeptical; surfaces what could not be verified and what is ambiguous.
-- ae-chair: badge eligibility, blocking issues, reviewer-burden headline.
+- ae-chair: badge prerequisites, blocking issues, reviewer-burden headline.
 """
 
 from __future__ import annotations
@@ -23,8 +23,9 @@ class Mode(str, Enum):
 @dataclass
 class BadgeEligibility:
     label: str
-    eligible: bool
+    eligible: bool  # static prerequisites only; never an award prediction
     blocking: list[str] = field(default_factory=list)
+    manual_review: list[str] = field(default_factory=list)
 
 
 def unverifiable_findings(card: ScoreCard) -> list[Finding]:
@@ -46,21 +47,27 @@ def _rule_status(card: ScoreCard, rule_id: str) -> Status | None:
 
 
 def badge_eligibility(card: ScoreCard) -> list[BadgeEligibility]:
-    """Likely eligibility for ACM artifact badges, from static evidence only.
+    """Static prerequisite posture for ACM artifact badges.
 
-    Results Reproduced/Replicated require independent execution and are
-    deliberately never assessed here.
+    An award decision requires committee review and, for evaluated badges,
+    execution. ``eligible`` therefore means only that the listed repository-
+    observable prerequisites passed; it is never an award prediction.
     """
     assessments: list[BadgeEligibility] = []
 
     # Artifacts Available: public, archived, persistent identifier.
     available_blockers = []
-    if _rule_status(card, "R-ARC-001") in (Status.FAIL, Status.PARTIAL):
+    if _rule_status(card, "R-ARC-001") is not Status.PASS:
         available_blockers.append("no archival DOI/SWHID (R-ARC-001)")
-    if _rule_status(card, "R-LIC-001") is Status.FAIL:
+    if _rule_status(card, "R-LIC-001") is not Status.PASS:
         available_blockers.append("no license (R-LIC-001)")
     assessments.append(
-        BadgeEligibility("ACM Artifacts Available", eligible=not available_blockers, blocking=available_blockers)
+        BadgeEligibility(
+            "ACM Artifacts Available",
+            eligible=not available_blockers,
+            blocking=available_blockers,
+            manual_review=["confirm the archived artifact is publicly accessible"],
+        )
     )
 
     # Artifacts Evaluated — Functional: documented, complete, exercisable.
@@ -74,11 +81,14 @@ def badge_eligibility(card: ScoreCard) -> list[BadgeEligibility]:
     functional_blockers = [
         f"{reason} ({rule_id})"
         for rule_id, reason in functional_requirements.items()
-        if _rule_status(card, rule_id) is Status.FAIL
+        if _rule_status(card, rule_id) is not Status.PASS
     ]
     assessments.append(
         BadgeEligibility(
-            "ACM Artifacts Evaluated — Functional", eligible=not functional_blockers, blocking=functional_blockers
+            "ACM Artifacts Evaluated — Functional",
+            eligible=not functional_blockers,
+            blocking=functional_blockers,
+            manual_review=["committee execution is required; static analysis cannot award this badge"],
         )
     )
 
@@ -89,11 +99,16 @@ def badge_eligibility(card: ScoreCard) -> list[BadgeEligibility]:
         ("R-DOC-003", "expected results not stated"),
         ("R-LIC-002", "no citation metadata"),
     ):
-        if _rule_status(card, rule_id) is Status.FAIL:
+        if _rule_status(card, rule_id) is not Status.PASS:
             reusable_blockers.append(f"{reason} ({rule_id})")
     assessments.append(
         BadgeEligibility(
-            "ACM Artifacts Evaluated — Reusable", eligible=not reusable_blockers, blocking=reusable_blockers
+            "ACM Artifacts Evaluated — Reusable",
+            eligible=not reusable_blockers,
+            blocking=reusable_blockers,
+            manual_review=[
+                "committee evaluation of reuse is required; static analysis cannot award this badge"
+            ],
         )
     )
     return assessments

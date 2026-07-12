@@ -3,12 +3,17 @@
 from __future__ import annotations
 
 from ..engine import CheckResult
+from ..model import sanitized_remote_url
 
 
 def render(result: CheckResult) -> str:
     ev = result.evidence
     remotes = [r for r in result.repo.git.remotes if r.startswith("http")]
-    repo_url = remotes[0] if remotes else "<your public repository URL>"
+    repo_url = (
+        sanitized_remote_url(remotes[0])
+        if remotes
+        else "[AUTHOR REVIEW REQUIRED: public repository URL]"
+    )
     lines = [
         "# Software Heritage archival note",
         "",
@@ -18,9 +23,15 @@ def render(result: CheckResult) -> str:
         "",
         "## Readiness",
         "",
-        f"- Public repository: {'yes' if remotes else 'not detected — publish the repository first'}",
+        "- Public repository: "
+        + ("HTTP remote detected; verify that it is publicly accessible" if remotes else "not detected"),
         f"- Tagged release to reference: {'yes' if result.repo.git.tags else 'no — tag the paper state first'}",
-        f"- Repository archivable as-is: {'check R-ARC-002 in the adduce report' if ev.data.untracked_binaries else 'yes'}",
+        "- Repository archivable as-is: "
+        + (
+            "check R-ARC-002 in the adduce report"
+            if ev.data.untracked_binaries
+            else "no blocking large binaries were detected by the static scan"
+        ),
         "",
         "## Steps",
         "",

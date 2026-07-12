@@ -13,17 +13,13 @@ from ..engine import CheckResult
 from ..ledger import Ledger, LedgerEntry, build_entry, build_provenance, sha256_text
 from ..rules.base import Finding
 
-_TODO = "_[author: complete]_"
+_TODO = "[AUTHOR REVIEW REQUIRED]"
 
 # The A.2 meta-information block states facts about documentation, the
 # environment, how to run, and licensing; A.6 states the expected numbers.
 # These rule sets are the evidence surfaces those statements rest on.
 _A2_RULES = ("R-DOC-001", "R-ENV-001", "R-EXEC-002", "R-LIC-001")
 _A6_RULES = ("R-RES-001", "R-RES-002", "R-RES-003")
-
-
-def _yes_no(condition: bool, detail: str = "") -> str:
-    return f"Yes{f' — {detail}' if detail else ''}" if condition else "No"
 
 
 def _anchor_line(findings: list[Finding], cap: int = 4) -> str | None:
@@ -36,14 +32,27 @@ def render(result: CheckResult, strict: bool = False) -> tuple[str, Ledger]:
     findings_by_rule = {f.rule_id: f for f in result.card.findings}
     a2_findings = [findings_by_rule[r] for r in _A2_RULES if r in findings_by_rule]
     a6_findings = [findings_by_rule[r] for r in _A6_RULES if r in findings_by_rule]
-    claims_with_values = [c for c in ev.manifest.claims if c.value is not None]
+    confirmed_claims = [
+        claim
+        for claim in ev.manifest.claims
+        if (claim.status or "").strip().lower() != "draft"
+    ]
+    claims_with_values = [claim for claim in confirmed_claims if claim.value is not None]
+    archival_doi = next(
+        (
+            doi
+            for doi in ev.docs.dois
+            if "zenodo" in doi.lower() or doi.startswith("10.5281/")
+        ),
+        None,
+    )
     entries: list[LedgerEntry] = [
         build_entry(
             item_id="A.2",
             question="Artifact check-list (meta-information)",
             findings=a2_findings,
             rule_ids=_A2_RULES,
-            manifest_backed=bool(ev.manifest.claims),
+            manifest_backed=False,
             strict=strict,
         ),
         build_entry(
@@ -51,7 +60,8 @@ def render(result: CheckResult, strict: bool = False) -> tuple[str, Ledger]:
             question="Evaluation and expected results",
             findings=a6_findings,
             rule_ids=_A6_RULES,
-            manifest_backed=bool(claims_with_values),
+            manifest_backed=False,
+            manifest_evidence=bool(claims_with_values),
             strict=strict,
         ),
     ]
@@ -84,17 +94,22 @@ def render(result: CheckResult, strict: bool = False) -> tuple[str, Ledger]:
         f"- **How to run:** `{runner}`" if runner != _TODO else f"- **How to run:** {_TODO}",
         f"- **Disk space required (artifact):** ~{total_mb:.0f} MiB plus datasets",
         f"- **Approximate experiment time:** {_TODO}",
-        f"- **Publicly available:** {_yes_no(ev.git.is_repo)}",
-        f"- **Code license:** {_yes_no(bool(ev.docs.license_file), ev.docs.license_file or '')}",
-        f"- **Archived (DOI):** {_yes_no(ev.git.has_archival_doi)}",
+        f"- **Publicly available:** {_TODO} Confirm the artifact URL and its access permissions.",
+        "- **Code license:** "
+        + (f"Detected — {ev.docs.license_file}" if ev.docs.license_file else "Not detected"),
+        f"- **Archived (DOI):** Detected — {archival_doi}"
+        if archival_doi
+        else f"- **Archived (DOI):** {_TODO} Confirm the deposit and record its DOI.",
         "",
     ]
 
     lines += ["## A.3 Description", "", "### A.3.1 How the artifact is delivered", ""]
-    delivery = "Public git repository"
-    if ev.git.has_archival_doi:
-        delivery += " with an archival deposit (DOI)"
-    lines += [delivery + ".", "", "### A.3.2 Hardware dependencies", ""]
+    lines += [
+        _TODO + " Describe how reviewers receive the artifact and any access requirements.",
+        "",
+        "### A.3.2 Hardware dependencies",
+        "",
+    ]
     lines += [hardware if hardware != _TODO else _TODO, "", "### A.3.3 Software dependencies", ""]
     deps_line = ", ".join(ev.deps.declaration_files) if ev.deps.declared else _TODO
     lines += [f"Declared in: {deps_line}."
@@ -110,10 +125,14 @@ def render(result: CheckResult, strict: bool = False) -> tuple[str, Ledger]:
 
     lines += ["## A.4 Installation", ""]
     if ev.docs.has_section("install"):
-        lines += ["See the README installation section. Summary:", ""]
-    lines += ["```bash", "# " + (_TODO if not ev.docs.has_section("install") else "check against the README"),
-              "pip install -r requirements.txt" if ev.repo.exists("requirements.txt") else "pip install -e .",
-              "```", ""]
+        lines += [
+            "Installation instructions were detected in the README; verify and reproduce the exact commands here before submission.",
+            "",
+            _TODO + " Paste the exact installation commands from a clean environment.",
+            "",
+        ]
+    else:
+        lines += [_TODO + " Provide exact installation commands from a clean environment.", ""]
 
     lines += ["## A.5 Experiment workflow", ""]
     commands = [c.command for c in ev.runs.commands[:5]] or ev.docs.run_commands[:5]
@@ -134,7 +153,12 @@ def render(result: CheckResult, strict: bool = False) -> tuple[str, Ledger]:
             )
         lines += [""]
     elif ev.docs.has_results_table:
-        lines += ["Expected results are tabulated in the README; a rerun should land within the stated tolerance.", ""]
+        lines += [
+            "Expected results are tabulated in the README.",
+            "",
+            _TODO + " State the acceptable tolerance and how reviewers should compare a run against those values.",
+            "",
+        ]
     else:
         lines += [_TODO + " State the numbers a successful evaluation should obtain and the tolerance.", ""]
 

@@ -2,20 +2,34 @@
 
 **A local research-artifact auditor.**
 
-`adduce` checks whether a paper's claims, code, configs, data, dependencies, remote models, precision settings, and generated results still agree with each other before submission — and produces the artifacts reviewers and conferences ask for: filled NeurIPS/ACL checklists, an ACM Artifact Appendix, archival metadata (RO-Crate, Croissant, CodeMeta, Zenodo), and a claim-by-claim evidence trail.
+`adduce` checks whether a paper's claims, code, configs, data, dependencies, remote models, precision settings, and generated results still agree with each other before submission. It also drafts repository-observable NeurIPS/ACL checklist items, an ACM Artifact Appendix, archival metadata (RO-Crate, Croissant, CodeMeta, Zenodo), and a claim-by-claim evidence trail for author review.
 
 ```
 pipx install adduce        # or: pip install adduce / uvx adduce
 adduce check .
 ```
 
+PyPI `0.1.1` is the current release.
+
+Existing installations do not update automatically. Upgrade with the command
+for the installer you used:
+
+```console
+python -m pip install --upgrade adduce
+pipx upgrade adduce
+uv tool upgrade adduce
+```
+
+For a one-off run that explicitly selects the latest release, use
+`uvx adduce@latest --version`.
+
 The north-star question: *for every number in the paper, can I point to the artifact that produced it, and will that artifact still produce it elsewhere?*
 
-> `adduce` is offline by default. It never sends repository contents anywhere. Online checks are opt-in (`--online` or the `pin-remotes`/`archive-plan` commands) and only resolve public remote metadata such as Hugging Face model and dataset revisions, GitHub release SHAs, and URL headers. Resolved values are cached in `.adduce/cache` and written to the manifest only when requested. No server is operated by the project; all requests originate from the user's machine.
+> `adduce` is offline by default and sends nothing anywhere during ordinary checks. Public-metadata lookups are opt-in through `--online` or `pin-remotes`; they resolve Hugging Face revisions and URL headers from the user's machine and cache responses in `.adduce/cache`. The separate `checklist --llm` option sends the selected checklist question plus deterministic rule statuses and messages to the provider the user explicitly configures, or to a local Ollama endpoint. Those messages can contain repository paths, artifact identifiers, and detected metric or configuration values, but not source-file contents. No server is operated by the project.
 
 ## What it reports
 
-Real output (trimmed) from running `adduce check` on [nanoGPT](https://github.com/karpathy/nanoGPT), in under a second:
+Trimmed output captured from running `adduce check` on [nanoGPT](https://github.com/karpathy/nanoGPT) at commit `3adf61e`:
 
 ```
 ╭─ adduce  ·  nanoGPT  ·  commit 3adf61e ──────────────────────────────────────╮
@@ -48,7 +62,7 @@ Top fixes (largest score gains first)
       adduce pin-remotes --diff
 ```
 
-Every flagged line is anchored to real code — the TF32 finding above points at `train.py:107`, and the unpinned hub call at `model.py:238`. When a manifest declares claims, the report adds a per-claim trail:
+Location-bearing findings are anchored to source lines—the TF32 finding above points at `train.py:107`, and the unpinned hub call at `model.py:238`. When a manifest declares claims, the report adds a per-claim trail:
 
 ```
 Claim trails (manifest)
@@ -60,15 +74,15 @@ Claim trails (manifest)
     status      PARTIAL
 ```
 
-Every finding carries a status (`pass` / `partial` / `fail` / `not-applicable` / `unknown`), a confidence, file:line locations, and a concrete remediation. `partial` is the most common and most useful state.
+Every finding carries a status (`pass` / `partial` / `fail` / `not-applicable` / `unknown`), a confidence, available file:line locations, and a concrete remediation. `partial` is used when the repository supports only part of a check.
 
 ## The three layers, and which one this is
 
-The reproducibility problem has three layers. **Sharing** (findable, licensed, citable) is owned by FAIR tools like `howfairis`. **Packaging** (capture and replay execution) is owned by ReproZip, DataLad, and repo2docker. **Traceability** — does each reported claim map to the exact code, config, data, seed, environment, command, and logged result that produced it — is the layer reviewers actually probe, and the layer `adduce` owns, folding the other two in as inputs.
+The reproducibility problem has three layers. FAIR tools such as `howfairis` focus on **sharing** (findable, licensed, citable). ReproZip, DataLad, and repo2docker focus on **packaging** (capture and replay execution). `adduce` focuses on **traceability**: whether each reported claim maps to the code, config, data, seed, environment, command, and logged result that produced it, while using sharing and packaging signals as inputs.
 
 ## The Reproducibility Manifest
 
-`.adduce/manifest.yaml` is the machine-readable source of truth. `adduce manifest` drafts it from detected evidence — claims extracted from the paper, datasets from loaders, unpinned remotes, the environment — and the author confirms it. Every other command consumes it: manifest-declared links are authoritative, inferred links carry confidence.
+`.adduce/manifest.yaml` is the machine-readable source of truth. `adduce manifest` drafts it from detected evidence—claims extracted from the paper, datasets from loaders, unpinned remotes, and the environment—and marks generated claims as drafts for author confirmation. Non-draft manifest links are authoritative; draft and inferred links retain their provisional status. Refreshes are written as separate proposal files so comments, extensions, and author content are never overwritten.
 
 ```yaml
 schema: adduce/1
@@ -89,7 +103,7 @@ smoke:
   expected_outputs: ["results/smoke_metrics.json"]
 ```
 
-The `smoke` target is the biggest usability lever an artifact can have: it lets a reviewer verify the pipeline's shape in minutes instead of "download 200 GB and train for three days."
+A `smoke` target can substantially reduce reviewer setup time by checking the pipeline's shape without requiring the full experiment.
 
 ## What it checks
 
@@ -115,7 +129,7 @@ The `smoke` target is the biggest usability lever an artifact can have: it lets 
 | Access & Legal | `R-LIC` | LICENSE, CITATION.cff, third-party asset licenses |
 | Archival Readiness | `R-ARC` | DOI/SWHID, archivable size, `.zenodo.json`/`codemeta.json` |
 
-Drift resolution uses an explicit authority ranking: a materialised run config (Hydra output, W&B, MLflow) outranks a checked-in config, which outranks an argparse/dataclass default — a default alone is weak evidence of what actually ran. Floats compare with rounding-awareness (a paper's 0.814 matches a logged 0.8137); nothing ever auto-edits the `.tex`.
+Drift resolution uses an explicit authority ranking: a materialised run config (Hydra output, W&B, MLflow) outranks a checked-in config only when an author-confirmed claim links that run config; checked-in configs otherwise outrank argparse/dataclass defaults. Floats compare with rounding-awareness (a paper's 0.814 matches a logged 0.8137); nothing ever auto-edits the `.tex`.
 
 Call resolution goes through an import-alias map (`import torch as th` is handled) plus one hop of wrapper resolution: a project-local `set_seed()` that calls the primitives counts. Python's dynamism (`getattr`, dynamic import) cannot be resolved statically — which is exactly why findings carry a confidence, never a verdict.
 
@@ -124,14 +138,15 @@ Call resolution goes through an import-alias map (`import torch as th` is handle
 ```bash
 adduce check .                       # everything offline: report, claim trails, reviewer time
 adduce check --mode reviewer         # skeptical framing: what could not be verified
-adduce check --mode ae-chair         # badge eligibility, blocking issues, burden headline
+adduce check --mode ae-chair         # badge prerequisites, blocking issues, burden headline
 adduce check -f json|sarif|markdown|badge|latex -o out
 adduce check ./code --paper ../paper       # paper and code kept in separate repositories
 adduce drift                         # paper ↔ code/config consistency + result reconciliation
 adduce precision                     # TF32/AMP/low-precision audit
 adduce deps                          # ghost/unused/notebook dependency analysis
-adduce manifest                      # scaffold/refresh .adduce/manifest.yaml
-adduce checklist --profile neurips   # filled reproducibility checklist (also: acl); --strict-evidence
+adduce manifest                      # scaffold .adduce/manifest.yaml
+adduce manifest --refresh            # write a separate refresh proposal; never overwrite author content
+adduce checklist --profile neurips   # repository-evidence checklist draft (also: acl); --strict-evidence
 adduce appendix                      # ACM Artifact Appendix draft; --strict-evidence
 adduce package --profile neurips     # one-command submission bundle (checklist, appendix,
                                      # manifest, ledger, checksums, RO-Crate) in adduce-submission/
@@ -145,7 +160,7 @@ adduce rules · adduce explain R-DET-001
 adduce fix --scaffold seeds|docker|citation|runner|readme
 
 # opt-in, clearly fenced:
-adduce pin-remotes --diff            # resolve current HF/GitHub SHAs (online), show pin diffs
+adduce pin-remotes --diff            # resolve current Hugging Face revisions (online), show pin diffs
 adduce reproduce --yes               # run the smoke target twice, assert the runs agree (executes repo code)
 ```
 
@@ -155,7 +170,7 @@ adduce reproduce --yes               # run the smoke target twice, assert the ru
 
 ## Reviewer time to first result
 
-The score reframed into the currency a PI feels: `< 10 min` Excellent · `10–30` Good · `30–90` Risky · `90+` High reviewer burden — with the factors named (no one-command path, manual data fetch, no smoke target, undocumented runtime), so the author knows exactly what buys time back.
+The reviewer-time estimate uses four buckets: `< 10 min` Excellent · `10–30` Good · `30–90` Risky · `90+` High reviewer burden. It lists the contributing signals (for example, no one-command path, manual data fetch, no smoke target, or undocumented runtime) so the estimate remains inspectable.
 
 ## Scoring, profiles, suppression
 
@@ -178,7 +193,7 @@ Suppressed findings still appear, marked as ignored.
 
 ## Continuous integration
 
-The default run is diagnostic: `adduce check` exits 0 regardless of score. Gate with `--fail-under N`, or adopt incrementally with `adduce baseline` + `--fail-on-regression`, which fails only when a rule gets *worse* than the committed `.adduce/baseline.json` — new rules are never regressions, so upgrading the tool never punishes you.
+The default run is diagnostic: `adduce check` exits 0 regardless of score. Gate with `--fail-under N`, or adopt incrementally with `adduce baseline` + `--fail-on-regression`, which fails only when a recorded rule gets *worse* than the committed `.adduce/baseline.json`. Rules absent from the baseline are not classified as regressions.
 
 ```yaml
 # .github/workflows/reproducibility.yml
@@ -189,7 +204,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: QHarshil/adduce@v1
+      - uses: QHarshil/adduce@v0.1.1
         with:
           profile: neurips
           report-file: adduce-report.md   # lands in the job summary
@@ -236,18 +251,18 @@ Installing the pack is all it takes.
 
 ## Generation safety
 
-adduce generates artifacts that may enter real submissions, so every generated statement is an evidence-backed draft — never a final claim, never a substitute for author review. The full contract is in [docs/generation-safety.md](docs/generation-safety.md); the short version:
+adduce generates checklist and appendix drafts that may enter real submissions, so their answers are derived from a deterministic evidence ledger—never treated as final claims or substitutes for author review. The full [generation-safety contract](https://github.com/QHarshil/adduce/blob/main/docs/generation-safety.md) documents this policy; the short version:
 
 - Generated answers use a fixed vocabulary — `yes` (direct, high-confidence evidence), `partial` (incomplete, inferred, or conflicting evidence), `not detected` (searched and absent, with the search scope recorded), `author input required` (depends on information outside the repository), `unknown` (too ambiguous to classify). There is no unsupported "yes."
-- Every checklist and appendix is written alongside `.adduce/evidence-ledger.json`: per-answer evidence with `file:line`, confidence, and evidence strength (direct / inferred / author-confirmed / online-resolved / dynamically-verified), plus generation provenance (version, command, profile, commit, timestamp). Generated text is downstream of deterministic evidence, not the source of truth.
+- Every checklist and appendix generation updates `.adduce/evidence-ledger.json`: per-answer evidence with available `file:line` anchors, confidence, evidence strength, and generation provenance (version, command, profile, commit, timestamp). Generated text is downstream of deterministic evidence, not the source of truth.
 - `--strict-evidence` tightens generation for authors who want zero inference in the output.
-- Every generation command ends with a safety summary (evidence-backed vs. partial vs. author-input answers, conflicts, the ledger path) — a draft with open items is useful, but it is not submission-ready, and adduce says so.
+- Checklist, appendix, and package generation end with a safety summary (evidence-backed vs. partial vs. author-input answers, conflicts, the ledger path)—a draft with open items is useful, but it is not submission-ready, and adduce says so.
 - `adduce audit-generated <artifact>` checks a generated artifact against its ledger before submission: unsupported claims, low-confidence yeses, execution wording without an actual `reproduce` run, unresolved placeholders, and drift since the ledger was produced.
-- No generated text may imply execution-based verification unless `adduce reproduce` actually ran; nothing is invented from context; conflicts are surfaced, never silently resolved; secrets are never echoed; source is never edited without an explicit `--write` after a shown diff.
+- Checklist and appendix drafts do not imply execution-based verification; `adduce reproduce` writes a separate dynamic report. Nothing is invented from context; conflicts are surfaced rather than silently resolved; secrets are never echoed; source is never edited without an explicit `--write` after a shown diff.
 
 ## Optional LLM layer
 
-Strictly separated from checks and scoring, which stay deterministic and offline. With a configured provider (`ADDUCE_LLM_PROVIDER=openai|anthropic|ollama`, bring your own key or a local model), `adduce checklist --llm` drafts the free-text justification prose from the deterministic evidence — it rephrases evidence-linked findings, never determines an answer, and the prose stays intentionally plain. Without a provider, everything works identically. adduce ships no key and never calls a paid API on your behalf.
+Checks, scores, and checklist answers remain deterministic and offline. With a configured provider (`ADDUCE_LLM_PROVIDER=openai|anthropic|ollama`, bring your own key or a local model), `adduce checklist --llm` can draft optional free-text justification from finding summaries. Provider prose is labelled as a draft and requires author review; it never determines the answer recorded in the evidence ledger. Without a provider, everything works identically. adduce ships no key and never calls a paid API on your behalf.
 
 ## Honest limits
 

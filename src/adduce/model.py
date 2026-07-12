@@ -12,6 +12,7 @@ import subprocess
 from dataclasses import dataclass, field
 from functools import lru_cache
 from pathlib import Path, PurePath, PurePosixPath
+from urllib.parse import urlsplit, urlunsplit
 
 #: Directories never worth scanning. Matched against any path segment.
 DEFAULT_EXCLUDES: frozenset[str] = frozenset(
@@ -79,6 +80,21 @@ _FRAMEWORK_DISTS: dict[str, str] = {
     "xgboost": "xgboost",
     "lightgbm": "lightgbm",
 }
+
+
+def sanitized_remote_url(remote: str) -> str:
+    """Remove credentials, query parameters, and fragments from an HTTP remote."""
+    if not remote.startswith(("http://", "https://")):
+        return remote
+    parsed = urlsplit(remote)
+    hostname = parsed.hostname or ""
+    if ":" in hostname and not hostname.startswith("["):
+        hostname = f"[{hostname}]"
+    try:
+        port = f":{parsed.port}" if parsed.port is not None else ""
+    except ValueError:
+        port = ""
+    return urlunsplit((parsed.scheme, hostname + port, parsed.path, "", ""))
 
 
 @dataclass(frozen=True)

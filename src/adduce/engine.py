@@ -72,6 +72,8 @@ def run_check(
     profile: Profile = load_profile(config.profile)
     repo = scan_repository(path, exclude=config.exclude)
     evidence = collect(repo)
+    if evidence.manifest.error:
+        raise ValueError(evidence.manifest.error)
     if paper is not None:
         from .evidence.latex import collect_latex
 
