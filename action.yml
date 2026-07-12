@@ -73,6 +73,9 @@ runs:
           GATE_ARGS+=(--fail-on-regression)
         fi
 
+        GATE_STATUS=0
+        adduce check "${GATE_ARGS[@]}" || GATE_STATUS=$?
+
         adduce check "${BASE_ARGS[@]}" --format json --output "$RESULT_FILE"
         SCORE=$(python -c "import json, sys; print(json.load(open(sys.argv[1]))['total'])" "$RESULT_FILE")
         echo "score=$SCORE" >> "$GITHUB_OUTPUT"
@@ -85,4 +88,4 @@ runs:
           cat -- "$ADDUCE_INPUT_REPORT_FILE" >> "$GITHUB_STEP_SUMMARY"
         fi
 
-        adduce check "${GATE_ARGS[@]}"
+        exit "$GATE_STATUS"

@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "adduce"
-version = "0.1.1"
+version = "0.1.2.dev0"
 description = "A local research-artifact auditor: checks that a paper's claims, code, configs, data, and results still agree, and produces the artifacts reviewers ask for."
 readme = "README.md"
 license = { file = "LICENSE" }

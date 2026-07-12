@@ -118,6 +118,8 @@ def test_fix_readme_appends_missing_sections(tmp_path):
     content = (tmp_path / "README.md").read_text(encoding="utf-8")
     assert content.startswith("# Demo")  # existing content untouched
     assert "Expected results" in content
+    assert "[AUTHOR REVIEW REQUIRED] Define the acceptable metric tolerance" in content
+    assert "successful reproduction" not in content
     assert content.count("## Installation") == 1  # present section not duplicated
 
 

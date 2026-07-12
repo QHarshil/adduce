@@ -201,6 +201,9 @@ name: reproducibility
 on: [pull_request]
 jobs:
   adduce:
+    permissions:
+      contents: read
+      security-events: write
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -210,6 +213,7 @@ jobs:
           report-file: adduce-report.md   # lands in the job summary
           sarif-file: adduce.sarif
       - uses: github/codeql-action/upload-sarif@v3   # code-scanning alerts on public repos
+        if: always()
         with:
           sarif_file: adduce.sarif
 ```

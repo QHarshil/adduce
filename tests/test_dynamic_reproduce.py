@@ -10,7 +10,18 @@ from adduce.dynamic.reproduce import reproduce
 
 
 def _python_command(script: str = "runner.py") -> str:
-    return f"{shlex.quote(sys.executable)} {shlex.quote(script)}"
+    arguments = [sys.executable, script]
+    if sys.platform == "win32":
+        return subprocess.list2cmdline(arguments)
+    return shlex.join(arguments)
+
+
+def test_python_command_uses_windows_shell_quoting(monkeypatch):
+    monkeypatch.setattr(sys, "platform", "win32")
+
+    command = _python_command("runner with spaces.py")
+
+    assert command == subprocess.list2cmdline([sys.executable, "runner with spaces.py"])
 
 
 def test_reproduce_isolates_runs_and_preserves_existing_files(tmp_path):
