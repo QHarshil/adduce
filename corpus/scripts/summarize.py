@@ -1,31 +1,35 @@
 #!/usr/bin/env python3
-"""Summarise a validation run into summary.md, within honesty limits.
+"""Summarise one validated corpus run without exceeding its evidence.
 
-Only distributional statements are computed — medians, IQRs, ranges,
-overlap — because with ~50 labelled repositories that is all the data
-supports. No significance statistics are invented, and nothing here claims a
-false-positive rate: that number can only come from hand-labelled findings
-(label_findings.py --report). The stress cohort is summarised for crash rate
-and noise only; its scores back no claim.
+The purposive pilot supports descriptive medians, spread, operational
+outcomes, and finding prevalence only. It does not support significance,
+population false-positive, calibrated-tier, or stress-cohort quality claims.
 """
 
 from __future__ import annotations
 
 import argparse
-import csv
-import json
 import statistics
 import sys
 from collections import Counter
 from pathlib import Path
 
-
-def _read_rows(run_dir: Path) -> list[dict[str, str]]:
-    combined = run_dir / "combined.csv"
-    if not combined.is_file():
-        sys.exit(f"missing {combined}; run run_validation.py first.")
-    with combined.open(newline="") as handle:
-        return list(csv.DictReader(handle))
+if __package__:
+    from .run_contract import (
+        RunContractError,
+        ensure_output_outside,
+        load_json_object_bytes,
+        require_current_harness_file,
+        validate_run_evidence_with_digest,
+    )
+else:
+    from run_contract import (
+        RunContractError,
+        ensure_output_outside,
+        load_json_object_bytes,
+        require_current_harness_file,
+        validate_run_evidence_with_digest,
+    )
 
 
 def _scores(rows: list[dict[str, str]]) -> list[float]:
@@ -47,31 +51,47 @@ def _spread(scores: list[float]) -> str:
     )
 
 
-def _crash_line(rows: list[dict[str, str]]) -> str:
-    crashed = sum(1 for r in rows if r.get("crash") == "True")
-    timed_out = sum(1 for r in rows if r.get("timeout") == "True")
+def _acquisition_line(rows: list[dict[str, str]]) -> str:
+    failed = sum(1 for row in rows if row.get("run_status") == "acquisition_failed")
+    partial = sum(1 for row in rows if row.get("acquisition_status") == "partial")
     total = len(rows)
-    rate = crashed / total if total else 0.0
-    return f"{crashed}/{total} rows crashed or timed out ({rate:.0%}; {timed_out} of those were timeouts)"
+    rate = failed / total if total else 0.0
+    return f"{failed}/{total} failed ({rate:.0%}); {partial}/{total} were partial"
+
+
+def _scanner_line(rows: list[dict[str, str]]) -> str:
+    attempted = [row for row in rows if row.get("run_status") != "acquisition_failed"]
+    scanner_failures = sum(
+        1 for row in attempted if row.get("run_status") in {"scanner_crash", "scanner_timeout"}
+    )
+    contract_failures = sum(1 for row in attempted if row.get("run_status") == "contract_failed")
+    timed_out = sum(1 for row in attempted if row.get("run_status") == "scanner_timeout")
+    return (
+        f"{scanner_failures}/{len(attempted)} scanner attempts crashed or timed out "
+        f"({timed_out} timeout(s)); {contract_failures} contract failure(s)"
+    )
 
 
 def _runtime_line(rows: list[dict[str, str]]) -> str:
     runtimes = sorted(float(r["runtime_seconds"]) for r in rows if r.get("runtime_seconds"))
     if not runtimes:
         return "no runtimes recorded"
+    p95_index = max(0, min(len(runtimes) - 1, round(0.95 * len(runtimes) + 0.5) - 1))
     return (
-        f"median {statistics.median(runtimes):.1f}s, "
+        f"median {statistics.median(runtimes):.1f}s, p95 {runtimes[p95_index]:.1f}s, "
         f"range [{runtimes[0]:.1f}s, {runtimes[-1]:.1f}s] over {len(runtimes)} runs"
     )
 
 
-def _top_noisy_rules(run_dir: Path, rows: list[dict[str, str]]) -> list[tuple[str, int]]:
+def _chattiest_rules(
+    artifacts: dict[str, bytes], rows: list[dict[str, str]]
+) -> list[tuple[str, int]]:
     counter: Counter[str] = Counter()
     for row in rows:
-        raw = run_dir / "raw_json" / f"{row['id']}.json"
-        if not raw.is_file():
+        raw = artifacts.get(f"raw_json/{row['id']}.json")
+        if raw is None:
             continue
-        payload = json.loads(raw.read_text(encoding="utf-8"))
+        payload = load_json_object_bytes(raw, f"raw_json/{row['id']}.json")
         for finding in payload.get("findings", []):
             if finding.get("status") in ("fail", "partial") and not finding.get("suppressed"):
                 counter[finding["rule_id"]] += 1
@@ -80,14 +100,24 @@ def _top_noisy_rules(run_dir: Path, rows: list[dict[str, str]]) -> list[tuple[st
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--run", type=Path, required=True, help="a corpus/outputs/<version>/ directory")
+    parser.add_argument(
+        "--run", type=Path, required=True, help="a corpus/outputs/<version>/ directory"
+    )
+    parser.add_argument(
+        "--out",
+        type=Path,
+        default=None,
+        help="summary destination (defaults beside, never inside, the immutable run)",
+    )
     args = parser.parse_args()
 
-    rows = _read_rows(args.run)
-    meta = {}
-    meta_path = args.run / "run_meta.json"
-    if meta_path.is_file():
-        meta = json.loads(meta_path.read_text(encoding="utf-8"))
+    summary = args.out or args.run.parent / f"{args.run.name}-summary.md"
+    try:
+        ensure_output_outside(summary, [args.run])
+        meta, artifacts, rows, meta_digest = validate_run_evidence_with_digest(args.run)
+        require_current_harness_file(meta, "scripts/summarize.py", Path(__file__))
+    except RunContractError as exc:
+        sys.exit(f"invalid corpus run: {exc}")
 
     badged = [r for r in rows if r["cohort"].startswith("badged_")]
     unvetted = [r for r in rows if r["cohort"] == "unvetted"]
@@ -98,9 +128,13 @@ def main() -> int:
     lines = [
         f"# Validation summary (adduce {meta.get('adduce_version', 'unknown')})",
         "",
+        f"- run ID: `{meta['run_id']}`",
+        f"- run metadata SHA-256: `{meta_digest}`",
+        "",
         "Distributional signal only: medians and spread over small cohorts.",
         "No significance statistics are computed, and no false-positive rate is",
-        "claimed here — that comes only from hand labels (label_findings.py --report).",
+        "claimed here. Manual review is required, and this purposive sample does not",
+        "estimate a population rate.",
         "",
         "## Labelled cohorts",
         "",
@@ -112,7 +146,10 @@ def main() -> int:
         if sub_scores:
             lines.append(f"  - {name}: {_spread(sub_scores)}")
     if badged_scores and unvetted_scores:
-        low, high = max(badged_scores[0], unvetted_scores[0]), min(badged_scores[-1], unvetted_scores[-1])
+        low, high = (
+            max(badged_scores[0], unvetted_scores[0]),
+            min(badged_scores[-1], unvetted_scores[-1]),
+        )
         overlap = "none" if low > high else f"[{low:.1f}, {high:.1f}]"
         above = sum(1 for s in unvetted_scores if s >= statistics.median(badged_scores))
         lines += [
@@ -135,20 +172,30 @@ def main() -> int:
         "",
         "## Robustness",
         "",
-        f"- crash rate (all cohorts): {_crash_line(rows)}",
+        f"- acquisition (all cohorts): {_acquisition_line(rows)}",
+        f"- scanner execution (all cohorts): {_scanner_line(rows)}",
         f"- runtime: {_runtime_line(rows)}",
     ]
     if stress:
         lines += [
-            f"- stress cohort crash rate: {_crash_line(stress)}",
-            "- stress scores back no claim; the cohort exists to find crashes and noise.",
+            f"- stress cohort acquisition: {_acquisition_line(stress)}",
+            f"- stress cohort scanner execution: {_scanner_line(stress)}",
+            "- stress scores back no claim; the cohort probes operational limits and chatty output.",
         ]
-        noisy = _top_noisy_rules(args.run, stress)
-        if noisy:
-            lines += ["", "### Top noisy rules on the stress cohort (fail/partial counts)", ""]
-            lines += [f"- {rule_id}: {count}" for rule_id, count in noisy]
+        chatty = _chattiest_rules(artifacts, stress)
+        if chatty:
+            lines += [
+                "",
+                "### Chattiest rules on the stress cohort (fail/partial prevalence only)",
+                "",
+                "Prevalence is not a manual noise label.",
+                "",
+            ]
+            lines += [f"- {rule_id}: {count}" for rule_id, count in chatty]
 
-    summary = args.run / "summary.md"
+    if summary.exists():
+        sys.exit(f"refusing to overwrite existing summary: {summary}")
+    summary.parent.mkdir(parents=True, exist_ok=True)
     summary.write_text("\n".join(lines) + "\n", encoding="utf-8")
     print(f"wrote {summary}")
     return 0

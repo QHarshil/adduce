@@ -1,4 +1,16 @@
 id,cohort,repo_url,commit_sha,badge_type,venue,year,framework,has_tex,notes
-nanogpt,stress,https://github.com/karpathy/nanoGPT,,none,,,pytorch,false,popular minimal GPT training repo; empty sha means HEAD
-mingpt,stress,https://github.com/karpathy/minGPT,,none,,,pytorch,false,educational GPT implementation; empty sha means HEAD
-vit-pytorch,stress,https://github.com/lucidrains/vit-pytorch,,none,,,pytorch,false,large collection of ViT variants; empty sha means HEAD
+dnn-decompiler,badged_functional,https://github.com/monkbai/DNN-decompiler,b4f64783846b85cac4b0eb6c7a5595535cc858d3,available+functional+results_reproduced,USENIX Security,2023,mixed,false,Evaluated artifact snapshot named by the official artifact appendix
+frl,badged_functional,https://github.com/SPIN-UMass/FRL,4cf2550972e0e6299f61f682579f10b8e32c39d7,available+functional+results_reproduced,USENIX Security,2023,pytorch,false,Federated-learning artifact with an evaluated snapshot
+meta-sift,badged_functional,https://github.com/reds-lab/Meta-Sift,6c18b085b127c33ca8829a6194635739ebe30c4a,available+functional+results_reproduced,USENIX Security,2023,pytorch,false,Release used for artifact evaluation; repository ownership was transferred
+modelguard,badged_functional,https://github.com/Yoruko-Tang/ModelGuard,0eb60fc4912f432f036d1c49a0a09c6f5530a3a6,available+functional+results_reproduced,USENIX Security,2024,pytorch,false,Release identified as the evaluated artifact version
+md-ml,badged_functional,https://github.com/NemoYuan2008/MD-ML,1b0bdbd9a4ac23359e5718bbac88e1d572521e73,available+functional+results_reproduced,USENIX Security,2024,cpp,false,Evaluated privacy-preserving machine-learning artifact
+ibn-net,unvetted,https://github.com/XingangPan/IBN-Net,d1673389b36c1180cf9bc35ea8260d84046da915,none,,,pytorch,false,Small single-paper computer-vision repository
+ncsn,unvetted,https://github.com/ermongroup/ncsn,7f27f4a16471d20a0af3be8b8b4c2ec57c8a0bc1,none,,,pytorch,false,Older config-driven generative-model repository
+simcse,unvetted,https://github.com/princeton-nlp/SimCSE,49fa580a853752ede55b8c76d9debf748e214d3f,none,,,pytorch,false,Natural-language-processing training and evaluation repository
+vision-transformer,unvetted,https://github.com/google-research/vision_transformer,c27af3e61245e9040ee27834d3e93e0ee2506301,none,,,jax,false,JAX and Flax multi-paper model repository
+mdetr,unvetted,https://github.com/ashkamath/mdetr,ea09acc44ca067072c4b143b726447ee7ff66f5f,none,,,pytorch,false,Multimodal multi-stage research repository
+nanogpt,stress,https://github.com/karpathy/nanoGPT,3adf61e154c3fe3fca428ad6bc3818b27a3b8291,none,,,pytorch,false,Compact training repository retained from the original stress seed
+mingpt,stress,https://github.com/karpathy/minGPT,37baab71b9abea1b76ab957409a1cc2fbfba8a26,none,,,pytorch,false,Small archived-lineage repository retained from the original stress seed
+vit-pytorch,stress,https://github.com/lucidrains/vit-pytorch,b4116d350b45830198125f5a19cc5173b4ccda32,none,,,pytorch,false,Large collection of model variants retained from the original stress seed
+torchtune,stress,https://github.com/meta-pytorch/torchtune,bd2a0fc7c31430972728494fa01aaeeb0ebf1ba1,none,,,pytorch,false,Framework-scale recipe and configuration case
+transformers,stress,https://github.com/huggingface/transformers,11ed2ff4df5fdfb3117f0e3365ef6ad94081ba69,none,,,mixed,false,Framework-scale file-count and configuration-diversity case

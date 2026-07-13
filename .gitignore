@@ -47,3 +47,17 @@ Thumbs.db
 .adduce/cache/
 .adduce/reproduce-report.json
 
+# Validation corpus working data (inventory, scripts, and protocols are tracked)
+corpus/clones/
+corpus/outputs/
+corpus/labels/
+corpus/reports/
+corpus/snapshots/
+corpus/derived/
+
+# Calibration working data (analysis code and metadata are tracked)
+research/calibration/snapshots/
+research/calibration/derived/
+research/calibration/labels/
+research/calibration/models/
+research/calibration/reports/

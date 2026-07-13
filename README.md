@@ -11,6 +11,11 @@ adduce check .
 
 PyPI `0.1.1` is the current release.
 
+Adduce is beta software. Findings are static-analysis signals for review, and
+scores, tiers, and reviewer-time estimates are provisional pending calibration
+against manually reviewed real repositories. Generated submission material is
+always a draft.
+
 Existing installations do not update automatically. Upgrade with the command
 for the installer you used:
 
@@ -82,7 +87,13 @@ The reproducibility problem has three layers. FAIR tools such as `howfairis` foc
 
 ## The Reproducibility Manifest
 
-`.adduce/manifest.yaml` is the machine-readable source of truth. `adduce manifest` drafts it from detected evidence—claims extracted from the paper, datasets from loaders, unpinned remotes, and the environment—and marks generated claims as drafts for author confirmation. Non-draft manifest links are authoritative; draft and inferred links retain their provisional status. Refreshes are written as separate proposal files so comments, extensions, and author content are never overwritten.
+`.adduce/manifest.yaml` is the machine-readable source of truth. `adduce manifest`
+scaffolds it from repository-observable evidence such as candidate result
+tables, datasets from loaders, unpinned remotes, and environment files. Inferred
+claim fields are draft placeholders for author confirmation, not reliable claim
+discovery. Non-draft manifest links are authoritative; draft and inferred links
+retain their provisional status. Refreshes are written as separate proposal
+files so comments, extensions, and author content are never overwritten.
 
 ```yaml
 schema: adduce/1
@@ -175,6 +186,10 @@ The reviewer-time estimate uses four buckets: `< 10 min` Excellent · `10–30` 
 ## Scoring, profiles, suppression
 
 Scoring is category-weighted and explainable — each category reports earned/possible with the findings that moved it; inapplicable categories drop out and the rest renormalise, so a scikit-learn repository is never scored against CUDA flags. Profiles: `default`, `neurips`, `iclr`, `acl`, `acm`, `strict`, or your own TOML.
+
+Scores and named tiers are experimental prioritisation aids. They are not
+calibrated quality grades and should not be used to rank unrelated repositories;
+repositories can have materially different applicable-rule denominators.
 
 Every finding carries four separate dimensions — status, confidence, severity, and score weight — because a low-confidence high-severity issue (a possible committed secret) must not read the same as a high-confidence low-severity one (a missing `.zenodo.json`).
 
@@ -271,6 +286,10 @@ Checks, scores, and checklist answers remain deterministic and offline. With a c
 ## Honest limits
 
 - **Signals, never certification.** adduce reports what it detected and what it could not; it never says "your code is reproducible", and it never assesses execution-based badges (Results Reproduced/Replicated).
+- **Automatic claim inference is scaffolding.** Reliable claim trails currently
+  require author-confirmed manifest claims; inferred repository-wide candidates
+  may be missing or unrelated to the headline result and must not be treated as
+  supported claims.
 - **Static resolution has a ceiling.** Alias plus one-hop wrapper resolution covers the common shapes of real ML code; Python's dynamism is unresolvable and reported as confidence, not verdicts, with `adduce reproduce` as the escape hatch.
 - **The probabilistic rules are diagnostic.** LaTeX numeric extraction, result reconciliation, notebook staleness, and ablation matching will sometimes miss or over-flag; they carry confidence and stay off the blocking path by default.
 - **Remote pinning is a forward guarantee**, not recovery of the version historically used.

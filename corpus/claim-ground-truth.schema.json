@@ -1,0 +1,212 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://github.com/QHarshil/adduce/blob/main/corpus/claim-ground-truth.schema.json",
+    "title": "Adduce corpus claim ground truth",
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+        "claim_ground_truth_schema_version",
+        "corpus_inventory_sha256",
+        "clone_manifest_sha256",
+        "frozen_at",
+        "claims",
+        "unavailable_repositories"
+    ],
+    "properties": {
+        "claim_ground_truth_schema_version": {"const": 1},
+        "corpus_inventory_sha256": {"$ref": "#/$defs/sha256"},
+        "clone_manifest_sha256": {"$ref": "#/$defs/sha256"},
+        "frozen_at": {"type": "string", "format": "date-time"},
+        "claims": {"type": "array", "items": {"$ref": "#/$defs/claim"}},
+        "unavailable_repositories": {
+            "type": "array",
+            "items": {"$ref": "#/$defs/unavailableRepository"}
+        }
+    },
+    "$defs": {
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "unavailableRepository": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["repo_id", "repo_commit", "acquisition_status", "clone_status", "error"],
+            "properties": {
+                "repo_id": {"type": "string", "minLength": 1},
+                "repo_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+                "acquisition_status": {"const": "failed"},
+                "clone_status": {"type": "string", "minLength": 1},
+                "error": {"type": "string", "minLength": 1}
+            }
+        },
+        "fileAnchor": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["kind", "path", "sha256"],
+            "properties": {
+                "kind": {"const": "repository_file"},
+                "path": {"type": "string", "minLength": 1},
+                "sha256": {"$ref": "#/$defs/sha256"},
+                "line_start": {"type": "integer", "minimum": 1},
+                "line_end": {"type": "integer", "minimum": 1},
+                "role": {"type": "string", "minLength": 1}
+            },
+            "dependentRequired": {"line_start": ["line_end"], "line_end": ["line_start"]}
+        },
+        "repositorySource": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["kind", "path", "sha256", "quote", "line_start", "line_end"],
+            "properties": {
+                "kind": {"const": "repository_file"},
+                "path": {"type": "string", "minLength": 1},
+                "sha256": {"$ref": "#/$defs/sha256"},
+                "quote": {"type": "string", "minLength": 1},
+                "line_start": {"type": "integer", "minimum": 1},
+                "line_end": {"type": "integer", "minimum": 1}
+            }
+        },
+        "paperSource": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["kind", "path", "sha256", "quote", "publication_url"],
+            "anyOf": [{"required": ["page"]}, {"required": ["locator"]}],
+            "properties": {
+                "kind": {"const": "paper_snapshot"},
+                "path": {"type": "string", "minLength": 1},
+                "sha256": {"$ref": "#/$defs/sha256"},
+                "quote": {"type": "string", "minLength": 1},
+                "publication_url": {"type": "string", "format": "uri", "pattern": "^https://"},
+                "page": {"type": "integer", "minimum": 1},
+                "locator": {"type": "string", "minLength": 1}
+            }
+        },
+        "artifact": {
+            "oneOf": [
+                {"$ref": "#/$defs/fileAnchor"},
+                {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": ["kind"],
+                    "properties": {
+                        "kind": {"const": "claim_source"},
+                        "role": {"type": "string", "minLength": 1}
+                    }
+                },
+                {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": ["kind", "value"],
+                    "properties": {
+                        "kind": {"const": "literal"},
+                        "value": {"type": ["string", "number", "integer"]},
+                        "role": {"type": "string", "minLength": 1}
+                    }
+                },
+                {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": ["kind"],
+                    "anyOf": [{"required": ["identifier"]}, {"required": ["url"]}],
+                    "properties": {
+                        "kind": {"const": "external_reference"},
+                        "identifier": {"type": "string", "minLength": 1},
+                        "url": {"type": "string", "format": "uri", "pattern": "^https://"},
+                        "role": {"type": "string", "minLength": 1}
+                    }
+                }
+            ]
+        },
+        "link": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["target", "expected_resolution", "artifacts", "rationale"],
+            "properties": {
+                "target": {
+                    "enum": [
+                        "code",
+                        "reported_result",
+                        "run",
+                        "output",
+                        "command",
+                        "configuration",
+                        "data",
+                        "environment",
+                        "seed",
+                        "commit"
+                    ]
+                },
+                "expected_resolution": {
+                    "enum": ["resolved", "unresolved", "unknown", "not_applicable"]
+                },
+                "artifacts": {"type": "array", "items": {"$ref": "#/$defs/artifact"}},
+                "rationale": {"type": "string", "minLength": 1}
+            }
+        },
+        "claim": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+                "claim_id",
+                "repo_id",
+                "repo_commit",
+                "source",
+                "claim",
+                "adduce_match",
+                "expected_trail_status",
+                "expected_links",
+                "ground_truth_review"
+            ],
+            "properties": {
+                "claim_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$"},
+                "repo_id": {"type": "string", "minLength": 1},
+                "repo_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+                "source": {
+                    "oneOf": [{"$ref": "#/$defs/repositorySource"}, {"$ref": "#/$defs/paperSource"}]
+                },
+                "claim": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": ["text", "metric", "value"],
+                    "properties": {
+                        "text": {"type": "string", "minLength": 1},
+                        "metric": {"type": ["string", "null"]},
+                        "value": {"type": ["string", "number", "integer", "null"]},
+                        "unit": {"type": ["string", "null"]},
+                        "context": {"type": ["string", "null"]}
+                    }
+                },
+                "adduce_match": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": ["headline_contains"],
+                    "properties": {
+                        "claim_id": {"type": "string", "minLength": 1},
+                        "headline_contains": {"type": "string", "minLength": 1}
+                    }
+                },
+                "expected_trail_status": {"enum": ["supported", "partial", "unlinked", "unknown"]},
+                "expected_links": {
+                    "type": "array",
+                    "minItems": 10,
+                    "maxItems": 10,
+                    "items": {"$ref": "#/$defs/link"}
+                },
+                "ground_truth_review": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": ["prepared_by", "prepared_at", "verified_by", "verified_at"],
+                    "properties": {
+                        "prepared_by": {"type": "string", "pattern": "^\\S+$"},
+                        "prepared_at": {"type": "string", "format": "date-time"},
+                        "verified_by": {"type": "string", "pattern": "^\\S+$"},
+                        "verified_at": {"type": "string", "format": "date-time"},
+                        "notes": {"type": "string"}
+                    },
+                    "dependentRequired": {
+                        "verified_by": ["verified_at"],
+                        "verified_at": ["verified_by"]
+                    }
+                }
+            }
+        }
+    }
+}

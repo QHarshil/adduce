@@ -1,0 +1,209 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/QHarshil/adduce/blob/main/corpus/generation-audit.schema.json",
+  "title": "Adduce sentinel generation-audit bundle",
+  "description": "Integrity and audit result for the predeclared corpus sentinel drafts.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "procedure",
+    "generated_at",
+    "result",
+    "sentinels",
+    "generation_policy",
+    "source",
+    "repositories",
+    "artifacts",
+    "summary"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "procedure": {"const": "adduce-sentinel-generation-audit"},
+    "generated_at": {"type": "string", "format": "date-time"},
+    "result": {"enum": ["pass", "fail"]},
+    "sentinels": {
+      "type": "array",
+      "prefixItems": [
+        {"const": "frl"},
+        {"const": "simcse"},
+        {"const": "torchtune"}
+      ],
+      "items": false,
+      "minItems": 3,
+      "maxItems": 3
+    },
+    "generation_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "profile",
+        "mode",
+        "generated_text_policy",
+        "deterministic_generation",
+        "plugins_enabled",
+        "network_policy",
+        "process_policy",
+        "filesystem_policy",
+        "warning_policy",
+        "input_policy"
+      ],
+      "properties": {
+        "profile": {"const": "neurips"},
+        "mode": {"const": "strict"},
+        "generated_text_policy": {"const": "evidence_only"},
+        "deterministic_generation": {"const": true},
+        "plugins_enabled": {"const": false},
+        "network_policy": {"const": "python-audit-socket-deny"},
+        "process_policy": {"const": "python-audit-read-only-git-metadata-only"},
+        "filesystem_policy": {"const": "python-audit-write-deny"},
+        "warning_policy": {"const": "ignore-syntaxwarning-only"},
+        "input_policy": {"const": "validated-clone-read-only-static-regeneration"}
+      }
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "run_id",
+        "run_meta_sha256",
+        "adduce_version",
+        "adduce_source_tree_sha256",
+        "clone_manifest_sha256",
+        "generation_script_sha256",
+        "generation_schema_sha256",
+        "builtin_checker_sha256"
+      ],
+      "properties": {
+        "run_id": {"type": "string", "minLength": 1},
+        "run_meta_sha256": {"$ref": "#/$defs/sha256"},
+        "adduce_version": {"type": "string", "minLength": 1},
+        "adduce_source_tree_sha256": {"$ref": "#/$defs/sha256"},
+        "clone_manifest_sha256": {"$ref": "#/$defs/sha256"},
+        "generation_script_sha256": {"$ref": "#/$defs/sha256"},
+        "generation_schema_sha256": {"$ref": "#/$defs/sha256"},
+        "builtin_checker_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "repositories": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {"$ref": "#/$defs/repository"}
+    },
+    "artifacts": {
+      "type": "array",
+      "minItems": 9,
+      "maxItems": 9,
+      "items": {"$ref": "#/$defs/artifact"}
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repositories",
+        "generated_artifacts",
+        "affirmative_entries",
+        "yes_entries",
+        "partial_entries",
+        "failures"
+      ],
+      "properties": {
+        "repositories": {"const": 3},
+        "generated_artifacts": {"const": 6},
+        "affirmative_entries": {"type": "integer", "minimum": 0},
+        "yes_entries": {"type": "integer", "minimum": 0},
+        "partial_entries": {"type": "integer", "minimum": 0},
+        "failures": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1}
+        }
+      }
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "auditedEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "artifact_path",
+        "item_id",
+        "answer",
+        "evidence_count",
+        "strengths",
+        "result"
+      ],
+      "properties": {
+        "artifact_path": {"type": "string", "minLength": 1},
+        "item_id": {"type": "string", "minLength": 1},
+        "answer": {"enum": ["yes", "partial"]},
+        "evidence_count": {"type": "integer", "minimum": 1},
+        "strengths": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "direct",
+              "inferred",
+              "manifest_author_confirmed",
+              "online_resolved",
+              "dynamic_verified"
+            ]
+          }
+        },
+        "result": {"const": "pass"}
+      }
+    },
+    "repository": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "commit",
+        "worktree_sha256",
+        "raw_json_sha256",
+        "raw_projection_sha256",
+        "rerun_projection_sha256",
+        "raw_scan_match",
+        "artifacts",
+        "affirmative_entries",
+        "failures"
+      ],
+      "properties": {
+        "id": {"enum": ["frl", "simcse", "torchtune"]},
+        "commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "worktree_sha256": {"$ref": "#/$defs/sha256"},
+        "raw_json_sha256": {"$ref": "#/$defs/sha256"},
+        "raw_projection_sha256": {"$ref": "#/$defs/sha256"},
+        "rerun_projection_sha256": {"$ref": "#/$defs/sha256"},
+        "raw_scan_match": {"const": true},
+        "artifacts": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "items": {"$ref": "#/$defs/artifact"}
+        },
+        "affirmative_entries": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/auditedEntry"}
+        },
+        "failures": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1}
+        }
+      }
+    }
+  }
+}
