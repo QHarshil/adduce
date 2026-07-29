@@ -52,11 +52,17 @@ dev = [
     "pytest-cov>=5.0",
     "ruff>=0.6",
     "mypy>=1.10",
+    "jsonschema>=4.23,<5",
     "types-PyYAML",
+]
+release = [
+    "build>=1.2",
+    "twine>=5.1",
 ]
 
 [project.scripts]
 adduce = "adduce.cli:app"
+adduce-rng-audit = "adduce.dynamic.import_hook:main"
 
 [project.entry-points."adduce.rules"]
 builtin = "adduce.rules.builtin"
@@ -74,9 +80,20 @@ packages = ["src/adduce"]
 include = [
     "src/adduce",
     "tests",
+    "corpus/scripts",
     "corpus/synthetic",
+    "corpus/*.json",
+    "corpus/*.md",
+    "corpus/*.csv",
     "docs/generation-safety.md",
+    "docs/releasing.md",
+    "docs/security-model.md",
+    "scripts",
+    ".github/workflows/release.yml",
+    "action.yml",
     "README.md",
+    "SECURITY.md",
+    "CITATION.cff",
     "LICENSE",
     "CHANGELOG.md",
 ]
@@ -97,5 +114,25 @@ ignore = ["E501"]
 [tool.mypy]
 python_version = "3.10"
 warn_unused_ignores = true
+check_untyped_defs = true
+no_implicit_optional = true
+warn_return_any = true
 disallow_untyped_defs = false
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = [
+    "adduce.cache",
+    "adduce.engine",
+    "adduce.evidence",
+    "adduce.evidence.remote",
+    "adduce.dynamic.reproduce",
+    "adduce.dynamic.resolve",
+    "adduce.manifest",
+    "adduce.model",
+    "adduce.report",
+    "adduce.report.*",
+    "adduce.rules.base",
+    "adduce.rules.registry",
+]
+disallow_untyped_defs = true

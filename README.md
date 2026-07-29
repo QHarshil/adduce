@@ -9,7 +9,7 @@ pipx install adduce        # or: pip install adduce / uvx adduce
 adduce check .
 ```
 
-PyPI `0.1.1` is the current release.
+[PyPI `0.1.1`](https://pypi.org/project/adduce/0.1.1/) is the current release.
 
 Adduce is beta software. Findings are static-analysis signals for review, and
 scores, tiers, and reviewer-time estimates are provisional pending calibration
@@ -30,7 +30,11 @@ For a one-off run that explicitly selects the latest release, use
 
 The north-star question: *for every number in the paper, can I point to the artifact that produced it, and will that artifact still produce it elsewhere?*
 
-> `adduce` is offline by default and sends nothing anywhere during ordinary checks. Public-metadata lookups are opt-in through `--online` or `pin-remotes`; they resolve Hugging Face revisions and URL headers from the user's machine and cache responses in `.adduce/cache`. The separate `checklist --llm` option sends the selected checklist question plus deterministic rule statuses and messages to the provider the user explicitly configures, or to a local Ollama endpoint. Those messages can contain repository paths, artifact identifiers, and detected metric or configuration values, but not source-file contents. No server is operated by the project.
+> Built-in checks are offline by default. Public-metadata requests require the
+> explicit `--online` or `pin-remotes` modes; they use a bounded public-HTTPS
+> resolver, and pre-existing repository cache entries never count as network
+> evidence. See the [security model](https://github.com/QHarshil/adduce/blob/main/docs/security-model.md) before using
+> network, provider, plugin, or dynamic-execution features on untrusted input.
 
 ## What it reports
 
@@ -91,14 +95,20 @@ The reproducibility problem has three layers. FAIR tools such as `howfairis` foc
 scaffolds it from repository-observable evidence such as candidate result
 tables, datasets from loaders, unpinned remotes, and environment files. Inferred
 claim fields are draft placeholders for author confirmation, not reliable claim
-discovery. Non-draft manifest links are authoritative; draft and inferred links
-retain their provisional status. Refreshes are written as separate proposal
-files so comments, extensions, and author content are never overwritten.
+discovery. New author-reviewed claims should use `status: confirmed`; generated
+claims use `status: draft`. Status-less claims retain the legacy 0.1.x
+non-draft behavior in claim-trail parsing for compatibility. They do not count
+as author-confirmed evidence for generated checklist or appendix statements,
+and the exact-revision trust check also requires explicit confirmation. Draft
+and inferred links remain provisional. Refreshes are written as separate
+proposal files so comments, extensions, and author content are never
+overwritten.
 
 ```yaml
 schema: adduce/1
 claims:
   - id: C1
+    status: confirmed
     text: "LambdaMART achieves NDCG@10 of 0.814"
     where: "Table 2"
     metric: "ndcg@10"
@@ -175,7 +185,7 @@ adduce pin-remotes --diff            # resolve current Hugging Face revisions (o
 adduce reproduce --yes               # run the smoke target twice, assert the runs agree (executes repo code)
 ```
 
-`adduce reproduce` is the empirical layer: two runs with a pinned seed, fingerprinted (output hashes, stdout metrics), compared. It executes repository code, so it demands `--yes`, is designed to run inside the repo's own container or CI, and is never invoked by `check`. A first-use ordering diagnostic (`python -m adduce.dynamic.import_hook train.py`) reports whether seeding precedes the first RNG draw.
+`adduce reproduce` is the empirical layer: two runs with the same declared seed environment, fingerprinted (output hashes and stdout metrics), and compared. The target command must actually consume `ADDUCE_SEED` or apply its own equivalent seeding; Adduce does not inject framework seed calls. It executes repository code, so it demands `--yes`, is designed to run inside a disposable container or virtual machine, and is never invoked by `check`. Repository copying provides input isolation only; it does not provide process, credential, filesystem, device, resource, or network isolation. Adduce bounds captured streams and expected-output hashing, but those safeguards do not limit what the command can access or consume. The reproduction report records the selected command and parsed numeric metric names and values verbatim, although it does not retain the captured streams; do not put credentials in commands or metric names, and review the report before sharing it. The best-effort first-use diagnostic (`adduce-rng-audit --yes train.py`) also imports libraries and executes the selected script without a sandbox; it reports ordering only for supported module-level Python, NumPy, and Torch RNG calls and does not observe generator-instance methods or library-internal/native draws. Read the [security model](https://github.com/QHarshil/adduce/blob/main/docs/security-model.md) before either execution mode.
 
 `adduce pin-remotes` resolves current revisions and drafts `revision="<sha>"` edits as diffs (libcst codemods, applied only with `--write`). Pinning to the *current* SHA is a forward guarantee — it does not recover the version historically used, and the output says so.
 
@@ -204,7 +214,12 @@ ignore = ["R-ARC-001"]
 exclude = ["third_party"]
 ```
 
-Suppressed findings still appear, marked as ignored.
+Suppressed findings still appear, marked as ignored, and retain their observed
+score. Suppression records an accepted exception; it does not count missing
+evidence as a pass. Repository-configured exclusions reduce scan scope and are
+disclosed in reports. `--mode reviewer` and `--mode ae-chair` bypass
+repository-supplied profile, ignore, exclude, and threshold settings unless the
+caller supplies explicit CLI options.
 
 ## Continuous integration
 
@@ -276,12 +291,12 @@ adduce generates checklist and appendix drafts that may enter real submissions, 
 - Every checklist and appendix generation updates `.adduce/evidence-ledger.json`: per-answer evidence with available `file:line` anchors, confidence, evidence strength, and generation provenance (version, command, profile, commit, timestamp). Generated text is downstream of deterministic evidence, not the source of truth.
 - `--strict-evidence` tightens generation for authors who want zero inference in the output.
 - Checklist, appendix, and package generation end with a safety summary (evidence-backed vs. partial vs. author-input answers, conflicts, the ledger path)—a draft with open items is useful, but it is not submission-ready, and adduce says so.
-- `adduce audit-generated <artifact>` checks a generated artifact against its ledger before submission: unsupported claims, low-confidence yeses, execution wording without an actual `reproduce` run, unresolved placeholders, and drift since the ledger was produced.
-- Checklist and appendix drafts do not imply execution-based verification; `adduce reproduce` writes a separate dynamic report. Nothing is invented from context; conflicts are surfaced rather than silently resolved; secrets are never echoed; source is never edited without an explicit `--write` after a shown diff.
+- `adduce audit-generated <artifact>` checks a generated artifact against its ledger before submission: unsupported claims, low-confidence yeses, execution wording that cannot be supported by checklist/appendix ledgers, unresolved provider prose and placeholders, and drift since the ledger was produced. Dynamic reports remain separate and are never imported as submission evidence.
+- Checklist and appendix drafts do not imply execution-based verification; `adduce reproduce` writes a separate dynamic report. Nothing is invented from context; conflicts are surfaced rather than silently resolved; a detected likely-credential finding omits the matched value; source is never edited without an explicit `--write` after a shown diff. Generated drafts and dynamic reports are not general-purpose secret scrubbers and must be reviewed before sharing.
 
 ## Optional LLM layer
 
-Checks, scores, and checklist answers remain deterministic and offline. With a configured provider (`ADDUCE_LLM_PROVIDER=openai|anthropic|ollama`, bring your own key or a local model), `adduce checklist --llm` can draft optional free-text justification from finding summaries. Provider prose is labelled as a draft and requires author review; it never determines the answer recorded in the evidence ledger. Without a provider, everything works identically. adduce ships no key and never calls a paid API on your behalf.
+Checks, scores, and checklist answers remain deterministic and offline. With a configured provider (`ADDUCE_LLM_PROVIDER=openai|anthropic|ollama`, bring your own key or a local model), `adduce checklist --llm` can draft optional free-text justification from finding summaries. Provider prose is labelled as unverified, carries an author-review marker, and never counts as evidence or determines the ledger answer. The ledger records the provider, model, and a hash of each prose fragment without recording credentials. Without a provider, everything works identically. Adduce ships no key and makes no provider request unless the user explicitly selects `--llm` and configures a provider.
 
 ## Honest limits
 
@@ -290,12 +305,17 @@ Checks, scores, and checklist answers remain deterministic and offline. With a c
   require author-confirmed manifest claims; inferred repository-wide candidates
   may be missing or unrelated to the headline result and must not be treated as
   supported claims.
-- **Static resolution has a ceiling.** Alias plus one-hop wrapper resolution covers the common shapes of real ML code; Python's dynamism is unresolvable and reported as confidence, not verdicts, with `adduce reproduce` as the escape hatch.
+- **Static resolution has a ceiling.** Alias plus one-hop wrapper resolution handles the explicitly supported call shapes; coverage on unfamiliar ML repositories has not yet been established. Python's dynamism is not generally resolvable statically, so uncertain evidence is reported with confidence and can require a separately authorized dynamic check.
 - **The probabilistic rules are diagnostic.** LaTeX numeric extraction, result reconciliation, notebook staleness, and ablation matching will sometimes miss or over-flag; they carry confidence and stay off the blocking path by default.
 - **Remote pinning is a forward guarantee**, not recovery of the version historically used.
+- **Dynamic reproduction is not a sandbox.** The copied workspaces separate run inputs, but the repository command retains the invoking user's host access and permissions.
+- **Not a secret scrubber.** Likely-credential findings redact the matched value,
+  but generated drafts can include repository-derived commands, paths,
+  identifiers, and metadata, and reproduction reports retain the selected
+  command and parsed metric names and values.
 - **CUDA/cuDNN versions are rarely in source.** adduce checks whether anything *captures* them (container, conda env, manifest), not that it can read them from code.
 - **Not a data-leakage detector.** Train/test contamination is undetectable statically and adduce claims nothing about it.
-- **No hosted backend, ever.** The design is deliberately serverless so it stays free.
+- **No project-operated backend.** Built-in checks run locally; only explicitly selected remote-metadata or provider features make network requests.
 
 ## Development
 
@@ -303,13 +323,21 @@ Checks, scores, and checklist answers remain deterministic and offline. With a c
 git clone https://github.com/QHarshil/adduce
 cd adduce
 python -m venv .venv && source .venv/bin/activate
-pip install -e ".[dev]"
-pytest
-ruff check src tests
+pip install -e ".[dev,release]"
+pytest --cov=adduce --cov-report=term-missing --cov-fail-under=85
+ruff check src tests scripts corpus/scripts
+mypy src/adduce scripts corpus/scripts
+python -m build
+twine check --strict dist/*
 ```
 
-Validation against real repositories is a standing quality gate — see [corpus/README.md](corpus/README.md) for the protocol and what may honestly be claimed from it. Contributions are welcome, especially false-positive reports: a check that cries wolf is a bug. See [CONTRIBUTING.md](CONTRIBUTING.md).
+The real-repository corpus protocol defines a pending release quality gate; no
+effectiveness or calibration claim is made until its human-review requirements
+are complete. See the [validation corpus protocol](https://github.com/QHarshil/adduce/blob/main/corpus/README.md) and
+permitted conclusions. Contributions are welcome, especially incorrect or
+low-value finding reports. See [CONTRIBUTING.md](https://github.com/QHarshil/adduce/blob/main/CONTRIBUTING.md). Report
+vulnerabilities privately under the [security policy](https://github.com/QHarshil/adduce/blob/main/SECURITY.md).
 
 ## License
 
-[MIT](LICENSE)
+[MIT](https://github.com/QHarshil/adduce/blob/main/LICENSE)

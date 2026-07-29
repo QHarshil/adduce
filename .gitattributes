@@ -1,0 +1,2 @@
+# Preserve the authoritative OASIS schema bytes, including upstream CRLF.
+tests/schemas/sarif-schema-2.1.0.json -text -diff
