@@ -1,4 +1,4 @@
-# R-DATA-001 — Data availability statement / provenance
+# R-DATA-001 — Data-source documentation signals
 
 **Category:** Data  
 **Severity:** medium  
@@ -6,7 +6,7 @@
 
 ## Why it matters
 
-If reviewers cannot learn where the data comes from, nothing else about the repository matters.
+Documenting each dataset's origin helps reviewers assess whether the inputs can be obtained and interpreted.
 
 ## Suppressing
 

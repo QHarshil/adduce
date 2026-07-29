@@ -23,11 +23,26 @@ def _uses_dataset_loaders(ev: Evidence) -> bool:
     )
 
 
+def _reference_bound_checksum_files(ev: Evidence) -> list[str]:
+    """Files containing a download with a visibly bound checksum check."""
+    return sorted(
+        {
+            reference.file
+            for reference in ev.remote.references
+            if reference.kind in {"url", "gdrive", "bucket"}
+            and reference.pin_detail == "checksum"
+        }
+    )
+
+
 class DataProvenanceRule(Rule):
     id = "R-DATA-001"
     category = Category.DATA
-    title = "Data availability statement / provenance"
-    rationale = "If reviewers cannot learn where the data comes from, nothing else about the repository matters."
+    title = "Data-source documentation signals"
+    rationale = (
+        "Documenting each dataset's origin helps reviewers assess whether the inputs can be obtained "
+        "and interpreted."
+    )
     weight = 4
 
     def applies_to(self, repo: Repo) -> bool:
@@ -48,13 +63,13 @@ class DataProvenanceRule(Rule):
             return self.finding(
                 status,
                 confidence=0.75,
-                message="Data provenance stated: " + "; ".join(signals) + ".",
+                message="Data-source documentation signal(s) detected: " + "; ".join(signals) + ".",
                 remediation="" if status is Status.PASS else "Name the dataset source (ideally a DOI) explicitly in the README data section.",
             )
         return self.finding(
             Status.FAIL,
             confidence=0.7,
-            message="No data availability statement found: no README data section, dataset link, or manifest entry.",
+            message="No data-source documentation signal detected in a README data section, dataset link, or manifest entry.",
             remediation="Add a README data section naming each dataset, its source (DOI where possible), and its license.",
         )
 
@@ -101,10 +116,10 @@ class DownloadPathRule(Rule):
 class DataIntegrityRule(Rule):
     id = "R-DATA-003"
     category = Category.DATA
-    title = "Data integrity verifiable (checksums)"
+    title = "Dataset-integrity evidence"
     rationale = (
-        "Datasets silently change upstream. A checksum turns 'we used the same data' "
-        "from an assumption into a check."
+        "Dataset-specific checksums and content-addressed metadata make upstream changes "
+        "detectable. Static evidence shows that a verification path exists, not that it ran."
     )
     weight = 3
 
@@ -113,12 +128,43 @@ class DataIntegrityRule(Rule):
 
     def evaluate(self, ev: Evidence) -> Finding:
         if ev.data.uses_dvc:
-            return self.finding(Status.PASS, confidence=0.85, message="DVC tracks data content-addressed; integrity is built in.")
+            return self.finding(
+                Status.PASS,
+                confidence=0.85,
+                message="DVC metadata or pipeline files provide a content-addressed data-integrity signal.",
+            )
+        bound_files = _reference_bound_checksum_files(ev)
+        if bound_files:
+            return self.finding(
+                Status.PASS,
+                confidence=0.85,
+                message=(
+                    "Checksum verification is visibly bound to a data download in: "
+                    + ", ".join(bound_files[:3])
+                    + "."
+                ),
+            )
         if any(d.checksum for d in ev.manifest.datasets):
-            return self.finding(Status.PASS, confidence=0.9, message="The manifest records dataset checksums.")
+            return self.finding(
+                Status.PARTIAL,
+                confidence=0.8,
+                message=(
+                    "The manifest declares dataset checksum(s), but the static scan did not "
+                    "confirm that the acquisition path verifies them."
+                ),
+                remediation="Verify each declared checksum in the scripted data-acquisition path.",
+            )
         if ev.data.checksum_files:
             return self.finding(
-                Status.PASS, confidence=0.8, message="Checksum file(s) present: " + ", ".join(ev.data.checksum_files[:3]) + "."
+                Status.PARTIAL,
+                confidence=0.65,
+                message=(
+                    "Checksum file(s) are present, but their coverage is not visibly linked "
+                    "to a detected data download: "
+                    + ", ".join(ev.data.checksum_files[:3])
+                    + "."
+                ),
+                remediation="Verify the checksum file in the download script and name the downloaded target explicitly.",
             )
         if ev.data.uses_hash_verification and ev.data.download_scripts:
             return self.finding(
@@ -170,10 +216,10 @@ class CommittedBinariesRule(Rule):
 class DataFrictionRule(Rule):
     id = "R-DATA-005"
     category = Category.DATA
-    title = "Data-access friction grade"
+    title = "Data-access path heuristic"
     rationale = (
-        "Reviewers abandon artifacts whose data cannot be obtained quickly. This grades the "
-        "access path from A (script + checksum) to E (no provenance)."
+        "A documented, scripted, and integrity-checked acquisition path gives reviewers stronger "
+        "static evidence that the intended data can be identified and retrieved."
     )
     weight = 3
 
@@ -182,27 +228,37 @@ class DataFrictionRule(Rule):
 
     def evaluate(self, ev: Evidence) -> Finding:
         scripted = bool(ev.data.download_scripts) or ev.data.uses_dvc or _uses_dataset_loaders(ev)
-        checksummed = ev.data.has_integrity_checks or any(d.checksum for d in ev.manifest.datasets)
+        checksummed = (
+            ev.data.uses_dvc
+            or bool(_reference_bound_checksum_files(ev))
+            or any(d.checksum for d in ev.manifest.datasets)
+        )
         documented = ev.data.dataset_urls or ev.docs.has_section("data") or bool(ev.manifest.datasets)
         gated = bool(ev.remote.by_kind("gdrive")) or bool(ev.remote.by_kind("bucket"))
 
         if scripted and checksummed:
-            grade, status = "A (scripted download with integrity checks)", Status.PASS
-        elif scripted or (documented and checksummed):
-            grade, status = "B (public source, scripted or documented)", Status.PASS
+            grade, status = "A (scripted acquisition with dataset-specific integrity evidence)", Status.PASS
+        elif scripted:
+            grade, status = "B (scripted acquisition without dataset-specific integrity evidence)", Status.PASS
+        elif documented and checksummed:
+            grade, status = "B (documented acquisition with dataset-specific integrity evidence)", Status.PASS
         elif documented and gated:
-            grade, status = "C (documented, but behind an account or private surface)", Status.PARTIAL
+            grade, status = "C (documented path on a host that may apply access controls)", Status.PARTIAL
         elif documented:
-            grade, status = "C (documented manual path, no integrity checks)", Status.PARTIAL
+            grade, status = "C (documented manual path without detected integrity checks)", Status.PARTIAL
         elif gated:
-            grade, status = "D (private bucket or drive link, no documented path)", Status.FAIL
+            grade, status = "D (hosted path detected without acquisition documentation)", Status.FAIL
         else:
-            grade, status = "E (no provenance detected)", Status.FAIL
+            grade, status = "E (no data-source or acquisition signal detected)", Status.FAIL
         return self.finding(
             status,
             confidence=0.7,
-            message=f"Data-access friction: grade {grade}.",
-            remediation="" if status is Status.PASS else "Move toward grade A: script the download, add checksums, avoid account-gated hosts.",
+            message=f"Heuristic data-access grade: {grade}.",
+            remediation=(
+                ""
+                if status is Status.PASS
+                else "Strengthen the acquisition path with explicit instructions, automation, integrity checks, and access requirements."
+            ),
         )
 
 

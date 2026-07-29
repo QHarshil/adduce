@@ -1,4 +1,4 @@
-# R-DRIFT-001 — Paper hyperparameter differs from the authoritative code value
+# R-DRIFT-001 — Paper hyperparameter differs from the highest-ranked code value
 
 **Category:** Paper & Artifact Consistency  
 **Severity:** high  
@@ -6,7 +6,7 @@
 
 ## Why it matters
 
-Configs get tuned after the paper freezes; a stated learning rate that no config contains is the classic camera-ready drift.
+Comparing paper statements with author-linked run configs, committed configs, and code defaults can identify values that need manual reconciliation.
 
 ## Suppressing
 

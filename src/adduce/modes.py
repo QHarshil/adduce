@@ -30,11 +30,11 @@ class BadgeEligibility:
 
 def unverifiable_findings(card: ScoreCard) -> list[Finding]:
     """What a skeptical reviewer starts from: unknowns and low-confidence passes."""
-    unknowns = [f for f in card.findings if f.status is Status.UNKNOWN and not f.suppressed]
+    unknowns = [f for f in card.findings if f.status is Status.UNKNOWN]
     weak_passes = [
         f
         for f in card.findings
-        if f.status is Status.PASS and f.confidence < 0.6 and not f.suppressed
+        if f.status is Status.PASS and f.confidence < 0.6
     ]
     return unknowns + weak_passes
 
@@ -120,7 +120,7 @@ def blocking_issues(card: ScoreCard) -> list[Finding]:
         (
             f
             for f in card.findings
-            if f.status is Status.FAIL and not f.suppressed and f.weight >= 3
+            if f.status is Status.FAIL and f.weight >= 3
         ),
         key=lambda f: -f.weight,
     )

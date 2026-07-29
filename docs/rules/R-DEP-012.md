@@ -6,7 +6,9 @@
 
 ## Why it matters
 
-Notebook-only imports are the most common ghost dependencies: installed once with !pip install, never declared, gone on the reviewer's machine.
+Notebook-only imports can become undeclared dependencies when an interactive
+environment retains packages installed with `!pip install`. Recording them in
+the dependency manifest gives reviewers a repeatable installation path.
 
 ## Suppressing
 

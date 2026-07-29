@@ -112,7 +112,63 @@ def test_strict_determinism_counts_controls(make_evidence):
     )
     finding = StrictDeterminismRule().evaluate(ev)
     assert finding.status is Status.PARTIAL
-    assert "CUBLAS_WORKSPACE_CONFIG" in finding.message
+    assert "PYTHONHASHSEED at interpreter startup" in finding.message
+    assert "Runtime-only assignment" in finding.message
+
+
+def test_strict_determinism_accepts_only_enabled_mode_and_startup_environment(
+    make_evidence,
+):
+    disabled = make_evidence(
+        {
+            **_TORCH_REQS,
+            "a.py": "import torch\ntorch.use_deterministic_algorithms(False)\n",
+            "Dockerfile": (
+                "FROM python:3.12\n"
+                "ENV PYTHONHASHSEED=0 CUBLAS_WORKSPACE_CONFIG=:4096:8\n"
+            ),
+        }
+    )
+    assert StrictDeterminismRule().evaluate(disabled).status is Status.PARTIAL
+    assert CudnnFlagsRule().evaluate(disabled).status is Status.FAIL
+
+    enabled_single_line = make_evidence(
+        {
+            **_TORCH_REQS,
+            "a.py": "import torch\ntorch.use_deterministic_algorithms(True)\n",
+            "Dockerfile": (
+                "FROM python:3.12\n"
+                "ENV PYTHONHASHSEED=0 CUBLAS_WORKSPACE_CONFIG=:4096:8\n"
+            ),
+        }
+    )
+    assert StrictDeterminismRule().evaluate(enabled_single_line).status is Status.PASS
+
+    enabled = make_evidence(
+        {
+            **_TORCH_REQS,
+            "a.py": "import torch\ntorch.use_deterministic_algorithms(mode=True)\n",
+            "Dockerfile": (
+                "FROM python:3.12\n"
+                "ENV PYTHONHASHSEED=0 \\\n"
+                "    CUBLAS_WORKSPACE_CONFIG=:4096:8\n"
+            ),
+        }
+    )
+    finding = StrictDeterminismRule().evaluate(enabled)
+    assert finding.status is Status.PASS
+    assert "does not prove bit-exact" in finding.message
+
+
+def test_lightning_deterministic_false_does_not_satisfy_cudnn_rule(make_evidence):
+    ev = make_evidence(
+        {
+            **_TORCH_REQS,
+            "a.py": "from lightning import Trainer\nTrainer(deterministic=False)\n",
+        }
+    )
+
+    assert CudnnFlagsRule().evaluate(ev).status is Status.FAIL
 
 
 def test_dataloader_generator_rule(make_evidence):
@@ -142,8 +198,25 @@ def test_dataloader_worker_rule(make_evidence):
         }
     )
     finding = DataLoaderWorkerRule().evaluate(ev)
-    assert finding.status is Status.FAIL
+    assert finding.status is Status.PARTIAL
     assert finding.locations[0].path == "data.py"
+
+
+def test_lightning_workers_false_does_not_satisfy_worker_seeding(make_evidence):
+    ev = make_evidence(
+        {
+            "requirements.txt": "lightning==2.0.0\ntorch==2.1.0\n",
+            "train.py": (
+                "import torch\n"
+                "from lightning import seed_everything\n"
+                "from torch.utils.data import DataLoader\n"
+                "seed_everything(0, workers=False)\n"
+                "loader = DataLoader(None, num_workers=2)\n"
+            ),
+        }
+    )
+
+    assert DataLoaderWorkerRule().evaluate(ev).status is Status.PARTIAL
 
 
 def test_dataloader_rules_na_without_loaders(make_evidence):

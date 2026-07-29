@@ -80,8 +80,8 @@ class HiddenStateRule(_NotebookBase):
     category = Category.NOTEBOOK
     title = "Hidden-state risk (gaps in execution counts)"
     rationale = (
-        "Gaps mean cells were run and then deleted or edited: the kernel carried state the "
-        "committed code no longer contains."
+        "Execution-count gaps can indicate out-of-order execution, deleted cells, or other "
+        "hidden kernel state; they are a review signal rather than proof of one cause."
     )
     weight = 2
 
@@ -95,7 +95,7 @@ class HiddenStateRule(_NotebookBase):
         return self.finding(
             Status.PARTIAL,
             confidence=0.6,
-            message=f"{len(gapped)} notebook(s) have gaps in execution counts (cells ran that no longer exist).",
+            message=f"{len(gapped)} notebook(s) have gaps in execution counts; committed outputs may depend on hidden state.",
             remediation="Restart the kernel and 'Run All' so committed state is self-contained.",
             locations=[Location(n.path) for n in gapped[:5]],
         )
@@ -128,7 +128,10 @@ class NotebookPathsRule(_NotebookBase):
     id = "R-NB-005"
     category = Category.NOTEBOOK
     title = "No absolute/local paths in notebook cells"
-    rationale = "Absolute paths guarantee the notebook fails on any machine but the author's."
+    rationale = (
+        "Machine-specific absolute paths commonly fail under a different account, "
+        "filesystem layout, or operating system."
+    )
     weight = 2
 
     def evaluate(self, ev: Evidence) -> Finding:
@@ -148,7 +151,10 @@ class NotebookSeedRule(_NotebookBase):
     id = "R-NB-006"
     category = Category.NOTEBOOK
     title = "Seeding precedes randomness in notebooks"
-    rationale = "A notebook that draws random numbers before (or without) seeding differs on every rerun."
+    rationale = (
+        "Drawing before deterministic seeding makes notebook results depend on prior RNG state "
+        "and can cause reruns to differ."
+    )
     weight = 2
 
     def evaluate(self, ev: Evidence) -> Finding:
@@ -197,8 +203,8 @@ class NotebookScriptTwinRule(_NotebookBase):
     category = Category.NOTEBOOK
     title = "Result-bearing notebooks have a script equivalent"
     rationale = (
-        "Notebooks that produce paper results need a script/jupytext/papermill twin: scripts "
-        "run headless, diff cleanly, and slot into pipelines; notebooks do none of that."
+        "A script, Jupytext source, or Papermill entry point can make a result-bearing notebook "
+        "easier to run headlessly, review as text, and integrate into automation."
     )
     weight = 2
 

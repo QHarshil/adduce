@@ -6,7 +6,9 @@
 
 ## Why it matters
 
-torch.hub.load('owner/repo') tracks the default branch of a GitHub repo — maximal rot exposure.
+`torch.hub.load('owner/repo')` follows a repository branch by default, so the
+referenced code may change between runs. A commit identifies content but does
+not by itself establish long-term availability.
 
 ## Suppressing
 

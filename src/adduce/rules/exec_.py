@@ -12,8 +12,8 @@ class EntrypointRule(Rule):
     category = Category.CODE_EXECUTION
     title = "Discoverable entrypoint"
     rationale = (
-        "Without an obvious entrypoint, reproduction starts with reverse-engineering "
-        "which of the scripts is the one that produced the results."
+        "When the primary entrypoint is neither documented nor conventionally named, "
+        "a reviewer must infer which command is intended to produce the reported results."
     )
     weight = 5
 
@@ -102,16 +102,40 @@ class ReproduceCommandRule(Rule):
         return bool(repo.python_files())
 
     def evaluate(self, ev: Evidence) -> Finding:
-        manifest_commands = [
+        confirmed_commands = [
             claim.produced_by.command
             for claim in ev.manifest.claims
-            if claim.produced_by.command
+            if (claim.status or "").strip().lower() == "confirmed"
+            and claim.produced_by.command
         ]
-        if ev.manifest.exists and manifest_commands:
+        provisional_commands = [
+            claim.produced_by.command
+            for claim in ev.manifest.claims
+            if (claim.status or "").strip().lower() != "confirmed"
+            and claim.produced_by.command
+        ]
+        if ev.manifest.exists and confirmed_commands:
             return self.finding(
                 Status.PASS,
                 confidence=0.9,
-                message=f"The manifest records the producing command for {len(manifest_commands)} claim(s).",
+                message=(
+                    "The manifest records the producing command for "
+                    f"{len(confirmed_commands)} author-confirmed claim(s)."
+                ),
+            )
+        if ev.manifest.exists and provisional_commands:
+            return self.finding(
+                Status.PARTIAL,
+                confidence=0.7,
+                message=(
+                    "The manifest records producing commands for "
+                    f"{len(provisional_commands)} provisional claim(s), but none is "
+                    "explicitly author-confirmed."
+                ),
+                remediation=(
+                    "Review each claim-command link and set `status: confirmed` only "
+                    "when it identifies the command that produced the reported result."
+                ),
             )
         if ev.docs.run_commands:
             return self.finding(

@@ -3,7 +3,13 @@
 from __future__ import annotations
 
 from adduce.rules.base import Status
-from adduce.rules.data import CommittedBinariesRule, DataProvenanceRule, DownloadPathRule
+from adduce.rules.data import (
+    CommittedBinariesRule,
+    DataFrictionRule,
+    DataIntegrityRule,
+    DataProvenanceRule,
+    DownloadPathRule,
+)
 from adduce.rules.docs import ExpectedResultsRule, ReadmeSectionsRule
 from adduce.rules.exec_ import EntrypointRule, RunnerRule
 from adduce.rules.licensing import CitationRule, LicenseRule
@@ -121,12 +127,93 @@ def test_data_provenance_fails_without_any_path(make_evidence):
     assert DataProvenanceRule().evaluate(ev).status is Status.FAIL
 
 
+def test_unlinked_checksum_file_is_only_partial_integrity_evidence(make_evidence):
+    ev = make_evidence(
+        {
+            "requirements.txt": "torch==2.1.0\n",
+            "scripts/download_data.sh": "curl https://example.org/data.tar -o data.tar\n",
+            "SHA256SUMS.txt": "0" * 64 + "  unrelated-model.bin\n",
+            "train.py": "import torch\n",
+        }
+    )
+
+    integrity = DataIntegrityRule().evaluate(ev)
+    friction = DataFrictionRule().evaluate(ev)
+
+    assert integrity.status is Status.PARTIAL
+    assert "not visibly linked" in integrity.message
+    assert friction.status is Status.PASS
+    assert "B (scripted acquisition without dataset-specific integrity evidence)" in friction.message
+
+
+def test_download_bound_checksum_is_strong_static_integrity_evidence(make_evidence):
+    ev = make_evidence(
+        {
+            "requirements.txt": "torch==2.1.0\n",
+            "scripts/download_data.sh": (
+                "curl https://example.org/data.tar -o data.tar\n"
+                "sha256sum -c data.tar.sha256\n"
+            ),
+            "train.py": "import torch\n",
+        }
+    )
+
+    integrity = DataIntegrityRule().evaluate(ev)
+    friction = DataFrictionRule().evaluate(ev)
+
+    assert integrity.status is Status.PASS
+    assert "visibly bound" in integrity.message
+    assert friction.status is Status.PASS
+    assert "A (scripted acquisition with dataset-specific integrity evidence)" in friction.message
+
+
+def test_manifest_checksum_does_not_imply_static_verification(make_evidence):
+    ev = make_evidence(
+        {
+            "requirements.txt": "torch==2.1.0\n",
+            ".adduce/manifest.yaml": (
+                "schema: adduce/1\n"
+                "datasets:\n"
+                "  - id: demo\n"
+                "    source: https://example.org/data.tar\n"
+                "    checksum: sha256:abc\n"
+            ),
+            "train.py": "import torch\n",
+        }
+    )
+
+    finding = DataIntegrityRule().evaluate(ev)
+
+    assert finding.status is Status.PARTIAL
+    assert "declares dataset checksum" in finding.message
+    assert "did not confirm" in finding.message
+
+
 def test_license_and_citation(make_evidence):
     ev = make_evidence(
         {"LICENSE": "MIT", "CITATION.cff": "cff-version: 1.2.0\n", "train.py": "pass\n"}
     )
     assert LicenseRule().evaluate(ev).status is Status.PASS
     assert CitationRule().evaluate(ev).status is Status.PASS
+
+
+def test_nested_citation_does_not_satisfy_repository_citation(make_evidence):
+    ev = make_evidence(
+        {"metadata/CITATION.cff": "cff-version: 1.2.0\n", "train.py": "pass\n"}
+    )
+    assert ev.docs.citation_file is None
+    assert CitationRule().evaluate(ev).status is Status.FAIL
+
+
+def test_generated_submission_directory_is_excluded_from_scan(make_evidence):
+    ev = make_evidence(
+        {
+            "adduce-submission/CITATION.cff": "cff-version: 1.2.0\n",
+            "train.py": "pass\n",
+        }
+    )
+    assert all("adduce-submission" not in file.path.parts for file in ev.repo.files)
+    assert CitationRule().evaluate(ev).status is Status.FAIL
 
 
 def test_bibtex_without_cff_is_partial(make_evidence):

@@ -8,7 +8,10 @@ takes to add lab-specific checks — no forking.
 
 from __future__ import annotations
 
-from importlib.metadata import entry_points
+import re
+import warnings
+from collections.abc import Iterable
+from importlib.metadata import EntryPoint, entry_points
 
 from .archival import ArchivableAsIsRule, ArchivalIdentifierRule, ArchivalMetadataRule
 from .base import Rule
@@ -193,26 +196,156 @@ BUILTIN_RULES: tuple[type[Rule], ...] = (
     ArchivalMetadataRule,
 )
 
+_UNSAFE_LABEL = re.compile(r"[^A-Za-z0-9_.:-]+")
+_VALID_ENTRY_POINT_NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,79}\Z")
+_VALID_RULE_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.:-]{0,79}\Z")
+
+
+class RulePluginWarning(UserWarning):
+    """A configured rule plugin could not be used safely."""
+
+
+def _safe_label(value: object, fallback: str = "unknown") -> str:
+    """Return bounded printable metadata suitable for a diagnostic."""
+    try:
+        text = str(value)
+    except Exception:
+        return fallback
+    text = _UNSAFE_LABEL.sub("?", text)[:80]
+    return text or fallback
+
+
+def _entry_point_field(entry_point: object, field: str) -> object:
+    try:
+        return getattr(entry_point, field)
+    except Exception:
+        return "unknown"
+
+
+def _entry_point_label(entry_point: EntryPoint) -> str:
+    name = _safe_label(_entry_point_field(entry_point, "name"), "unnamed")
+    value = _safe_label(_entry_point_field(entry_point, "value"))
+    return f"{name} ({value})"
+
+
+def _warn_plugin(entry_point: EntryPoint, reason: str) -> None:
+    warnings.warn(
+        f"Skipped adduce.rules plugin {_entry_point_label(entry_point)}: {reason}.",
+        RulePluginWarning,
+        stacklevel=2,
+    )
+
+
+def _warn_discovery() -> None:
+    warnings.warn(
+        "Could not discover adduce.rules plugins; built-in rules remain available.",
+        RulePluginWarning,
+        stacklevel=2,
+    )
+
+
+def _entry_point_key(entry_point: EntryPoint) -> tuple[str, str, str]:
+    """Return a stable load order independent of package discovery order."""
+    distribution = _entry_point_field(entry_point, "dist")
+    distribution_name = _entry_point_field(distribution, "name")
+    return (
+        _safe_label(_entry_point_field(entry_point, "name")),
+        _safe_label(_entry_point_field(entry_point, "value")),
+        _safe_label(distribution_name),
+    )
+
+
+def _plugin_rule_classes(
+    entries: Iterable[EntryPoint],
+) -> list[tuple[EntryPoint, type[Rule]]]:
+    """Load valid plugin rule classes while isolating each entry point."""
+    classes: list[tuple[EntryPoint, type[Rule]]] = []
+    try:
+        ordered_entries = sorted(entries, key=_entry_point_key)
+    except Exception:
+        _warn_discovery()
+        return classes
+
+    for entry_point in ordered_entries:
+        try:
+            name = entry_point.name
+            module_name = entry_point.module
+        except Exception:
+            _warn_plugin(entry_point, "entry-point metadata is unreadable")
+            continue
+        if not isinstance(name, str) or _VALID_ENTRY_POINT_NAME.fullmatch(name) is None:
+            _warn_plugin(entry_point, "entry-point name is invalid")
+            continue
+        if module_name == "adduce.rules.builtin":
+            continue
+
+        try:
+            module = entry_point.load()
+        except Exception:
+            _warn_plugin(entry_point, "entry-point loading failed")
+            continue
+
+        try:
+            candidates = module.RULES
+            iterator = iter(candidates)
+        except Exception:
+            _warn_plugin(entry_point, "RULES is missing or is not iterable")
+            continue
+
+        staged_classes: list[type[Rule]] = []
+        found_invalid = False
+        try:
+            for candidate in iterator:
+                if isinstance(candidate, type) and issubclass(candidate, Rule):
+                    staged_classes.append(candidate)
+                else:
+                    found_invalid = True
+        except Exception:
+            _warn_plugin(entry_point, "RULES iteration failed")
+            continue
+
+        if found_invalid:
+            _warn_plugin(entry_point, "RULES contains a non-Rule class")
+        if not staged_classes:
+            _warn_plugin(entry_point, "RULES contains no Rule subclasses")
+        classes.extend((entry_point, candidate) for candidate in staged_classes)
+
+    return classes
+
 
 def discover_rules(include_plugins: bool = True) -> list[Rule]:
     """Instantiate all built-in rules plus any registered plugin rules."""
-    classes: list[type[Rule]] = list(BUILTIN_RULES)
-    if include_plugins:
-        for ep in entry_points(group="adduce.rules"):
-            if ep.module.startswith("adduce.rules"):
-                continue  # the built-in entry point; already loaded
-            try:
-                module = ep.load()
-            except Exception:
-                continue  # a broken plugin must not break the check
-            for cls in getattr(module, "RULES", []):
-                if isinstance(cls, type) and issubclass(cls, Rule) and cls not in classes:
-                    classes.append(cls)
-    seen: set[str] = set()
-    rules: list[Rule] = []
-    for cls in classes:
-        rule = cls()
-        if rule.id and rule.id not in seen:
-            seen.add(rule.id)
-            rules.append(rule)
+    rules = [rule_class() for rule_class in BUILTIN_RULES]
+    seen = {rule.id for rule in rules if rule.id}
+
+    if not include_plugins:
+        return rules
+
+    try:
+        plugin_entries = entry_points(group="adduce.rules")
+    except Exception:
+        _warn_discovery()
+        return rules
+
+    for entry_point, rule_class in _plugin_rule_classes(plugin_entries):
+        try:
+            rule = rule_class()
+            rule_id = rule.id
+        except Exception:
+            _warn_plugin(entry_point, "Rule construction failed")
+            continue
+        if not isinstance(rule, Rule):
+            _warn_plugin(entry_point, "Rule construction returned an invalid object")
+            continue
+        if not isinstance(rule_id, str) or _VALID_RULE_ID.fullmatch(rule_id) is None:
+            _warn_plugin(entry_point, "Rule id is invalid")
+            continue
+        if rule_id in seen:
+            _warn_plugin(
+                entry_point,
+                f"Rule id {_safe_label(rule_id)} conflicts with an existing rule",
+            )
+            continue
+        seen.add(rule_id)
+        rules.append(rule)
     return rules

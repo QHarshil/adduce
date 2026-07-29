@@ -6,7 +6,10 @@
 
 ## Why it matters
 
-DataLoader workers are separate processes: torch reseeds its own per-worker state, but numpy and random inherit unseeded state unless worker_init_fn reseeds them. This is a separate RNG source from the sampler and silently changes augmentation.
+DataLoader workers receive distinct PyTorch seeds, while other libraries and
+version-specific worker behavior can require explicit initialization. A
+`worker_init_fn` makes third-party RNG policy visible and derives it from the
+worker seed.
 
 ## Fix
 

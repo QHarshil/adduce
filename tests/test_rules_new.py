@@ -130,6 +130,7 @@ def test_reconcile_uses_manifest_declared_log_not_closest_unrelated_run(make_evi
                 "schema: adduce/1\n"
                 "claims:\n"
                 "  - id: C1\n"
+                "    status: confirmed\n"
                 "    metric: accuracy\n"
                 "    value: 92.4\n"
                 "    produced_by:\n"
@@ -144,6 +145,28 @@ def test_reconcile_uses_manifest_declared_log_not_closest_unrelated_run(make_evi
 
     assert finding.status is Status.PARTIAL
     assert "closest logged 85" in finding.message
+
+
+def test_reconcile_does_not_treat_statusless_log_as_authority(make_evidence):
+    ev = make_evidence(
+        {
+            ".adduce/manifest.yaml": (
+                "schema: adduce/1\n"
+                "claims:\n"
+                "  - id: C1\n"
+                "    metric: accuracy\n"
+                "    value: 92.4\n"
+                "    produced_by:\n"
+                "      log: results/main.csv\n"
+            ),
+            "results/main.csv": "epoch,accuracy\n1,85.0\n",
+            "results/unrelated.csv": "epoch,accuracy\n1,92.4\n",
+        }
+    )
+
+    finding = MaterialDifferenceRule().evaluate(ev)
+
+    assert finding.status is Status.PASS
 
 
 def test_unbacked_metric_na_without_results(make_evidence):
@@ -204,6 +227,22 @@ def test_checkpoint_complete_dict_passes(make_evidence):
     ev = make_evidence({"requirements.txt": "torch==2.1.0\n", "train.py": source})
     assert OptimizerStateRule().evaluate(ev).status is Status.PASS
     assert RngStateRule().evaluate(ev).status is Status.PASS
+
+
+def test_framework_import_does_not_prove_checkpoint_completeness(make_evidence):
+    ev = make_evidence(
+        {
+            "requirements.txt": "torch==2.1.0\nlightning==2.4.0\n",
+            "train.py": (
+                "import torch\n"
+                "import lightning\n"
+                "torch.save(model.state_dict(), 'model.pt')\n"
+            ),
+        }
+    )
+
+    assert OptimizerStateRule().evaluate(ev).status is Status.PARTIAL
+    assert RngStateRule().evaluate(ev).status is Status.PARTIAL
 
 
 def test_notebook_rules(make_evidence):

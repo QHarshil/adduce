@@ -6,7 +6,10 @@
 
 ## Why it matters
 
-Without deposit metadata, the Zenodo record inherits whatever GitHub guesses; .zenodo.json and codemeta.json make the archival record correct on first deposit.
+Without reviewed deposit metadata, an archive may infer incomplete fields from
+the repository host. `.zenodo.json` and `codemeta.json` provide an explicit
+draft for author review; their presence does not establish that the metadata
+is correct.
 
 ## Suppressing
 

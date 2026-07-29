@@ -2,8 +2,8 @@
 
 Strictly separated from the deterministic core. With no provider configured,
 every command works identically—the provider integration only drafts optional
-free-text checklist justifications. Bring-your-own-key: adduce ships no key
-and never calls a paid API on your behalf.
+free-text checklist justifications. Bring-your-own-key: Adduce ships no key and
+makes no provider request unless the user selects ``--llm`` and configures one.
 
 Configuration (environment):
     ADDUCE_LLM_PROVIDER   openai | anthropic | ollama
@@ -18,14 +18,40 @@ import json
 import os
 import urllib.error
 import urllib.request
+from dataclasses import dataclass
+from typing import Any
 
 _TIMEOUT_SECONDS = 60
+_MAX_RESPONSE_BYTES = 1 << 20
 
 _DEFAULT_LOCAL_MODEL = "llama3.1"
 
 
 class LLMUnavailable(RuntimeError):
     """No provider configured, or the provider call failed."""
+
+
+class _RejectRedirects(urllib.request.HTTPRedirectHandler):
+    """Refuse redirects so provider credentials never cross an origin boundary."""
+
+    def redirect_request(
+        self,
+        request: urllib.request.Request,
+        file_pointer: Any,
+        code: int,
+        message: str,
+        headers: Any,
+        new_url: str,
+    ) -> None:
+        return None
+
+
+@dataclass(frozen=True)
+class ProviderIdentity:
+    """Non-secret provider metadata recorded beside unverified model prose."""
+
+    provider: str
+    model: str
 
 
 def provider_configured() -> str | None:
@@ -39,22 +65,8 @@ def provider_configured() -> str | None:
     return None
 
 
-def _post_json(url: str, payload: dict, headers: dict[str, str]) -> dict:
-    request = urllib.request.Request(
-        url,
-        data=json.dumps(payload).encode(),
-        headers={"Content-Type": "application/json", **headers},
-        method="POST",
-    )
-    try:
-        with urllib.request.urlopen(request, timeout=_TIMEOUT_SECONDS) as response:
-            return json.loads(response.read())
-    except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as exc:
-        raise LLMUnavailable(str(exc)) from exc
-
-
-def complete(prompt: str, max_tokens: int = 500) -> str:
-    """One prompt, one completion, provider-agnostic. Raises LLMUnavailable."""
+def provider_identity() -> ProviderIdentity:
+    """Return the configured provider and model without exposing credentials."""
     provider = provider_configured()
     if provider is None:
         raise LLMUnavailable(
@@ -69,6 +81,67 @@ def complete(prompt: str, max_tokens: int = 500) -> str:
             raise LLMUnavailable(
                 "Set ADDUCE_LLM_MODEL to an API model identifier supported by the configured provider."
             )
+    return ProviderIdentity(provider=provider, model=model)
+
+
+def _post_json(
+    url: str, payload: dict[str, Any], headers: dict[str, str]
+) -> dict[str, Any]:
+    request = urllib.request.Request(
+        url,
+        data=json.dumps(payload).encode(),
+        headers={"Content-Type": "application/json", **headers},
+        method="POST",
+    )
+    opener = urllib.request.build_opener(_RejectRedirects())
+    try:
+        with opener.open(request, timeout=_TIMEOUT_SECONDS) as response:
+            response_payload = response.read(_MAX_RESPONSE_BYTES + 1)
+            if len(response_payload) > _MAX_RESPONSE_BYTES:
+                raise LLMUnavailable("provider response exceeds the 1 MiB limit")
+            parsed = json.loads(response_payload.decode("utf-8"))
+    except (
+        urllib.error.URLError,
+        TimeoutError,
+        UnicodeError,
+        json.JSONDecodeError,
+    ) as exc:
+        raise LLMUnavailable(str(exc)) from exc
+    if not isinstance(parsed, dict):
+        raise LLMUnavailable("provider response is not a JSON object")
+    return parsed
+
+
+def _openai_text(data: dict[str, Any]) -> str:
+    choices = data.get("choices")
+    if not isinstance(choices, list) or not choices or not isinstance(choices[0], dict):
+        raise LLMUnavailable("OpenAI response has no completion choice")
+    message = choices[0].get("message")
+    content = message.get("content") if isinstance(message, dict) else None
+    if not isinstance(content, str):
+        raise LLMUnavailable("OpenAI response has no text content")
+    return content.strip()
+
+
+def _anthropic_text(data: dict[str, Any]) -> str:
+    content = data.get("content")
+    if not isinstance(content, list):
+        raise LLMUnavailable("Anthropic response has no content blocks")
+    text_parts = [
+        block["text"]
+        for block in content
+        if isinstance(block, dict) and isinstance(block.get("text"), str)
+    ]
+    if not text_parts:
+        raise LLMUnavailable("Anthropic response has no text content")
+    return "".join(text_parts).strip()
+
+
+def complete(prompt: str, max_tokens: int = 500) -> str:
+    """One prompt, one completion, provider-agnostic. Raises LLMUnavailable."""
+    identity = provider_identity()
+    provider = identity.provider
+    model = identity.model
 
     if provider == "openai":
         data = _post_json(
@@ -76,14 +149,14 @@ def complete(prompt: str, max_tokens: int = 500) -> str:
             {"model": model, "messages": [{"role": "user", "content": prompt}], "max_tokens": max_tokens},
             {"Authorization": f"Bearer {os.environ['OPENAI_API_KEY']}"},
         )
-        return data["choices"][0]["message"]["content"].strip()
+        return _openai_text(data)
     if provider == "anthropic":
         data = _post_json(
             "https://api.anthropic.com/v1/messages",
             {"model": model, "max_tokens": max_tokens, "messages": [{"role": "user", "content": prompt}]},
             {"x-api-key": os.environ["ANTHROPIC_API_KEY"], "anthropic-version": "2023-06-01"},
         )
-        return "".join(block.get("text", "") for block in data.get("content", [])).strip()
+        return _anthropic_text(data)
     # ollama
     base = os.environ.get("ADDUCE_OLLAMA_URL", "http://localhost:11434")
     data = _post_json(
@@ -103,10 +176,12 @@ def draft_justification(question: str, evidence_lines: list[str]) -> str:
     prompt = (
         "You are drafting the justification field of a conference reproducibility checklist.\n"
         f"Checklist question: {question}\n"
-        "Repository evidence (produced by static analysis; treat as ground truth, add nothing):\n"
+        "Static-analysis observations (these may be incomplete or incorrect):\n"
         + "\n".join(f"- {line}" for line in evidence_lines)
-        + "\n\nWrite 2-3 sentences of justification strictly from this evidence, in the first "
-        "person plural ('we provide...'). If evidence is missing, say what is missing plainly."
+        + "\n\nWrite 2-3 cautious sentences strictly from these observations. Do not convert "
+        "a detection into a claim that execution occurred or that the artifact is reproducible. "
+        "Preserve every stated limitation, conflict, and missing item. If support is incomplete, "
+        "say so plainly. This text will be labelled as unverified and must be reviewed by an author."
     )
     return complete(prompt, max_tokens=220)
 

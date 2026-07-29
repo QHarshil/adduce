@@ -1,4 +1,4 @@
-# R-VER-002 — Tagged release marking the reported state
+# R-VER-002 — Tag marking the scanned revision
 
 **Category:** Versioning  
 **Severity:** low  
@@ -6,7 +6,9 @@
 
 ## Why it matters
 
-Tags make the exact state that produced the paper recoverable years later.
+A tag pointing at the scanned commit gives reviewers a stable local name for
+that state. This static check does not establish that the tag was published,
+retained remotely, or protected from later movement or deletion.
 
 ## Suppressing
 

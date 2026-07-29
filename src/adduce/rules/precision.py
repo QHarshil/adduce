@@ -88,7 +88,10 @@ class AmpRule(_PrecisionRule):
     id = "R-PREC-002"
     category = Category.PRECISION
     title = "Mixed precision (AMP/autocast) undocumented"
-    rationale = "AMP changes numerics run-to-run and across GPU generations; the policy must be stated."
+    rationale = (
+        "AMP changes numerical precision and can interact with hardware, kernels, and "
+        "determinism settings; documenting the policy helps interpret differences."
+    )
     weight = 3
     events_kinds = ("autocast", "grad_scaler")
     subject = "automatic mixed precision (autocast/GradScaler)"

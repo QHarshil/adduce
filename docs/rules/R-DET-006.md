@@ -6,7 +6,9 @@
 
 ## Why it matters
 
-sklearn estimators and splitters with stochastic behaviour default to fresh entropy; results differ across runs unless random_state is fixed.
+When `random_state` is omitted, stochastic scikit-learn calls can depend on
+mutable global RNG state and call order. An explicit value isolates each
+call's randomness; omission does not prove that every run will differ.
 
 ## Suppressing
 

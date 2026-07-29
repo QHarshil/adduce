@@ -6,7 +6,8 @@
 
 ## Why it matters
 
-Without an obvious entrypoint, reproduction starts with reverse-engineering which of the scripts is the one that produced the results.
+When the primary entrypoint is neither documented nor conventionally named, a
+reviewer must infer which command is intended to produce the reported results.
 
 ## Suppressing
 

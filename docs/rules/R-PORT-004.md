@@ -6,7 +6,9 @@
 
 ## Why it matters
 
-A committed key is a security incident and blocks publishing the artifact at all.
+A potential credential match requires prompt validation because secret
+detection is heuristic. A confirmed active credential must be revoked and
+removed from the published artifact and its history.
 
 ## Suppressing
 

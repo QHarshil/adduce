@@ -2,9 +2,9 @@
 #
 # Each case isolates one behaviour. `expect` maps rule id -> status that MUST
 # be observed; `forbid` maps rule id -> status that MUST NOT be observed.
-# tests/test_synthetic_corpus.py enforces both on every run — this file is
-# the permanent false-positive regression suite. Tune fixtures, not
-# expectations, unless the tool's behaviour is genuinely correct.
+# tests/test_synthetic_corpus.py enforces both on every run. These are targeted
+# regression controls, not a real-world false-positive estimate. Tune fixtures,
+# not expectations, unless the intended detector behaviour genuinely changed.
 
 - case: synthetic_lr_drift
   expect:

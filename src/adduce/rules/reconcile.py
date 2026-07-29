@@ -19,9 +19,13 @@ def _paper_metric_statements(ev: Evidence) -> list[tuple[str, float, str | None]
     manifest_pairs: set[tuple[str, float]] = set()
     for claim in ev.manifest.claims:
         if claim.metric and claim.value is not None:
-            is_draft = (claim.status or "").strip().lower() == "draft"
+            is_confirmed = (claim.status or "").strip().lower() == "confirmed"
             statements.append(
-                (claim.metric, claim.value, None if is_draft else claim.produced_by.log)
+                (
+                    claim.metric,
+                    claim.value,
+                    claim.produced_by.log if is_confirmed else None,
+                )
             )
             manifest_pairs.add((claim.metric.casefold(), claim.value))
     for metric in ev.latex.metrics:
@@ -152,7 +156,11 @@ class SingleRunRule(Rule):
         # "averaged over 5 seeds" in the .tex must not pass this rule when
         # nothing in the repository actually sweeps seeds.
         corroborated: list[str] = []
-        if any(len(c.seeds) > 1 for c in ev.manifest.claims):
+        if any(
+            (claim.status or "").strip().lower() == "confirmed"
+            and len(claim.seeds) > 1
+            for claim in ev.manifest.claims
+        ):
             corroborated.append("the manifest records multiple seeds per claim")
         seeds_in_commands = {s for c in ev.runs.commands for s in c.seeds}
         if len(seeds_in_commands) > 1:
@@ -186,8 +194,11 @@ class SingleRunRule(Rule):
 class UnbackedMetricRule(_ReconcileBase):
     id = "R-RES-004"
     category = Category.RESULTS
-    title = "Reported metric has no corresponding logged result"
-    rationale = "A number with no log behind it is exactly what artifact reviewers probe first."
+    title = "Reported metric lacks a detected matching logged column"
+    rationale = (
+        "A detected correspondence between a reported metric and stored result data gives reviewers "
+        "a traceable basis for checking the claim."
+    )
     weight = 3
 
     def evaluate(self, ev: Evidence) -> Finding:
@@ -209,12 +220,12 @@ class UnbackedMetricRule(_ReconcileBase):
             return self.finding(
                 Status.PASS,
                 confidence=0.6,
-                message=f"Every stated metric ({len(statements)}) has at least one matching logged column.",
+                message=f"Each extracted metric statement ({len(statements)}) has at least one detected matching logged column.",
             )
         return self.finding(
             Status.PARTIAL,
             confidence=0.55,
-            message="Stated metric(s) with no matching logged column: " + ", ".join(unbacked[:5]) + " "
+            message="Extracted metric(s) without a detected matching logged column: " + ", ".join(unbacked[:5]) + " "
             "(logs may be gitignored — link them explicitly if they exist).",
             remediation="Commit or link the evaluation logs, and map each claim to its log in the manifest (produced_by.log).",
         )

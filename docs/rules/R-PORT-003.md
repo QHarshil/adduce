@@ -1,4 +1,4 @@
-# R-PORT-003 — No private buckets or drive links as data sources
+# R-PORT-003 — Drive and object-storage data-source dependencies
 
 **Category:** Portability  
 **Severity:** medium  
@@ -6,7 +6,9 @@
 
 ## Why it matters
 
-Google Drive links and s3:///gs:// buckets rot, throttle, and are frequently permissioned; they are the least durable data path an artifact can have.
+Drive links and object-storage URIs may depend on owner-controlled permissions,
+quotas, and retention. Static inspection cannot determine their current public
+accessibility.
 
 ## Suppressing
 

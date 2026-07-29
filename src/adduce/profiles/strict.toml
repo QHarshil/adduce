@@ -1,5 +1,5 @@
 name = "strict"
-description = "Everything weighted evenly and nothing forgiven; intended for internal lab standards."
+description = "All categories receive near-uniform weight; intended for explicit internal lab standards."
 
 [weights]
 code_execution = 6

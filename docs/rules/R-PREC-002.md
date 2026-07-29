@@ -6,7 +6,9 @@
 
 ## Why it matters
 
-AMP changes numerics run-to-run and across GPU generations; the policy must be stated.
+AMP changes numerical precision and can interact with hardware, kernels, and
+determinism settings. Recording the policy helps reviewers interpret numerical
+differences; AMP alone does not prove run-to-run instability.
 
 ## Suppressing
 

@@ -39,7 +39,11 @@ class UnpinnedDependencyRule(Rule):
         if not ev.deps.dependencies:
             return self.finding(Status.NOT_APPLICABLE, confidence=0.7, message="No parseable dependency entries.")
         if ev.deps.has_lockfile:
-            return self.finding(Status.PASS, confidence=0.85, message="A lockfile pins the resolved environment.")
+            return self.finding(
+                Status.PASS,
+                confidence=0.85,
+                message="A lockfile records the resolved package dependency set.",
+            )
         floating = [d for d in ev.deps.dependencies if d.pin is PinLevel.UNBOUNDED]
         if not floating:
             return self.finding(Status.PASS, confidence=0.85, message="Every declared dependency carries a version constraint.")
@@ -184,8 +188,8 @@ class NotebookOnlyImportRule(Rule):
     category = Category.DEPENDENCIES
     title = "Notebook imports missing from the dependency manifest"
     rationale = (
-        "Notebook-only imports are the most common ghost dependencies: installed once with "
-        "!pip install, never declared, gone on the reviewer's machine."
+        "Notebook-only imports can become undeclared dependencies when an interactive "
+        "environment retains packages installed with !pip install."
     )
     weight = 2
 

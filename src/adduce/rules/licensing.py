@@ -11,7 +11,10 @@ class LicenseRule(Rule):
     id = "R-LIC-001"
     category = Category.ACCESS_LEGAL
     title = "License file present"
-    rationale = "Without a license, reuse is legally undefined no matter how open the repository looks."
+    rationale = (
+        "Without an explicit license, recipients generally have no stated permission to copy, "
+        "modify, or redistribute the work, subject to applicable law."
+    )
     weight = 3
 
     def evaluate(self, ev: Evidence) -> Finding:

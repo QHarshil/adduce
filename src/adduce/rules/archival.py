@@ -71,8 +71,8 @@ class ArchivalMetadataRule(Rule):
     category = Category.ARCHIVAL
     title = "Machine-readable archival metadata (.zenodo.json / codemeta.json)"
     rationale = (
-        "Without deposit metadata, the Zenodo record inherits whatever GitHub guesses; "
-        ".zenodo.json and codemeta.json make the archival record correct on first deposit."
+        "Without reviewed deposit metadata, an archive may infer incomplete repository fields. "
+        ".zenodo.json and codemeta.json provide an explicit draft for author review."
     )
     weight = 1
 
