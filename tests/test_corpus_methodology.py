@@ -9,6 +9,7 @@ import random
 import subprocess
 import sys
 from pathlib import Path
+from typing import Any
 
 import pytest
 from corpus.scripts.claim_ground_truth import (
@@ -17,9 +18,53 @@ from corpus.scripts.claim_ground_truth import (
     _observed_resolution,
     validate_ground_truth,
 )
-from corpus.scripts.label_findings import load, report, validate_against_run
-from corpus.scripts.label_findings import validate as validate_labels
+from corpus.scripts.claim_review import (
+    ClaimReviewError,
+    initialize_review,
+    merge_independent_reviews,
+    validate_review_for_candidate_run,
+    verify_independent_review_sources,
+)
+from corpus.scripts.claim_review import (
+    validate_review as validate_claim_review,
+)
+from corpus.scripts.label_findings import (
+    FindingReviewError,
+    _collect_conflict_declaration,
+    _conflict_scope,
+    initialize_finding_review_source,
+    load,
+    merge_independent_finding_reviews,
+    report,
+    validate_against_run,
+    validate_finding_review_calibration,
+    validate_independent_finding_review,
+    validate_merged_finding_review,
+)
+from corpus.scripts.label_findings import (
+    validate as validate_labels,
+)
+from corpus.scripts.preregistration import (
+    PREREGISTRATION_ANALYSIS_PLAN_PATHS,
+    PreregistrationError,
+    analysis_plan_identity,
+    build_preregistration,
+    builtin_rule_ids_sha256,
+    validate_preregistration_bytes,
+)
+from corpus.scripts.review_allocation import (
+    ReviewAllocationError,
+    require_first_review_completion,
+    require_review_completion,
+)
+from corpus.scripts.review_allocation import (
+    build_manifest as build_review_allocation,
+)
+from corpus.scripts.review_allocation import (
+    validate_manifest as validate_review_allocation,
+)
 from corpus.scripts.run_contract import sha256_file
+from corpus.scripts.run_validation import _source_tree_sha256
 from corpus.scripts.sample_findings import (
     _filter_repositories,
     _fingerprint_set_sha256,
@@ -27,12 +72,97 @@ from corpus.scripts.sample_findings import (
     _sample_findings,
     _sampler_python_identity,
 )
+from jsonschema import Draft202012Validator
 
+import adduce
+from adduce.rules import discover_rules
 from tests.test_corpus_tooling import _write_minimal_valid_run
 
 ROOT = Path(__file__).resolve().parent.parent
 SAMPLE_SCRIPT = ROOT / "corpus" / "scripts" / "sample_findings.py"
 LABEL_SCRIPT = ROOT / "corpus" / "scripts" / "label_findings.py"
+CLAIM_REVIEW_SCRIPT = ROOT / "corpus" / "scripts" / "claim_review.py"
+
+
+def _preregistration_fixture() -> tuple[bytes, dict[str, Any], dict[str, object]]:
+    schema_data = (ROOT / "corpus" / "preregistration.schema.json").read_bytes()
+    repos_data = (
+        "id,cohort,repo_url,commit_sha\n"
+        f"badged,badged_functional,https://example.invalid/badged,{'1' * 40}\n"
+        f"labelled,unvetted,https://example.invalid/labelled,{'2' * 40}\n"
+        f"load,stress,https://example.invalid/load,{'3' * 40}\n"
+    ).encode()
+    records = []
+    for repo_id, commit in (
+        ("badged", "1" * 40),
+        ("labelled", "2" * 40),
+        ("load", "3" * 40),
+    ):
+        records.append(
+            {
+                "id": repo_id,
+                "status": "cloned",
+                "acquisition_status": "complete",
+                "requested_sha": commit,
+                "resolved_sha": commit,
+                "git_tree_sha": "4" * 40,
+                "worktree_sha256": "5" * 64,
+                "submodule_state": "not_configured",
+                "git_lfs_state": "no_pointers",
+                "git_lfs_pointer_count": 0,
+            }
+        )
+    inputs = {
+        "schema_data": schema_data,
+        "repos_data": repos_data,
+        "clone_manifest_data": json.dumps(
+            {"clone_schema_version": 2, "records": records},
+            sort_keys=True,
+        ).encode(),
+        "claim_ground_truth_data": b'{"claims":[]}\n',
+        "claim_review_schema_data": b'{"title":"claim review"}\n',
+        "badged_provenance_data": b"id,commit_sha\n",
+        "analysis_plan_files": {
+            name: (ROOT / "corpus" / name).read_bytes()
+            for name in PREREGISTRATION_ANALYSIS_PLAN_PATHS
+        },
+    }
+    identity: dict[str, object] = {
+        "adduce_version": "0.test",
+        "adduce_source_commit": "9" * 40,
+        "adduce_source_tree_sha256": "a" * 64,
+        "builtin_rule_ids": ["R-TEST-001", "R-TEST-002"],
+        "dependency_versions": {"fixture": "1.0"},
+        "corpus_harness_git_commit": "9" * 40,
+    }
+    payload = build_preregistration(
+        protocol_id="fixture-r3",
+        candidate_pair=["candidate-a", "candidate-b"],
+        source_identity=identity,
+        timeout_seconds=300,
+        **inputs,
+    )
+    return (
+        json.dumps(payload, sort_keys=True, separators=(",", ":")).encode(),
+        inputs,
+        identity,
+    )
+
+
+def _validate_preregistration_fixture(
+    data: bytes,
+    inputs: dict[str, Any],
+    identity: dict[str, object],
+    **overrides: Any,
+) -> dict[str, Any]:
+    arguments: dict[str, Any] = {
+        **inputs,
+        "source_identity": identity,
+        "candidate_run_name": "candidate-a",
+        "timeout_seconds": 300,
+    }
+    arguments.update(overrides)
+    return validate_preregistration_bytes(data, **arguments)
 
 
 def _probability(numerator: int, denominator: int) -> dict[str, int | float]:
@@ -135,6 +265,26 @@ def _review(reviewer_id: str, correctness: str = "correct") -> dict:
         "notes": "",
         "evidence_links": ["README.md:1"],
     }
+
+
+def _mixed_report_entries() -> list[dict]:
+    effectiveness = _sample_entry()
+    effectiveness["reviews"] = [_review("reviewer-a"), _review("reviewer-b")]
+
+    stress = copy.deepcopy(effectiveness)
+    stress.update(
+        {
+            "repo_id": "stress-case",
+            "cohort": "stress",
+            "rule_id": "R-STRESS-001",
+            "title": "Stress diagnostic",
+            "finding_fingerprint": "v1:" + "f" * 64,
+        }
+    )
+    stress["sampling"]["repository_stratum"]["cohort"] = "stress"
+    entries = [effectiveness, stress]
+    _bind_sample_set(entries)
+    return entries
 
 
 def test_finding_sampling_excludes_stress_unless_explicitly_selected() -> None:
@@ -324,6 +474,10 @@ def test_review_schema_keeps_independent_records_and_requires_adjudication() -> 
     with pytest.raises(ValueError, match="appears more than once"):
         validate_labels([entry])
 
+    entry["reviews"][-1] = _review("reviewer-c")
+    with pytest.raises(ValueError, match="at most two"):
+        validate_labels([entry])
+
 
 def test_review_requires_evidence_and_uncertainty_rationale() -> None:
     entry = _sample_entry()
@@ -358,6 +512,687 @@ def test_review_report_labels_aggregates_as_sample_proportions(
     assert "R-TEST-001: reviewed=1" in output
     assert "root-cause counts" in output
     assert "none: 1" in output
+
+
+def test_mixed_report_requires_explicit_scope() -> None:
+    entries = _mixed_report_entries()
+    validate_labels(entries)
+
+    with pytest.raises(ValueError, match=r"mixed effectiveness and stress.*--report-scope"):
+        report(entries)
+
+
+def test_report_scopes_effectiveness_and_stress_without_pooling(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    entries = _mixed_report_entries()
+
+    report(entries, report_scope="effectiveness")
+    effectiveness_output = capsys.readouterr().out
+    assert "report scope: effectiveness" in effectiveness_output
+    assert "scope selection: 1 of 2 validated bound findings" in effectiveness_output
+    assert "R-TEST-001: reviewed=1" in effectiveness_output
+    assert "R-STRESS-001" not in effectiveness_output
+    assert "unweighted reviewed-sample proportions" in effectiveness_output
+
+    report(entries, report_scope="stress")
+    stress_output = capsys.readouterr().out
+    assert "report scope: stress (diagnostic-only operational review)" in stress_output
+    assert "scope selection: 1 of 2 validated bound findings" in stress_output
+    assert "R-STRESS-001: reviewed=1" in stress_output
+    assert "R-TEST-001" not in stress_output
+    assert "unweighted reviewed-sample proportions" not in stress_output
+    assert "incorrect fail/partial labels" not in stress_output
+    assert "incorrect pass labels" not in stress_output
+
+
+def test_report_validates_complete_bound_sample_before_scope_filtering() -> None:
+    entries = _mixed_report_entries()
+    entries[1]["reviews"][0]["evidence_links"] = []
+
+    with pytest.raises(ValueError, match="evidence link"):
+        report(entries, report_scope="effectiveness")
+
+
+def _allocation_sources() -> list[tuple[str, str, list[dict]]]:
+    sources: list[list[dict]] = [[], []]
+    counter = 1
+    statuses = ("fail", "pass", "unknown")
+    for repo_number in range(10):
+        cohort = "badged_functional" if repo_number < 5 else "unvetted"
+        for status in statuses:
+            for occurrence in range(10):
+                entry = copy.deepcopy(_sample_entry())
+                entry.update(
+                    {
+                        "repo_id": f"repo-{repo_number}",
+                        "repo_commit": f"{repo_number + 1:x}" * 40,
+                        "cohort": cohort,
+                        "rule_id": f"R-ALLOC-{occurrence:03d}",
+                        "finding_status": status,
+                        "finding_fingerprint": f"v1:{counter:064x}",
+                    }
+                )
+                entry["sampling"]["repository_stratum"]["cohort"] = cohort
+                entry["sampling"]["finding_stratum"]["status"] = status
+                entry["reviews"] = []
+                entry["adjudication"] = None
+                sources[0 if repo_number < 5 else 1].append(entry)
+                counter += 1
+
+    stress = copy.deepcopy(sources[0][0])
+    stress.update(
+        {
+            "repo_id": "stress-repo",
+            "repo_commit": "f" * 40,
+            "cohort": "stress",
+            "finding_fingerprint": f"v1:{counter:064x}",
+        }
+    )
+    stress["sampling"]["repository_stratum"]["cohort"] = "stress"
+    sources[0].append(stress)
+    for entries in sources:
+        _bind_sample_set(entries)
+        validate_labels(entries)
+    return [
+        ("sentinels.jsonl", "1" * 64, sources[0]),
+        ("sample.jsonl", "2" * 64, sources[1]),
+    ]
+
+
+def _allocation_run_binding() -> dict:
+    return {
+        "run_schema_version": 1,
+        "run_id": "candidate-run",
+        "adduce_version": "0.test",
+        "run_meta_sha256": "3" * 64,
+        "corpus_harness_sha256": "4" * 64,
+        "claim_ground_truth_sha256": "5" * 64,
+    }
+
+
+def test_review_allocation_is_deterministic_stratified_and_excludes_stress() -> None:
+    sources = _allocation_sources()
+    manifest = build_review_allocation(sources, _allocation_run_binding(), seed=17)
+    repeated = build_review_allocation(list(reversed(sources)), _allocation_run_binding(), seed=17)
+
+    assert manifest == repeated
+    assert manifest["population"]["entry_count"] == 300
+    assert manifest["population"]["repository_count"] == 10
+    assert manifest["calibration_count"] == 40
+    assert manifest["second_review_count"] == 60
+    calibration = {entry["finding_fingerprint"] for entry in manifest["calibration"]}
+    second_review = {entry["finding_fingerprint"] for entry in manifest["second_review"]}
+    assert calibration <= second_review
+    assert {entry["repo_id"] for entry in manifest["calibration"]} == {
+        f"repo-{number}" for number in range(10)
+    }
+    assert {entry["decision_group"] for entry in manifest["calibration"]} == {
+        "emitted",
+        "pass",
+        "abstention",
+    }
+    assert all(entry["cohort"] != "stress" for entry in manifest["second_review"])
+    bound_sources = {source["source_id"]: source for source in manifest["sources"]}
+    assert bound_sources["sentinels.jsonl"]["excluded_stress_entry_count"] == 1
+    assert bound_sources["sample.jsonl"]["initial_source_sha256"] == "2" * 64
+    assert bound_sources["sentinels.jsonl"]["initial_source_sha256"] == "1" * 64
+
+
+def test_review_allocation_remains_bound_when_only_review_fields_change() -> None:
+    sources = _allocation_sources()
+    run_binding = _allocation_run_binding()
+    manifest = build_review_allocation(sources, run_binding, seed=4)
+    sources[0][2][0]["reviews"] = [_review("reviewer-a")]
+
+    validate_review_allocation(manifest, sources, run_binding)
+
+    tampered = copy.deepcopy(manifest)
+    tampered["calibration"][0]["finding_fingerprint"] = "v1:" + "f" * 64
+    with pytest.raises(ReviewAllocationError, match="deterministic.*reconstruction"):
+        validate_review_allocation(tampered, sources, run_binding)
+
+
+def test_review_allocation_completion_enforces_calibration_and_full_quota() -> None:
+    sources = _allocation_sources()
+    manifest = build_review_allocation(sources, _allocation_run_binding(), seed=9)
+    entries = {
+        entry["finding_fingerprint"]: entry
+        for _, _, source_entries in sources
+        for entry in source_entries
+    }
+    for reference in manifest["calibration"]:
+        entries[reference["finding_fingerprint"]]["reviews"] = [
+            _review("reviewer-a"),
+            _review("reviewer-b"),
+        ]
+
+    require_review_completion(manifest, sources, "calibration")
+    with pytest.raises(ReviewAllocationError, match="first review is incomplete"):
+        require_first_review_completion(sources)
+    with pytest.raises(ReviewAllocationError, match="second-review review is incomplete"):
+        require_review_completion(manifest, sources, "second-review")
+
+    for reference in manifest["second_review"]:
+        entry = entries[reference["finding_fingerprint"]]
+        if not entry["reviews"]:
+            entry["reviews"] = [_review("reviewer-a"), _review("reviewer-b")]
+    require_review_completion(manifest, sources, "second-review")
+
+    for _, _, source_entries in sources:
+        for entry in source_entries:
+            if entry["cohort"] != "stress" and not entry["reviews"]:
+                entry["reviews"] = [_review("reviewer-a")]
+    require_first_review_completion(sources)
+
+
+def test_review_allocation_enforces_calibration_exact_agreement_floor() -> None:
+    sources = _allocation_sources()
+    manifest = build_review_allocation(sources, _allocation_run_binding(), seed=11)
+    entries = {
+        entry["finding_fingerprint"]: entry
+        for _, _, source_entries in sources
+        for entry in source_entries
+    }
+    for index, reference in enumerate(manifest["calibration"]):
+        entry = entries[reference["finding_fingerprint"]]
+        second = _review("reviewer-b", "incorrect" if index < 9 else "correct")
+        entry["reviews"] = [_review("reviewer-a"), second]
+        if index < 9:
+            adjudication = {
+                **_review("unused"),
+                "adjudicator_id": "adjudicator-c",
+                "notes": "Resolved against the pinned repository evidence.",
+            }
+            del adjudication["reviewer_id"]
+            entry["adjudication"] = adjudication
+
+    with pytest.raises(ReviewAllocationError, match="correctness.*below 80%: 31/40"):
+        require_review_completion(manifest, sources, "calibration")
+
+
+def _completed_finding_review_source(
+    manifest: dict,
+    sources: list[tuple[str, str, list[dict]]],
+    *,
+    role: str,
+    reviewer_id: str,
+) -> dict:
+    payload = initialize_finding_review_source(
+        manifest,
+        sources,
+        "6" * 64,
+        review_role=role,
+        reviewer_id=reviewer_id,
+    )
+    payload["domain_expertise"] = "Research-artifact evaluation and Python tooling."
+    payload["blinding_declaration"] = {
+        "independent_review": True,
+        "other_reviewer_decisions_not_seen": True,
+        "other_reviewer_source_not_accessed": True,
+        "declared_at": "2026-07-13T11:00:00+00:00",
+    }
+    payload["conflict_of_interest_declaration"] = {
+        "scope": _conflict_scope(payload["records"]),
+        "no_relevant_authorship_or_contribution": True,
+        "no_close_collaboration_supervision_or_employment": True,
+        "no_financial_conflict": True,
+        "no_personal_conflict": True,
+        "declared_at": "2026-07-13T11:00:00+00:00",
+    }
+    for record in payload["records"]:
+        record["review"] = _review(reviewer_id)
+    return payload
+
+
+def test_separate_finding_review_sources_bind_roles_and_exclude_stress() -> None:
+    sources = _allocation_sources()
+    manifest = build_review_allocation(sources, _allocation_run_binding(), seed=17)
+
+    primary = initialize_finding_review_source(
+        manifest,
+        sources,
+        "6" * 64,
+        review_role="primary",
+        reviewer_id="finding-reviewer-a",
+    )
+    secondary = initialize_finding_review_source(
+        manifest,
+        sources,
+        "6" * 64,
+        review_role="secondary",
+        reviewer_id="finding-reviewer-b",
+    )
+
+    assert len(primary["records"]) == manifest["population"]["entry_count"] == 300
+    assert len(secondary["records"]) == manifest["second_review_count"] == 60
+    assert all("cohort" not in record for record in primary["records"])
+    assert all("reviews" not in record for record in primary["records"])
+    assert all(record["review"] is None for record in primary["records"])
+    assert {
+        record["finding_fingerprint"] for record in secondary["records"]
+    } == {
+        reference["finding_fingerprint"] for reference in manifest["second_review"]
+    }
+    stress_fingerprint = sources[0][2][-1]["finding_fingerprint"]
+    assert stress_fingerprint not in {
+        record["finding_fingerprint"] for record in primary["records"]
+    }
+    assert sum(
+        binding["excluded_stress_entry_count"]
+        for binding in primary["source_bindings"]
+    ) == 1
+
+
+def test_finding_review_sources_merge_deterministically_with_exact_provenance() -> None:
+    sources = _allocation_sources()
+    manifest = build_review_allocation(sources, _allocation_run_binding(), seed=17)
+    primary = _completed_finding_review_source(
+        manifest,
+        sources,
+        role="primary",
+        reviewer_id="finding-reviewer-a",
+    )
+    secondary = _completed_finding_review_source(
+        manifest,
+        sources,
+        role="secondary",
+        reviewer_id="finding-reviewer-b",
+    )
+
+    validate_independent_finding_review(
+        primary,
+        manifest,
+        sources,
+        "6" * 64,
+        require_complete=True,
+    )
+    validate_independent_finding_review(
+        secondary,
+        manifest,
+        sources,
+        "6" * 64,
+        require_complete=True,
+    )
+    merged = merge_independent_finding_reviews(
+        [primary, secondary],
+        ["7" * 64, "8" * 64],
+        manifest,
+        sources,
+        "6" * 64,
+    )
+    repeated = merge_independent_finding_reviews(
+        [secondary, primary],
+        ["8" * 64, "7" * 64],
+        manifest,
+        sources,
+        "6" * 64,
+    )
+
+    assert merged == repeated
+    assert merged["population"] == {
+        "cohorts": ["badged_functional", "unvetted"],
+        "excluded_cohorts": ["stress"],
+        "entry_count": 300,
+        "finding_fingerprint_set_sha256": manifest["population"][
+            "finding_fingerprint_set_sha256"
+        ],
+        "primary_review_count": 300,
+        "secondary_review_count": 60,
+        "excluded_stress_entry_count": 1,
+    }
+    assert [
+        (source["review_role"], source["reviewer_id"], source["sha256"])
+        for source in merged["initial_review_sources"]
+    ] == [
+        ("primary", "finding-reviewer-a", "7" * 64),
+        ("secondary", "finding-reviewer-b", "8" * 64),
+    ]
+    summary = validate_merged_finding_review(
+        merged,
+        [secondary, primary],
+        ["8" * 64, "7" * 64],
+        manifest,
+        sources,
+        "6" * 64,
+        require_complete=True,
+    )
+    assert summary == {
+        "population": 300,
+        "second_reviewed": 60,
+        "adjudicated": 0,
+        "pending_adjudications": 0,
+    }
+
+
+def test_finding_review_calibration_requires_complete_pair_and_agreement_floor() -> None:
+    sources = _allocation_sources()
+    manifest = build_review_allocation(sources, _allocation_run_binding(), seed=19)
+    primary = _completed_finding_review_source(
+        manifest,
+        sources,
+        role="primary",
+        reviewer_id="finding-reviewer-a",
+    )
+    secondary = _completed_finding_review_source(
+        manifest,
+        sources,
+        role="secondary",
+        reviewer_id="finding-reviewer-b",
+    )
+
+    agreements = validate_finding_review_calibration(
+        [secondary, primary],
+        manifest,
+        sources,
+        "6" * 64,
+    )
+    assert agreements["correctness"] == (40, 40)
+    assert agreements["applicability"] == (40, 40)
+
+    incomplete = copy.deepcopy(secondary)
+    calibration_fingerprint = manifest["calibration"][0]["finding_fingerprint"]
+    next(
+        record
+        for record in incomplete["records"]
+        if record["finding_fingerprint"] == calibration_fingerprint
+    )["review"] = None
+    with pytest.raises(FindingReviewError, match="calibration review is incomplete"):
+        validate_finding_review_calibration(
+            [primary, incomplete],
+            manifest,
+            sources,
+            "6" * 64,
+        )
+
+    low_agreement = copy.deepcopy(secondary)
+    by_fingerprint = {
+        record["finding_fingerprint"]: record for record in low_agreement["records"]
+    }
+    for reference in manifest["calibration"][:9]:
+        by_fingerprint[reference["finding_fingerprint"]]["review"]["correctness"] = (
+            "incorrect"
+        )
+    with pytest.raises(FindingReviewError, match="correctness.*below 80%: 31/40"):
+        validate_finding_review_calibration(
+            [primary, low_agreement],
+            manifest,
+            sources,
+            "6" * 64,
+        )
+
+
+def test_finding_review_source_rejects_weak_blinding_and_role_drift() -> None:
+    sources = _allocation_sources()
+    manifest = build_review_allocation(sources, _allocation_run_binding(), seed=5)
+    primary = _completed_finding_review_source(
+        manifest,
+        sources,
+        role="primary",
+        reviewer_id="finding-reviewer-a",
+    )
+
+    missing_declaration = copy.deepcopy(primary)
+    missing_declaration["blinding_declaration"] = None
+    with pytest.raises(FindingReviewError, match="blinding declaration fields"):
+        validate_independent_finding_review(
+            missing_declaration,
+            manifest,
+            sources,
+            "6" * 64,
+        )
+
+    late_declaration = copy.deepcopy(primary)
+    late_declaration["blinding_declaration"]["declared_at"] = (
+        "2026-07-13T12:00:01+00:00"
+    )
+    with pytest.raises(FindingReviewError, match="after review began"):
+        validate_independent_finding_review(
+            late_declaration,
+            manifest,
+            sources,
+            "6" * 64,
+        )
+
+    missing_conflict_declaration = copy.deepcopy(primary)
+    missing_conflict_declaration["conflict_of_interest_declaration"] = None
+    with pytest.raises(FindingReviewError, match="conflict-of-interest declaration fields"):
+        validate_independent_finding_review(
+            missing_conflict_declaration,
+            manifest,
+            sources,
+            "6" * 64,
+        )
+
+    conflicted = copy.deepcopy(primary)
+    conflicted["conflict_of_interest_declaration"]["no_financial_conflict"] = False
+    with pytest.raises(FindingReviewError, match="assignment must be reassigned"):
+        validate_independent_finding_review(
+            conflicted,
+            manifest,
+            sources,
+            "6" * 64,
+        )
+
+    wrong_scope = copy.deepcopy(primary)
+    wrong_scope["conflict_of_interest_declaration"]["scope"][
+        "finding_fingerprint_set_sha256"
+    ] = "0" * 64
+    with pytest.raises(FindingReviewError, match="scope does not match"):
+        validate_independent_finding_review(
+            wrong_scope,
+            manifest,
+            sources,
+            "6" * 64,
+        )
+
+    late_conflict_declaration = copy.deepcopy(primary)
+    late_conflict_declaration["conflict_of_interest_declaration"]["declared_at"] = (
+        "2026-07-13T12:00:01+00:00"
+    )
+    with pytest.raises(FindingReviewError, match="after review began"):
+        validate_independent_finding_review(
+            late_conflict_declaration,
+            manifest,
+            sources,
+            "6" * 64,
+        )
+
+    changed_role = copy.deepcopy(primary)
+    changed_role["review_role"] = "secondary"
+    with pytest.raises(FindingReviewError, match="immutable field 'selection'"):
+        validate_independent_finding_review(
+            changed_role,
+            manifest,
+            sources,
+            "6" * 64,
+        )
+
+    deleted_record = copy.deepcopy(primary)
+    deleted_record["records"].pop()
+    with pytest.raises(FindingReviewError, match="assigned records"):
+        validate_independent_finding_review(
+            deleted_record,
+            manifest,
+            sources,
+            "6" * 64,
+        )
+
+    same_reviewer = _completed_finding_review_source(
+        manifest,
+        sources,
+        role="secondary",
+        reviewer_id="finding-reviewer-a",
+    )
+    with pytest.raises(FindingReviewError, match="distinct reviewer identities"):
+        merge_independent_finding_reviews(
+            [primary, same_reviewer],
+            ["7" * 64, "8" * 64],
+            manifest,
+            sources,
+            "6" * 64,
+        )
+
+
+def test_conflicted_finding_reviewer_is_recused_without_collecting_details(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr("builtins.input", lambda _: "conflict")
+
+    with pytest.raises(FindingReviewError, match="assignment must be reassigned"):
+        _collect_conflict_declaration(
+            {
+                "repository_ids": ["labelled"],
+                "finding_fingerprint_set_sha256": "1" * 64,
+            },
+            role="primary reviewer",
+        )
+
+
+def test_merged_finding_review_requires_adjudication_and_exact_source_hashes() -> None:
+    sources = _allocation_sources()
+    manifest = build_review_allocation(sources, _allocation_run_binding(), seed=13)
+    primary = _completed_finding_review_source(
+        manifest,
+        sources,
+        role="primary",
+        reviewer_id="finding-reviewer-a",
+    )
+    secondary = _completed_finding_review_source(
+        manifest,
+        sources,
+        role="secondary",
+        reviewer_id="finding-reviewer-b",
+    )
+    merged = merge_independent_finding_reviews(
+        [primary, secondary],
+        ["7" * 64, "8" * 64],
+        manifest,
+        sources,
+        "6" * 64,
+    )
+    calibration_fingerprint = manifest["calibration"][0]["finding_fingerprint"]
+    disputed = next(
+        entry
+        for source in merged["sources"]
+        for entry in source["entries"]
+        if entry["finding_fingerprint"] == calibration_fingerprint
+    )
+    disputed["reviews"][1]["correctness"] = "incorrect"
+
+    changed_secondary = copy.deepcopy(secondary)
+    changed_record = next(
+        record
+        for record in changed_secondary["records"]
+        if record["finding_fingerprint"] == calibration_fingerprint
+    )
+    changed_record["review"]["correctness"] = "incorrect"
+    changed_merged = merge_independent_finding_reviews(
+        [primary, changed_secondary],
+        ["7" * 64, "9" * 64],
+        manifest,
+        sources,
+        "6" * 64,
+    )
+    with pytest.raises(FindingReviewError, match="unadjudicated"):
+        validate_merged_finding_review(
+            changed_merged,
+            [primary, changed_secondary],
+            ["7" * 64, "9" * 64],
+            manifest,
+            sources,
+            "6" * 64,
+            require_complete=True,
+        )
+
+    changed_disputed = next(
+        entry
+        for source in changed_merged["sources"]
+        for entry in source["entries"]
+        if entry["finding_fingerprint"] == calibration_fingerprint
+    )
+    adjudication = {
+        **_review("unused", "correct"),
+        "adjudicator_id": "finding-adjudicator-c",
+        "notes": "Resolved against the commit-pinned repository evidence.",
+        "conflict_of_interest_declaration": {
+            "scope": _conflict_scope([changed_disputed]),
+            "no_relevant_authorship_or_contribution": True,
+            "no_close_collaboration_supervision_or_employment": True,
+            "no_financial_conflict": True,
+            "no_personal_conflict": True,
+            "declared_at": "2026-07-13T12:00:00+00:00",
+        },
+    }
+    del adjudication["reviewer_id"]
+    changed_disputed["adjudication"] = adjudication
+    validate_merged_finding_review(
+        changed_merged,
+        [primary, changed_secondary],
+        ["7" * 64, "9" * 64],
+        manifest,
+        sources,
+        "6" * 64,
+        require_complete=True,
+    )
+
+    missing_adjudicator_declaration = copy.deepcopy(changed_merged)
+    changed_adjudication = next(
+        entry
+        for source in missing_adjudicator_declaration["sources"]
+        for entry in source["entries"]
+        if entry["finding_fingerprint"] == calibration_fingerprint
+    )["adjudication"]
+    del changed_adjudication["conflict_of_interest_declaration"]
+    with pytest.raises(FindingReviewError, match="requires a conflict-of-interest declaration"):
+        validate_merged_finding_review(
+            missing_adjudicator_declaration,
+            [primary, changed_secondary],
+            ["7" * 64, "9" * 64],
+            manifest,
+            sources,
+            "6" * 64,
+        )
+
+    conflicted_adjudicator = copy.deepcopy(changed_merged)
+    conflicted_adjudication = next(
+        entry
+        for source in conflicted_adjudicator["sources"]
+        for entry in source["entries"]
+        if entry["finding_fingerprint"] == calibration_fingerprint
+    )["adjudication"]
+    conflicted_adjudication["conflict_of_interest_declaration"][
+        "no_close_collaboration_supervision_or_employment"
+    ] = False
+    with pytest.raises(FindingReviewError, match="assignment must be reassigned"):
+        validate_merged_finding_review(
+            conflicted_adjudicator,
+            [primary, changed_secondary],
+            ["7" * 64, "9" * 64],
+            manifest,
+            sources,
+            "6" * 64,
+        )
+
+    with pytest.raises(FindingReviewError, match="bound field 'initial_review_sources'"):
+        validate_merged_finding_review(
+            changed_merged,
+            [primary, changed_secondary],
+            ["7" * 64, "a" * 64],
+            manifest,
+            sources,
+            "6" * 64,
+        )
+
+
+def test_review_allocation_rejects_missing_decision_group() -> None:
+    sources = _allocation_sources()
+    for _, _, entries in sources:
+        entries[:] = [entry for entry in entries if entry["finding_status"] != "unknown"]
+        _bind_sample_set(entries)
+
+    with pytest.raises(ReviewAllocationError, match="lacks decision group"):
+        build_review_allocation(sources, _allocation_run_binding(), seed=0)
 
 
 def _draw_bound_sample(tmp_path: Path) -> tuple[Path, Path, list[dict]]:
@@ -505,6 +1340,8 @@ def test_v2_review_and_reporting_require_matching_run(tmp_path: Path) -> None:
             "--run",
             str(run),
             "--report",
+            "--report-scope",
+            "effectiveness",
         ],
         cwd=ROOT,
         capture_output=True,
@@ -515,6 +1352,94 @@ def test_v2_review_and_reporting_require_matching_run(tmp_path: Path) -> None:
     assert "v2 samples require --run" in unbound.stderr
     assert bound.returncode == 0, bound.stderr
     assert "sampled findings" in bound.stdout
+    assert "report scope: effectiveness" in bound.stdout
+
+
+def test_report_scope_is_report_only(tmp_path: Path) -> None:
+    run, sample, _ = _draw_bound_sample(tmp_path)
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            str(LABEL_SCRIPT),
+            str(sample),
+            "--run",
+            str(run),
+            "--report-scope",
+            "effectiveness",
+        ],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+    )
+
+    assert completed.returncode != 0
+    assert "--report-scope requires --report" in completed.stderr
+
+
+def test_review_allocation_cli_requires_complete_argument_set(tmp_path: Path) -> None:
+    run, sample, _ = _draw_bound_sample(tmp_path)
+    without_manifest = subprocess.run(
+        [
+            sys.executable,
+            str(LABEL_SCRIPT),
+            str(sample),
+            "--run",
+            str(run),
+            "--review-set",
+            "calibration",
+            "--reviewer-id",
+            "reviewer-a",
+        ],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+    )
+    without_sources = subprocess.run(
+        [
+            sys.executable,
+            str(LABEL_SCRIPT),
+            str(sample),
+            "--run",
+            str(run),
+            "--allocation",
+            str(tmp_path / "allocation.json"),
+            "--review-set",
+            "calibration",
+            "--reviewer-id",
+            "reviewer-a",
+        ],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+    )
+    shared_file_attempt = subprocess.run(
+        [
+            sys.executable,
+            str(LABEL_SCRIPT),
+            str(sample),
+            "--run",
+            str(run),
+            "--allocation",
+            str(tmp_path / "allocation.json"),
+            "--review-set",
+            "calibration",
+            "--allocation-source",
+            str(sample),
+            "--reviewer-id",
+            "reviewer-a",
+        ],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+    )
+
+    assert without_manifest.returncode != 0
+    assert "--allocation and --review-set must be supplied together" in without_manifest.stderr
+    assert without_sources.returncode != 0
+    assert "--allocation requires every bound file" in without_sources.stderr
+    assert shared_file_attempt.returncode != 0
+    assert "must use separate reviewer sources" in shared_file_attempt.stderr
 
 
 def test_census_cli_records_complete_selection_contract(tmp_path: Path) -> None:
@@ -746,6 +1671,336 @@ def _claim_payload(repos: Path, clones: Path, commit: str) -> dict:
     }
 
 
+def _domain_review(reviewer_id: str, decision: str = "verified") -> dict:
+    return {
+        "reviewer_id": reviewer_id,
+        "domain_expertise": "Machine-learning artifact evaluation",
+        "reviewed_at": "2026-07-14T12:00:00+00:00",
+        "blinding_declaration": {
+            "independent_review": True,
+            "other_reviewer_decisions_not_seen": True,
+            "adduce_claim_link_outputs_not_seen": True,
+            "declared_at": "2026-07-14T11:00:00+00:00",
+        },
+        "conflict_of_interest_declaration": {
+            "scope": {
+                "repository_id": "labelled",
+                "artifact_id": "labelled-headline",
+            },
+            "no_relevant_authorship_or_contribution": True,
+            "no_close_collaboration_supervision_or_employment": True,
+            "no_financial_conflict": True,
+            "no_personal_conflict": True,
+            "declared_at": "2026-07-14T11:00:00+00:00",
+        },
+        "claim_decision": decision,
+        "claim_rationale": "The pinned source supports the selected claim.",
+        "claim_evidence": ["README.md:2"],
+        "link_decisions": [
+            {
+                "target": target,
+                "decision": decision,
+                "rationale": f"The frozen mapping for {target} matches the pinned evidence.",
+                "evidence": ["README.md:2"],
+            }
+            for target in TARGETS
+        ],
+    }
+
+
+def _claim_adjudication(decision: str = "verified") -> dict:
+    return {
+        "adjudicator_id": "adjudicator-c",
+        "domain_expertise": "Machine-learning artifact evaluation",
+        "adjudicated_at": "2026-07-14T13:00:00+00:00",
+        "conflict_of_interest_declaration": {
+            "scope": {
+                "repository_id": "labelled",
+                "artifact_id": "labelled-headline",
+            },
+            "no_relevant_authorship_or_contribution": True,
+            "no_close_collaboration_supervision_or_employment": True,
+            "no_financial_conflict": True,
+            "no_personal_conflict": True,
+            "declared_at": "2026-07-14T12:30:00+00:00",
+        },
+        "claim_decision": decision,
+        "claim_rationale": "The pinned source resolves the disagreement.",
+        "claim_evidence": ["README.md:2"],
+        "link_decisions": [
+            {
+                "target": target,
+                "decision": decision,
+                "rationale": f"The pinned evidence resolves {target}.",
+                "evidence": ["README.md:2"],
+            }
+            for target in TARGETS
+        ],
+    }
+
+
+def _bind_claim_review_sources(review: dict) -> None:
+    reviewer_ids = sorted(
+        {item["reviewer_id"] for claim in review["claims"] for item in claim["reviews"]}
+    )
+    review["initial_review_sources"] = [
+        {"reviewer_id": reviewer_id, "sha256": f"{number:064x}"}
+        for number, reviewer_id in enumerate(reviewer_ids, 1)
+    ]
+
+
+def test_claim_review_scaffold_binds_truth_without_fabricating_decisions(
+    tmp_path: Path,
+) -> None:
+    clones = tmp_path / "clones"
+    commit = _make_claim_repo(clones / "labelled")
+    repos = tmp_path / "repos.csv"
+    _write_inventory(repos, commit)
+    (clones / "load-test").mkdir()
+    truth = _claim_payload(repos, clones, commit)
+    review = initialize_review(
+        truth,
+        "7" * 64,
+        ["pilot-0.1.2dev0-r4-a", "pilot-0.1.2dev0-r4-b"],
+    )
+
+    summary = validate_claim_review(review, truth, "7" * 64)
+
+    assert summary == {"claims": 1, "completed": 0, "accepted": 0, "adjudicated": 0}
+    assert review["claims"][0]["reviews"] == []
+    assert review["claims"][0]["adjudication"] is None
+    with pytest.raises(ClaimReviewError, match="lacks two independent reviews"):
+        validate_claim_review(review, truth, "7" * 64, require_complete=True)
+
+
+def test_claim_review_requires_independent_blinded_link_level_evidence(
+    tmp_path: Path,
+) -> None:
+    clones = tmp_path / "clones"
+    commit = _make_claim_repo(clones / "labelled")
+    repos = tmp_path / "repos.csv"
+    _write_inventory(repos, commit)
+    (clones / "load-test").mkdir()
+    truth = _claim_payload(repos, clones, commit)
+    review = initialize_review(truth, "8" * 64, ["candidate-a", "candidate-b"])
+    review["claims"][0]["reviews"] = [
+        _domain_review("reviewer-a"),
+        _domain_review("reviewer-b"),
+    ]
+    _bind_claim_review_sources(review)
+
+    summary = validate_claim_review(
+        review, truth, "8" * 64, require_complete=True, require_accepted=True
+    )
+    assert summary["accepted"] == 1
+
+    unblinded = copy.deepcopy(review)
+    unblinded["claims"][0]["reviews"][1]["blinding_declaration"][
+        "adduce_claim_link_outputs_not_seen"
+    ] = False
+    with pytest.raises(ClaimReviewError, match="must affirm"):
+        validate_claim_review(unblinded, truth, "8" * 64)
+
+    duplicate = copy.deepcopy(review)
+    duplicate["claims"][0]["reviews"][1]["reviewer_id"] = "reviewer-a"
+    with pytest.raises(ClaimReviewError, match="repeats reviewer"):
+        validate_claim_review(duplicate, truth, "8" * 64)
+
+    missing_evidence = copy.deepcopy(review)
+    missing_evidence["claims"][0]["reviews"][1]["link_decisions"][0]["evidence"] = []
+    with pytest.raises(ClaimReviewError, match="evidence locator"):
+        validate_claim_review(missing_evidence, truth, "8" * 64)
+
+    conflicted = copy.deepcopy(review)
+    conflicted["claims"][0]["reviews"][1]["conflict_of_interest_declaration"][
+        "no_personal_conflict"
+    ] = False
+    with pytest.raises(ClaimReviewError, match="assignment must be reassigned"):
+        validate_claim_review(conflicted, truth, "8" * 64)
+
+    wrong_scope = copy.deepcopy(review)
+    wrong_scope["claims"][0]["reviews"][1]["conflict_of_interest_declaration"]["scope"][
+        "artifact_id"
+    ] = "different-claim"
+    with pytest.raises(ClaimReviewError, match="assigned repository and artifact"):
+        validate_claim_review(wrong_scope, truth, "8" * 64)
+
+    late_conflict_declaration = copy.deepcopy(review)
+    late_conflict_declaration["claims"][0]["reviews"][1][
+        "conflict_of_interest_declaration"
+    ]["declared_at"] = "2026-07-14T12:00:01+00:00"
+    with pytest.raises(ClaimReviewError, match="after the review decision"):
+        validate_claim_review(late_conflict_declaration, truth, "8" * 64)
+
+
+def test_independent_claim_reviews_merge_deterministically_with_source_hashes(
+    tmp_path: Path,
+) -> None:
+    clones = tmp_path / "clones"
+    commit = _make_claim_repo(clones / "labelled")
+    repos = tmp_path / "repos.csv"
+    _write_inventory(repos, commit)
+    (clones / "load-test").mkdir()
+    truth = _claim_payload(repos, clones, commit)
+    first = initialize_review(truth, "8" * 64, ["candidate-a", "candidate-b"])
+    second = copy.deepcopy(first)
+    first["claims"][0]["reviews"] = [_domain_review("reviewer-a")]
+    second["claims"][0]["reviews"] = [_domain_review("reviewer-b")]
+
+    merged = merge_independent_reviews([first, second], ["1" * 64, "2" * 64], truth, "8" * 64)
+    reversed_merge = merge_independent_reviews(
+        [second, first], ["2" * 64, "1" * 64], truth, "8" * 64
+    )
+
+    assert merged == reversed_merge
+    assert merged["initial_review_sources"] == [
+        {"reviewer_id": "reviewer-a", "sha256": "1" * 64},
+        {"reviewer_id": "reviewer-b", "sha256": "2" * 64},
+    ]
+    validate_claim_review(merged, truth, "8" * 64, require_complete=True, require_accepted=True)
+    verify_independent_review_sources(
+        merged, [second, first], ["2" * 64, "1" * 64], truth, "8" * 64
+    )
+
+    no_provenance = copy.deepcopy(merged)
+    no_provenance["initial_review_sources"] = []
+    with pytest.raises(ClaimReviewError, match="merge provenance"):
+        validate_claim_review(no_provenance, truth, "8" * 64, require_complete=True)
+
+
+def test_claim_review_cli_requires_both_source_files_for_acceptance(tmp_path: Path) -> None:
+    clones = tmp_path / "clones"
+    commit = _make_claim_repo(clones / "labelled")
+    repos = tmp_path / "repos.csv"
+    _write_inventory(repos, commit)
+    (clones / "load-test").mkdir()
+    truth = _claim_payload(repos, clones, commit)
+    claims = tmp_path / "claims.json"
+    claims.write_text(json.dumps(truth), encoding="utf-8")
+    truth_digest = sha256_file(claims)
+    first = initialize_review(truth, truth_digest, ["candidate-a", "candidate-b"])
+    second = copy.deepcopy(first)
+    first["claims"][0]["reviews"] = [_domain_review("reviewer-a")]
+    second["claims"][0]["reviews"] = [_domain_review("reviewer-b")]
+    source_paths = [tmp_path / "review-a.json", tmp_path / "review-b.json"]
+    for path, payload in zip(source_paths, [first, second], strict=True):
+        path.write_text(json.dumps(payload), encoding="utf-8")
+    merged = merge_independent_reviews(
+        [first, second],
+        [sha256_file(path) for path in source_paths],
+        truth,
+        truth_digest,
+    )
+    merged_path = tmp_path / "merged.json"
+    merged_path.write_text(json.dumps(merged), encoding="utf-8")
+    base_command = [
+        sys.executable,
+        str(CLAIM_REVIEW_SCRIPT),
+        "validate",
+        "--review",
+        str(merged_path),
+        "--claims",
+        str(claims),
+        "--require-accepted",
+    ]
+
+    missing = subprocess.run(base_command, cwd=ROOT, capture_output=True, text=True)
+    complete = subprocess.run(
+        [
+            *base_command,
+            "--initial-review",
+            str(source_paths[0]),
+            "--initial-review",
+            str(source_paths[1]),
+        ],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+    )
+
+    assert missing.returncode != 0
+    assert "requires exactly two --initial-review" in missing.stderr
+    assert complete.returncode == 0, complete.stderr
+
+
+def test_claim_review_must_precede_and_name_the_candidate_run(tmp_path: Path) -> None:
+    clones = tmp_path / "clones"
+    commit = _make_claim_repo(clones / "labelled")
+    repos = tmp_path / "repos.csv"
+    _write_inventory(repos, commit)
+    (clones / "load-test").mkdir()
+    truth = _claim_payload(repos, clones, commit)
+    review = initialize_review(truth, "8" * 64, ["candidate-a", "candidate-b"])
+    review["claims"][0]["reviews"] = [
+        _domain_review("reviewer-a"),
+        _domain_review("reviewer-b"),
+    ]
+    _bind_claim_review_sources(review)
+
+    summary = validate_review_for_candidate_run(
+        review,
+        truth,
+        "8" * 64,
+        "candidate-a",
+        "2026-07-15T00:00:00+00:00",
+    )
+    assert summary["accepted"] == 1
+
+    with pytest.raises(ClaimReviewError, match="pre-registered candidate pair"):
+        validate_review_for_candidate_run(
+            review,
+            truth,
+            "8" * 64,
+            "candidate-c",
+            "2026-07-15T00:00:00+00:00",
+        )
+    with pytest.raises(ClaimReviewError, match="before human review was complete"):
+        validate_review_for_candidate_run(
+            review,
+            truth,
+            "8" * 64,
+            "candidate-a",
+            "2026-07-14T12:00:00+00:00",
+        )
+
+
+def test_claim_review_disagreement_requires_independent_adjudication(
+    tmp_path: Path,
+) -> None:
+    clones = tmp_path / "clones"
+    commit = _make_claim_repo(clones / "labelled")
+    repos = tmp_path / "repos.csv"
+    _write_inventory(repos, commit)
+    (clones / "load-test").mkdir()
+    truth = _claim_payload(repos, clones, commit)
+    review = initialize_review(truth, "9" * 64, ["candidate-a", "candidate-b"])
+    review["claims"][0]["reviews"] = [
+        _domain_review("reviewer-a"),
+        _domain_review("reviewer-b", "unclear"),
+    ]
+    _bind_claim_review_sources(review)
+
+    with pytest.raises(ClaimReviewError, match="required adjudication"):
+        validate_claim_review(review, truth, "9" * 64, require_complete=True)
+
+    review["claims"][0]["adjudication"] = _claim_adjudication()
+    summary = validate_claim_review(
+        review, truth, "9" * 64, require_complete=True, require_accepted=True
+    )
+    assert summary == {"claims": 1, "completed": 1, "accepted": 1, "adjudicated": 1}
+
+    review["claims"][0]["adjudication"]["adjudicator_id"] = "reviewer-a"
+    with pytest.raises(ClaimReviewError, match="adjudicator must be independent"):
+        validate_claim_review(review, truth, "9" * 64)
+
+    review["claims"][0]["adjudication"]["adjudicator_id"] = "adjudicator-c"
+    review["claims"][0]["adjudication"]["conflict_of_interest_declaration"][
+        "no_relevant_authorship_or_contribution"
+    ] = False
+    with pytest.raises(ClaimReviewError, match="assignment must be reassigned"):
+        validate_claim_review(review, truth, "9" * 64)
+
+
 def test_claim_ground_truth_is_commit_pinned_exact_and_excludes_stress(tmp_path: Path) -> None:
     clones = tmp_path / "clones"
     commit = _make_claim_repo(clones / "labelled")
@@ -804,3 +2059,235 @@ def test_claim_schema_is_valid_json_and_covers_normative_targets() -> None:
 
     assert schema["$schema"] == "https://json-schema.org/draft/2020-12/schema"
     assert set(schema_targets) == set(TARGETS)
+
+
+def test_preregistration_binds_candidate_pair_analyzer_execution_and_inputs() -> None:
+    data, inputs, identity = _preregistration_fixture()
+
+    payload = _validate_preregistration_fixture(data, inputs, identity)
+    Draft202012Validator(json.loads(inputs["schema_data"])).validate(payload)
+
+    assert payload["candidate_pair"] == ["candidate-a", "candidate-b"]
+    assert payload["execution_contract"] == {
+        "adduce_check_mode": "reviewer",
+        "configuration_mode": "defaults-only-repository-config-disabled",
+        "environment_policy": "minimal-no-host-credentials",
+        "execution_mode": "offline-builtins-only",
+        "input_policy": "clone-root-symlink-containment",
+        "plugins_enabled": False,
+        "timeout_seconds": 300,
+    }
+    assert payload["inputs"]["repository_count"] == 3
+    assert payload["inputs"]["cohort_counts"] == {
+        "badged_functional": 1,
+        "stress": 1,
+        "unvetted": 1,
+    }
+
+
+@pytest.mark.parametrize(
+    ("overrides", "match"),
+    [
+        ({"candidate_run_name": "candidate-c"}, "absent from"),
+        ({"timeout_seconds": 301}, "execution contract differs"),
+        ({"claim_ground_truth_data": b'{"claims":[{}]}\n'}, "frozen inputs differ"),
+        ({"schema_data": b'{"type":"array"}\n'}, "schema SHA-256 differs"),
+        (
+            {
+                "source_identity": {
+                    "adduce_version": "0.test",
+                    "adduce_source_commit": "9" * 40,
+                    "adduce_source_tree_sha256": "b" * 64,
+                    "builtin_rule_ids": ["R-TEST-001", "R-TEST-002"],
+                    "dependency_versions": {"fixture": "1.0"},
+                    "corpus_harness_git_commit": "9" * 40,
+                }
+            },
+            "analyzer identity differs",
+        ),
+        (
+            {
+                "source_identity": {
+                    "adduce_version": "0.test",
+                    "adduce_source_commit": "9" * 40,
+                    "adduce_source_tree_sha256": "a" * 64,
+                    "builtin_rule_ids": ["R-TEST-001", "R-TEST-002"],
+                    "dependency_versions": {"fixture": "2.0"},
+                    "corpus_harness_git_commit": "9" * 40,
+                }
+            },
+            "analyzer identity differs",
+        ),
+    ],
+)
+def test_preregistration_rejects_any_candidate_lock_drift(
+    overrides: dict[str, Any],
+    match: str,
+) -> None:
+    data, inputs, identity = _preregistration_fixture()
+
+    with pytest.raises(PreregistrationError, match=match):
+        _validate_preregistration_fixture(data, inputs, identity, **overrides)
+
+
+def test_preregistration_rejects_analysis_plan_drift_and_extra_fields() -> None:
+    data, inputs, identity = _preregistration_fixture()
+    changed_inputs = dict(inputs)
+    changed_plan = dict(inputs["analysis_plan_files"])
+    changed_plan["PILOT_PROTOCOL.md"] += b"\nchanged after preregistration\n"
+    changed_inputs["analysis_plan_files"] = changed_plan
+
+    with pytest.raises(PreregistrationError, match="analysis plan differs"):
+        _validate_preregistration_fixture(data, changed_inputs, identity)
+
+    payload = json.loads(data)
+    payload["unregistered_field"] = True
+    changed_data = json.dumps(payload).encode()
+    with pytest.raises(PreregistrationError, match="fields differ"):
+        _validate_preregistration_fixture(changed_data, inputs, identity)
+
+
+@pytest.mark.parametrize(
+    "data",
+    [
+        b'{"field":1,"field":2}',
+        b'{"field":NaN}',
+        b"\xff",
+    ],
+)
+def test_preregistration_parser_rejects_ambiguous_json(data: bytes) -> None:
+    _, inputs, identity = _preregistration_fixture()
+
+    with pytest.raises(PreregistrationError):
+        _validate_preregistration_fixture(data, inputs, identity)
+
+
+@pytest.mark.parametrize(
+    "candidate_pair",
+    [
+        ["candidate-a", "candidate-a"],
+        ["candidate-a", "../candidate-b"],
+        ["candidate-a", ["candidate-b"]],
+    ],
+)
+def test_preregistration_builder_rejects_unsafe_candidate_pairs(
+    candidate_pair: list[Any],
+) -> None:
+    _, inputs, identity = _preregistration_fixture()
+
+    with pytest.raises(PreregistrationError, match="two distinct candidate"):
+        build_preregistration(
+            protocol_id="fixture-r3",
+            candidate_pair=candidate_pair,
+            source_identity=identity,
+            timeout_seconds=300,
+            **inputs,
+        )
+
+
+def test_review_schemas_are_valid_and_accept_generated_draft_artifacts(
+    tmp_path: Path,
+) -> None:
+    allocation_schema = json.loads(
+        (ROOT / "corpus" / "review-allocation.schema.json").read_text(encoding="utf-8")
+    )
+    claim_review_schema = json.loads(
+        (ROOT / "corpus" / "claim-review.schema.json").read_text(encoding="utf-8")
+    )
+    finding_review_schema = json.loads(
+        (ROOT / "corpus" / "finding-review.schema.json").read_text(encoding="utf-8")
+    )
+    preregistration_schema_path = ROOT / "corpus" / "preregistration.schema.json"
+    preregistration_schema = json.loads(
+        preregistration_schema_path.read_text(encoding="utf-8")
+    )
+    checked_in_preregistration = json.loads(
+        (ROOT / "corpus" / "pilot-r4-preregistration.json").read_text(encoding="utf-8")
+    )
+    Draft202012Validator.check_schema(allocation_schema)
+    Draft202012Validator.check_schema(claim_review_schema)
+    Draft202012Validator.check_schema(finding_review_schema)
+    Draft202012Validator.check_schema(preregistration_schema)
+    Draft202012Validator(preregistration_schema).validate(checked_in_preregistration)
+    assert checked_in_preregistration["schema_sha256"] == sha256_file(
+        preregistration_schema_path
+    )
+    assert checked_in_preregistration["analysis_plan"] == analysis_plan_identity(
+        {
+            name: (ROOT / "corpus" / name).read_bytes()
+            for name in PREREGISTRATION_ANALYSIS_PLAN_PATHS
+        }
+    )
+    assert checked_in_preregistration["adduce"]["source_tree_sha256"] == (
+        _source_tree_sha256(Path(adduce.__file__).resolve().parent)
+    )
+    assert checked_in_preregistration["adduce"]["builtin_rule_ids_sha256"] == (
+        builtin_rule_ids_sha256(
+            [rule.id for rule in discover_rules(include_plugins=False)]
+        )
+    )
+    assert checked_in_preregistration["inputs"]["repos_file_sha256"] == sha256_file(
+        ROOT / "corpus" / "repos.csv"
+    )
+    assert checked_in_preregistration["inputs"]["badged_provenance_sha256"] == (
+        sha256_file(ROOT / "corpus" / "badged-provenance.csv")
+    )
+    assert checked_in_preregistration["inputs"]["claim_review_schema_sha256"] == (
+        sha256_file(ROOT / "corpus" / "claim-review.schema.json")
+    )
+    assert checked_in_preregistration["candidate_pair"] == [
+        "pilot-0.1.2dev0-r4-a",
+        "pilot-0.1.2dev0-r4-b",
+    ]
+    assert checked_in_preregistration["execution_contract"]["timeout_seconds"] == 300
+    assert checked_in_preregistration["inputs"]["repository_count"] == 15
+    assert checked_in_preregistration["inputs"]["cohort_counts"] == {
+        "badged_functional": 5,
+        "stress": 5,
+        "unvetted": 5,
+    }
+
+    allocation_sources = _allocation_sources()
+    allocation = build_review_allocation(
+        allocation_sources,
+        _allocation_run_binding(),
+        seed=2,
+    )
+    Draft202012Validator(allocation_schema).validate(allocation)
+    primary = initialize_finding_review_source(
+        allocation,
+        allocation_sources,
+        "6" * 64,
+        review_role="primary",
+        reviewer_id="finding-reviewer-a",
+    )
+    Draft202012Validator(finding_review_schema).validate(primary)
+    primary = _completed_finding_review_source(
+        allocation,
+        allocation_sources,
+        role="primary",
+        reviewer_id="finding-reviewer-a",
+    )
+    secondary = _completed_finding_review_source(
+        allocation,
+        allocation_sources,
+        role="secondary",
+        reviewer_id="finding-reviewer-b",
+    )
+    merged = merge_independent_finding_reviews(
+        [primary, secondary],
+        ["7" * 64, "8" * 64],
+        allocation,
+        allocation_sources,
+        "6" * 64,
+    )
+    Draft202012Validator(finding_review_schema).validate(merged)
+
+    clones = tmp_path / "clones"
+    commit = _make_claim_repo(clones / "labelled")
+    repos = tmp_path / "repos.csv"
+    _write_inventory(repos, commit)
+    (clones / "load-test").mkdir()
+    truth = _claim_payload(repos, clones, commit)
+    claim_review = initialize_review(truth, "a" * 64, ["candidate-a", "candidate-b"])
+    Draft202012Validator(claim_review_schema).validate(claim_review)

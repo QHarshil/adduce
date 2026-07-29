@@ -1,0 +1,547 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/QHarshil/adduce/blob/main/corpus/finding-review.schema.json",
+  "title": "Adduce corpus finding review",
+  "oneOf": [
+    {"$ref": "#/$defs/independentReview"},
+    {"$ref": "#/$defs/mergedReview"}
+  ],
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "commit": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "fingerprint": {
+      "type": "string",
+      "pattern": "^v1:[0-9a-f]{64}$"
+    },
+    "identifier": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+    },
+    "runBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "run_schema_version",
+        "run_id",
+        "adduce_version",
+        "run_meta_sha256",
+        "corpus_harness_sha256",
+        "claim_ground_truth_sha256"
+      ],
+      "properties": {
+        "run_schema_version": {"type": "integer", "minimum": 1},
+        "run_id": {"type": "string", "minLength": 1},
+        "adduce_version": {"type": "string", "minLength": 1},
+        "run_meta_sha256": {"$ref": "#/$defs/sha256"},
+        "corpus_harness_sha256": {"$ref": "#/$defs/sha256"},
+        "claim_ground_truth_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "reviewPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "effectiveness_cohorts",
+        "excluded_cohorts",
+        "primary_assignment",
+        "secondary_assignment",
+        "separate_independent_review_sources",
+        "other_reviewer_decisions_absent_from_independent_sources",
+        "cohort_assignment_absent_from_independent_sources",
+        "independent_adjudication_of_judgement_disagreements",
+        "conflicted_assignments_reassigned"
+      ],
+      "properties": {
+        "effectiveness_cohorts": {
+          "const": ["badged_functional", "unvetted"]
+        },
+        "excluded_cohorts": {
+          "const": ["stress"]
+        },
+        "primary_assignment": {
+          "const": "complete-layer-b-population"
+        },
+        "secondary_assignment": {
+          "const": "deterministic-second-review-allocation"
+        },
+        "separate_independent_review_sources": {"const": true},
+        "other_reviewer_decisions_absent_from_independent_sources": {"const": true},
+        "cohort_assignment_absent_from_independent_sources": {"const": true},
+        "independent_adjudication_of_judgement_disagreements": {"const": true},
+        "conflicted_assignments_reassigned": {"const": true}
+      }
+    },
+    "sourceBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_id",
+        "initial_source_sha256",
+        "source_identity_sha256",
+        "sample_set_sha256",
+        "entry_count",
+        "layer_b_entry_count",
+        "excluded_stress_entry_count"
+      ],
+      "properties": {
+        "source_id": {"type": "string", "minLength": 1},
+        "initial_source_sha256": {"$ref": "#/$defs/sha256"},
+        "source_identity_sha256": {"$ref": "#/$defs/sha256"},
+        "sample_set_sha256": {"$ref": "#/$defs/sha256"},
+        "entry_count": {"type": "integer", "minimum": 1},
+        "layer_b_entry_count": {"type": "integer", "minimum": 0},
+        "excluded_stress_entry_count": {"type": "integer", "minimum": 0}
+      }
+    },
+    "blindingDeclaration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "independent_review",
+        "other_reviewer_decisions_not_seen",
+        "other_reviewer_source_not_accessed",
+        "declared_at"
+      ],
+      "properties": {
+        "independent_review": {"const": true},
+        "other_reviewer_decisions_not_seen": {"const": true},
+        "other_reviewer_source_not_accessed": {"const": true},
+        "declared_at": {"type": "string", "format": "date-time"}
+      }
+    },
+    "conflictScope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repository_ids",
+        "finding_fingerprint_set_sha256"
+      ],
+      "properties": {
+        "repository_ids": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/identifier"}
+        },
+        "finding_fingerprint_set_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "conflictOfInterestDeclaration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scope",
+        "no_relevant_authorship_or_contribution",
+        "no_close_collaboration_supervision_or_employment",
+        "no_financial_conflict",
+        "no_personal_conflict",
+        "declared_at"
+      ],
+      "properties": {
+        "scope": {"$ref": "#/$defs/conflictScope"},
+        "no_relevant_authorship_or_contribution": {"const": true},
+        "no_close_collaboration_supervision_or_employment": {"const": true},
+        "no_financial_conflict": {"const": true},
+        "no_personal_conflict": {"const": true},
+        "declared_at": {"type": "string", "format": "date-time"}
+      }
+    },
+    "review": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "reviewer_id",
+        "reviewed_at",
+        "correctness",
+        "applicability",
+        "utility",
+        "root_cause",
+        "verification_mode",
+        "label_confidence",
+        "notes",
+        "evidence_links"
+      ],
+      "properties": {
+        "reviewer_id": {"$ref": "#/$defs/identifier"},
+        "reviewed_at": {"type": "string", "format": "date-time"},
+        "correctness": {"enum": ["correct", "incorrect", "unclear"]},
+        "applicability": {"enum": ["applicable", "not_applicable", "unclear"]},
+        "utility": {
+          "enum": ["actionable", "minor", "low_value", "not_applicable", "unclear"]
+        },
+        "root_cause": {
+          "enum": [
+            "collector_miss",
+            "semantic_equivalence",
+            "abstraction_limit",
+            "repository_context",
+            "wording_problem",
+            "weighting_problem",
+            "real_repository_gap",
+            "needs_dynamic_evidence",
+            "needs_author_input",
+            "suppression_policy",
+            "none"
+          ]
+        },
+        "verification_mode": {
+          "enum": ["manual_static", "manual_online", "author_confirmed"]
+        },
+        "label_confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "notes": {"type": "string"},
+        "evidence_links": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "adjudication": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "adjudicator_id",
+        "reviewed_at",
+        "conflict_of_interest_declaration",
+        "correctness",
+        "applicability",
+        "utility",
+        "root_cause",
+        "verification_mode",
+        "label_confidence",
+        "notes",
+        "evidence_links"
+      ],
+      "properties": {
+        "adjudicator_id": {"$ref": "#/$defs/identifier"},
+        "reviewed_at": {"type": "string", "format": "date-time"},
+        "conflict_of_interest_declaration": {
+          "$ref": "#/$defs/conflictOfInterestDeclaration"
+        },
+        "correctness": {"enum": ["correct", "incorrect", "unclear"]},
+        "applicability": {"enum": ["applicable", "not_applicable", "unclear"]},
+        "utility": {
+          "enum": ["actionable", "minor", "low_value", "not_applicable", "unclear"]
+        },
+        "root_cause": {
+          "enum": [
+            "collector_miss",
+            "semantic_equivalence",
+            "abstraction_limit",
+            "repository_context",
+            "wording_problem",
+            "weighting_problem",
+            "real_repository_gap",
+            "needs_dynamic_evidence",
+            "needs_author_input",
+            "suppression_policy",
+            "none"
+          ]
+        },
+        "verification_mode": {
+          "enum": ["manual_static", "manual_online", "author_confirmed"]
+        },
+        "label_confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "notes": {"type": "string", "minLength": 1},
+        "evidence_links": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "independentRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_id",
+        "source_entry_number",
+        "finding_fingerprint",
+        "finding_record_sha256",
+        "repo_id",
+        "repo_commit",
+        "rule_id",
+        "category",
+        "title",
+        "finding_status",
+        "finding_confidence",
+        "severity",
+        "message",
+        "locations",
+        "suppressed",
+        "review"
+      ],
+      "properties": {
+        "source_id": {"type": "string", "minLength": 1},
+        "source_entry_number": {"type": "integer", "minimum": 1},
+        "finding_fingerprint": {"$ref": "#/$defs/fingerprint"},
+        "finding_record_sha256": {"$ref": "#/$defs/sha256"},
+        "repo_id": {"type": "string", "minLength": 1},
+        "repo_commit": {"$ref": "#/$defs/commit"},
+        "rule_id": {"type": "string", "minLength": 1},
+        "category": {"type": ["string", "null"]},
+        "title": {"type": "string"},
+        "finding_status": {
+          "enum": ["pass", "partial", "fail", "unknown", "not-applicable"]
+        },
+        "finding_confidence": {"type": ["number", "null"]},
+        "severity": {"type": ["string", "null"]},
+        "message": {"type": "string"},
+        "locations": {"type": "array"},
+        "suppressed": {"type": "boolean"},
+        "review": {
+          "oneOf": [
+            {"type": "null"},
+            {"$ref": "#/$defs/review"}
+          ]
+        }
+      }
+    },
+    "selection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "purpose",
+        "entry_count",
+        "finding_fingerprint_set_sha256"
+      ],
+      "properties": {
+        "purpose": {
+          "enum": [
+            "complete-layer-b-population",
+            "deterministic-second-review-allocation"
+          ]
+        },
+        "entry_count": {"type": "integer", "minimum": 1},
+        "finding_fingerprint_set_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "independentReview": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "finding_review_schema_version",
+        "artifact_type",
+        "schema_sha256",
+        "allocation_sha256",
+        "run_binding",
+        "review_policy",
+        "source_bindings",
+        "review_role",
+        "reviewer_id",
+        "domain_expertise",
+        "blinding_declaration",
+        "conflict_of_interest_declaration",
+        "selection",
+        "records"
+      ],
+      "properties": {
+        "finding_review_schema_version": {"const": 1},
+        "artifact_type": {"const": "independent"},
+        "schema_sha256": {"$ref": "#/$defs/sha256"},
+        "allocation_sha256": {"$ref": "#/$defs/sha256"},
+        "run_binding": {"$ref": "#/$defs/runBinding"},
+        "review_policy": {"$ref": "#/$defs/reviewPolicy"},
+        "source_bindings": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/sourceBinding"}
+        },
+        "review_role": {"enum": ["primary", "secondary"]},
+        "reviewer_id": {"$ref": "#/$defs/identifier"},
+        "domain_expertise": {"type": "string"},
+        "blinding_declaration": {
+          "oneOf": [
+            {"type": "null"},
+            {"$ref": "#/$defs/blindingDeclaration"}
+          ]
+        },
+        "conflict_of_interest_declaration": {
+          "oneOf": [
+            {"type": "null"},
+            {"$ref": "#/$defs/conflictOfInterestDeclaration"}
+          ]
+        },
+        "selection": {"$ref": "#/$defs/selection"},
+        "records": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/independentRecord"}
+        }
+      }
+    },
+    "initialReviewSource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "review_role",
+        "reviewer_id",
+        "sha256",
+        "domain_expertise",
+        "blinding_declaration",
+        "conflict_of_interest_declaration"
+      ],
+      "properties": {
+        "review_role": {"enum": ["primary", "secondary"]},
+        "reviewer_id": {"$ref": "#/$defs/identifier"},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "domain_expertise": {"type": "string", "minLength": 1},
+        "blinding_declaration": {"$ref": "#/$defs/blindingDeclaration"},
+        "conflict_of_interest_declaration": {
+          "$ref": "#/$defs/conflictOfInterestDeclaration"
+        }
+      }
+    },
+    "findingEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "label_schema_version",
+        "run_id",
+        "repo_id",
+        "repo_commit",
+        "cohort",
+        "adduce_version",
+        "rule_id",
+        "category",
+        "title",
+        "finding_status",
+        "finding_confidence",
+        "severity",
+        "message",
+        "locations",
+        "suppressed",
+        "finding_fingerprint",
+        "run_evidence",
+        "sampling",
+        "sample_set",
+        "reviews",
+        "adjudication"
+      ],
+      "properties": {
+        "label_schema_version": {"const": 2},
+        "run_id": {"type": "string", "minLength": 1},
+        "repo_id": {"type": "string", "minLength": 1},
+        "repo_commit": {"$ref": "#/$defs/commit"},
+        "cohort": {"enum": ["badged_functional", "unvetted"]},
+        "adduce_version": {"type": "string", "minLength": 1},
+        "rule_id": {"type": "string", "minLength": 1},
+        "category": {},
+        "title": {},
+        "finding_status": {
+          "enum": ["pass", "partial", "fail", "unknown", "not-applicable"]
+        },
+        "finding_confidence": {},
+        "severity": {},
+        "message": {},
+        "locations": {"type": "array"},
+        "suppressed": {"type": "boolean"},
+        "finding_fingerprint": {"$ref": "#/$defs/fingerprint"},
+        "run_evidence": {"type": "object"},
+        "sampling": {"type": "object"},
+        "sample_set": {"type": "object"},
+        "reviews": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 2,
+          "items": {"$ref": "#/$defs/review"}
+        },
+        "adjudication": {
+          "oneOf": [
+            {"type": "null"},
+            {"$ref": "#/$defs/adjudication"}
+          ]
+        }
+      }
+    },
+    "mergedSource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source_id", "entries"],
+      "properties": {
+        "source_id": {"type": "string", "minLength": 1},
+        "entries": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/findingEntry"}
+        }
+      }
+    },
+    "population": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "cohorts",
+        "excluded_cohorts",
+        "entry_count",
+        "finding_fingerprint_set_sha256",
+        "primary_review_count",
+        "secondary_review_count",
+        "excluded_stress_entry_count"
+      ],
+      "properties": {
+        "cohorts": {"const": ["badged_functional", "unvetted"]},
+        "excluded_cohorts": {"const": ["stress"]},
+        "entry_count": {"type": "integer", "minimum": 1},
+        "finding_fingerprint_set_sha256": {"$ref": "#/$defs/sha256"},
+        "primary_review_count": {"type": "integer", "minimum": 1},
+        "secondary_review_count": {"type": "integer", "minimum": 1},
+        "excluded_stress_entry_count": {"type": "integer", "minimum": 0}
+      }
+    },
+    "mergedReview": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "finding_review_schema_version",
+        "artifact_type",
+        "schema_sha256",
+        "allocation_sha256",
+        "run_binding",
+        "review_policy",
+        "source_bindings",
+        "initial_review_sources",
+        "population",
+        "sources"
+      ],
+      "properties": {
+        "finding_review_schema_version": {"const": 1},
+        "artifact_type": {"const": "merged"},
+        "schema_sha256": {"$ref": "#/$defs/sha256"},
+        "allocation_sha256": {"$ref": "#/$defs/sha256"},
+        "run_binding": {"$ref": "#/$defs/runBinding"},
+        "review_policy": {"$ref": "#/$defs/reviewPolicy"},
+        "source_bindings": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/sourceBinding"}
+        },
+        "initial_review_sources": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {"$ref": "#/$defs/initialReviewSource"}
+        },
+        "population": {"$ref": "#/$defs/population"},
+        "sources": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/mergedSource"}
+        }
+      }
+    }
+  }
+}

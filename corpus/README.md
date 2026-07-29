@@ -106,8 +106,75 @@ checked-out commit, inventory coverage, declared reviewer identity and
 timestamps, and the presence of every expected link target. These mechanical
 checks do not substitute for human domain review. Paper claims require a hashed
 local paper snapshot plus a page or exact locator. The command prints the
-frozen ground-truth SHA-256. Passing the same file to the runner copies it into
-the immutable run evidence and records that digest.
+frozen ground-truth SHA-256. An effectiveness run copies this exact file and its
+accepted claim-review artifact into immutable run evidence and records both
+digests.
+
+Before the first candidate scan, initialize the separate human-review artifact
+that is defined by [`claim-review.schema.json`](claim-review.schema.json). The
+command below writes an empty scaffold; it does not create, infer, or
+pre-populate a human decision:
+
+```bash
+CLAIM_REVIEW_A=corpus/labels/pilot-claim-review-r4-reviewer-a.json
+CLAIM_REVIEW_B=corpus/labels/pilot-claim-review-r4-reviewer-b.json
+CLAIM_REVIEW=corpus/labels/pilot-claim-review-r4-merged.json
+
+python corpus/scripts/claim_review.py init \
+  --claims corpus/labels/pilot-claims.json \
+  --repos corpus/repos.csv \
+  --clones corpus/clones/pilot-2026-07-13 \
+  --candidate-run pilot-0.1.2dev0-r4-a \
+  --candidate-run pilot-0.1.2dev0-r4-b \
+  --out "$CLAIM_REVIEW_A"
+
+cp "$CLAIM_REVIEW_A" "$CLAIM_REVIEW_B"
+```
+
+A neutral coordinator creates the two identical empty files before review and
+gives each reviewer access only to their assigned copy. Each human domain
+reviewer records exactly one claim decision and one decision for each of the ten
+expected links, with evidence, expertise, identity, timestamp, and affirmative
+blinding and conflict-of-interest declarations. The conflict declaration is
+scoped to the assigned repository and claim identifier and must affirm no
+relevant authorship or contribution; close collaboration, supervision, or
+employment; financial conflict; or personal conflict. A reviewer who cannot
+make every affirmation is recused and the assignment is given to a different
+reviewer; a disclosure does not make the reviewer eligible. Neither reviewer
+may see the other file or any Adduce
+claim-link output for the bound truth, including retained r2 evaluations,
+before both files are returned and locked. The coordinator then merges them
+deterministically:
+
+```bash
+python corpus/scripts/claim_review.py merge \
+  --review "$CLAIM_REVIEW_A" \
+  --review "$CLAIM_REVIEW_B" \
+  --claims corpus/labels/pilot-claims.json \
+  --out "$CLAIM_REVIEW"
+```
+
+The merge records both source-file SHA-256 values and reviewer identities and
+never adds an adjudication. An independent adjudicator resolves every decision
+disagreement in the merged file. The adjudicator makes the same assignment-
+scoped conflict declaration after the initial reviews and before recording a
+decision; a conflicted adjudication is reassigned. Before `r4-a` starts, the
+completed artifact and its two immutable sources must pass:
+
+```bash
+python corpus/scripts/claim_review.py validate \
+  --review "$CLAIM_REVIEW" \
+  --claims corpus/labels/pilot-claims.json \
+  --initial-review "$CLAIM_REVIEW_A" \
+  --initial-review "$CLAIM_REVIEW_B" \
+  --require-accepted
+```
+
+`--require-accepted` fails unless both reviews exist for every claim and link,
+the merged source hashes reproduce the independent decisions, all disagreements
+are adjudicated, and the resolved decisions accept the exact truth file. If
+review requires a truth change, freeze a new version and add a dated protocol
+amendment with new candidate-pair names; never rewrite r2.
 
 ## Run twice and validate
 
@@ -117,31 +184,67 @@ against socket and non-metadata subprocess activity, and hashes repository
 bytes before and after each check. The audit guard detects scanner regressions;
 it is not an operating-system sandbox.
 
+The [2026-07-29 protocol amendment](PILOT_PROTOCOL.md#protocol-amendment-5-post-harness-change-re-lock-and-candidate-rename)
+pre-registers the fresh pair below. These commands are prospective: the pair
+must not run until the claim-review gate above passes and the candidate source
+and harness have stabilized. Effectiveness runs also require Adduce source at a
+full, clean Git commit so the analyzer can be reconstructed; a release tag or
+package publication is not required for this candidate evidence.
+
+The tracked
+[`pilot-r4-preregistration.json`](pilot-r4-preregistration.json) is the
+machine-readable prospective lock. It freezes the exact candidate names,
+300-second timeout, analyzer, rule-set and dependency identity, repository,
+clone, truth and provenance digests, reviewer/offline/no-plugin execution
+policy, and the complete analysis-plan file map. Before creating an output
+directory, effectiveness preflight requires the analyzer, preregistration, and
+every required harness file to be tracked and clean at one Git `HEAD`.
+
+`pilot-r3-preregistration.json` is also present because protocol amendment 4
+names it. Protocol amendment 5 voids that lock, and it is retained only as a
+historical artifact: no script, test, or run loads it, and
+`pilot-r4-preregistration.json` is the live prospective lock.
+
 ```bash
 python corpus/scripts/run_validation.py \
   --repos corpus/repos.csv \
   --clones corpus/clones/pilot-2026-07-13 \
   --claims corpus/labels/pilot-claims.json \
-  --out corpus/outputs/pilot-0.1.2dev0-r2-a \
+  --claim-review "$CLAIM_REVIEW" \
+  --claim-review-source "$CLAIM_REVIEW_A" \
+  --claim-review-source "$CLAIM_REVIEW_B" \
+  --out corpus/outputs/pilot-0.1.2dev0-r4-a \
   --timeout 300
 
 python corpus/scripts/validate_run.py \
-  corpus/outputs/pilot-0.1.2dev0-r2-a
+  corpus/outputs/pilot-0.1.2dev0-r4-a
 
 python corpus/scripts/run_validation.py \
   --repos corpus/repos.csv \
   --clones corpus/clones/pilot-2026-07-13 \
   --claims corpus/labels/pilot-claims.json \
-  --out corpus/outputs/pilot-0.1.2dev0-r2-b \
+  --claim-review "$CLAIM_REVIEW" \
+  --claim-review-source "$CLAIM_REVIEW_A" \
+  --claim-review-source "$CLAIM_REVIEW_B" \
+  --out corpus/outputs/pilot-0.1.2dev0-r4-b \
   --timeout 300
 
 python corpus/scripts/validate_run.py \
-  corpus/outputs/pilot-0.1.2dev0-r2-b
+  corpus/outputs/pilot-0.1.2dev0-r4-b
 
 python corpus/scripts/compare_runs.py \
-  corpus/outputs/pilot-0.1.2dev0-r2-a \
-  corpus/outputs/pilot-0.1.2dev0-r2-b \
-  --out corpus/reports/pilot-determinism-r2.json
+  corpus/outputs/pilot-0.1.2dev0-r4-a \
+  corpus/outputs/pilot-0.1.2dev0-r4-b \
+  --out corpus/reports/pilot-determinism-r4.json
+
+python corpus/scripts/claim_review.py validate \
+  --review "$CLAIM_REVIEW" \
+  --claims corpus/labels/pilot-claims.json \
+  --initial-review "$CLAIM_REVIEW_A" \
+  --initial-review "$CLAIM_REVIEW_B" \
+  --require-accepted \
+  --run corpus/outputs/pilot-0.1.2dev0-r4-a \
+  --run corpus/outputs/pilot-0.1.2dev0-r4-b
 ```
 
 A run directory is never reused. `_RUNNING` marks interrupted output;
@@ -154,16 +257,46 @@ filesystem caches were not cleared, the disabled Adduce application-cache
 path, per-repository scanned file and byte counts, and platform-qualified peak
 resident set size when the standard library exposes it.
 
+For an effectiveness run, the runner validates the accepted human review, its
+truth digest, candidate label, and completion timestamps before it creates the
+output directory. It also reconstructs the merge from the two independently
+completed source files. The immutable run manifest binds byte-for-byte copies
+of the truth, merged review, and both review sources. `--operational-only` runs
+contain none of those artifacts, may use a dirty development tree, and cannot
+support effectiveness conclusions.
+
 The initial directory `corpus/outputs/pilot-0.1.2dev0-a` is a retained
 preflight failure: all 15 scanner payloads were rejected because a relative
 clone argument was resolved again after the child working directory changed.
 It contains no accepted raw results and is excluded from effectiveness and
 repeatability analysis. The absolute-path correction produced a valid,
 deterministic `r1-a`/`r1-b` pair. A subsequent generation-audit preflight
-stopped on a repository `SyntaxWarning`; the narrowly amended, final harness
-uses the fresh `r2-a` and `r2-b` directories shown above. Both failed
-preflights and the valid `r1` pair remain retained. See the protocol
-amendments for the fixed scope and rationale.
+stopped on a repository `SyntaxWarning`; the narrowly amended r2 harness then
+produced a valid deterministic pair and generation audit. All preflights, r1,
+and r2 remain immutable historical evidence. Current scripts have changed and
+must not reinterpret any of those directories; historical verification uses
+only each run's frozen `harness/` copy. The preregistered r4 pair is the next
+candidate and has not been run as part of this documentation change.
+
+The following historical checks are read-only. They invoke only the frozen r2
+harness, do not pass an output path, and disable bytecode writes so validation
+does not add `__pycache__` entries to retained evidence:
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 python -B \
+  corpus/outputs/pilot-0.1.2dev0-r2-a/harness/scripts/validate_run.py \
+  corpus/outputs/pilot-0.1.2dev0-r2-a
+PYTHONDONTWRITEBYTECODE=1 python -B \
+  corpus/outputs/pilot-0.1.2dev0-r2-b/harness/scripts/validate_run.py \
+  corpus/outputs/pilot-0.1.2dev0-r2-b
+PYTHONDONTWRITEBYTECODE=1 python -B \
+  corpus/outputs/pilot-0.1.2dev0-r2-a/harness/scripts/compare_runs.py \
+  corpus/outputs/pilot-0.1.2dev0-r2-a \
+  corpus/outputs/pilot-0.1.2dev0-r2-b
+```
+
+Do not use current corpus scripts, add `--out`, or otherwise write into either
+historical run directory.
 
 ## Produce a descriptive report
 
@@ -171,8 +304,8 @@ Reports are written outside the immutable run directory.
 
 ```bash
 python corpus/scripts/summarize.py \
-  --run corpus/outputs/pilot-0.1.2dev0-r2-a \
-  --out corpus/reports/pilot-summary-r2.md
+  --run corpus/outputs/pilot-0.1.2dev0-r4-a \
+  --out corpus/reports/pilot-summary-r4.md
 ```
 
 The report keeps evaluated, unvetted, and stress roles distinct. A frequent
@@ -182,25 +315,44 @@ whether it is noisy.
 ## Draw and review a finding sample
 
 Use the operational definitions and edge-case rules in the
-[`ANNOTATION_GUIDE.md`](ANNOTATION_GUIDE.md) for every review. First draw a
-complete census of all findings for the predeclared FRL, SimCSE, and Torchtune
-sentinels:
+[`ANNOTATION_GUIDE.md`](ANNOTATION_GUIDE.md) for every review. The retained r2
+samples and outputs remain immutable historical evidence. Because
+`label_findings.py` is part of the run-bound harness, the current reporter must
+not reinterpret those samples after its source changes. Draw new bound samples
+only from the validated r4 candidate. Do not point any current command at r2:
+
+```bash
+RUN=corpus/outputs/pilot-0.1.2dev0-r4-a
+SENTINELS=corpus/labels/pilot-sentinels-r4.jsonl
+SAMPLE=corpus/labels/pilot-layer-b-sample-r4.jsonl
+ALLOCATION=corpus/labels/pilot-review-allocation-r4.json
+PRIMARY_REVIEW=corpus/labels/pilot-findings-r4-primary.json
+SECONDARY_REVIEW=corpus/labels/pilot-findings-r4-secondary.json
+MERGED_REVIEW=corpus/labels/pilot-findings-r4-merged.json
+```
+
+First draw a complete census of all findings for the predeclared FRL, SimCSE,
+and Torchtune sentinels:
 
 ```bash
 python corpus/scripts/sample_findings.py \
-  --run corpus/outputs/pilot-0.1.2dev0-r2-a \
+  --run "$RUN" \
   --census \
   --include-repo frl \
   --include-repo simcse \
   --include-repo torchtune \
   --statuses pass,partial,fail,unknown,not-applicable \
   --seed 0 \
-  --out corpus/labels/pilot-sentinels-r2.jsonl
+  --out "$SENTINELS"
 ```
 
 The census includes suppressed findings by default. Do not use
 `--exclude-suppressed` for the primary pilot; it exists only for a separately
-declared sensitivity analysis.
+declared sensitivity analysis. The historical r2 census contains 156 Layer B
+findings from FRL and SimCSE and 78 Layer C findings from Torchtune. Torchtune
+remains a separate stress diagnostic even though the three sentinels share one
+bound review file. Record the fresh sample's actual counts rather than assuming
+they are unchanged.
 
 Then sample all statuses from the remaining Layer B repositories so false
 passes, applicability errors, and inappropriate abstentions can be detected.
@@ -208,42 +360,210 @@ Finding sampling excludes the stress cohort by default. The command below also
 excludes the two Layer B sentinels already included in the census. The seed
 makes repository and status/category-stratum selection repeatable.
 
-Run the independent review, adjudication, and report sequence below for the
-sentinel census and then for the remaining Layer B sample; the commands show
-the latter filename.
-
 ```bash
 python corpus/scripts/sample_findings.py \
-  --run corpus/outputs/pilot-0.1.2dev0-r2-a \
+  --run "$RUN" \
   --n-repos 8 \
   --exclude-repo frl \
   --exclude-repo simcse \
   --per-stratum 2 \
   --statuses pass,partial,fail,unknown,not-applicable \
   --seed 0 \
-  --out corpus/labels/pilot-sample-r2.jsonl
-
-python corpus/scripts/label_findings.py \
-  corpus/labels/pilot-sample-r2.jsonl \
-  --run corpus/outputs/pilot-0.1.2dev0-r2-a \
-  --reviewer-id reviewer-1
-
-python corpus/scripts/label_findings.py \
-  corpus/labels/pilot-sample-r2.jsonl \
-  --run corpus/outputs/pilot-0.1.2dev0-r2-a \
-  --reviewer-id reviewer-2
-
-python corpus/scripts/label_findings.py \
-  corpus/labels/pilot-sample-r2.jsonl \
-  --run corpus/outputs/pilot-0.1.2dev0-r2-a \
-  --adjudicate \
-  --reviewer-id adjudicator-1
-
-python corpus/scripts/label_findings.py \
-  corpus/labels/pilot-sample-r2.jsonl \
-  --run corpus/outputs/pilot-0.1.2dev0-r2-a \
-  --report
+  --out "$SAMPLE"
 ```
+
+Before annotation begins, freeze one allocation across both review files:
+
+```bash
+python corpus/scripts/review_allocation.py create \
+  --run "$RUN" \
+  --sample "$SENTINELS" \
+  --sample "$SAMPLE" \
+  --seed 0 \
+  --calibration-count 40 \
+  --out "$ALLOCATION"
+
+python corpus/scripts/review_allocation.py validate \
+  --allocation "$ALLOCATION" \
+  --run "$RUN" \
+  --sample "$SENTINELS" \
+  --sample "$SAMPLE"
+```
+
+The manifest follows the published
+[`review-allocation.schema.json`](review-allocation.schema.json). It records the
+candidate run and harness identity, selector and schema SHA-256, seed, both
+pristine sample-source SHA-256 values, immutable source projections, sample-set
+hashes, exact finding fingerprints, and repository/status strata. It excludes
+stress records even though the sentinel source is mixed. The 40 calibration
+findings are balanced across repositories and available emitted
+(`fail`/`partial`), pass, and abstention (`unknown`/`not-applicable`) strata.
+The second-review allowlist contains the calibration set and is exactly the
+larger of 40 or 20% of every fresh Layer B review target, rounded up. It is
+therefore a quota over the full Layer B workload, not the first 100–200 records,
+and calibration is included in rather than added to that quota. Final
+validation separately requires at least one review for every Layer B target.
+
+Create two role-bound reviewer files from the pristine samples. The primary
+file contains every Layer B target. The secondary file contains exactly the
+persisted second-review allocation. Neither file contains stress records,
+cohort assignments, or another reviewer’s decisions. Give each reviewer only
+their own file:
+
+```bash
+python corpus/scripts/label_findings.py init-review-source \
+  --allocation "$ALLOCATION" \
+  --run "$RUN" \
+  --sample "$SENTINELS" \
+  --sample "$SAMPLE" \
+  --review-role primary \
+  --reviewer-id reviewer-1 \
+  --out "$PRIMARY_REVIEW"
+
+python corpus/scripts/label_findings.py init-review-source \
+  --allocation "$ALLOCATION" \
+  --run "$RUN" \
+  --sample "$SENTINELS" \
+  --sample "$SAMPLE" \
+  --review-role secondary \
+  --reviewer-id reviewer-2 \
+  --out "$SECONDARY_REVIEW"
+```
+
+Each reviewer first completes only the calibration assignment in their own
+file. The command records a domain-expertise statement and requires a
+time-stamped declaration that the review is independent, the other decisions
+were not seen, and the other reviewer file was not accessed. Before the first
+decision, it also requires a time-stamped conflict-of-interest declaration
+bound to the exact assigned repository set and finding-fingerprint-set digest.
+The declaration affirms no relevant authorship or contribution; close
+collaboration, supervision, or employment; financial conflict; or personal
+conflict. If any affirmation is unavailable, stop and reassign the complete
+role-bound reviewer file. Do not record a person's name, employer,
+relationship, or reason for recusal in the review artifact.
+
+```bash
+python corpus/scripts/label_findings.py review-source \
+  --allocation "$ALLOCATION" \
+  --run "$RUN" \
+  --sample "$SENTINELS" \
+  --sample "$SAMPLE" \
+  --review "$PRIMARY_REVIEW" \
+  --review-set calibration
+
+python corpus/scripts/label_findings.py review-source \
+  --allocation "$ALLOCATION" \
+  --run "$RUN" \
+  --sample "$SENTINELS" \
+  --sample "$SAMPLE" \
+  --review "$SECONDARY_REVIEW" \
+  --review-set calibration
+
+python corpus/scripts/label_findings.py validate-calibration \
+  --allocation "$ALLOCATION" \
+  --run "$RUN" \
+  --sample "$SENTINELS" \
+  --sample "$SAMPLE" \
+  --review "$PRIMARY_REVIEW" \
+  --review "$SECONDARY_REVIEW"
+```
+
+Continue only after correctness and applicability each reach at least 80%
+exact agreement and the handbook resolves any repeated ambiguity. The
+calibration validator prints both exact reviewer-file SHA-256 values so the
+neutral coordinator can retain byte-for-byte, read-only checkpoint copies
+without combining or disclosing decisions.
+Cohen’s kappa remains descriptive, not the sole gate. If the gate fails,
+version the handbook and freeze a new allocation under a dated amendment before
+restarting. The 40 items are calibration work, not an effectiveness estimate.
+
+After calibration passes, each reviewer completes the remaining records in
+their own file. The primary reviewer covers every Layer B target; the secondary
+reviewer covers only the predeclared quota.
+
+```bash
+python corpus/scripts/label_findings.py review-source \
+  --allocation "$ALLOCATION" \
+  --run "$RUN" \
+  --sample "$SENTINELS" \
+  --sample "$SAMPLE" \
+  --review "$PRIMARY_REVIEW" \
+  --review-set remaining
+
+python corpus/scripts/label_findings.py review-source \
+  --allocation "$ALLOCATION" \
+  --run "$RUN" \
+  --sample "$SENTINELS" \
+  --sample "$SAMPLE" \
+  --review "$SECONDARY_REVIEW" \
+  --review-set remaining
+```
+
+Only after both files are complete may the coordinator merge them. The merged
+artifact records the exact source-file SHA-256, reviewer role, identity,
+expertise statement, blinding declaration, and conflict-of-interest
+declaration. Input order does not affect the result. Initial decisions cannot
+be changed during merge.
+
+```bash
+python corpus/scripts/label_findings.py merge-review-sources \
+  --allocation "$ALLOCATION" \
+  --run "$RUN" \
+  --sample "$SENTINELS" \
+  --sample "$SAMPLE" \
+  --review "$PRIMARY_REVIEW" \
+  --review "$SECONDARY_REVIEW" \
+  --out "$MERGED_REVIEW"
+
+python corpus/scripts/label_findings.py adjudicate-review \
+  --allocation "$ALLOCATION" \
+  --run "$RUN" \
+  --sample "$SENTINELS" \
+  --sample "$SAMPLE" \
+  --review "$MERGED_REVIEW" \
+  --initial-review "$PRIMARY_REVIEW" \
+  --initial-review "$SECONDARY_REVIEW" \
+  --adjudicator-id adjudicator-1
+
+python corpus/scripts/label_findings.py validate-review \
+  --allocation "$ALLOCATION" \
+  --run "$RUN" \
+  --sample "$SENTINELS" \
+  --sample "$SAMPLE" \
+  --review "$MERGED_REVIEW" \
+  --initial-review "$PRIMARY_REVIEW" \
+  --initial-review "$SECONDARY_REVIEW" \
+  --require-complete
+
+python corpus/scripts/label_findings.py report-review \
+  --allocation "$ALLOCATION" \
+  --run "$RUN" \
+  --sample "$SENTINELS" \
+  --sample "$SAMPLE" \
+  --review "$MERGED_REVIEW" \
+  --initial-review "$PRIMARY_REVIEW" \
+  --initial-review "$SECONDARY_REVIEW"
+```
+
+The merged effectiveness report excludes stress by construction. Review the
+Torchtune census separately as a diagnostic-only Layer C artifact; do not merge
+its decisions into effectiveness proportions.
+
+Each adjudication also carries a declaration bound to the disputed repository
+and finding fingerprint. It is made after the two initial reviews and before
+the adjudication decision. If the assigned adjudicator has a relevant conflict,
+leave that record unresolved and rerun adjudication with a different stable,
+non-personal adjudicator identifier.
+
+The historical r2 Layer B review workload is 560 findings: the 156 FRL
+and SimCSE census records plus 404 records from the other eight Layer B
+repositories. All 560 remain unreviewed targets; under that frozen design, at
+least 112 would have required a stratified independent second review. Its 78
+Torchtune findings are separate, unreviewed diagnostic targets. A fresh
+candidate reports its own Layer B and stress counts; the allocation manifest
+calculates the fresh, full-population quota. Stress reports are labelled
+diagnostic-only and omit effectiveness proportions. No human annotation is
+complete until review records are actually entered and adjudicated.
 
 Labels keep correctness, applicability, and utility separate and retain the
 exact repository commit, Adduce version, finding identity, source locations,
@@ -257,12 +577,16 @@ suppression policy, eligible and selected repository IDs, entry count, and
 canonical fingerprint-set digest. Validation reconstructs the selection from
 the immutable run and rejects legacy or mixed samples, deleted or injected
 records or fields, inconsistent bindings, and sampler or runtime drift.
-The initial review interface hides cohort and other reviewers' judgements.
+Independent reviewer files omit cohort assignments and other reviewers'
+judgements; the interactive review command cannot display data that the file
+does not contain.
 Every sample record includes repository- and finding-stratum population sizes,
-sample sizes, and inclusion probabilities. The report presents unweighted
-reviewed-sample proportions as descriptive summaries, never as corpus rates.
-At least 20% of the first 100–200 findings require independent second review;
-the command above uses the stronger design of second-reviewing the full sample.
+sample sizes, and inclusion probabilities. Effectiveness reports present
+unweighted reviewed-sample proportions as descriptive summaries, never as
+corpus rates. Stress reports retain diagnostic counts and agreement information
+but omit those proportions. The allocation validator proves that the fresh
+candidate met its exact calibration and second-review allowlists; a report must
+state the resulting numerator and full Layer B denominator.
 
 ## Claim-level review
 
@@ -276,8 +600,8 @@ python corpus/scripts/claim_ground_truth.py evaluate \
   --claims corpus/labels/pilot-claims.json \
   --repos corpus/repos.csv \
   --clones corpus/clones/pilot-2026-07-13 \
-  --run corpus/outputs/pilot-0.1.2dev0-r2-a \
-  --out corpus/reports/pilot-claim-links-r2-a.json
+  --run corpus/outputs/pilot-0.1.2dev0-r4-a \
+  --out corpus/reports/pilot-claim-links-r4-a.json
 ```
 
 Incorrect links are more serious than missing links: no claim trail should be
@@ -295,13 +619,13 @@ machine-checkable audit manifest.
 
 ```bash
 python corpus/scripts/audit_sentinel_generation.py generate \
-  --run corpus/outputs/pilot-0.1.2dev0-r2-a \
+  --run corpus/outputs/pilot-0.1.2dev0-r4-a \
   --clones corpus/clones/pilot-2026-07-13 \
-  --out corpus/reports/pilot-generation-audit-r2-a
+  --out corpus/reports/pilot-generation-audit-r4-a
 
 python corpus/scripts/audit_sentinel_generation.py validate \
-  --bundle corpus/reports/pilot-generation-audit-r2-a \
-  --run corpus/outputs/pilot-0.1.2dev0-r2-a \
+  --bundle corpus/reports/pilot-generation-audit-r4-a \
+  --run corpus/outputs/pilot-0.1.2dev0-r4-a \
   --clones corpus/clones/pilot-2026-07-13
 ```
 
@@ -318,11 +642,16 @@ affirmative path; the report must state that limitation explicitly.
 
 ## Permitted conclusions
 
-- Synthetic controls: specified regression behaviour only.
-- Labelled real repositories: reviewed finding correctness, applicability,
-  utility, claim-link behaviour, and descriptive score distributions, always
-  with repository and review counts.
-- Stress repositories: operational robustness only.
+- Before human review is complete: synthetic controls support specified
+  regression behaviour only; validated real and stress runs support operational
+  completion, crash/timeout, runtime, volume, and deterministic-repeatability
+  observations only.
+- After the claim-review, finding-review, allocation, agreement, and
+  adjudication gates pass: Layer B supports reviewed finding correctness,
+  applicability, utility, claim-link behaviour, and descriptive score
+  distributions, always with repository and review counts.
+- Layer C always supports operational robustness only. Stress findings and
+  scores never enter an effectiveness denominator.
 
 Weights and tier thresholds remain unchanged during the pilot. Detector fixes
 follow measured root causes; the score is not tuned to make a cohort look
@@ -337,14 +666,17 @@ The corpus slice of the 0.1.2 trust milestone is complete only when:
    submodule or Git LFS state;
 2. all fourteen synthetic controls pass and the complete local gate succeeds:
    `pytest --cov=adduce --cov-report=term-missing --cov-fail-under=85`,
-   `ruff check src tests corpus/scripts`, and
-   `mypy src/adduce corpus/scripts`;
+   `ruff check src tests scripts corpus/scripts`, and
+   `mypy src/adduce scripts corpus/scripts`;
 3. one candidate claim for each of the ten Layer B repositories is frozen
-   before the first scan, independently reviewed by two human domain reviewers,
-   validates against the exact checkout, covers all ten link targets, and is
-   bound by SHA-256 into both run directories; the review record binds that
-   digest, and no trail is accepted as `supported` when any expected link is
-   known to be wrong;
+   before the first scan, validates against the exact checkout, and covers all
+   ten link targets; two human domain reviewers independently review every
+   claim and link, and the final merged or adjudicated resolution accepts the
+   exact truth; the machine-valid review artifact binds the exact truth
+   SHA-256, per-claim and per-link decisions and evidence, blinding
+   declarations, identities, timestamps, and independent adjudication, and
+   both run directories bind the same truth digest; no trail is accepted as
+   `supported` when any expected link is known to be wrong;
 4. two fresh built-in-only runs validate, have comparable analyzer, harness,
    environment, inventory, acquisition, and ground-truth identities, and
    produce no unexplained deterministic-output difference;
@@ -352,8 +684,11 @@ The corpus slice of the 0.1.2 trust milestone is complete only when:
    scanner, timeout, and contract failures reported separately;
 6. the three sentinel repositories receive a complete all-status,
    suppressed-inclusive census review, the remaining Layer B sample follows
-   the frozen design, at least 20% receives independent second review, and
-   disagreements are reported and adjudicated; and
+   the frozen design, and the persisted allocation binds all review sources and
+   exact fingerprints; the 40 calibration findings pass the agreement gate,
+   the larger of 40 or 20% of all fresh Layer B targets (rounded up) receives
+   independent second review with calibration included in that quota, stress is
+   excluded, and disagreements are reported and adjudicated; and
 7. the bounded sentinel generation command exits 0, its independent validation
    also exits 0, every ledger-classified `yes` or `partial` answer is backed by
    the recorded evidence policy, no static draft implies execution, and the

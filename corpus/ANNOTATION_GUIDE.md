@@ -10,16 +10,53 @@ descriptive proportions generalized accuracy estimates.
 Review only a sample that passes `label_findings.py` validation against its
 immutable run and the frozen sampler source and Python identity. Use stable,
 non-personal reviewer identifiers that remain attributable within the study.
+For handbook calibration and independent second review, also require the
+deterministic allocation manifest to reconstruct from every pristine sample
+source. Review only the fingerprints assigned to the reviewer’s role and
+declared phase. The primary reviewer file covers the complete Layer B
+population; the secondary file covers exactly the second-review allocation.
+The calibration allowlist contains 40 Layer B records and is included within
+the allocation of at least 20% of all fresh Layer B targets; stress records
+belong to neither assignment.
 Correctness, applicability, utility, claim verification, and adjudication are
 human judgements; automated checks or suggestions cannot be recorded as
 reviewer decisions. Initial reviewers work independently and do not inspect
 cohort labels, badge status, another reviewer's decisions, or aggregate results
-before submitting their own review.
+before submitting their own review. Their separate files omit cohort assignments
+and all peer decisions. The deterministic merge binds each completed file’s
+exact SHA-256, reviewer role, identity, expertise statement, and time-stamped
+blinding declaration without changing an initial decision.
 
 Judge the complete analyzer decision: status, scope, message, locations, and,
 when present, suppression. Read the documented rule contract and inspect the
 pinned repository evidence before assigning a label. Do not infer that a
 repository command ran merely because static files describe it.
+
+## Conflict of interest and recusal
+
+Before an initial review or adjudication begins, the assigned person must
+affirm that the exact repository and artifact assignment presents none of
+these relevant conflicts:
+
+- authorship of or contribution to the repository or artifact;
+- close collaboration, supervision, or employment involving its authors or
+  contributors;
+- a financial interest that could reasonably affect the judgement; or
+- a personal relationship or dispute that could reasonably affect the
+  judgement.
+
+If any affirmation cannot be made, stop and reassign the work. Disclosure is
+not a substitute for recusal. A finding-review declaration is bound to the
+assigned repository set and finding-fingerprint-set digest. A claim or
+adjudication declaration is bound to its repository and artifact identifier.
+Validation requires the time-stamped declaration to follow assignment and
+precede the decision.
+
+Use only the stable, non-personal reviewer or adjudicator identifier in study
+records. The declaration records affirmative booleans and assignment scope; it
+must not contain a person's name, contact information, employer, relationship
+details, or reason for recusal. Administrative reassignment records, if
+required, remain access-controlled and outside the corpus artifact.
 
 ## Decision order
 

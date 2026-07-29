@@ -12,7 +12,7 @@ import sys
 from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
-from typing import Any
+from typing import Any, cast
 
 if __package__:
     from .run_contract import (
@@ -90,7 +90,7 @@ def _require_object_shape(
 
 def _load_object_bytes(data: bytes, label: str) -> dict[str, Any]:
     try:
-        return load_json_object_bytes(data, label)
+        return cast(dict[str, Any], load_json_object_bytes(data, label))
     except RunContractError as exc:
         raise ClaimGroundTruthError(str(exc)) from exc
 

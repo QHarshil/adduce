@@ -1,0 +1,131 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/QHarshil/adduce/blob/main/corpus/preregistration.schema.json",
+  "title": "Adduce corpus effectiveness-run preregistration",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "preregistration_schema_version",
+    "schema_sha256",
+    "protocol_id",
+    "candidate_pair",
+    "analysis_scope",
+    "adduce",
+    "analysis_plan",
+    "execution_contract",
+    "inputs"
+  ],
+  "properties": {
+    "preregistration_schema_version": {"const": 1},
+    "schema_sha256": {"$ref": "#/$defs/sha256"},
+    "protocol_id": {"$ref": "#/$defs/identifier"},
+    "candidate_pair": {
+      "type": "array",
+      "prefixItems": [
+        {"$ref": "#/$defs/identifier"},
+        {"$ref": "#/$defs/identifier"}
+      ],
+      "items": false,
+      "minItems": 2,
+      "maxItems": 2,
+      "uniqueItems": true
+    },
+    "analysis_scope": {"const": "effectiveness"},
+    "adduce": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "version",
+        "source_tree_sha256",
+        "builtin_rule_count",
+        "builtin_rule_ids_sha256",
+        "dependency_versions_sha256"
+      ],
+      "properties": {
+        "version": {"type": "string", "minLength": 1},
+        "source_tree_sha256": {"$ref": "#/$defs/sha256"},
+        "builtin_rule_count": {"type": "integer", "minimum": 1},
+        "builtin_rule_ids_sha256": {"$ref": "#/$defs/sha256"},
+        "dependency_versions_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "analysis_plan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sha256", "files"],
+      "properties": {
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "files": {
+          "type": "object",
+          "minProperties": 1,
+          "propertyNames": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._/-]*$"
+          },
+          "additionalProperties": {"$ref": "#/$defs/sha256"}
+        }
+      }
+    },
+    "execution_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "adduce_check_mode",
+        "timeout_seconds",
+        "execution_mode",
+        "configuration_mode",
+        "environment_policy",
+        "input_policy",
+        "plugins_enabled"
+      ],
+      "properties": {
+        "adduce_check_mode": {"const": "reviewer"},
+        "timeout_seconds": {"type": "integer", "minimum": 1},
+        "execution_mode": {"const": "offline-builtins-only"},
+        "configuration_mode": {"const": "defaults-only-repository-config-disabled"},
+        "environment_policy": {"const": "minimal-no-host-credentials"},
+        "input_policy": {"const": "clone-root-symlink-containment"},
+        "plugins_enabled": {"const": false}
+      }
+    },
+    "inputs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repos_file_sha256",
+        "repository_count",
+        "cohort_counts",
+        "clone_manifest_sha256",
+        "clone_snapshot_set_sha256",
+        "claim_ground_truth_sha256",
+        "claim_review_schema_sha256",
+        "badged_provenance_sha256"
+      ],
+      "properties": {
+        "repos_file_sha256": {"$ref": "#/$defs/sha256"},
+        "repository_count": {"type": "integer", "minimum": 1},
+        "cohort_counts": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["badged_functional", "unvetted", "stress"],
+          "properties": {
+            "badged_functional": {"type": "integer", "minimum": 0},
+            "unvetted": {"type": "integer", "minimum": 0},
+            "stress": {"type": "integer", "minimum": 0}
+          }
+        },
+        "clone_manifest_sha256": {"$ref": "#/$defs/sha256"},
+        "clone_snapshot_set_sha256": {"$ref": "#/$defs/sha256"},
+        "claim_ground_truth_sha256": {"$ref": "#/$defs/sha256"},
+        "claim_review_schema_sha256": {"$ref": "#/$defs/sha256"},
+        "badged_provenance_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    }
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "identifier": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+    }
+  }
+}

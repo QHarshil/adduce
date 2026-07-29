@@ -96,7 +96,7 @@ def _peak_rss_observation() -> dict[str, object]:
 def _allowed_git_command(
     executable: object, arguments: object, repository: Path | None = None
 ) -> bool:
-    """Permit only the read-only Git queries used by repository ingestion."""
+    """Permit only hardened, read-only Git queries used by repository ingestion."""
     if not isinstance(executable, (str, bytes, os.PathLike)) or not isinstance(
         arguments, (list, tuple)
     ):
@@ -108,15 +108,23 @@ def _allowed_git_command(
         return False
     if executable_name != "git" or not command or Path(command[0]).name != "git":
         return False
-    if len(command) < 4 or command[1] != "-C":
+    expected_prefix = [
+        "--no-pager",
+        "-c",
+        "core.fsmonitor=false",
+        "-c",
+        "core.quotePath=true",
+        "-C",
+    ]
+    if len(command) < 9 or command[1:7] != expected_prefix:
         return False
-    if repository is not None and Path(command[2]).resolve() != repository:
+    if repository is not None and Path(command[7]).resolve() != repository:
         return False
-    operation = tuple(command[3:])
+    operation = tuple(command[8:])
     return operation in {
         ("rev-parse", "--is-inside-work-tree"),
         ("rev-parse", "HEAD"),
-        ("tag", "--list"),
+        ("tag", "--points-at", "HEAD"),
         ("ls-files",),
         ("remote", "-v"),
     }
@@ -140,13 +148,21 @@ def _enforce_offline(event: str, args: tuple[object, ...], repository: Path | No
     ):
         raise RuntimeError(f"process execution is disabled during corpus scans ({event})")
     if event == "open":
+        target = args[0] if args else None
         mode = args[1] if len(args) > 1 else None
         flags = args[2] if len(args) > 2 else 0
         write_mode = isinstance(mode, str) and any(token in mode for token in "wax+")
         write_flags = isinstance(flags, int) and bool(
             flags & (os.O_WRONLY | os.O_RDWR | os.O_CREAT | os.O_TRUNC | os.O_APPEND)
         )
-        if write_mode or write_flags:
+        try:
+            is_devnull = (
+                isinstance(target, (str, bytes, os.PathLike))
+                and Path(os.fsdecode(target)).resolve() == Path(os.devnull).resolve()
+            )
+        except (OSError, TypeError, ValueError):
+            is_devnull = False
+        if (write_mode or write_flags) and not is_devnull:
             raise RuntimeError("filesystem writes are disabled during corpus scans (open)")
     if event in _MUTATING_EVENTS:
         raise RuntimeError(f"filesystem mutation is disabled during corpus scans ({event})")
@@ -207,7 +223,18 @@ def main() -> int:
             raise RuntimeError("Adduce source bytes changed before scanner import")
         engine.load_config = _default_config
         rules = discover_rules(include_plugins=False)
-        result = engine.run_check(repository, include_plugins=False, rules=rules)
+        # This is the programmatic equivalent of ``adduce check --mode
+        # reviewer``. Repository-authored Adduce policy is deliberately not
+        # honored in reviewer mode, and the default-config override also makes
+        # malformed local policy unable to abort or reshape the corpus scan.
+        result = engine.run_check(
+            repository,
+            include_plugins=False,
+            rules=rules,
+            honor_repository_policy=False,
+        )
+        if result.config.repository_policy_honored is not False:
+            raise RuntimeError("reviewer-mode corpus scan honored repository policy")
     except Exception as exc:
         print(f"{type(exc).__name__}: {exc}", file=sys.stderr)
         return 2
@@ -237,7 +264,9 @@ def main() -> int:
             }
         )
     payload["corpus_execution"] = {
+        "adduce_check_mode": "reviewer",
         "configuration_mode": "defaults-only-repository-config-disabled",
+        "repository_policy_honored": False,
         "plugins_enabled": False,
         "network_policy": "python-audit-socket-deny",
         "process_policy": "python-audit-read-only-git-metadata-only",
