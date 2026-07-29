@@ -42,9 +42,9 @@ def _score_color(percentage: float) -> str:
 
 
 def _status_text(finding: Finding) -> Text:
-    if finding.suppressed:
-        return Text("ignored", style="dim")
     style, label = _STATUS_STYLE[finding.status]
+    if finding.suppressed:
+        return Text(f"{label} (ignored)", style=style)
     return Text(label, style=style)
 
 
@@ -71,6 +71,28 @@ def _render_summary(result: CheckResult, console: Console) -> None:
                 style="dim",
             )
         )
+    if result.config.source and not result.config.repository_policy_honored:
+        console.print(
+            Text(
+                f"Repository policy in {result.config.source} was not applied in this "
+                "reviewer-facing mode.",
+                style="yellow",
+            )
+        )
+    elif result.config.source and (result.config.ignore or result.config.exclude):
+        details = []
+        if result.config.ignore:
+            details.append(f"{len(result.config.ignore)} ignored rule(s)")
+        if result.config.exclude:
+            details.append(f"{len(result.config.exclude)} excluded path pattern(s)")
+        console.print(
+            Text(
+                f"Repository policy applied from {result.config.source}: "
+                + ", ".join(details)
+                + ". Ignored findings retain their observed score; excluded paths were not scanned.",
+                style="yellow",
+            )
+        )
     console.print()
 
 
@@ -82,8 +104,9 @@ def _render_categories(result: CheckResult, console: Console) -> None:
     for cat in result.card.categories:
         notes = [
             finding.message.rstrip(".")
+            + (" (ignored)" if finding.suppressed else "")
             for finding in cat.findings
-            if finding.status in (Status.PARTIAL, Status.FAIL) and not finding.suppressed
+            if finding.status in (Status.PARTIAL, Status.FAIL)
         ]
         joined = "; ".join(notes)
         if len(joined) > 180:

@@ -4,6 +4,9 @@ from __future__ import annotations
 
 import json
 import subprocess
+import sys
+
+import pytest
 
 from adduce.engine import baseline_snapshot, regressions_against, run_check
 from adduce.rules.base import Status
@@ -115,6 +118,30 @@ def test_config_profile_and_cli_override(tmp_path):
     assert run_check(tmp_path, profile_name="strict").card.profile_name == "strict"
 
 
+def test_reviewer_policy_does_not_apply_repository_scoring_configuration(tmp_path):
+    files = dict(BARE)
+    files["adduce.toml"] = (
+        'profile = "acm"\n'
+        'ignore = ["R-LIC-001"]\n'
+        'exclude = ["third_party"]\n'
+        "fail-under = 100\n"
+    )
+    files["third_party/vendor.py"] = "print('scanned')\n"
+    _write(tmp_path, files)
+
+    result = run_check(tmp_path, honor_repository_policy=False)
+    finding = next(f for f in result.card.findings if f.rule_id == "R-LIC-001")
+
+    assert result.config.source == "adduce.toml"
+    assert result.config.repository_policy_honored is False
+    assert result.card.profile_name == "default"
+    assert result.config.ignore == frozenset()
+    assert result.config.exclude == ()
+    assert result.config.fail_under is None
+    assert finding.suppressed is False
+    assert result.repo.exists("third_party/vendor.py")
+
+
 def test_exclude_directories(tmp_path):
     files = dict(WELL_FORMED)
     files["third_party/vendor.py"] = "from sklearn.cluster import KMeans\nKMeans()\n"
@@ -165,6 +192,38 @@ def test_git_metadata_collected(tmp_path):
     vcs = next(f for f in result.card.findings if f.rule_id == "R-VER-002")
     assert vcs.status is Status.PASS
     assert result.repo.git.head_commit
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="executable Git fixture uses a POSIX shebang")
+def test_git_metadata_never_executes_repository_fsmonitor(tmp_path):
+    _write(tmp_path, WELL_FORMED)
+    subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "add", "-A"], cwd=tmp_path, check=True)
+    subprocess.run(
+        ["git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"],
+        cwd=tmp_path,
+        check=True,
+    )
+    marker = tmp_path.parent / "fsmonitor-executed"
+    helper = tmp_path.parent / "fsmonitor-helper.py"
+    helper.write_text(
+        f"#!{sys.executable}\n"
+        "from pathlib import Path\n"
+        f"Path({str(marker)!r}).touch()\n",
+        encoding="utf-8",
+    )
+    helper.chmod(0o755)
+    subprocess.run(
+        ["git", "config", "core.fsmonitor", str(helper)],
+        cwd=tmp_path,
+        check=True,
+    )
+
+    result = run_check(tmp_path)
+
+    assert result.repo.git.is_repo
+    assert result.repo.git.tracked_files
+    assert not marker.exists()
 
 
 def test_json_serialisation_round_trip(tmp_path):

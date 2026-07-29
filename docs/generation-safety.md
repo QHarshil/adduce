@@ -24,9 +24,26 @@ Checklist and appendix answers are governed by the evidence-ledger policy below 
 
 8. **Source is never edited silently.** The only codemods that rewrite source are the remote-pinning edits (`adduce pin-remotes`), and they require an explicit `--write` after showing the diff. The paper `.tex` is never edited automatically under any flag, because when paper and code drift, either side could be the correct one.
 
-9. **Secrets are never echoed.** When a committed credential is detected, generated output records its location and kind only ("AWS access key detected at `deploy/config.py:12`"). The value never appears in any artifact, log, or ledger.
+9. **Detected credential values are redacted from the finding.** When the
+   heuristic detector identifies a likely credential, that finding and its
+   evidence entry record the location and kind, not the matched value ("AWS
+   access key detected at `deploy/config.py:12`"). This is not blanket output
+   sanitization: generated drafts can include other repository-derived text,
+   including commands, paths, identifiers, and metadata. Authors must inspect
+   every generated file before sharing it.
 
 10. **LLM prose is post-hoc and optional.** The bring-your-own-key layer receives deterministic finding summaries, not source files, and can draft labelled justification prose. It never determines the evidence-ledger answer. Provider prose remains untrusted author-review material; everything works identically with no provider configured.
+
+## Filesystem boundary
+
+Fixed repository outputs are created exclusively. adduce refuses symbolic links,
+non-regular entries, multiply linked source files, and paths with symbolic-link
+directory components. An explicit `--force` may atomically replace an inspected
+regular output; it never authorizes writing through a link or replacing another
+entry type. README scaffolding appends by atomically replacing an inspected
+single-link regular file. User-selected `--output` paths are also rejected when
+the destination or a directory component is a symbolic link or another unsafe
+entry type.
 
 ## Answer levels
 
@@ -93,7 +110,11 @@ Every checklist or appendix generation updates `.adduce/evidence-ledger.json`, w
 
 - the answer value;
 - each evidence item, with its kind, path, line, and confidence;
-- the evidence strength — one of `direct`, `inferred`, `manifest_author_confirmed`, `online_resolved`, or `dynamic_verified`;
+- the evidence strength. The shared model reserves `direct`, `inferred`,
+  `manifest_author_confirmed`, `online_resolved`, and `dynamic_verified`, but
+  checklist and appendix generation currently emits and audits only the first
+  three. Online and dynamic reports remain separately auditable artifacts until
+  a typed, hash-bound linkage contract is defined;
 - the searched scope;
 - an explicit `missing` list.
 
@@ -113,6 +134,7 @@ The ledger also records generation provenance: `adduce_version`, command, profil
       "generated_at": "2026-07-04T14:12:09Z"
     },
     "generated_text_policy": "evidence_only",
+    "generated_text_provenance": [],
     "entries": [
       {
         "item_id": "experimental-reproducibility",
@@ -141,7 +163,17 @@ Generated text is downstream of deterministic evidence, not the source of truth.
 
 Deterministic evidence text is factual and avoids persuasive language about the artifact: "seeding was detected for torch (`train.py:37`); NumPy and Python RNGs were not" is the intended register, not "the code is carefully seeded."
 
-Optional provider-generated prose is visibly labelled as a draft and does not alter the deterministic answer or ledger. Authors should omit `--llm` when they require a wholly deterministic artifact, and must review provider prose when they enable it.
+Optional provider-generated prose is visibly labelled as unverified and does
+not alter the deterministic answer. Static-analysis observations are not
+presented to a provider as ground truth, and the prompt requires uncertainty,
+conflicts, and missing evidence to remain visible. Because a provider can still
+introduce unsupported language, each fragment carries an author-review marker
+and is governed by `provider_generated_unverified`, never `evidence_only`.
+The ledger records the provider, model, item identifier, and fragment SHA-256
+without recording credentials or treating the fragment as evidence.
+`audit-generated` reports the unresolved provider-review requirement and still
+checks the complete artifact hash and unsupported execution wording. Authors
+should omit `--llm` when they require a wholly deterministic artifact.
 
 ## Human-edit markers
 
@@ -149,6 +181,10 @@ Generated drafts carry visible markers so review points are unmissable rather th
 
 - `[AUTHOR REVIEW REQUIRED]` on author-input answers, conflicts, and scaffold fields the repository cannot supply;
 - `[EVIDENCE: README.md:84, train.py:37]` anchors where a finding has source locations; the ledger retains inferred evidence that has no line-level anchor.
+
+The generated `reproduce.sh` exits with status 2 before any draft stage until
+the author replaces the placeholders and deliberately removes its fail-closed
+guard. An unfinished runner must not resemble a successful reproduction.
 
 Markers survive regeneration and are what `adduce audit-generated` looks for when checking that nothing unresolved slipped through.
 
@@ -172,9 +208,10 @@ The summary states plainly that an artifact with conflicts or author-input-requi
 |---|---|
 | `R-GEN-001` | A generated claim lacks an evidence path |
 | `R-GEN-002` | A "yes" rests on low-confidence evidence |
-| `R-GEN-003` | Generated text implies execution-based verification but no reproduce run is recorded |
+| `R-GEN-003` | A checklist or appendix claims execution; these generated ledgers deliberately do not import dynamic-run evidence |
 | `R-GEN-004` | An unresolved placeholder remains in the artifact |
 | `R-GEN-005` | The artifact changed since its ledger was produced |
+| `R-GEN-006` | Visible provider-prose fragments do not match their unverified provider/model and fragment-hash provenance |
 
 This audits the audit output; run it before anything generated is submitted.
 

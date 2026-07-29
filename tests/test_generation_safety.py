@@ -6,6 +6,7 @@ import hashlib
 import json
 import subprocess
 
+import pytest
 import yaml
 from typer.testing import CliRunner
 
@@ -43,6 +44,22 @@ def _git(tmp_path, *args):
         check=True,
         capture_output=True,
     )
+
+
+def _refresh_ledger_counts(record):
+    entries = record["entries"]
+    record["counts"] = {
+        "evidence_backed": sum(item["answer"] == "yes" for item in entries),
+        "partial": sum(item["answer"] == "partial" for item in entries),
+        "author_input_required": sum(
+            item["answer"] == "author_input_required" for item in entries
+        ),
+        "not_detected": sum(
+            item["answer"] == "not_detected" for item in entries
+        ),
+        "unknown": sum(item["answer"] == "unknown" for item in entries),
+        "conflicts": sum(bool(item["conflicts"]) for item in entries),
+    }
 
 
 # -- derive_answer policy ----------------------------------------------------
@@ -137,6 +154,53 @@ def test_draft_manifest_claim_does_not_back_unrelated_checklist_items(tmp_path):
     )
 
 
+def test_statusless_manifest_claim_is_not_author_confirmed_generation_evidence(
+    tmp_path,
+):
+    _write(tmp_path, WELL_FORMED)
+    manifest_dir = tmp_path / ".adduce"
+    manifest_dir.mkdir()
+    (manifest_dir / "manifest.yaml").write_text(
+        yaml.safe_dump(
+            {
+                "schema": "adduce/1",
+                "claims": [
+                    {
+                        "id": "C1",
+                        "metric": "accuracy",
+                        "value": 92.1,
+                        "produced_by": {"command": "bash run.sh"},
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    result = run_check(tmp_path)
+    findings = {finding.rule_id: finding for finding in result.card.findings}
+
+    _, checklist_ledger = render_markdown(load_checklist("neurips"), result)
+    appendix_markdown, appendix_ledger = appendix_report.render(result)
+
+    assert all(
+        not any(
+            item.strength is EvidenceStrength.MANIFEST_AUTHOR_CONFIRMED
+            for item in entry.evidence
+        )
+        for entry in checklist_ledger.entries
+    )
+    a6 = next(entry for entry in appendix_ledger.entries if entry.item_id == "A.6")
+    assert not any(
+        item.strength is EvidenceStrength.MANIFEST_AUTHOR_CONFIRMED
+        for item in a6.evidence
+    )
+    assert "| C1 | accuracy | 92.1 |" not in appendix_markdown
+    assert "**Metrics:** [AUTHOR REVIEW REQUIRED]" in appendix_markdown
+    assert findings["R-DOC-003"].status is Status.PARTIAL
+    assert findings["R-EXEC-003"].status is Status.PARTIAL
+    assert findings["R-RUN-001"].status is Status.PARTIAL
+
+
 # -- checklist command: ledger, markers, anchors, summary ---------------------
 
 
@@ -152,6 +216,7 @@ def test_checklist_command_writes_ledger_with_provenance(tmp_path):
     assert "checklist.md" in records
     record = records["checklist.md"]
     assert record["generated_text_policy"] == "evidence_only"
+    assert record["generated_text_provenance"] == []
     provenance = record["provenance"]
     assert provenance["adduce_version"] == __version__
     assert provenance["command"] == "checklist"
@@ -159,6 +224,204 @@ def test_checklist_command_writes_ledger_with_provenance(tmp_path):
     assert provenance["repo_commit"]
     assert provenance["generated_at"]
     assert record["artifact_sha256"] == hashlib.sha256(target.read_bytes()).hexdigest()
+
+
+def test_provider_prose_is_unverified_and_has_non_secret_provenance(tmp_path):
+    _write(tmp_path, WELL_FORMED)
+    result = run_check(tmp_path)
+    selected = load_checklist("neurips")
+    item_id = selected.items[0].id
+
+    markdown, ledger = render_markdown(
+        selected,
+        result,
+        llm_drafts={item_id: "A provider-supplied draft."},
+        llm_provider=("openai", "configured-model"),
+    )
+
+    assert "[AUTHOR REVIEW REQUIRED] — this prose is not evidence" in markdown
+    assert "<!-- adduce-provider-fragment " in markdown
+    assert "\n    A provider-supplied draft.\n" in markdown
+    assert ledger.generated_text_policy == "provider_generated_unverified"
+    assert len(ledger.generated_text_provenance) == 1
+    provenance = ledger.generated_text_provenance[0].to_dict()
+    assert provenance["item_id"] == item_id
+    assert provenance["provider"] == "openai"
+    assert provenance["model"] == "configured-model"
+    assert provenance["source"] == "external_model"
+    assert provenance["author_review_required"] is True
+    assert provenance["text_sha256"] == hashlib.sha256(
+        b"A provider-supplied draft."
+    ).hexdigest()
+    assert "key" not in provenance
+
+
+def test_provider_prose_without_identity_is_rejected(tmp_path):
+    _write(tmp_path, WELL_FORMED)
+    result = run_check(tmp_path)
+    selected = load_checklist("neurips")
+
+    with pytest.raises(ValueError, match="provider/model provenance"):
+        render_markdown(
+            selected,
+            result,
+            llm_drafts={selected.items[0].id: "unbound prose"},
+        )
+
+
+def test_only_explicitly_confirmed_claims_support_manifest_answers(tmp_path):
+    _write(tmp_path, WELL_FORMED)
+    manifest_dir = tmp_path / ".adduce"
+    manifest_dir.mkdir()
+    (manifest_dir / "manifest.yaml").write_text(
+        yaml.safe_dump(
+            {
+                "schema": "adduce/1",
+                "claims": [
+                    {
+                        "id": "C-confirmed",
+                        "status": "confirmed",
+                        "metric": "accuracy",
+                        "value": 91.0,
+                        "produced_by": {"command": "python eval.py"},
+                    },
+                    {
+                        "id": "C-draft",
+                        "status": "draft",
+                        "metric": "f1",
+                        "value": 99.0,
+                        "produced_by": {"command": "python unrelated.py"},
+                    },
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    custom = tmp_path / "confirmed.yaml"
+    custom.write_text(
+        yaml.safe_dump(
+            {
+                "name": "Confirmed claims",
+                "key": "confirmed",
+                "items": [
+                    {
+                        "id": "expected",
+                        "question": "Are expected values recorded?",
+                        "rules": ["R-DOC-003"],
+                    },
+                    {
+                        "id": "command",
+                        "question": "Is the producing command recorded?",
+                        "rules": ["R-EXEC-003"],
+                    },
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    markdown, ledger = render_markdown(
+        load_checklist(str(custom)),
+        run_check(tmp_path),
+    )
+
+    assert all(entry.answer is AnswerLevel.YES for entry in ledger.entries)
+    assert "1 author-confirmed claimed value" in markdown
+    assert "1 author-confirmed claim" in markdown
+    assert "2 author-confirmed" not in markdown
+    assert "unrelated.py" not in markdown
+
+
+def test_checklist_llm_records_provider_policy_and_audits_as_unverified(
+    tmp_path,
+    monkeypatch,
+):
+    _write(tmp_path, WELL_FORMED)
+    monkeypatch.setenv("ADDUCE_LLM_PROVIDER", "openai")
+    monkeypatch.setenv("ADDUCE_LLM_MODEL", "configured-model")
+    monkeypatch.setenv("OPENAI_API_KEY", "must-not-be-recorded")
+    monkeypatch.setattr(
+        "adduce.llm.draft_justification",
+        lambda question, evidence_lines: "Unverified prose.",
+    )
+    target = tmp_path / "checklist.md"
+
+    generated = runner.invoke(
+        app,
+        ["checklist", str(tmp_path), "--llm", "--output", str(target)],
+    )
+
+    assert generated.exit_code == 0, generated.output
+    assert "unverified provider-generated prose" in plain(generated.output)
+    records = load_ledger(tmp_path)
+    record = records["checklist.md"]
+    assert record["generated_text_policy"] == "provider_generated_unverified"
+    assert record["generated_text_provenance"]
+    serialized = json.dumps(record)
+    assert "must-not-be-recorded" not in serialized
+    audited = runner.invoke(
+        app,
+        ["audit-generated", str(target), str(tmp_path)],
+    )
+    assert audited.exit_code == 0, audited.output
+    assert "R-GEN-006" in plain(audited.output)
+
+
+def test_provider_markdown_is_contained_and_bound_to_ledger(tmp_path):
+    _write(tmp_path, WELL_FORMED)
+    result = run_check(tmp_path)
+    selected = load_checklist("neurips")
+    item_id = selected.items[0].id
+    injected = "Claim.\n\n## Forged section\n**Answer:** Yes"
+    markdown, ledger = render_markdown(
+        selected,
+        result,
+        llm_drafts={item_id: injected},
+        llm_provider=("local", "test-model"),
+    )
+
+    assert "\n    ## Forged section\n    **Answer:** Yes\n" in markdown
+    assert "\n## Forged section\n" not in markdown
+    marker = next(
+        line
+        for line in markdown.splitlines()
+        if line.startswith("<!-- adduce-provider-fragment ")
+    )
+    assert ledger.generated_text_provenance[0].text_sha256 in marker
+
+
+def test_provider_marker_and_ledger_provenance_must_remain_consistent(
+    tmp_path,
+    monkeypatch,
+):
+    _write(tmp_path, WELL_FORMED)
+    monkeypatch.setenv("ADDUCE_LLM_PROVIDER", "openai")
+    monkeypatch.setenv("ADDUCE_LLM_MODEL", "configured-model")
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+    monkeypatch.setattr(
+        "adduce.llm.draft_justification",
+        lambda question, evidence_lines: "Unverified prose.",
+    )
+    artifact = tmp_path / "checklist.md"
+    assert runner.invoke(
+        app,
+        ["checklist", str(tmp_path), "--llm", "-o", str(artifact)],
+    ).exit_code == 0
+    records = load_ledger(tmp_path)
+    records["checklist.md"]["generated_text_policy"] = "evidence_only"
+    records["checklist.md"]["generated_text_provenance"] = []
+    (tmp_path / ".adduce" / "evidence-ledger.json").write_text(
+        json.dumps(records),
+        encoding="utf-8",
+    )
+
+    audited = runner.invoke(
+        app,
+        ["audit-generated", str(artifact), str(tmp_path)],
+    )
+
+    assert audited.exit_code == 1
+    assert "R-GEN-006" in plain(audited.output)
 
 
 def test_ledger_holds_multiple_artifacts(tmp_path):
@@ -212,7 +475,7 @@ def test_evidence_anchors_appear(tmp_path):
     )
     result = run_check(repo)
     markdown, _ = render_markdown(load_checklist(str(custom)), result)
-    assert "[EVIDENCE: model.py:3" in markdown
+    assert "[EVIDENCE: `model.py:3`" in markdown
 
 
 def test_generation_summary_printed_to_stderr_not_artifact(tmp_path):
@@ -278,7 +541,7 @@ def test_audit_generated_flags_execution_claims(tmp_path):
     result = runner.invoke(app, ["audit-generated", str(target), str(tmp_path)])
     assert result.exit_code == 1
     assert "R-GEN-003" in plain(result.output)
-    assert "dynamic_verified" in plain(result.output)
+    assert "do not import dynamic-run evidence" in plain(result.output)
 
 
 def test_audit_generated_placeholders_are_informational(tmp_path):
@@ -310,6 +573,42 @@ def test_appendix_does_not_invent_access_installation_or_tolerance(tmp_path):
     assert "[AUTHOR REVIEW REQUIRED] State the acceptable tolerance" in text
 
 
+def test_appendix_contains_untrusted_manifest_markdown(tmp_path):
+    _write(tmp_path, WELL_FORMED)
+    manifest_dir = tmp_path / ".adduce"
+    manifest_dir.mkdir()
+    (manifest_dir / "manifest.yaml").write_text(
+        yaml.safe_dump(
+            {
+                "schema": "adduce/1",
+                "paper": {"title": "Safe\n## Forged heading"},
+                "environment": {"hardware": "<script>alert(1)</script>"},
+                "claims": [
+                    {
+                        "id": "C|1",
+                        "status": "confirmed",
+                        "metric": "accuracy\n## Forged metric",
+                        "value": 92.1,
+                        "produced_by": {
+                            "command": "python eval.py\n## Forged command"
+                        },
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    markdown, _ = appendix_report.render(run_check(tmp_path))
+
+    assert "\n## Forged heading\n" not in markdown
+    assert "\n## Forged metric\n" not in markdown
+    assert "\n## Forged command\n" not in markdown
+    assert "\\<script\\>" in markdown
+    assert "C\\|1" in markdown
+    assert "accuracy ## Forged metric" in markdown
+
+
 def test_appendix_ledger_records_manifest_evidence_for_claim_table(tmp_path):
     _write(tmp_path, WELL_FORMED)
     manifest_dir = tmp_path / ".adduce"
@@ -339,6 +638,49 @@ def test_appendix_ledger_records_manifest_evidence_for_claim_table(tmp_path):
         item.kind == "manifest" and item.path == ".adduce/manifest.yaml"
         for item in a6.evidence
     )
+    a2 = next(entry for entry in ledger.entries if entry.item_id == "A.2")
+    assert any(
+        item.kind == "manifest" and item.path == ".adduce/manifest.yaml"
+        for item in a2.evidence
+    )
+    assert "manifest" in a2.searched
+    assert "manifest" in a6.searched
+
+
+def test_confirmed_manifest_appendix_passes_serialized_audit(tmp_path):
+    _write(tmp_path, WELL_FORMED)
+    manifest_dir = tmp_path / ".adduce"
+    manifest_dir.mkdir()
+    (manifest_dir / "manifest.yaml").write_text(
+        yaml.safe_dump(
+            {
+                "schema": "adduce/1",
+                "claims": [
+                    {
+                        "id": "C1",
+                        "status": "confirmed",
+                        "metric": "accuracy",
+                        "value": 92.1,
+                        "produced_by": {"command": "bash run.sh"},
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    artifact = tmp_path / "appendix.md"
+
+    generated = runner.invoke(
+        app,
+        ["appendix", str(tmp_path), "--output", str(artifact)],
+    )
+    audited = runner.invoke(
+        app,
+        ["audit-generated", str(artifact), str(tmp_path)],
+    )
+
+    assert generated.exit_code == 0, generated.output
+    assert audited.exit_code == 0, audited.output
 
 
 def test_audit_generated_without_ledger_errors(tmp_path):
@@ -348,6 +690,202 @@ def test_audit_generated_without_ledger_errors(tmp_path):
     result = runner.invoke(app, ["audit-generated", str(artifact), str(tmp_path)])
     assert result.exit_code == 2
     assert "evidence ledger" in plain(result.output)
+
+
+def test_audit_generated_rejects_malformed_ledger_records_without_traceback(tmp_path):
+    _write(tmp_path, WELL_FORMED)
+    artifact = tmp_path / "checklist.md"
+    artifact.write_text("# generated\n", encoding="utf-8")
+    ledger_dir = tmp_path / ".adduce"
+    ledger_dir.mkdir()
+    (ledger_dir / "evidence-ledger.json").write_text(
+        json.dumps(
+            {
+                "checklist.md": {
+                    "artifact_sha256": "0" * 64,
+                    "entries": [{"answer": "yes", "evidence": ["malformed"]}],
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    result = runner.invoke(app, ["audit-generated", str(artifact), str(tmp_path)])
+
+    assert result.exit_code == 2
+    assert "invalid evidence ledger record" in plain(result.output)
+    assert "Traceback" not in result.output
+
+
+def test_audit_generated_rejects_empty_ledger_record(tmp_path):
+    _write(tmp_path, WELL_FORMED)
+    artifact = tmp_path / "checklist.md"
+    artifact.write_text("# generated\n", encoding="utf-8")
+    ledger_dir = tmp_path / ".adduce"
+    ledger_dir.mkdir()
+    (ledger_dir / "evidence-ledger.json").write_text(
+        json.dumps({"checklist.md": {}}),
+        encoding="utf-8",
+    )
+
+    result = runner.invoke(app, ["audit-generated", str(artifact), str(tmp_path)])
+
+    assert result.exit_code == 2
+    assert "invalid evidence ledger record" in plain(result.output)
+
+
+def test_audit_generated_rejects_unknown_evidence_mode(tmp_path):
+    _write(tmp_path, WELL_FORMED)
+    artifact = tmp_path / "checklist.md"
+    assert runner.invoke(
+        app,
+        ["checklist", str(tmp_path), "-o", str(artifact)],
+    ).exit_code == 0
+    records = load_ledger(tmp_path)
+    records["checklist.md"]["provenance"]["mode"] = "strict-typo"
+    (tmp_path / ".adduce" / "evidence-ledger.json").write_text(
+        json.dumps(records),
+        encoding="utf-8",
+    )
+
+    result = runner.invoke(
+        app,
+        ["audit-generated", str(artifact), str(tmp_path)],
+    )
+
+    assert result.exit_code == 2
+    assert "invalid evidence ledger record" in plain(result.output)
+
+
+def test_audit_generated_rejects_manifest_disguised_as_direct_evidence(
+    tmp_path,
+):
+    _write(tmp_path, WELL_FORMED)
+    artifact = tmp_path / "checklist.md"
+    assert runner.invoke(
+        app,
+        ["checklist", str(tmp_path), "-o", str(artifact)],
+    ).exit_code == 0
+    records = load_ledger(tmp_path)
+    record = records["checklist.md"]
+    entry = record["entries"][0]
+    entry["answer"] = "yes"
+    if "manifest" not in entry["searched"]:
+        entry["searched"].append("manifest")
+    entry["evidence"] = [
+        {
+            "kind": "manifest",
+            "path": ".adduce/manifest.yaml",
+            "line": None,
+            "confidence": 1.0,
+            "strength": "direct",
+        }
+    ]
+    _refresh_ledger_counts(record)
+    (tmp_path / ".adduce" / "evidence-ledger.json").write_text(
+        json.dumps(records),
+        encoding="utf-8",
+    )
+
+    result = runner.invoke(
+        app,
+        ["audit-generated", str(artifact), str(tmp_path)],
+    )
+
+    assert result.exit_code == 2
+    assert "invalid evidence ledger record" in plain(result.output)
+
+
+def test_audit_generated_rejects_searchless_not_detected_answer(tmp_path):
+    _write(tmp_path, WELL_FORMED)
+    artifact = tmp_path / "checklist.md"
+    assert runner.invoke(
+        app,
+        ["checklist", str(tmp_path), "-o", str(artifact)],
+    ).exit_code == 0
+    records = load_ledger(tmp_path)
+    record = records["checklist.md"]
+    entry = record["entries"][0]
+    entry.update(
+        answer="not_detected",
+        evidence=[],
+        searched=[],
+        missing=[],
+        conflicts=[],
+    )
+    _refresh_ledger_counts(record)
+    (tmp_path / ".adduce" / "evidence-ledger.json").write_text(
+        json.dumps(records),
+        encoding="utf-8",
+    )
+
+    result = runner.invoke(
+        app,
+        ["audit-generated", str(artifact), str(tmp_path)],
+    )
+
+    assert result.exit_code == 2
+    assert "invalid evidence ledger record" in plain(result.output)
+
+
+def test_audit_generated_rejects_weak_inferred_yes(tmp_path):
+    _write(tmp_path, WELL_FORMED)
+    artifact = tmp_path / "checklist.md"
+    assert runner.invoke(
+        app,
+        ["checklist", str(tmp_path), "-o", str(artifact)],
+    ).exit_code == 0
+    records = load_ledger(tmp_path)
+    record = records["checklist.md"]
+    entry = record["entries"][0]
+    entry["answer"] = "yes"
+    entry["evidence"] = [
+        {
+            "kind": entry["searched"][0],
+            "path": "",
+            "line": None,
+            "confidence": 0.99,
+            "strength": "inferred",
+        }
+    ]
+    _refresh_ledger_counts(record)
+    (tmp_path / ".adduce" / "evidence-ledger.json").write_text(
+        json.dumps(records),
+        encoding="utf-8",
+    )
+
+    result = runner.invoke(app, ["audit-generated", str(artifact), str(tmp_path)])
+
+    assert result.exit_code == 1
+    assert "R-GEN-002" in plain(result.output)
+
+
+@pytest.mark.parametrize(
+    "claim",
+    [
+        "We executed every experiment and matched all reported numbers.",
+        "The rerun matched the paper.",
+        "I ran all experiments.",
+        "Training completed successfully and reproduced Figure 2.",
+    ],
+)
+def test_audit_generated_detects_broader_execution_claims(tmp_path, claim):
+    _write(tmp_path, WELL_FORMED)
+    artifact = tmp_path / "checklist.md"
+    assert runner.invoke(
+        app,
+        ["checklist", str(tmp_path), "-o", str(artifact)],
+    ).exit_code == 0
+    text = artifact.read_text(encoding="utf-8")
+    artifact.write_text(
+        f"{text}\n{claim}\n",
+        encoding="utf-8",
+    )
+
+    result = runner.invoke(app, ["audit-generated", str(artifact), str(tmp_path)])
+
+    assert result.exit_code == 1
+    assert "R-GEN-003" in plain(result.output)
 
 
 # -- package ------------------------------------------------------------------

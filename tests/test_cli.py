@@ -4,9 +4,11 @@ from __future__ import annotations
 
 import json
 
+import pytest
 from typer.testing import CliRunner
 
 from adduce.cli import app
+from tests.conftest import plain
 from tests.test_engine import BARE, WELL_FORMED, _write
 
 runner = CliRunner()
@@ -26,6 +28,38 @@ def test_check_json_format(tmp_path):
     payload = json.loads(result.output)
     assert payload["tool"]["name"] == "adduce"
     assert 0 <= payload["total"] <= 100
+
+
+def test_reviewer_json_discloses_and_bypasses_repository_policy(tmp_path):
+    files = dict(BARE)
+    files["adduce.toml"] = (
+        'profile = "acm"\n'
+        'ignore = ["R-LIC-001"]\n'
+        'exclude = ["third_party"]\n'
+        "fail-under = 100\n"
+    )
+    _write(tmp_path, files)
+
+    result = runner.invoke(
+        app,
+        ["check", str(tmp_path), "--mode", "reviewer", "--format", "json"],
+    )
+
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.output)
+    assert payload["configuration"] == {
+        "source": "adduce.toml",
+        "repository_policy_honored": False,
+        "profile": "default",
+        "ignored_rules": [],
+        "excluded_paths": [],
+    }
+    finding = next(
+        finding
+        for finding in payload["findings"]
+        if finding["rule_id"] == "R-LIC-001"
+    )
+    assert finding["suppressed"] is False
 
 
 def test_check_sarif_is_valid_json(tmp_path):
@@ -51,6 +85,16 @@ def test_fail_under_exit_code(tmp_path):
     assert result.exit_code == 1
 
 
+@pytest.mark.parametrize("threshold", ["nan", "inf", "-1", "101"])
+def test_fail_under_rejects_non_finite_or_out_of_range_values(tmp_path, threshold):
+    _write(tmp_path, BARE)
+
+    result = runner.invoke(app, ["check", str(tmp_path), "--fail-under", threshold])
+
+    assert result.exit_code == 2
+    assert "--fail-under must be a finite number from 0 to 100" in plain(result.output)
+
+
 def test_diagnostic_by_default(tmp_path):
     _write(tmp_path, BARE)
     result = runner.invoke(app, ["check", str(tmp_path)])
@@ -74,6 +118,22 @@ def test_baseline_then_regression_gate(tmp_path):
     (tmp_path / "train.py").write_text("import torch\n", encoding="utf-8")
     result = runner.invoke(app, ["check", str(tmp_path), "--fail-on-regression"])
     assert result.exit_code == 1
+
+
+def test_regression_gate_rejects_malformed_baseline_without_traceback(tmp_path):
+    _write(tmp_path, WELL_FORMED)
+    directory = tmp_path / ".adduce"
+    directory.mkdir()
+    (directory / "baseline.json").write_text(
+        '{"version": 1, "rules": []}\n',
+        encoding="utf-8",
+    )
+
+    result = runner.invoke(app, ["check", str(tmp_path), "--fail-on-regression"])
+
+    assert result.exit_code == 2
+    assert "invalid baseline" in result.output
+    assert "Traceback" not in result.output
 
 
 def test_checklist_command(tmp_path):

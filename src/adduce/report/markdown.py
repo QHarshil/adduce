@@ -27,6 +27,20 @@ def render(result: CheckResult) -> str:
         subtitle += f" · commit `{commit}`"
     lines.append(subtitle)
     lines.append("")
+    if result.config.source and not result.config.repository_policy_honored:
+        lines.append(
+            f"> Repository policy in `{result.config.source}` was not applied in "
+            "this reviewer-facing run."
+        )
+        lines.append("")
+    elif result.config.source and (result.config.ignore or result.config.exclude):
+        lines.append(
+            f"> Repository policy from `{result.config.source}` applied "
+            f"{len(result.config.ignore)} ignored rule(s) and "
+            f"{len(result.config.exclude)} excluded path pattern(s). "
+            "Ignored findings retain their observed score; excluded paths were not scanned."
+        )
+        lines.append("")
     lines.append("| Category | Score | |")
     lines.append("|---|---:|---|")
     for cat in card.categories:
@@ -48,14 +62,17 @@ def render(result: CheckResult) -> str:
     lines.append("| Rule | Status | Confidence | Detail |")
     lines.append("|---|---|---:|---|")
     for finding in card.findings:
-        status = "ignored" if finding.suppressed else _STATUS_LABEL[finding.status]
+        status = _STATUS_LABEL[finding.status]
+        if finding.suppressed:
+            status += " (ignored)"
         detail = finding.message.replace("|", "\\|")
         if finding.locations:
             detail += " — " + ", ".join(f"`{loc}`" for loc in finding.locations[:3])
         lines.append(f"| {finding.rule_id} | {status} | {finding.confidence:.0%} | {detail} |")
     lines.append("")
     lines.append(
-        "> Statuses are detected signals from static analysis, not a certification of reproducibility."
+        "> Statuses are detected signals from static analysis, not a certification of "
+        "reproducibility. Suppression is a triage annotation and does not change scoring."
     )
     lines.append("")
     return "\n".join(lines)

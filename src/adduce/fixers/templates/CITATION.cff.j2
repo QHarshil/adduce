@@ -1,13 +1,12 @@
 cff-version: 1.2.0
 message: "If you use this software, please cite it using the metadata below."
-title: "{{ title }}"
+title: {{ ("[AUTHOR REVIEW REQUIRED] " ~ title)|tojson }}
 type: software
 {% if authors %}authors:
-{% for author in authors %}  - family-names: "{{ author.family }}"
-    given-names: "{{ author.given }}"
+{% for author in authors %}  - family-names: {{ author.family|tojson }}
+    given-names: {{ author.given|tojson }}
 {% endfor %}{% else %}authors:
   - family-names: "[AUTHOR REVIEW REQUIRED]"
     given-names: "[AUTHOR REVIEW REQUIRED]"
-{% endif %}{% if repository_url %}repository-code: "{{ repository_url }}"
-{% endif %}date-released: "{{ date }}"
-version: "{{ version }}"
+{% endif %}{% if repository_url %}repository-code: {{ repository_url|tojson }}
+{% endif %}

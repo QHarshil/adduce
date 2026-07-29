@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import pytest
 import yaml
 
 from adduce.checklists import available_checklists, load_checklist, render_markdown
@@ -63,3 +64,26 @@ def test_bare_repo_drafts_negative_answers(tmp_path):
     result = run_check(tmp_path)
     output, _ = render_markdown(load_checklist("neurips"), result)
     assert "Not detected (draft)" in output or "Partial (draft)" in output
+
+
+@pytest.mark.parametrize(
+    "items",
+    [
+        [],
+        [
+            {"id": "duplicate", "question": "First?", "rules": []},
+            {"id": "duplicate", "question": "Second?", "rules": []},
+        ],
+        [{"id": "../unsafe", "question": "Unsafe?", "rules": []}],
+        [{"id": "bad-rules", "question": "Rules?", "rules": "R-DOC-001"}],
+    ],
+)
+def test_custom_checklist_rejects_empty_or_ambiguous_items(tmp_path, items):
+    path = tmp_path / "checklist.yaml"
+    path.write_text(
+        yaml.safe_dump({"name": "Custom", "key": "custom", "items": items}),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="Checklist"):
+        load_checklist(str(path))

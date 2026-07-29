@@ -1,11 +1,13 @@
-# Runtime environment for reproducing the experiments in this repository.
+# [AUTHOR REVIEW REQUIRED] Draft runtime environment; verify the Python base,
+# dependency installation, system packages, entrypoint, and hardware runtime.
 # Pin the base image digest before publishing:
 #   docker pull python:{{ python_version }}-slim && docker inspect --format='{{ '{{' }}index .RepoDigests 0{{ '}}' }}' python:{{ python_version }}-slim
 FROM python:{{ python_version }}-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PYTHONHASHSEED=0
+    PYTHONHASHSEED=0 \
+    CUBLAS_WORKSPACE_CONFIG=:4096:8
 
 WORKDIR /workspace
 
@@ -15,5 +17,5 @@ RUN pip install --no-cache-dir -r {{ requirements_file }}
 {% endif %}
 COPY . .
 
-# Replace with the exact command that reproduces the main results.
-CMD ["python", "{{ entrypoint }}"]
+# [AUTHOR REVIEW REQUIRED] Replace with the exact main-results command.
+CMD ["python", {{ entrypoint|tojson }}]

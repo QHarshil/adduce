@@ -22,9 +22,12 @@ from typing import Any
 
 from . import __version__
 from .rules.base import Finding, Status
+from .safe_write import SafeWriteError, read_text_regular, replace_text_regular
 
 LEDGER_DIR = ".adduce"
 LEDGER_NAME = "evidence-ledger.json"
+EVIDENCE_ONLY_TEXT_POLICY = "evidence_only"
+PROVIDER_UNVERIFIED_TEXT_POLICY = "provider_generated_unverified"
 
 # Confidence policy: a drafted "yes" needs strong evidence; anything weaker is
 # explicitly partial or unknown so the author knows what still needs them.
@@ -98,6 +101,28 @@ class LedgerEntry:
         }
 
 
+@dataclass(frozen=True)
+class GeneratedTextProvenance:
+    """Non-secret provenance for one unverified provider-generated fragment."""
+
+    item_id: str
+    provider: str
+    model: str
+    text_sha256: str
+    source: str = "external_model"
+    author_review_required: bool = True
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "item_id": self.item_id,
+            "source": self.source,
+            "provider": self.provider,
+            "model": self.model,
+            "text_sha256": self.text_sha256,
+            "author_review_required": self.author_review_required,
+        }
+
+
 @dataclass
 class Ledger:
     """Everything needed to re-audit one generated artifact."""
@@ -106,7 +131,10 @@ class Ledger:
     artifact_sha256: str
     provenance: dict[str, Any]
     entries: list[LedgerEntry] = field(default_factory=list)
-    generated_text_policy: str = "evidence_only"
+    generated_text_policy: str = EVIDENCE_ONLY_TEXT_POLICY
+    generated_text_provenance: list[GeneratedTextProvenance] = field(
+        default_factory=list
+    )
 
     def counts(self) -> dict[str, int]:
         """Tally of answers by level plus the number of conflicted entries."""
@@ -137,6 +165,9 @@ class Ledger:
             "artifact_sha256": self.artifact_sha256,
             "provenance": self.provenance,
             "generated_text_policy": self.generated_text_policy,
+            "generated_text_provenance": [
+                item.to_dict() for item in self.generated_text_provenance
+            ],
             "counts": self.counts(),
             "entries": [entry.to_dict() for entry in self.entries],
         }
@@ -149,6 +180,21 @@ def sha256_text(text: str) -> str:
     the recorded hash matches the emitted file byte for byte.
     """
     return hashlib.sha256((text.rstrip("\n") + "\n").encode("utf-8")).hexdigest()
+
+
+def provider_text_provenance(
+    item_id: str,
+    provider: str,
+    model: str,
+    text: str,
+) -> GeneratedTextProvenance:
+    """Bind an unverified provider fragment without retaining prompts or secrets."""
+    return GeneratedTextProvenance(
+        item_id=item_id,
+        provider=provider,
+        model=model,
+        text_sha256=hashlib.sha256(text.encode("utf-8")).hexdigest(),
+    )
 
 
 def sha256_file(path: Path) -> str:
@@ -289,7 +335,7 @@ def build_entry(
     the evidence found for it.
     """
     searched = list(rule_ids)
-    if manifest_backed:
+    if manifest_backed or manifest_evidence:
         searched.append("manifest")
     if manual:
         answer: AnswerLevel = AnswerLevel.AUTHOR_INPUT_REQUIRED
@@ -331,21 +377,45 @@ def write_ledger(root: Path, ledger: Ledger) -> Path:
     for one repository coexist instead of overwriting each other.
     """
     directory = root / LEDGER_DIR
-    directory.mkdir(parents=True, exist_ok=True)
     target = directory / LEDGER_NAME
     records = load_ledger(root)
     records[ledger.artifact_path] = ledger.to_dict()
-    target.write_text(json.dumps(records, indent=2) + "\n", encoding="utf-8", newline="\n")
+    try:
+        rendered = json.dumps(records, allow_nan=False, indent=2) + "\n"
+    except (TypeError, ValueError) as exc:
+        raise SafeWriteError(
+            "evidence ledger contains values that cannot be serialized safely"
+        ) from exc
+    replace_text_regular(
+        target,
+        rendered,
+        label="evidence ledger",
+        parent_label=".adduce directory",
+    )
     return target
 
 
 def load_ledger(root: Path) -> dict[str, Any]:
     """Load the ledger file as a raw dict keyed by artifact path; {} if absent."""
     target = root / LEDGER_DIR / LEDGER_NAME
-    if not target.is_file():
-        return {}
     try:
-        data = json.loads(target.read_text(encoding="utf-8"))
-    except (json.JSONDecodeError, OSError):
+        source = read_text_regular(
+            target,
+            label="evidence ledger",
+            parent_label=".adduce directory",
+        )
+    except UnicodeError as exc:
+        raise SafeWriteError("evidence ledger is not valid UTF-8") from exc
+    if source is None:
         return {}
-    return data if isinstance(data, dict) else {}
+
+    def reject_non_finite(value: str) -> None:
+        raise ValueError(f"non-finite JSON value {value}")
+
+    try:
+        data = json.loads(source, parse_constant=reject_non_finite)
+    except (json.JSONDecodeError, ValueError) as exc:
+        raise SafeWriteError("refusing to replace an invalid evidence ledger") from exc
+    if not isinstance(data, dict):
+        raise SafeWriteError("refusing to replace an invalid evidence ledger")
+    return data

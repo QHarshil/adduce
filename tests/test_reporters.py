@@ -30,13 +30,18 @@ def test_sarif_structure(tmp_path):
         assert "partialFingerprints" in item
 
 
-def test_sarif_excludes_passes_and_suppressed(tmp_path):
-    _write(tmp_path, WELL_FORMED)
+def test_sarif_excludes_passes_but_retains_suppressed_findings(tmp_path):
+    files = dict(BARE)
+    files["adduce.toml"] = 'ignore = ["R-LIC-001"]\n'
+    _write(tmp_path, files)
     result = run_check(tmp_path)
     sarif = json.loads(RENDERERS["sarif"](result))
-    reported = {r["ruleId"] for r in sarif["runs"][0]["results"]}
+    results = sarif["runs"][0]["results"]
+    reported = {r["ruleId"] for r in results}
     passed = {f.rule_id for f in result.card.findings if f.status.value == "pass"}
     assert not (reported & passed)
+    suppressed = next(item for item in results if item["ruleId"] == "R-LIC-001")
+    assert suppressed["suppressions"][0]["status"] == "accepted"
 
 
 def test_markdown_contains_score_and_disclaimer(tmp_path):

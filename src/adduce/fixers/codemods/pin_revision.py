@@ -12,13 +12,14 @@ import difflib
 
 import libcst as cst
 
-_PINNABLE_TERMINALS = frozenset(
-    {"from_pretrained", "load_dataset", "hf_hub_download", "snapshot_download", "SentenceTransformer"}
-)
+_MODEL_TERMINALS = frozenset({"from_pretrained", "SentenceTransformer"})
+_DATASET_TERMINALS = frozenset({"load_dataset"})
+_HUB_DOWNLOAD_TERMINALS = frozenset({"hf_hub_download", "snapshot_download"})
+_PINNABLE_TERMINALS = _MODEL_TERMINALS | _DATASET_TERMINALS | _HUB_DOWNLOAD_TERMINALS
 
 
 class _AddRevision(cst.CSTTransformer):
-    def __init__(self, revisions: dict[str, str]) -> None:
+    def __init__(self, revisions: dict[tuple[str, str], str]) -> None:
         self.revisions = revisions
         self.changes = 0
 
@@ -41,7 +42,27 @@ class _AddRevision(cst.CSTTransformer):
         if not isinstance(first, cst.SimpleString):
             return updated
         identifier = first.evaluated_value
-        sha = self.revisions.get(identifier) if isinstance(identifier, str) else None
+        if not isinstance(identifier, str):
+            return updated
+        if terminal in _DATASET_TERMINALS:
+            resolver_kind = "hf-dataset"
+        elif terminal in _MODEL_TERMINALS:
+            resolver_kind = "hf-model"
+        else:
+            repo_type = next(
+                (
+                    arg.value.evaluated_value
+                    for arg in updated.args
+                    if arg.keyword
+                    and arg.keyword.value == "repo_type"
+                    and isinstance(arg.value, cst.SimpleString)
+                ),
+                "model",
+            )
+            if repo_type not in {"model", "dataset"}:
+                return updated
+            resolver_kind = f"hf-{repo_type}"
+        sha = self.revisions.get((resolver_kind, identifier))
         if not sha:
             return updated
         revision_arg = cst.Arg(
@@ -56,7 +77,10 @@ class _AddRevision(cst.CSTTransformer):
         return updated.with_changes(args=[*updated.args, revision_arg])
 
 
-def pin_revisions(source: str, revisions: dict[str, str]) -> tuple[str, int]:
+def pin_revisions(
+    source: str,
+    revisions: dict[tuple[str, str], str],
+) -> tuple[str, int]:
     """Return (new_source, number_of_calls_pinned)."""
     module = cst.parse_module(source)
     transformer = _AddRevision(revisions)

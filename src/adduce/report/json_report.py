@@ -18,6 +18,13 @@ def render(result: CheckResult) -> str:
             "frameworks": sorted(result.repo.frameworks.detected),
             "files_scanned": len(result.repo.files),
         },
+        "configuration": {
+            "source": result.config.source,
+            "repository_policy_honored": result.config.repository_policy_honored,
+            "profile": result.config.profile,
+            "ignored_rules": sorted(result.config.ignore),
+            "excluded_paths": list(result.config.exclude),
+        },
         "reviewer_time": {
             "low_minutes": reviewer_time.low_minutes,
             "high_minutes": reviewer_time.high_minutes,

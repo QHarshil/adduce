@@ -27,7 +27,7 @@ def render(result: CheckResult) -> str:
 
     for finding in result.card.findings:
         level = _LEVELS.get(finding.status)
-        if level is None or finding.suppressed:
+        if level is None:
             continue
         if finding.rule_id not in rules_seen:
             rules_seen[finding.rule_id] = {
@@ -59,8 +59,7 @@ def render(result: CheckResult) -> str:
                     }
                 }
             ]
-        results.append(
-            {
+        sarif_result = {
                 "ruleId": finding.rule_id,
                 "level": level,
                 "message": {"text": f"{finding.message} {finding.remediation}".strip()},
@@ -69,10 +68,20 @@ def render(result: CheckResult) -> str:
                     "adduceFindingKey": _fingerprint(finding, primary_path),
                 },
             }
-        )
+        if finding.suppressed:
+            sarif_result["suppressions"] = [
+                {
+                    "kind": "external",
+                    "status": "accepted",
+                    "justification": (
+                        "Suppressed by Adduce policy; the observed finding and score are retained."
+                    ),
+                }
+            ]
+        results.append(sarif_result)
 
     sarif = {
-        "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
+        "$schema": "https://docs.oasis-open.org/sarif/sarif/v2.1.0/os/schemas/sarif-schema-2.1.0.json",
         "version": "2.1.0",
         "runs": [
             {
@@ -82,6 +91,17 @@ def render(result: CheckResult) -> str:
                         "informationUri": "https://github.com/QHarshil/adduce",
                         "version": __version__,
                         "rules": list(rules_seen.values()),
+                    }
+                },
+                "properties": {
+                    "adduceConfiguration": {
+                        "source": result.config.source or "",
+                        "repositoryPolicyHonored": (
+                            result.config.repository_policy_honored
+                        ),
+                        "profile": result.config.profile,
+                        "ignoredRules": sorted(result.config.ignore),
+                        "excludedPaths": list(result.config.exclude),
                     }
                 },
                 "results": results,

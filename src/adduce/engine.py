@@ -53,6 +53,8 @@ def run_check(
     include_plugins: bool = True,
     rules: list[Rule] | None = None,
     paper: Path | None = None,
+    online: bool = False,
+    honor_repository_policy: bool = True,
 ) -> CheckResult:
     """Run the full pipeline against a repository root.
 
@@ -61,7 +63,14 @@ def run_check(
     ``.tex`` file; its extraction replaces whatever the repository itself
     contains, and evidence locations are relative to the paper root.
     """
-    config = load_config(path)
+    repository_config = load_config(path)
+    if honor_repository_policy:
+        config = repository_config
+    else:
+        config = Config(
+            source=repository_config.source,
+            repository_policy_honored=False,
+        )
     if profile_name:
         config.profile = profile_name
     if ignore:
@@ -69,11 +78,20 @@ def run_check(
     if exclude:
         config.exclude = tuple(dict.fromkeys([*config.exclude, *exclude]))
 
-    profile: Profile = load_profile(config.profile)
+    profile: Profile = load_profile(config.profile, allow_path=profile_name is not None)
     repo = scan_repository(path, exclude=config.exclude)
     evidence = collect(repo)
     if evidence.manifest.error:
         raise ValueError(evidence.manifest.error)
+    if online:
+        from .cache import Cache
+        from .dynamic.resolve import resolve_references
+
+        evidence.remote.online_attempted = True
+        evidence.remote.resolutions = resolve_references(
+            evidence.remote.references,
+            Cache(repo.root),
+        )
     if paper is not None:
         from .evidence.latex import collect_latex
 
@@ -110,6 +128,7 @@ _STATUS_ORDER = {
     Status.PARTIAL: 2,
     Status.FAIL: 1,
 }
+_BASELINE_STATUSES = frozenset(status.value for status in _STATUS_ORDER)
 
 
 def baseline_snapshot(card: ScoreCard) -> dict:
@@ -125,13 +144,27 @@ def baseline_snapshot(card: ScoreCard) -> dict:
     }
 
 
-def regressions_against(card: ScoreCard, baseline: dict) -> list[Finding]:
+def regressions_against(card: ScoreCard, baseline: dict[str, object]) -> list[Finding]:
     """Findings that are strictly worse than their recorded baseline status.
 
     Rules absent from the baseline (new rules, newly applicable) are not
     regressions: adoption must never punish upgrading the tool.
     """
-    recorded: dict[str, str] = baseline.get("rules", {})
+    if baseline.get("version") != 1:
+        raise ValueError("invalid baseline: expected version 1")
+    recorded_value = baseline.get("rules")
+    if not isinstance(recorded_value, dict) or any(
+        not isinstance(rule_id, str)
+        or not isinstance(status, str)
+        or status not in _BASELINE_STATUSES
+        for rule_id, status in recorded_value.items()
+    ):
+        raise ValueError("invalid baseline: 'rules' must map rule IDs to statuses")
+    recorded = {
+        rule_id: status
+        for rule_id, status in recorded_value.items()
+        if isinstance(rule_id, str) and isinstance(status, str)
+    }
     regressed: list[Finding] = []
     for finding in card.findings:
         if finding.suppressed or finding.status.score_value is None:

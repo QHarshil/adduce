@@ -7,9 +7,7 @@ Existing files are never overwritten.
 
 from __future__ import annotations
 
-import datetime
 import re
-import stat
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -17,6 +15,7 @@ from jinja2 import Environment, PackageLoader, StrictUndefined
 
 from ..engine import CheckResult
 from ..model import sanitized_remote_url
+from ..safe_write import append_text_regular, create_text_exclusive, regular_file_exists
 
 _env = Environment(
     loader=PackageLoader("adduce.fixers", "templates"),
@@ -55,33 +54,31 @@ def _entrypoint(result: CheckResult) -> str:
 
 def scaffold_seeds(result: CheckResult) -> ScaffoldResult:
     target = result.repo.root / "seed_utils.py"
-    if target.exists():
+    if regular_file_exists(target, label="seed scaffold destination"):
         return ScaffoldResult(target, "skipped (exists)")
     content = _env.get_template("seed_utils.py.j2").render(
         torch=result.repo.frameworks.uses("torch"),
     )
-    target.write_text(content, encoding="utf-8")
+    create_text_exclusive(target, content, label="seed scaffold destination")
     return ScaffoldResult(target, "created")
 
 
 def scaffold_citation(result: CheckResult) -> ScaffoldResult:
     target = result.repo.root / "CITATION.cff"
-    if target.exists():
+    if regular_file_exists(target, label="citation scaffold destination"):
         return ScaffoldResult(target, "skipped (exists)")
     content = _env.get_template("CITATION.cff.j2").render(
         title=result.repo.root.name,
         authors=[],
         repository_url=_git_remote_url(result),
-        date=datetime.date.today().isoformat(),
-        version="1.0.0",
     )
-    target.write_text(content, encoding="utf-8")
+    create_text_exclusive(target, content, label="citation scaffold destination")
     return ScaffoldResult(target, "created")
 
 
 def scaffold_docker(result: CheckResult) -> ScaffoldResult:
     target = result.repo.root / "Dockerfile"
-    if target.exists():
+    if regular_file_exists(target, label="Dockerfile scaffold destination"):
         return ScaffoldResult(target, "skipped (exists)")
     version = result.evidence.deps.python_version or "3.11"
     match = re.search(r"(\d+\.\d+)", version)
@@ -91,17 +88,21 @@ def scaffold_docker(result: CheckResult) -> ScaffoldResult:
         requirements_file=_requirements_file(result),
         entrypoint=_entrypoint(result),
     )
-    target.write_text(content, encoding="utf-8")
+    create_text_exclusive(target, content, label="Dockerfile scaffold destination")
     return ScaffoldResult(target, "created")
 
 
 def scaffold_runner(result: CheckResult) -> ScaffoldResult:
     target = result.repo.root / "reproduce.sh"
-    if target.exists():
+    if regular_file_exists(target, label="runner scaffold destination"):
         return ScaffoldResult(target, "skipped (exists)")
-    content = _env.get_template("reproduce.sh.j2").render(entrypoint=_entrypoint(result))
-    target.write_text(content, encoding="utf-8")
-    target.chmod(target.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+    content = _env.get_template("reproduce.sh.j2").render()
+    create_text_exclusive(
+        target,
+        content,
+        label="runner scaffold destination",
+        mode=0o777,
+    )
     return ScaffoldResult(target, "created")
 
 
@@ -110,8 +111,6 @@ def scaffold_readme(result: CheckResult) -> ScaffoldResult:
     docs = result.evidence.docs
     existing = result.repo.root / (docs.readme_path or "README.md")
     context = {
-        "title": result.repo.root.name,
-        "repository_url": _git_remote_url(result),
         "commit": (result.repo.git.head_commit or "")[:7] or None,
         "include_title": not docs.has_readme,
         "include_install": not docs.has_section("install"),
@@ -126,10 +125,19 @@ def scaffold_readme(result: CheckResult) -> ScaffoldResult:
         return ScaffoldResult(existing, "skipped (all sections present)")
     content = _env.get_template("readme_sections.md.j2").render(**context)
     if docs.has_readme:
-        with existing.open("a", encoding="utf-8") as handle:
-            handle.write("\n" + content.lstrip("\n"))
+        append_text_regular(
+            existing,
+            "\n" + content.lstrip("\n"),
+            label="README scaffold destination",
+        )
         return ScaffoldResult(existing, "appended")
-    existing.write_text(content.lstrip("\n"), encoding="utf-8")
+    if regular_file_exists(existing, label="README scaffold destination"):
+        return ScaffoldResult(existing, "skipped (exists)")
+    create_text_exclusive(
+        existing,
+        content.lstrip("\n"),
+        label="README scaffold destination",
+    )
     return ScaffoldResult(existing, "created")
 
 

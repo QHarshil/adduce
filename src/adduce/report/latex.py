@@ -47,12 +47,13 @@ def render(result: CheckResult) -> str:
     gaps = [
         f
         for f in card.findings
-        if f.status in (Status.PARTIAL, Status.FAIL) and not f.suppressed
+        if f.status in (Status.PARTIAL, Status.FAIL)
     ]
     if gaps:
         lines.append("")
         lines.append("% Known gaps at generation time -- resolve or disclose:")
         for finding in gaps:
-            lines.append(f"% - {finding.rule_id}: {finding.message}")
+            suffix = " (ignored by policy; observed status retained)" if finding.suppressed else ""
+            lines.append(f"% - {finding.rule_id}: {finding.message}{suffix}")
     lines.append("")
     return "\n".join(lines)
