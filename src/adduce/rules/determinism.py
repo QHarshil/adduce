@@ -134,9 +134,13 @@ class CudnnFlagsRule(Rule):
     def evaluate(self, ev: Evidence) -> Finding:
         deterministic = ev.py.assigns("torch.backends.cudnn.deterministic", True)
         benchmark_off = ev.py.assigns("torch.backends.cudnn.benchmark", False)
-        strict = ev.py.calls("torch.use_deterministic_algorithms")
+        strict = any(
+            site.first_literal is True or site.kw_value("mode") == "True"
+            for site in ev.py.call_sites("torch.use_deterministic_algorithms")
+        )
         lightning_deterministic = any(
-            "deterministic" in site.keywords for site in ev.py.call_sites_terminal("Trainer")
+            site.kw_value("deterministic") == "True"
+            for site in ev.py.call_sites_terminal("Trainer")
         )
         if (deterministic and benchmark_off) or strict or lightning_deterministic:
             via = "torch.use_deterministic_algorithms" if strict and not deterministic else (
@@ -165,8 +169,8 @@ class StrictDeterminismRule(Rule):
     category = Category.DETERMINISM
     title = "Strict determinism controls (deterministic algorithms, hash seed, CUBLAS workspace)"
     rationale = (
-        "torch.use_deterministic_algorithms(True), PYTHONHASHSEED, and CUBLAS_WORKSPACE_CONFIG "
-        "close the remaining nondeterminism that seeds and cuDNN flags do not cover."
+        "Deterministic-algorithm mode plus process-start hash and CUBLAS settings reduce known "
+        "nondeterminism beyond ordinary RNG seeds; they do not prove bit-exact reproduction."
     )
     weight = 2
 
@@ -174,29 +178,72 @@ class StrictDeterminismRule(Rule):
         return repo.frameworks.uses("torch")
 
     def evaluate(self, ev: Evidence) -> Finding:
+        deterministic_algorithms = any(
+            site.first_literal is True or site.kw_value("mode") == "True"
+            for site in ev.py.call_sites("torch.use_deterministic_algorithms")
+        )
         controls = {
-            "torch.use_deterministic_algorithms(True)": ev.py.calls("torch.use_deterministic_algorithms"),
-            "PYTHONHASHSEED": ev.py.sets_env("PYTHONHASHSEED"),
-            "CUBLAS_WORKSPACE_CONFIG": ev.py.sets_env("CUBLAS_WORKSPACE_CONFIG"),
+            "torch.use_deterministic_algorithms(True)": deterministic_algorithms,
+            "PYTHONHASHSEED at interpreter startup": ev.env.sets_at_process_start(
+                "PYTHONHASHSEED"
+            ),
+            "CUBLAS_WORKSPACE_CONFIG at process startup": ev.env.sets_at_process_start(
+                "CUBLAS_WORKSPACE_CONFIG"
+            ),
         }
         present = [name for name, ok in controls.items() if ok]
         missing = [name for name, ok in controls.items() if not ok]
+        ignored_runtime = [
+            name
+            for name in ("PYTHONHASHSEED", "CUBLAS_WORKSPACE_CONFIG")
+            if ev.py.sets_env(name) and not ev.env.sets_at_process_start(name)
+        ]
+        runtime_note = (
+            " Runtime-only assignment does not establish startup configuration: "
+            + ", ".join(ignored_runtime)
+            + "."
+            if ignored_runtime
+            else ""
+        )
         if len(present) == 3:
-            return self.finding(Status.PASS, confidence=0.75, message="All strict determinism controls detected.")
+            return self.finding(
+                Status.PASS,
+                confidence=0.75,
+                message=(
+                    "All three strict determinism controls were detected; this reduces known "
+                    "nondeterminism but does not prove bit-exact results."
+                ),
+            )
         if present:
             return self.finding(
                 Status.PARTIAL,
                 confidence=0.7,
-                message="Some strict controls present (" + ", ".join(present) + "); missing " + ", ".join(missing) + ".",
-                remediation="Add the missing controls for strict mode: " + ", ".join(missing) + ".",
+                message=(
+                    "Some strict controls were detected ("
+                    + ", ".join(present)
+                    + "); missing "
+                    + ", ".join(missing)
+                    + "."
+                    + runtime_note
+                ),
+                remediation=(
+                    "Set process environment controls in the launcher or container before Python "
+                    "starts, and enable deterministic algorithms in code."
+                ),
             )
         return self.finding(
             Status.FAIL,
             confidence=0.7,
-            message="No strict determinism controls detected (" + ", ".join(missing) + ").",
+            message=(
+                "No strict determinism controls were detected ("
+                + ", ".join(missing)
+                + ")."
+                + runtime_note
+            ),
             remediation=(
-                "For strict bit-exact reproduction, call torch.use_deterministic_algorithms(True), set "
-                "PYTHONHASHSEED, and set CUBLAS_WORKSPACE_CONFIG=:4096:8. Optional but decisive for audits."
+                "Set PYTHONHASHSEED and CUBLAS_WORKSPACE_CONFIG in the launcher or container before "
+                "Python starts, then call torch.use_deterministic_algorithms(True). Verify the "
+                "specific operations and platform empirically."
             ),
         )
 
@@ -242,9 +289,9 @@ class DataLoaderWorkerRule(Rule):
     category = Category.DETERMINISM
     title = "Multi-worker DataLoaders reseed worker RNGs"
     rationale = (
-        "DataLoader workers are separate processes: torch reseeds its own per-worker state, but "
-        "numpy and random inherit unseeded state unless worker_init_fn reseeds them. This is a "
-        "separate RNG source from the sampler and silently changes augmentation."
+        "DataLoader workers receive distinct PyTorch seeds, while other libraries and version-"
+        "specific worker behavior can require explicit initialization. A worker_init_fn makes "
+        "third-party RNG policy visible and derived from the worker seed."
     )
     weight = 3
     fix_command = "adduce fix --scaffold seeds"
@@ -260,7 +307,7 @@ class DataLoaderWorkerRule(Rule):
             )
         # lightning's seed_everything(workers=True) installs the worker seeder globally.
         umbrella_workers = any(
-            "workers" in site.keywords
+            site.kw_value("workers") == "True"
             for name in ("pytorch_lightning.seed_everything", "lightning.seed_everything")
             for site in ev.py.call_sites(name)
         )
@@ -273,8 +320,8 @@ class DataLoaderWorkerRule(Rule):
                 message=f"Worker RNG seeding covered at all {len(multi_worker)} multi-worker DataLoader site(s){via}.",
             )
         return self.finding(
-            Status.PARTIAL if len(gaps) < len(multi_worker) else Status.FAIL,
-            confidence=0.8,
+            Status.PARTIAL,
+            confidence=0.7,
             message=f"{len(gaps)} of {len(multi_worker)} multi-worker DataLoader site(s) lack worker_init_fn.",
             remediation=(
                 "Pass a worker_init_fn that reseeds numpy and random from torch.initial_seed(), or use "
@@ -289,8 +336,8 @@ class SklearnRandomStateRule(Rule):
     category = Category.DETERMINISM
     title = "random_state set on scikit-learn estimators and splitters"
     rationale = (
-        "sklearn estimators and splitters with stochastic behaviour default to fresh entropy; "
-        "results differ across runs unless random_state is fixed."
+        "When random_state is omitted, stochastic scikit-learn calls can depend on mutable global "
+        "RNG state and call order. An explicit value isolates each call's randomness."
     )
     weight = 4
 

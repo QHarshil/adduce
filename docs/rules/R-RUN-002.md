@@ -6,7 +6,10 @@
 
 ## Why it matters
 
-The Hydra output (or W&B/MLflow record) is what actually ran. When it disagrees with the committed config, the committed config is the stale one.
+A materialised Hydra output or W&B/MLflow record can preserve the parameters
+used for a run. It outranks a checked-in config only when an author-confirmed
+claim links that run record; otherwise a disagreement remains visible rather
+than proving which source is stale.
 
 ## Suppressing
 

@@ -84,8 +84,9 @@ def collect_docs(repo: Repo) -> DocsEvidence:
         evidence.license_file = str(root_licenses[0].path)
 
     citations = repo.find_names("CITATION.cff", "citation.cff")
-    if citations:
-        evidence.citation_file = str(citations[0].path)
+    root_citations = [f for f in citations if len(f.path.parts) == 1]
+    if root_citations:
+        evidence.citation_file = str(root_citations[0].path)
 
     if evidence.readme_path:
         content = repo.read_text(evidence.readme_path) or ""

@@ -39,7 +39,11 @@ class DependencyPinningRule(Rule):
         fraction = ev.deps.pinned_fraction
         total = len(ev.deps.dependencies)
         if fraction >= 0.9:
-            detail = "a lockfile pins the full environment" if ev.deps.has_lockfile else f"{total} dependencies pinned"
+            detail = (
+                "a lockfile records the resolved package dependency set"
+                if ev.deps.has_lockfile
+                else f"{total} dependencies pinned"
+            )
             return self.finding(Status.PASS, confidence=0.85, message=f"Dependencies are pinned: {detail}.")
         if fraction >= 0.4:
             return self.finding(
@@ -61,8 +65,8 @@ class LockfileRule(Rule):
     category = Category.ENVIRONMENT
     title = "Lockfile capturing the transitive environment"
     rationale = (
-        "Direct pins still leave transitive dependencies floating; a lockfile freezes "
-        "the entire resolved environment."
+        "Direct pins can leave transitive package dependencies floating. A lockfile records "
+        "one resolved package set, but not the host OS, drivers, hardware, or external libraries."
     )
     weight = 3
 
@@ -93,8 +97,8 @@ class ContainerRule(Rule):
     category = Category.ENVIRONMENT
     title = "Container or reproducible environment definition"
     rationale = (
-        "A Dockerfile or devcontainer captures the system layer (CUDA, native libraries) "
-        "that Python manifests cannot express."
+        "A complete Dockerfile or devcontainer can record system dependencies that Python "
+        "manifests cannot express; presence alone does not establish completeness."
     )
     weight = 4
     fix_command = "adduce fix --scaffold docker"
@@ -105,10 +109,20 @@ class ContainerRule(Rule):
     def evaluate(self, ev: Evidence) -> Finding:
         if ev.env.dockerfiles:
             return self.finding(
-                Status.PASS, confidence=0.9, message="Container definition found: " + ", ".join(ev.env.dockerfiles) + "."
+                Status.PASS,
+                confidence=0.75,
+                message=(
+                    "Container definition detected (contents not validated): "
+                    + ", ".join(ev.env.dockerfiles)
+                    + "."
+                ),
             )
         if ev.env.has_devcontainer:
-            return self.finding(Status.PASS, confidence=0.85, message="Dev container configuration found.")
+            return self.finding(
+                Status.PASS,
+                confidence=0.75,
+                message="Dev container configuration detected; completeness was not validated.",
+            )
         if ev.env.has_conda_env:
             return self.finding(
                 Status.PARTIAL,

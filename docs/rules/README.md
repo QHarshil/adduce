@@ -16,11 +16,11 @@
 | [R-DEP-011](R-DEP-011.md) | Dependencies | low | 1 | Declared but apparently unused dependencies |
 | [R-DEP-012](R-DEP-012.md) | Dependencies | low | 2 | Notebook imports missing from the dependency manifest |
 | [R-DEP-013](R-DEP-013.md) | Dependencies | low | 1 | System/native dependencies used but undocumented |
-| [R-DATA-001](R-DATA-001.md) | Data | medium | 4 | Data availability statement / provenance |
+| [R-DATA-001](R-DATA-001.md) | Data | medium | 4 | Data-source documentation signals |
 | [R-DATA-002](R-DATA-002.md) | Data | medium | 4 | Scripted or documented data-acquisition path |
-| [R-DATA-003](R-DATA-003.md) | Data | medium | 3 | Data integrity verifiable (checksums) |
+| [R-DATA-003](R-DATA-003.md) | Data | medium | 3 | Dataset-integrity evidence |
 | [R-DATA-004](R-DATA-004.md) | Data | medium | 4 | Large binaries not committed raw into git |
-| [R-DATA-005](R-DATA-005.md) | Data | medium | 3 | Data-access friction grade |
+| [R-DATA-005](R-DATA-005.md) | Data | medium | 3 | Data-access path heuristic |
 | [R-DATA-006](R-DATA-006.md) | Data | low | 1 | Raw vs processed data distinguished |
 | [R-DOC-001](R-DOC-001.md) | Documentation | high | 5 | README covers install, usage, and hardware/runtime |
 | [R-DOC-002](R-DOC-002.md) | Documentation | medium | 4 | Hyperparameters recorded somewhere recoverable |
@@ -36,7 +36,7 @@
 | [R-PREC-003](R-PREC-003.md) | Numerical Precision & Hardware | medium | 3 | FP16/BF16 computation without documented hardware |
 | [R-PREC-004](R-PREC-004.md) | Numerical Precision & Hardware | low | 2 | set_float32_matmul_precision used but undocumented |
 | [R-PREC-005](R-PREC-005.md) | Numerical Precision & Hardware | low | 2 | GPU code without documented hardware |
-| [R-DRIFT-001](R-DRIFT-001.md) | Paper & Artifact Consistency | high | 5 | Paper hyperparameter differs from the authoritative code value |
+| [R-DRIFT-001](R-DRIFT-001.md) | Paper & Artifact Consistency | high | 5 | Paper hyperparameter differs from the highest-ranked code value |
 | [R-DRIFT-002](R-DRIFT-002.md) | Paper & Artifact Consistency | low | 2 | Multiple candidate configs; cannot resolve which backs the paper |
 | [R-DRIFT-003](R-DRIFT-003.md) | Paper & Artifact Consistency | medium | 3 | Hyperparameter reported in the paper not found in code |
 | [R-DRIFT-004](R-DRIFT-004.md) | Paper & Artifact Consistency | medium | 3 | Dataset named in the paper not found in code or configs |
@@ -45,7 +45,7 @@
 | [R-RES-001](R-RES-001.md) | Result Reconciliation | low | 1 | Reported metrics differ from logs only at rounding level |
 | [R-RES-002](R-RES-002.md) | Result Reconciliation | medium | 4 | Reported metric materially differs from the logged value |
 | [R-RES-003](R-RES-003.md) | Result Reconciliation | medium | 3 | Single-run results without variance reporting |
-| [R-RES-004](R-RES-004.md) | Result Reconciliation | medium | 3 | Reported metric has no corresponding logged result |
+| [R-RES-004](R-RES-004.md) | Result Reconciliation | medium | 3 | Reported metric lacks a detected matching logged column |
 | [R-RUN-001](R-RUN-001.md) | Run Traceability | medium | 4 | Reported results have recoverable run commands |
 | [R-RUN-002](R-RUN-002.md) | Run Traceability | medium | 3 | Materialised run config disagrees with checked-in configs |
 | [R-RUN-003](R-RUN-003.md) | Run Traceability | low | 2 | Batch-script resource requests undocumented for readers |
@@ -64,7 +64,7 @@
 | [R-NB-008](R-NB-008.md) | Notebooks | low | 2 | Result-bearing notebooks have a script equivalent |
 | [R-PORT-001](R-PORT-001.md) | Portability | medium | 3 | No local absolute paths |
 | [R-PORT-002](R-PORT-002.md) | Portability | low | 1 | No hardcoded localhost endpoints |
-| [R-PORT-003](R-PORT-003.md) | Portability | medium | 3 | No private buckets or drive links as data sources |
+| [R-PORT-003](R-PORT-003.md) | Portability | medium | 3 | Drive and object-storage data-source dependencies |
 | [R-PORT-004](R-PORT-004.md) | Portability | high | 3 | No hardcoded secrets or API keys |
 | [R-REMOTE-001](R-REMOTE-001.md) | Remote Artifacts & Rot | medium | 4 | Hugging Face references carry a revision pin |
 | [R-REMOTE-002](R-REMOTE-002.md) | Remote Artifacts & Rot | low | 2 | Revision pins are commit SHAs, not branches or tags |

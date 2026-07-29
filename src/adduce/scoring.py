@@ -75,7 +75,8 @@ def score(findings: list[Finding], profile: Profile) -> ScoreCard:
     """Aggregate findings into an explainable scorecard.
 
     Suppressed findings still appear in the report (marked as suppressed)
-    but score as full passes: the author has explicitly accepted the state.
+    and retain their observed score. Suppression records an accepted exception;
+    it does not turn absent evidence into evidence.
     """
     by_category: dict[Category, list[Finding]] = {}
     for finding in findings:
@@ -90,7 +91,7 @@ def score(findings: list[Finding], profile: Profile) -> ScoreCard:
         earned = 0.0
         possible = 0.0
         for finding in cat_findings:
-            value = 1.0 if finding.suppressed else finding.status.score_value
+            value = finding.status.score_value
             if value is None:  # not-applicable / unknown
                 continue
             earned += value * finding.weight
@@ -124,7 +125,7 @@ def top_fixes(card: ScoreCard, limit: int = 5) -> list[Finding]:
     gains: list[tuple[float, Finding]] = []
     for cat in card.categories:
         applicable_weight = sum(
-            f.weight for f in cat.findings if f.status.score_value is not None and not f.suppressed
+            f.weight for f in cat.findings if f.status.score_value is not None
         ) or 1.0
         for finding in cat.findings:
             value = finding.status.score_value

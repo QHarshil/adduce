@@ -6,7 +6,10 @@
 
 ## Why it matters
 
-A Dockerfile or devcontainer captures the system layer (CUDA, native libraries) that Python manifests cannot express.
+A complete Dockerfile or devcontainer can record system dependencies such as
+CUDA and native libraries that Python manifests cannot express. This rule
+detects the definition's presence; it does not validate that the definition is
+complete or builds successfully.
 
 ## Fix
 

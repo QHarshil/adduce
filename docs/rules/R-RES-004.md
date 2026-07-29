@@ -1,4 +1,4 @@
-# R-RES-004 — Reported metric has no corresponding logged result
+# R-RES-004 — Reported metric lacks a detected matching logged column
 
 **Category:** Result Reconciliation  
 **Severity:** medium  
@@ -6,7 +6,7 @@
 
 ## Why it matters
 
-A number with no log behind it is exactly what artifact reviewers probe first.
+A detected correspondence between a reported metric and stored result data gives reviewers a traceable basis for checking the claim.
 
 ## Suppressing
 

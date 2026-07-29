@@ -19,15 +19,6 @@ _RNG_KEYS = frozenset({"rng_state", "rng", "torch_rng_state", "numpy_rng_state",
 _PROVENANCE_KEYS = frozenset({"config", "cfg", "args", "hparams", "hyper_parameters", "commit", "git_commit", "git_sha", "versions", "library_versions", "data_hash", "wandb_id"})
 
 
-def _uses_framework_checkpointing(ev: Evidence) -> bool:
-    """Lightning/HF trainers save complete training state themselves."""
-    return (
-        ev.repo.frameworks.uses("lightning")
-        or bool(ev.py.call_sites_terminal("ModelCheckpoint"))
-        or any("save_strategy" in s.keywords or "save_steps" in s.keywords for s in ev.py.call_sites_terminal("TrainingArguments"))
-    )
-
-
 class _CheckpointBase(Rule):
     keys: frozenset[str] = frozenset()
     what: str = ""
@@ -40,12 +31,6 @@ class _CheckpointBase(Rule):
         saves = ev.py.torch_saves
         if not saves:
             return self.finding(Status.NOT_APPLICABLE, confidence=0.7, message="No torch.save call detected.")
-        if _uses_framework_checkpointing(ev):
-            return self.finding(
-                Status.PASS,
-                confidence=0.6,
-                message="Framework checkpointing (Lightning/HF Trainer) manages full training state.",
-            )
         visible = [s for s in saves if s.dict_keys is not None]
         if not visible:
             return self.finding(

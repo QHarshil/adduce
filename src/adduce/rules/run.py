@@ -30,18 +30,48 @@ class ClaimCommandRule(Rule):
 
     def evaluate(self, ev: Evidence) -> Finding:
         claims = ev.manifest.claims
-        if claims:
-            missing = [c.id for c in claims if not c.produced_by.command]
+        confirmed_claims = [
+            claim
+            for claim in claims
+            if (claim.status or "").strip().lower() == "confirmed"
+        ]
+        if confirmed_claims:
+            missing = [
+                claim.id
+                for claim in confirmed_claims
+                if not claim.produced_by.command
+            ]
             if not missing:
                 return self.finding(
-                    Status.PASS, confidence=0.9, message=f"All {len(claims)} manifest claim(s) record a producing command."
+                    Status.PASS,
+                    confidence=0.9,
+                    message=(
+                        f"All {len(confirmed_claims)} author-confirmed manifest "
+                        "claim(s) record a producing command."
+                    ),
                 )
             return self.finding(
                 Status.PARTIAL,
                 confidence=0.85,
-                message=f"{len(missing)} of {len(claims)} manifest claim(s) lack produced_by.command: "
+                message=(
+                    f"{len(missing)} of {len(confirmed_claims)} author-confirmed "
+                    "manifest claim(s) lack produced_by.command: "
+                )
                 + ", ".join(missing[:5]) + ".",
                 remediation="Fill produced_by.command for each claim in .adduce/manifest.yaml.",
+            )
+        if claims:
+            return self.finding(
+                Status.PARTIAL,
+                confidence=0.7,
+                message=(
+                    f"The manifest contains {len(claims)} provisional claim(s); "
+                    "none is explicitly author-confirmed for command traceability."
+                ),
+                remediation=(
+                    "Review each claim-command link and set `status: confirmed` only "
+                    "when it identifies the command that produced the reported result."
+                ),
             )
         # Without a manifest, judge from recoverable commands in the repo.
         if not (ev.latex.has_paper or ev.docs.has_results_table):
@@ -68,8 +98,8 @@ class MaterializedConfigDriftRule(Rule):
     category = Category.RUN
     title = "Materialised run config disagrees with checked-in configs"
     rationale = (
-        "The Hydra output (or W&B/MLflow record) is what actually ran. When it disagrees with "
-        "the committed config, the committed config is the stale one."
+        "A Hydra output or W&B/MLflow record can preserve values used for one run. "
+        "A disagreement must remain visible until the relevant run is linked to the claim."
     )
     weight = 3
 
@@ -108,7 +138,10 @@ class MaterializedConfigDriftRule(Rule):
             Status.PARTIAL,
             confidence=0.6,
             message="Materialised run configs disagree with checked-in configs: " + "; ".join(disagreements[:3]) + ".",
-            remediation="The materialised config is authoritative for what ran; update the committed configs or state which run backs the paper.",
+            remediation=(
+                "Identify which run backs the paper, link its materialised config in the "
+                "manifest, and reconcile or explain the checked-in configuration."
+            ),
         )
 
 

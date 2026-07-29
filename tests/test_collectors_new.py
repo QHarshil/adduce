@@ -5,6 +5,9 @@ from __future__ import annotations
 
 import json
 
+from adduce.rules.base import Status
+from adduce.rules.remote import RawUrlRule
+
 _TEX = r"""
 \documentclass{article}
 \title{CineMatch: Personalized Movie Recommendation}
@@ -126,11 +129,45 @@ def test_remote_collector_pins(make_evidence):
     )
     ev = make_evidence({"model.py": source, "get.sh": "wget https://example.org/weights.bin\n"})
     refs = ev.remote.references
+    ordering = [(r.file, r.line, r.kind, r.spec, r.pin_detail) for r in refs]
+    assert ordering == sorted(ordering)
     hf = [r for r in refs if r.kind == "hf"]
     assert sum(1 for r in hf if r.pinned) == 1
     assert any(r.pin_detail == "mutable-ref" for r in hf)
     assert any(r.kind == "torch_hub" and not r.pinned for r in refs)
     assert any(r.kind == "url" for r in refs)
+
+
+def test_unrelated_checksum_file_does_not_cover_raw_download(make_evidence):
+    ev = make_evidence(
+        {
+            "get.sh": "curl https://example.org/model.bin -o model.bin\n",
+            "checksums.txt": "0" * 64 + "  different.bin\n",
+        }
+    )
+
+    reference = next(r for r in ev.remote.references if r.kind == "url")
+
+    assert reference.pin_detail == "none"
+    assert RawUrlRule().evaluate(ev).status is Status.FAIL
+
+
+def test_named_checksum_command_covers_its_raw_download(make_evidence):
+    ev = make_evidence(
+        {
+            "get.sh": (
+                "curl https://example.org/model.bin -o model.bin\n"
+                "echo '"
+                + "0" * 64
+                + "  model.bin' | sha256sum -c -\n"
+            )
+        }
+    )
+
+    reference = next(r for r in ev.remote.references if r.kind == "url")
+
+    assert reference.pin_detail == "checksum"
+    assert RawUrlRule().evaluate(ev).status is Status.PASS
 
 
 def test_precision_collector(make_evidence):

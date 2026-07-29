@@ -8,6 +8,7 @@ against synthetic repositories.
 from __future__ import annotations
 
 import fnmatch
+import os
 import subprocess
 from dataclasses import dataclass, field
 from functools import lru_cache
@@ -35,6 +36,7 @@ DEFAULT_EXCLUDES: frozenset[str] = frozenset(
         "dist",
         "site-packages",
         ".ipynb_checkpoints",
+        "adduce-submission",
     }
 )
 
@@ -204,13 +206,39 @@ def _is_excluded(path: PurePosixPath, extra_excludes: frozenset[str]) -> bool:
 
 
 def _collect_git_info(root: Path) -> GitInfo:
+    git_environment = os.environ.copy()
+    for key in list(git_environment):
+        if key.startswith("GIT_"):
+            git_environment.pop(key, None)
+    git_environment.update(
+        {
+            "GIT_CONFIG_GLOBAL": os.devnull,
+            "GIT_CONFIG_NOSYSTEM": "1",
+            "GIT_OPTIONAL_LOCKS": "0",
+            "GIT_PAGER": "cat",
+            "GIT_TERMINAL_PROMPT": "0",
+        }
+    )
+
     def run(*args: str) -> str | None:
         try:
             result = subprocess.run(
-                ["git", "-C", str(root), *args],
+                [
+                    "git",
+                    "--no-pager",
+                    "-c",
+                    "core.fsmonitor=false",
+                    "-c",
+                    "core.quotePath=true",
+                    "-C",
+                    str(root),
+                    *args,
+                ],
                 capture_output=True,
                 text=True,
                 timeout=10,
+                stdin=subprocess.DEVNULL,
+                env=git_environment,
             )
         except (OSError, subprocess.TimeoutExpired):
             return None
@@ -221,7 +249,8 @@ def _collect_git_info(root: Path) -> GitInfo:
         return GitInfo(is_repo=False)
 
     head = run("rev-parse", "HEAD")
-    tags_out = run("tag", "--list")
+    # A tag is evidence for this scanned state only when it points at HEAD.
+    tags_out = run("tag", "--points-at", "HEAD")
     tags = tuple(t for t in (tags_out or "").splitlines() if t.strip())
     tracked_out = run("ls-files")
     tracked = frozenset((tracked_out or "").splitlines()) if tracked_out is not None else None

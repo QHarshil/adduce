@@ -93,7 +93,7 @@ def collect(repo: Repo) -> Evidence:
     notebooks = collect_notebooks(repo)
     portability = collect_portability(repo)
     precision = collect_precision(py, config)
-    remote = collect_remote(repo, py, has_checksums=data.has_integrity_checks)
+    remote = collect_remote(repo, py)
     results = collect_results(repo)
     runs = collect_run_history(repo)
     manifest = load_manifest(repo.root)

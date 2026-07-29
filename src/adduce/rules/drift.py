@@ -1,10 +1,11 @@
 """Paper ↔ artifact consistency (drift).
 
 Compares the hyperparameters and facts the paper states against what the
-repository declares, with an explicit authority ranking: a materialised run
-config (Hydra output, W&B, MLflow) outranks a checked-in config file, which
-outranks an argparse/dataclass default — a default alone is weak evidence of
-what was actually run.
+repository declares, with an explicit authority ranking: an author-linked
+materialised run config (Hydra output, W&B, MLflow) outranks a checked-in
+config file, which outranks an argparse/dataclass default. Unlinked run output
+is excluded because it may describe another experiment, and a default alone
+is weak evidence of what was actually run.
 
 Integers compare exactly; floats with rounding-awareness (a paper's 0.814
 matches a logged 0.8137). Everything here is probabilistic and reported with
@@ -31,7 +32,7 @@ def values_match(paper: float, code: float) -> bool:
         return True
     text = f"{paper:.10f}".rstrip("0")
     decimals = len(text.split(".")[1]) if "." in text and text.split(".")[1] else 0
-    return abs(code - paper) <= 0.5 * 10 ** (-decimals) + 1e-12
+    return abs(code - paper) <= 0.5 * 10.0 ** (-decimals) + 1e-12
 
 
 @dataclass
@@ -61,7 +62,8 @@ def _code_values(ev: Evidence) -> dict[str, list[_CodeValue]]:
     linked_run_configs = {
         claim.produced_by.config
         for claim in ev.manifest.claims
-        if claim.produced_by.config and (claim.status or "").strip().lower() != "draft"
+        if claim.produced_by.config
+        and (claim.status or "").strip().lower() == "confirmed"
     }
 
     def add(name: str, value: Any, source: str, key: str, authority: int) -> None:
@@ -90,10 +92,10 @@ def _code_values(ev: Evidence) -> dict[str, list[_CodeValue]]:
 class HyperparameterDriftRule(Rule):
     id = "R-DRIFT-001"
     category = Category.DRIFT
-    title = "Paper hyperparameter differs from the authoritative code value"
+    title = "Paper hyperparameter differs from the highest-ranked code value"
     rationale = (
-        "Configs get tuned after the paper freezes; a stated learning rate that no config "
-        "contains is the classic camera-ready drift."
+        "Comparing paper statements with author-linked run configs, committed configs, and code defaults "
+        "can identify values that need manual reconciliation."
     )
     weight = 5
 
@@ -117,11 +119,11 @@ class HyperparameterDriftRule(Rule):
             if not candidates:
                 continue
             top_authority = max(c.authority for c in candidates)
-            authoritative = [c for c in candidates if c.authority == top_authority]
+            highest_ranked = [c for c in candidates if c.authority == top_authority]
             for statement in statements:
                 checked += 1
-                if not any(values_match(statement.value, c.value) for c in authoritative):
-                    drifted.append((name, statement.value, authoritative[0]))
+                if not any(values_match(statement.value, c.value) for c in highest_ranked):
+                    drifted.append((name, statement.value, highest_ranked[0]))
         if checked == 0:
             return self.finding(
                 Status.UNKNOWN,
@@ -133,7 +135,7 @@ class HyperparameterDriftRule(Rule):
                 Status.PASS,
                 confidence=0.65,
                 message=f"All {checked} paper hyperparameter statement(s) with code counterparts agree "
-                "with the authoritative values.",
+                "with the highest-ranked detected values.",
             )
         details = "; ".join(
             f"{name}: paper says {paper_value:g}, {code.source} has {code.value:g} ({code.key})"
@@ -142,8 +144,11 @@ class HyperparameterDriftRule(Rule):
         return self.finding(
             Status.FAIL if any(code.authority >= 2 for _, _, code in drifted) else Status.PARTIAL,
             confidence=0.7,
-            message=f"{len(drifted)} hyperparameter(s) drift between paper and code: {details}.",
-            remediation="Update the paper or the config so they agree, and record the authoritative config in the manifest.",
+            message=f"{len(drifted)} potential hyperparameter mismatch(es) between paper and code: {details}.",
+            remediation=(
+                "Review the paper and highest-ranked code source, resolve any mismatch, "
+                "and record the intended run config in the manifest."
+            ),
             locations=[Location(code.source) for _, _, code in drifted[:5]],
         )
 
@@ -170,7 +175,8 @@ class AmbiguousConfigRule(Rule):
         if not paper_values:
             return self.finding(Status.NOT_APPLICABLE, confidence=0.6, message="No hyperparameter statements extracted from the paper.")
         if ev.manifest.claims and all(
-            c.produced_by.config and (c.status or "").strip().lower() != "draft"
+            c.produced_by.config
+            and (c.status or "").strip().lower() == "confirmed"
             for c in ev.manifest.claims
         ):
             return self.finding(

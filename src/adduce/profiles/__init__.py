@@ -69,14 +69,18 @@ def available_profiles() -> list[str]:
     return sorted(names)
 
 
-def load_profile(name_or_path: str) -> Profile:
-    """Load a bundled profile by name, or any profile from a TOML path."""
-    path = Path(name_or_path)
-    if path.suffix == ".toml" and path.is_file():
-        return _from_toml(path.stem, path.read_text(encoding="utf-8"))
-    resource = resources.files(__package__).joinpath(f"{name_or_path}.toml")
-    if not resource.is_file():
+def load_profile(name_or_path: str, *, allow_path: bool = True) -> Profile:
+    """Load a bundled profile, or an explicitly trusted TOML path when allowed."""
+    if allow_path:
+        path = Path(name_or_path)
+        if path.suffix == ".toml" and path.is_file():
+            return _from_toml(path.stem, path.read_text(encoding="utf-8"))
+    bundled = available_profiles()
+    if name_or_path not in bundled:
+        qualifier = " Repository configuration may select only a bundled profile." if not allow_path else ""
         raise ValueError(
-            f"Unknown profile '{name_or_path}'. Bundled profiles: {', '.join(available_profiles())}."
+            f"Unknown profile '{name_or_path}'. Bundled profiles: {', '.join(bundled)}."
+            f"{qualifier}"
         )
+    resource = resources.files(__package__).joinpath(f"{name_or_path}.toml")
     return _from_toml(name_or_path, resource.read_text(encoding="utf-8"))

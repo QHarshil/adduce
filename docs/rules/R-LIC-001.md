@@ -6,7 +6,8 @@
 
 ## Why it matters
 
-Without a license, reuse is legally undefined no matter how open the repository looks.
+Without an explicit license, recipients generally have no stated permission to
+copy, modify, or redistribute the work, subject to applicable law.
 
 ## Suppressing
 

@@ -6,7 +6,9 @@
 
 ## Why it matters
 
-Direct pins still leave transitive dependencies floating; a lockfile freezes the entire resolved environment.
+Direct pins can leave transitive package dependencies floating. A lockfile
+records one resolved package dependency set, but it does not capture the host
+operating system, drivers, hardware, or undeclared external libraries.
 
 ## Suppressing
 

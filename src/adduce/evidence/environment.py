@@ -19,6 +19,7 @@ class EnvironmentEvidence:
     entrypoint_files: list[str] = field(default_factory=list)
     console_scripts: bool = False
     has_ci: bool = False
+    startup_env_sources: dict[str, list[str]] = field(default_factory=dict)
 
     @property
     def has_container(self) -> bool:
@@ -29,12 +30,42 @@ class EnvironmentEvidence:
         """A one-command way to run the project: script, Makefile target, or CLI."""
         return bool(self.run_scripts) or bool(self.makefile_targets) or self.console_scripts
 
+    def sets_at_process_start(self, name: str) -> bool:
+        """Whether an execution surface sets ``name`` before Python starts."""
+        return bool(self.startup_env_sources.get(name))
+
 
 _ENTRYPOINT_NAMES = frozenset(
     {"main.py", "train.py", "run.py", "cli.py", "app.py", "experiment.py", "evaluate.py", "eval.py"}
 )
 _RUN_SCRIPT_RE = re.compile(r"^(run|reproduce|train|launch|repro)[\w.-]*\.(sh|bash|bat|ps1)$", re.IGNORECASE)
 _MAKE_TARGET_RE = re.compile(r"^([A-Za-z0-9][\w.-]*)\s*:(?!=)", re.MULTILINE)
+_STARTUP_ENV_NAMES = ("PYTHONHASHSEED", "CUBLAS_WORKSPACE_CONFIG")
+
+
+def _sets_startup_environment(content: str, name: str) -> bool:
+    escaped = re.escape(name)
+    patterns = (
+        rf"(?m)^\s*(?:(?:export|ENV)\s+)?"
+        rf"(?:[A-Za-z_][A-Za-z0-9_]*=\S+\s+)*"
+        rf"{escaped}\s*=\s*(?!['\"]?\s*(?:#|$))\S+",
+        rf"(?m)^\s*{escaped}\s*:\s*(?!['\"]?\s*(?:#|$))\S+",
+        rf"(?mi)^\s*\$env:{escaped}\s*=\s*(?!['\"]?\s*(?:#|$))\S+",
+    )
+    return any(re.search(pattern, content) for pattern in patterns)
+
+
+def _is_process_launcher(rel: str, name: str) -> bool:
+    lowered = name.lower()
+    return (
+        name == "Dockerfile"
+        or name.startswith("Dockerfile.")
+        or bool(_RUN_SCRIPT_RE.match(name))
+        or name in {"Makefile", "makefile", "justfile", "Justfile"}
+        or rel.startswith((".github/workflows/", ".gitlab-ci"))
+        or lowered in {"docker-compose.yml", "docker-compose.yaml", "compose.yml", "compose.yaml"}
+        or lowered.endswith((".slurm", ".sbatch"))
+    )
 
 
 def collect_environment(repo: Repo) -> EnvironmentEvidence:
@@ -71,5 +102,14 @@ def collect_environment(repo: Repo) -> EnvironmentEvidence:
     setup_cfg = repo.read_text("setup.cfg") if repo.exists("setup.cfg") else None
     if setup_cfg and "console_scripts" in setup_cfg:
         evidence.console_scripts = True
+
+    for entry in repo.files:
+        rel = str(entry.path)
+        if not _is_process_launcher(rel, entry.name):
+            continue
+        content = repo.read_text(entry.path) or ""
+        for name in _STARTUP_ENV_NAMES:
+            if _sets_startup_environment(content, name):
+                evidence.startup_env_sources.setdefault(name, []).append(rel)
 
     return evidence

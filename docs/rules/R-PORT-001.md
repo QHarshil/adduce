@@ -6,7 +6,9 @@
 
 ## Why it matters
 
-Paths under /Users, /home/<name>, or C:\Users fail on every machine but one.
+Paths under `/Users`, `/home/<name>`, or `C:\Users` encode a local filesystem
+layout and commonly fail for other users or environments. Repository-relative
+paths or explicit configurable roots are more portable.
 
 ## Suppressing
 

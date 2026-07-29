@@ -6,7 +6,12 @@
 
 ## Why it matters
 
-With --online, adduce resolves current hub revisions and URL heads from the user's machine; failures here mean the remote is gone, gated, or private — rot has already begun.
+With `--online`, Adduce checks supported public metadata from the user's
+machine. A terminal 2xx response establishes current availability for the exact
+detected identifier; redirects are independently validated. A failed request,
+an unsupported 3xx response, or an identifier above the documented 8,192-byte
+URL limit remains inconclusive because policy, access, and network conditions
+can also prevent resolution.
 
 ## Suppressing
 

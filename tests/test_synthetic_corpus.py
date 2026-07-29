@@ -1,10 +1,10 @@
-"""Positive-control synthetic corpus: the permanent false-positive suite.
+"""Targeted synthetic controls for detector regression behaviour.
 
 Each directory under corpus/synthetic/ isolates one behaviour (a real drift,
 a rounding-level match, a red-team trap...) and corpus/synthetic/
-expectations.yaml pins what adduce must and must not report for it. Tune the
-fixtures, never the expectations, unless the tool's behaviour is genuinely
-correct and the expectation wrong.
+expectations.yaml pins what adduce must and must not report for it. These cases
+do not estimate real-world false-positive rates. Tune the fixtures, never the
+expectations, unless the intended detector behaviour genuinely changed.
 """
 
 from __future__ import annotations

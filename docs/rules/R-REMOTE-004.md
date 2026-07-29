@@ -6,11 +6,14 @@
 
 ## Why it matters
 
-A wget with no checksum fetches whatever the server serves that day; with a checksum it fetches the artifact or fails loudly.
+A mutable download can change independently of the repository. Adduce reports
+checksum coverage only when a checksum-verification command is visibly bound
+to that download's named output (or to its pipeline); an unrelated checksum
+file does not establish coverage.
 
 ## Suppressing
 
 Inline, on the reported line: `# adduce: ignore=R-REMOTE-004`  
 Project-wide, in `adduce.toml` or `[tool.adduce]`: `ignore = ["R-REMOTE-004"]`
 
-Suppressed findings still appear in reports, marked as ignored.
+Suppressed findings still appear in reports and retain their observed score.

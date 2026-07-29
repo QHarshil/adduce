@@ -11,7 +11,10 @@ class AbsolutePathRule(Rule):
     id = "R-PORT-001"
     category = Category.PORTABILITY
     title = "No local absolute paths"
-    rationale = "Paths under /Users, /home/<name>, or C:\\Users fail on every machine but one."
+    rationale = (
+        "Paths under /Users, /home/<name>, or C:\\Users encode a local filesystem layout "
+        "and commonly fail for other users or environments."
+    )
     weight = 3
 
     def applies_to(self, repo: Repo) -> bool:
@@ -57,10 +60,11 @@ class LocalhostRule(Rule):
 class PrivateDataSourceRule(Rule):
     id = "R-PORT-003"
     category = Category.PORTABILITY
-    title = "No private buckets or drive links as data sources"
+    title = "Drive and object-storage data-source dependencies"
     rationale = (
-        "Google Drive links and s3:///gs:// buckets rot, throttle, and are frequently "
-        "permissioned; they are the least durable data path an artifact can have."
+        "Drive links and object-storage URIs may depend on owner-controlled "
+        "permissions, quotas, and retention. Static inspection cannot determine "
+        "their current public accessibility."
     )
     weight = 3
 
@@ -78,8 +82,11 @@ class PrivateDataSourceRule(Rule):
         return self.finding(
             Status.PARTIAL,
             confidence=0.75,
-            message=", ".join(parts) + " serve as data sources.",
-            remediation="Mirror the data to an archival host (Zenodo, Hugging Face datasets) with a DOI and checksums.",
+            message=", ".join(parts) + " detected as data-source dependencies.",
+            remediation=(
+                "Document access requirements and retain an archival copy with a "
+                "persistent identifier and checksums when licensing permits."
+            ),
             locations=[Location(h.file, h.line) for h in hits[:5]],
         )
 
@@ -88,7 +95,10 @@ class SecretsRule(Rule):
     id = "R-PORT-004"
     category = Category.PORTABILITY
     title = "No hardcoded secrets or API keys"
-    rationale = "A committed key is a security incident and blocks publishing the artifact at all."
+    rationale = (
+        "A potential credential in repository content requires prompt validation; a confirmed "
+        "active secret must be revoked and removed before publication."
+    )
     weight = 3
     severity = "high"  # a security incident regardless of its score weight
 
@@ -102,8 +112,8 @@ class SecretsRule(Rule):
             confidence=0.85,
             message=f"{len(hits)} potential secret(s) detected ({kinds}). Values are not echoed.",
             remediation=(
-                "Revoke the credentials, purge them from git history (git filter-repo), and load "
-                "secrets from the environment instead."
+                "Validate each hit without exposing its value. If it is a credential, revoke it, "
+                "purge it from git history (git filter-repo), and load secrets from the environment."
             ),
             locations=[Location(h.file, h.line) for h in hits[:5]],
         )

@@ -6,7 +6,9 @@
 
 ## Why it matters
 
-A commit hash in the docs ties the written instructions to the code state they were written for.
+A commit hash in the docs ties the written instructions to a specific code
+state. A confirmed manifest claim counts as stronger evidence only when its
+commit is a valid hexadecimal Git revision and matches the current checkout.
 
 ## Suppressing
 

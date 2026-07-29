@@ -8,6 +8,7 @@ authoritative; scaffolded draft claims remain inferred.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from enum import Enum
 
@@ -18,7 +19,7 @@ from .rules.drift import values_match
 
 
 class TrailStatus(Enum):
-    SUPPORTED = "supported"  # every statically checkable recorded edge resolves
+    SUPPORTED = "supported"  # complete core trail; every recorded edge resolves
     PARTIAL = "partial"      # some edges resolve, some missing
     UNLINKED = "unlinked"    # claim exists but nothing ties it to artifacts
 
@@ -103,14 +104,22 @@ def build_claim_trail(claim: Claim, ev: Evidence, inferred: bool) -> ClaimTrail:
     trail = ClaimTrail(claim=claim, inferred=inferred)
     entries = trail.entries
 
-    outcomes: list[bool] = []
+    outcomes: list[bool | None] = []
 
     metric_ok = _check_metric(claim, ev, entries, use_declared_log=not inferred)
     if metric_ok is not None:
         outcomes.append(metric_ok)
 
     if claim.produced_by.command:
-        entries.append(TrailEntry("command", claim.produced_by.command, resolved=None))
+        entries.append(
+            TrailEntry(
+                "command",
+                claim.produced_by.command,
+                "declared; execution not verified",
+                resolved=None,
+            )
+        )
+        outcomes.append(None)
     for label, path in (
         ("config", claim.produced_by.config),
         ("data", claim.produced_by.data),
@@ -129,24 +138,63 @@ def build_claim_trail(claim: Claim, ev: Evidence, inferred: bool) -> ClaimTrail:
         entries.append(TrailEntry("env", " + ".join(env_bits), resolved=True))
 
     if claim.seeds:
-        entries.append(TrailEntry("seeds", ", ".join(str(s) for s in claim.seeds), resolved=True))
+        entries.append(
+            TrailEntry(
+                "seeds",
+                ", ".join(str(s) for s in claim.seeds),
+                "declared; use by the run not verified",
+                resolved=None,
+            )
+        )
+        outcomes.append(None)
     if claim.produced_by.commit:
-        head = (ev.repo.git.head_commit or "")[: len(claim.produced_by.commit)]
-        at_head = head == claim.produced_by.commit
+        declared_commit = claim.produced_by.commit.strip().lower()
+        head = (ev.repo.git.head_commit or "").lower()
+        at_head = bool(
+            head
+            and 7 <= len(declared_commit) <= 40
+            and re.fullmatch(r"[0-9a-f]+", declared_commit)
+            and head.startswith(declared_commit)
+        )
         entries.append(
             TrailEntry(
                 "commit",
                 claim.produced_by.commit,
                 "" if at_head else "differs from current HEAD",
-                resolved=None,
+                resolved=at_head,
             )
         )
+        outcomes.append(at_head)
 
-    checkable = list(outcomes)
-    linked = bool(claim.produced_by.command or claim.produced_by.config or claim.produced_by.log)
-    if not linked and not checkable:
+    linked = bool(
+        claim.produced_by.command
+        or claim.produced_by.config
+        or claim.produced_by.data
+        or claim.produced_by.log
+        or claim.produced_by.commit
+        or claim.seeds
+    )
+    # A path or commit on its own is not a claim-to-artifact trail.  Reserve
+    # ``supported`` for a metric/result link with explicit producing-command
+    # and revision provenance.  Command declarations and seed declarations are
+    # deliberately unresolved until execution evidence can bind them, so the
+    # current static graph normally remains partial rather than implying a run.
+    has_core_trail = bool(
+        claim.metric
+        and claim.value is not None
+        and metric_ok is True
+        and claim.produced_by.command
+        and claim.produced_by.log
+        and claim.produced_by.commit
+    )
+    if not linked and not outcomes:
         trail.status = TrailStatus.UNLINKED
-    elif checkable and all(checkable) and linked:
+    elif (
+        has_core_trail
+        and outcomes
+        and all(outcome is True for outcome in outcomes)
+        and not inferred
+    ):
         trail.status = TrailStatus.SUPPORTED
     else:
         trail.status = TrailStatus.PARTIAL
@@ -162,7 +210,7 @@ def build_graph(ev: Evidence) -> ClaimGraph:
         # Best-effort: draft claims from evidence so the trail view exists
         # even before the author writes a manifest.
         claims = scaffold_manifest(ev).claims
-    for claim in claims[:10]:
+    for claim in claims:
         inferred = not graph.from_manifest or (claim.status or "").strip().lower() == "draft"
         graph.trails.append(build_claim_trail(claim, ev, inferred=inferred))
     return graph

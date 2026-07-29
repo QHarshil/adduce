@@ -100,12 +100,39 @@ class ExpectedResultsRule(Rule):
     weight = 4
 
     def evaluate(self, ev: Evidence) -> Finding:
-        if ev.manifest.claims and any(c.value is not None for c in ev.manifest.claims):
+        confirmed_values = [
+            claim
+            for claim in ev.manifest.claims
+            if (claim.status or "").strip().lower() == "confirmed"
+            and claim.value is not None
+        ]
+        provisional_values = [
+            claim
+            for claim in ev.manifest.claims
+            if (claim.status or "").strip().lower() != "confirmed"
+            and claim.value is not None
+        ]
+        if confirmed_values:
             return self.finding(
                 Status.PASS,
                 confidence=0.9,
-                message=f"The manifest records {sum(1 for c in ev.manifest.claims if c.value is not None)} "
-                "claimed value(s) with their producing artifacts.",
+                message=(
+                    f"The manifest records {len(confirmed_values)} author-confirmed "
+                    "claimed value(s)."
+                ),
+            )
+        if provisional_values:
+            return self.finding(
+                Status.PARTIAL,
+                confidence=0.7,
+                message=(
+                    f"The manifest records {len(provisional_values)} provisional "
+                    "claimed value(s), but none is explicitly author-confirmed."
+                ),
+                remediation=(
+                    "Review each claimed value and set `status: confirmed` only when "
+                    "its value and producing artifacts are correct."
+                ),
             )
         if not ev.docs.has_readme:
             return self.finding(Status.FAIL, confidence=0.9, message="No README to state expected results in.",

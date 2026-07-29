@@ -1,4 +1,4 @@
-# R-DATA-003 — Data integrity verifiable (checksums)
+# R-DATA-003 — Dataset-integrity evidence
 
 **Category:** Data  
 **Severity:** medium  
@@ -6,7 +6,9 @@
 
 ## Why it matters
 
-Datasets silently change upstream. A checksum turns 'we used the same data' from an assumption into a check.
+Dataset-specific checksums and content-addressed metadata make upstream changes detectable. Static evidence shows that a verification path exists, not that it ran.
+
+Adduce treats checksum verification visibly bound to a detected download, or DVC metadata, as strong static evidence. A manifest-declared checksum or an unlinked checksum file is partial evidence because the scan cannot establish that the acquisition path uses it.
 
 ## Suppressing
 

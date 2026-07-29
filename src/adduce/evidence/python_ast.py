@@ -28,7 +28,21 @@ _MAIN_GUARD_RE = re.compile(r"__name__\s*==\s*[\"']__main__[\"']")
 #: Keyword arguments whose *values* are worth capturing (revision pins,
 #: precision flags). Kept to an allowlist so CallSite stays lightweight.
 _CAPTURED_KWARGS = frozenset(
-    {"revision", "dtype", "torch_dtype", "precision", "fp16", "bf16", "tf32", "variant", "default"}
+    {
+        "revision",
+        "dtype",
+        "torch_dtype",
+        "precision",
+        "fp16",
+        "bf16",
+        "tf32",
+        "variant",
+        "default",
+        "mode",
+        "deterministic",
+        "repo_type",
+        "workers",
+    }
 )
 
 
@@ -47,6 +61,7 @@ class CallSite:
     keywords: frozenset[str] = frozenset()
     kw_values: tuple[tuple[str, str], ...] = ()
     first_arg: str | None = None  # first positional arg when a string literal
+    first_literal: object = None
 
     def kw_value(self, name: str) -> str | None:
         for key, value in self.kw_values:
@@ -255,8 +270,11 @@ class _ModuleVisitor(ast.NodeVisitor):
         if qualname:
             keywords = frozenset(kw.arg for kw in node.keywords if kw.arg)
             first_arg = None
-            if node.args and isinstance(node.args[0], ast.Constant) and isinstance(node.args[0].value, str):
-                first_arg = node.args[0].value
+            first_literal: object = None
+            if node.args and isinstance(node.args[0], ast.Constant):
+                first_literal = node.args[0].value
+                if isinstance(first_literal, str):
+                    first_arg = first_literal
             site = CallSite(
                 qualname=qualname,
                 file=self.analysis.path,
@@ -264,6 +282,7 @@ class _ModuleVisitor(ast.NodeVisitor):
                 keywords=keywords,
                 kw_values=self._capture_kw_values(node),
                 first_arg=first_arg,
+                first_literal=first_literal,
             )
             self.analysis.calls.append(site)
             for fn in self._current_function:

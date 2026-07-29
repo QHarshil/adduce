@@ -47,12 +47,20 @@ def test_partial_scores_half_weight():
     assert card.total == 50.0
 
 
-def test_suppressed_finding_scores_as_pass():
+def test_suppressed_finding_retains_observed_score():
     findings = [
         _finding("A", Category.CODE_EXECUTION, Status.FAIL, 5, suppressed=True),
     ]
     card = score(findings, load_profile("default"))
-    assert card.total == 100.0
+    assert card.total == 0.0
+
+
+def test_suppressed_partial_finding_retains_partial_score():
+    findings = [
+        _finding("A", Category.CODE_EXECUTION, Status.PARTIAL, 5, suppressed=True),
+    ]
+    card = score(findings, load_profile("default"))
+    assert card.total == 50.0
 
 
 def test_top_fixes_ranked_by_points_gained():
@@ -70,6 +78,21 @@ def test_top_fixes_exclude_suppressed():
     findings = [_finding("A", Category.CODE_EXECUTION, Status.FAIL, 5, suppressed=True)]
     card = score(findings, load_profile("default"))
     assert top_fixes(card) == []
+
+
+def test_top_fix_gain_uses_same_denominator_as_score():
+    findings = [
+        _finding("SMALL-GAP", Category.CODE_EXECUTION, Status.FAIL, 1),
+        _finding("SUPPRESSED", Category.CODE_EXECUTION, Status.PASS, 9, suppressed=True),
+        _finding("LARGER-GAP", Category.DATA, Status.FAIL, 1),
+    ]
+
+    card = score(findings, load_profile("default"))
+
+    assert [finding.rule_id for finding in top_fixes(card)] == [
+        "LARGER-GAP",
+        "SMALL-GAP",
+    ]
 
 
 def test_tiers():

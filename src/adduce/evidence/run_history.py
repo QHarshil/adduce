@@ -3,10 +3,10 @@ actually materialised.
 
 In ML repositories these often live outside ``configs/``: shell and SLURM
 scripts, Makefile targets, Hydra output directories, and local W&B/MLflow
-run metadata. A materialised Hydra output config is the most authoritative
-record of what actually ran and outranks a checked-in config in drift
-resolution — with the standing caveat that run-output directories are often
-gitignored, so a present one may not be the run behind the paper's numbers.
+run metadata. A materialised output can describe one actual run, but it
+outranks a checked-in config in paper-drift resolution only when an
+author-confirmed claim links that exact record. Run-output directories are
+often gitignored, so an unlinked record may belong to a different experiment.
 """
 
 from __future__ import annotations
