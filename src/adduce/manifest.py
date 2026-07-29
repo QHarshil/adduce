@@ -8,11 +8,21 @@ authoritative; links inferred from evidence carry confidence instead.
 
 from __future__ import annotations
 
+import json
+import math
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import yaml
+
+from .safe_write import (
+    SafeWriteError,
+    create_text_exclusive,
+    ensure_safe_directory,
+    read_text_regular,
+    regular_file_exists,
+)
 
 SCHEMA = "adduce/1"
 MANIFEST_DIR = ".adduce"
@@ -156,24 +166,33 @@ class Manifest:
                 "expected_metrics": self.smoke.expected_metrics,
             },
         }
-        return clean(raw)
+        return cast(dict[str, Any], clean(raw))
 
 
 def _as_str(value: Any) -> str | None:
-    return None if value is None else str(value)
+    return None if value is None else cast(str, value)
+
+
+def _is_finite_number(value: object) -> bool:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return False
+    try:
+        return math.isfinite(float(value))
+    except OverflowError:
+        return False
 
 
 def _parse_claim(raw: dict[str, Any]) -> Claim:
-    produced = raw.get("produced_by") or {}
+    produced = cast(dict[str, Any], raw.get("produced_by") or {})
     value = raw.get("value")
     return Claim(
-        id=str(raw.get("id", "")),
+        id=cast(str, raw["id"]),
         text=_as_str(raw.get("text")),
-        kind=str(raw.get("kind", "metric")),
+        kind=cast(str, raw.get("kind", "metric")),
         where=_as_str(raw.get("where")),
         metric=_as_str(raw.get("metric")),
         value=float(value) if isinstance(value, (int, float)) else None,
-        seeds=[int(s) for s in raw.get("seeds", []) if isinstance(s, (int, float))],
+        seeds=list(cast(list[int], raw.get("seeds", []))),
         produced_by=ProducedBy(
             command=_as_str(produced.get("command")),
             config=_as_str(produced.get("config")),
@@ -187,6 +206,18 @@ def _parse_claim(raw: dict[str, Any]) -> Claim:
 
 def _validate_manifest_data(data: dict[str, Any]) -> str | None:
     """Validate container shapes before parsing user-authored YAML."""
+
+    def validate_strings(
+        mapping: dict[str, Any],
+        keys: tuple[str, ...],
+        prefix: str,
+    ) -> str | None:
+        for key in keys:
+            value = mapping.get(key)
+            if value is not None and not isinstance(value, str):
+                return f"{prefix}{key} must be a string"
+        return None
+
     for section in ("paper", "environment", "smoke"):
         value = data.get(section)
         if value is not None and not isinstance(value, dict):
@@ -197,37 +228,108 @@ def _validate_manifest_data(data: dict[str, Any]) -> str | None:
             return f"'{section}' must be a list"
         if isinstance(value, list) and any(not isinstance(item, dict) for item in value):
             return f"every '{section}' entry must be a mapping"
+
+    paper = data.get("paper") or {}
+    if error := validate_strings(paper, ("title", "file"), "paper."):
+        return error
+    environment = data.get("environment") or {}
+    if error := validate_strings(
+        environment,
+        ("python", "lockfile", "container", "hardware", "precision", "cuda"),
+        "environment.",
+    ):
+        return error
+
     for index, dataset in enumerate(data.get("datasets") or []):
-        if not dataset.get("id"):
+        if not isinstance(dataset.get("id"), str) or not dataset["id"].strip():
             return f"datasets[{index}].id is required"
+        if error := validate_strings(
+            dataset,
+            ("source", "checksum", "split", "croissant", "license"),
+            f"datasets[{index}].",
+        ):
+            return error
     for index, remote in enumerate(data.get("remotes") or []):
-        if not remote.get("call"):
+        if not isinstance(remote.get("call"), str) or not remote["call"].strip():
             return f"remotes[{index}].call is required"
+        if error := validate_strings(remote, ("revision",), f"remotes[{index}]."):
+            return error
     for index, claim in enumerate(data.get("claims") or []):
-        if not claim.get("id"):
+        if not isinstance(claim.get("id"), str) or not claim["id"].strip():
             return f"claims[{index}].id is required"
+        if error := validate_strings(
+            claim,
+            ("text", "kind", "where", "metric", "status"),
+            f"claims[{index}].",
+        ):
+            return error
+        kind = claim.get("kind", "metric")
+        if kind not in {"metric", "figure", "table", "statement"}:
+            return (
+                f"claims[{index}].kind must be one of "
+                "'metric', 'figure', 'table', or 'statement'"
+            )
+        status = claim.get("status")
+        if status is not None and status not in {"draft", "confirmed"}:
+            return f"claims[{index}].status must be 'draft' or 'confirmed'"
         produced = claim.get("produced_by")
         if produced is not None and not isinstance(produced, dict):
             return f"claims[{index}].produced_by must be a mapping"
+        if isinstance(produced, dict) and (
+            error := validate_strings(
+                produced,
+                ("command", "config", "data", "log", "commit"),
+                f"claims[{index}].produced_by.",
+            )
+        ):
+            return error
         seeds = claim.get("seeds")
         if seeds is not None and not isinstance(seeds, list):
             return f"claims[{index}].seeds must be a list"
+        value = claim.get("value")
+        if value is not None and not _is_finite_number(value):
+            return f"claims[{index}].value must be a finite number"
+        if isinstance(seeds, list) and any(
+            isinstance(seed, bool) or not isinstance(seed, int) for seed in seeds
+        ):
+            return f"every claims[{index}].seeds entry must be an integer"
     smoke = data.get("smoke") or {}
+    if error := validate_strings(smoke, ("command",), "smoke."):
+        return error
     for key in ("expected_outputs", "expected_metrics"):
         value = smoke.get(key)
         if value is not None and not isinstance(value, list):
             return f"smoke.{key} must be a list"
+        if isinstance(value, list) and any(not isinstance(item, str) for item in value):
+            return f"every smoke.{key} entry must be a string"
+    timeout = smoke.get("max_runtime_minutes")
+    if timeout is not None and (
+        isinstance(timeout, bool)
+        or not isinstance(timeout, int)
+        or not 1 <= timeout <= 24 * 60
+    ):
+        return "smoke.max_runtime_minutes must be an integer from 1 to 1440"
     return None
 
 
 def load_manifest(root: Path) -> Manifest:
     """Load the manifest if present; otherwise an empty manifest (exists=False)."""
     target = root / MANIFEST_DIR / MANIFEST_NAME
-    if not target.is_file():
+    try:
+        source = read_text_regular(
+            target,
+            label="manifest.yaml",
+            parent_label=".adduce directory",
+        )
+    except SafeWriteError as exc:
+        return Manifest(path=target, error=str(exc))
+    except UnicodeError:
+        return Manifest(path=target, error="manifest.yaml is not valid UTF-8")
+    if source is None:
         return Manifest()
     try:
-        data = yaml.safe_load(target.read_text(encoding="utf-8")) or {}
-    except (yaml.YAMLError, OSError) as exc:
+        data = yaml.safe_load(source) or {}
+    except (UnicodeError, yaml.YAMLError) as exc:
         return Manifest(path=target, error=f"could not parse {target}: {exc}")
     if not isinstance(data, dict):
         return Manifest(path=target, error=f"{target} must contain a YAML mapping")
@@ -256,18 +358,18 @@ def load_manifest(root: Path) -> Manifest:
         ),
         datasets=[
             DatasetInfo(
-                id=str(d.get("id", f"dataset-{i}")),
+                id=cast(str, d["id"]),
                 source=_as_str(d.get("source")),
                 checksum=_as_str(d.get("checksum")),
                 split=_as_str(d.get("split")),
                 croissant=_as_str(d.get("croissant")),
                 license=_as_str(d.get("license")),
             )
-            for i, d in enumerate(data.get("datasets") or [])
+            for d in data.get("datasets") or []
             if isinstance(d, dict)
         ],
         remotes=[
-            RemoteInfo(call=str(r.get("call", "")), revision=_as_str(r.get("revision")))
+            RemoteInfo(call=cast(str, r["call"]), revision=_as_str(r.get("revision")))
             for r in (data.get("remotes") or [])
             if isinstance(r, dict)
         ],
@@ -275,10 +377,10 @@ def load_manifest(root: Path) -> Manifest:
         smoke=SmokeTarget(
             command=_as_str(smoke.get("command")),
             max_runtime_minutes=int(smoke["max_runtime_minutes"])
-            if isinstance(smoke.get("max_runtime_minutes"), (int, float))
+            if isinstance(smoke.get("max_runtime_minutes"), int)
             else None,
-            expected_outputs=[str(o) for o in smoke.get("expected_outputs", [])],
-            expected_metrics=[str(m) for m in smoke.get("expected_metrics", [])],
+            expected_outputs=list(cast(list[str], smoke.get("expected_outputs", []))),
+            expected_metrics=list(cast(list[str], smoke.get("expected_metrics", []))),
         ),
         path=target,
     )
@@ -287,18 +389,15 @@ def load_manifest(root: Path) -> Manifest:
 
 def write_manifest(root: Path, manifest: Manifest) -> Path:
     """Serialise the manifest to ``.adduce/manifest.yaml`` plus a JSON mirror."""
-    import json
-
+    yaml_text, json_text = _serialized_manifest(manifest)
     directory = root / MANIFEST_DIR
-    directory.mkdir(parents=True, exist_ok=True)
+    ensure_safe_directory(directory, label=".adduce directory", create=True)
     target = directory / MANIFEST_NAME
-    payload = manifest.to_dict()
-    target.write_text(
-        yaml.safe_dump(payload, sort_keys=False, allow_unicode=True), encoding="utf-8"
-    )
-    (directory / "manifest.json").write_text(
-        json.dumps(payload, indent=2) + "\n", encoding="utf-8", newline="\n"
-    )
+    mirror = directory / "manifest.json"
+    _require_new_target(target, "manifest.yaml")
+    _require_new_target(mirror, "manifest JSON mirror")
+    create_text_exclusive(target, yaml_text, label="manifest.yaml")
+    create_text_exclusive(mirror, json_text, label="manifest JSON mirror")
     manifest.path = target
     manifest.error = None
     return target
@@ -311,21 +410,35 @@ def write_manifest_proposal(root: Path, manifest: Manifest) -> Path:
     with the core parser. A refresh therefore never rewrites the author's
     file; it writes a uniquely named proposal for manual review and merging.
     """
-    import json
-
+    yaml_text, json_text = _serialized_manifest(manifest)
     directory = root / MANIFEST_DIR
-    directory.mkdir(parents=True, exist_ok=True)
+    ensure_safe_directory(directory, label=".adduce directory", create=True)
     suffix = 1
     while True:
         stem = "manifest.proposed" if suffix == 1 else f"manifest.proposed-{suffix}"
         target = directory / f"{stem}.yaml"
         mirror = directory / f"{stem}.json"
-        if not target.exists() and not mirror.exists():
+        target_exists = regular_file_exists(target, label="manifest proposal")
+        mirror_exists = regular_file_exists(mirror, label="manifest proposal JSON mirror")
+        if not target_exists and not mirror_exists:
             break
         suffix += 1
-    payload = manifest.to_dict()
-    with target.open("x", encoding="utf-8", newline="\n") as handle:
-        handle.write(yaml.safe_dump(payload, sort_keys=False, allow_unicode=True))
-    with mirror.open("x", encoding="utf-8", newline="\n") as handle:
-        handle.write(json.dumps(payload, indent=2) + "\n")
+    create_text_exclusive(target, yaml_text, label="manifest proposal")
+    create_text_exclusive(mirror, json_text, label="manifest proposal JSON mirror")
     return target
+
+
+def _serialized_manifest(manifest: Manifest) -> tuple[str, str]:
+    """Render both forms before any destination path is created or changed."""
+    payload = manifest.to_dict()
+    try:
+        json_text = json.dumps(payload, allow_nan=False, indent=2) + "\n"
+        yaml_text = yaml.safe_dump(payload, sort_keys=False, allow_unicode=True)
+    except (TypeError, ValueError, yaml.YAMLError) as exc:
+        raise SafeWriteError("manifest contains values that cannot be serialized safely") from exc
+    return yaml_text, json_text
+
+
+def _require_new_target(path: Path, label: str) -> None:
+    if regular_file_exists(path, label=label):
+        raise SafeWriteError(f"refusing to overwrite existing {label}")

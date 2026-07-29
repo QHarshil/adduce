@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
+import pytest
 import yaml
 
 from adduce.engine import run_check
@@ -11,6 +13,7 @@ from adduce.graph import TrailStatus
 from adduce.manifest import load_manifest, write_manifest
 from adduce.manifest_builder import scaffold_manifest
 from adduce.modes import badge_eligibility
+from adduce.report.json_report import render as render_json
 from tests.test_engine import BARE, WELL_FORMED, _write
 
 _MANIFEST = {
@@ -57,10 +60,12 @@ def test_manifest_round_trip(tmp_path):
     assert manifest.claims[0].produced_by.config == "configs/main.yaml"
     assert manifest.smoke.command == "python train.py --smoke"
 
-    write_manifest(tmp_path, manifest)
-    reloaded = load_manifest(tmp_path)
+    roundtrip = tmp_path / "roundtrip"
+    roundtrip.mkdir()
+    write_manifest(roundtrip, manifest)
+    reloaded = load_manifest(roundtrip)
     assert reloaded.claims[0].value == 92.1
-    assert (tmp_path / ".adduce" / "manifest.json").is_file()
+    assert (roundtrip / ".adduce" / "manifest.json").is_file()
 
 
 def test_malformed_manifest_is_recorded_as_an_error(tmp_path):
@@ -72,8 +77,6 @@ def test_malformed_manifest_is_recorded_as_an_error(tmp_path):
 
 
 def test_check_rejects_malformed_manifest_structure(tmp_path):
-    import pytest
-
     manifest_dir = tmp_path / ".adduce"
     manifest_dir.mkdir()
     (manifest_dir / "manifest.yaml").write_text(
@@ -81,6 +84,50 @@ def test_check_rejects_malformed_manifest_structure(tmp_path):
     )
 
     with pytest.raises(ValueError, match="paper.*mapping"):
+        run_check(tmp_path)
+
+
+@pytest.mark.parametrize(
+    ("body", "message"),
+    [
+        ("paper:\n  title: 3\n", r"paper\.title must be a string"),
+        ("environment:\n  hardware: [A100]\n", r"environment\.hardware must be a string"),
+        ("datasets:\n  - id: 7\n", r"datasets\[0\]\.id is required"),
+        (
+            "remotes:\n  - call: model\n    revision: 7\n",
+            r"remotes\[0\]\.revision must be a string",
+        ),
+        (
+            "claims:\n  - id: C1\n    kind: metric\n    text: [claim]\n",
+            r"claims\[0\]\.text must be a string",
+        ),
+        (
+            "claims:\n  - id: C1\n    status: accepted\n",
+            r"claims\[0\]\.status must be 'draft' or 'confirmed'",
+        ),
+        (
+            "claims:\n  - id: C1\n    produced_by:\n      command: [python, train.py]\n",
+            r"claims\[0\]\.produced_by\.command must be a string",
+        ),
+        (
+            "smoke:\n  expected_outputs: [result.json, 3]\n",
+            r"every smoke\.expected_outputs entry must be a string",
+        ),
+    ],
+)
+def test_manifest_rejects_scalar_coercion(
+    tmp_path: Path,
+    body: str,
+    message: str,
+) -> None:
+    manifest_dir = tmp_path / ".adduce"
+    manifest_dir.mkdir()
+    (manifest_dir / "manifest.yaml").write_text(
+        f"schema: adduce/1\n{body}",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match=message):
         run_check(tmp_path)
 
 
@@ -173,12 +220,14 @@ def test_claim_graph_with_manifest(tmp_path):
     result = run_check(tmp_path)
     assert result.graph.from_manifest
     trail = result.graph.trails[0]
-    assert trail.status in (TrailStatus.SUPPORTED, TrailStatus.PARTIAL)
+    assert trail.status is TrailStatus.PARTIAL
     assert not trail.inferred
     labels = {entry.label for entry in trail.entries}
     assert {"metric", "config", "log", "seeds"} <= labels
     metric_entry = next(e for e in trail.entries if e.label == "metric")
     assert metric_entry.resolved is True  # 92.07 rounds to the claimed 92.1
+    assert next(e for e in trail.entries if e.label == "seeds").resolved is None
+    assert next(e for e in trail.entries if e.label == "commit").resolved is False
 
 
 def test_claim_graph_flags_broken_paths(tmp_path):
@@ -201,6 +250,52 @@ def test_claim_graph_flags_broken_paths(tmp_path):
     assert trail.status is not TrailStatus.SUPPORTED
 
 
+def test_claim_graph_does_not_treat_one_existing_path_as_supported(tmp_path):
+    files = dict(WELL_FORMED)
+    files["results/eval.csv"] = "epoch,accuracy\n1,92.1\n"
+    _write(tmp_path, files)
+    manifest = dict(_MANIFEST)
+    manifest["claims"] = [
+        {
+            "id": "C1",
+            "produced_by": {"config": "configs/main.yaml"},
+        }
+    ]
+    (tmp_path / ".adduce").mkdir(exist_ok=True)
+    (tmp_path / ".adduce" / "manifest.yaml").write_text(
+        yaml.safe_dump(manifest),
+        encoding="utf-8",
+    )
+
+    trail = run_check(tmp_path).graph.trails[0]
+
+    assert trail.status is TrailStatus.PARTIAL
+
+
+def test_claim_graph_and_json_include_every_manifest_claim(tmp_path):
+    _write(tmp_path, dict(WELL_FORMED))
+    manifest = dict(_MANIFEST)
+    manifest["claims"] = [
+        {"id": f"C{index}", "text": f"Claim {index}"}
+        for index in range(1, 13)
+    ]
+    (tmp_path / ".adduce").mkdir(exist_ok=True)
+    (tmp_path / ".adduce" / "manifest.yaml").write_text(
+        yaml.safe_dump(manifest),
+        encoding="utf-8",
+    )
+
+    result = run_check(tmp_path)
+    payload = json.loads(render_json(result))
+
+    assert [trail.claim.id for trail in result.graph.trails] == [
+        f"C{index}" for index in range(1, 13)
+    ]
+    assert [claim["id"] for claim in payload["claims"]] == [
+        f"C{index}" for index in range(1, 13)
+    ]
+
+
 def test_draft_manifest_claim_is_inferred(tmp_path):
     files = dict(WELL_FORMED)
     files["results/eval.csv"] = "epoch,accuracy\n1,92.07\n"
@@ -215,7 +310,19 @@ def test_draft_manifest_claim_is_inferred(tmp_path):
     trail = run_check(tmp_path).graph.trails[0]
 
     assert trail.inferred
-    assert trail.status in (TrailStatus.SUPPORTED, TrailStatus.PARTIAL)
+    assert trail.status is TrailStatus.PARTIAL
+
+
+def test_inferred_placeholder_is_never_reported_as_supported(tmp_path):
+    files = dict(WELL_FORMED)
+    files["README.md"] = "# Demo\n\n## Results\n\n| Accuracy |\n|---|\n| 92.1 |\n"
+    _write(tmp_path, files)
+
+    result = run_check(tmp_path)
+
+    assert result.graph.trails
+    assert all(trail.inferred for trail in result.graph.trails)
+    assert all(trail.status is not TrailStatus.SUPPORTED for trail in result.graph.trails)
 
 
 def test_claim_graph_metric_source_matches_closest_value(tmp_path):
