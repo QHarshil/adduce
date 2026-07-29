@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
-# Installation smoke test: install adduce from PyPI into a clean environment
-# and exercise every surface that depends on packaged data (profiles,
-# checklists, fixer templates, rule docs). Catches broken wheels that unit
-# tests against the checkout cannot.
+# Installation smoke test: install adduce into a clean environment and exercise
+# every surface that depends on packaged data (profiles, checklists, fixer
+# templates, rule docs). The default installs from PyPI; package validation can
+# pass a locally built wheel or source distribution. Catches packaging defects
+# that tests against the checkout cannot.
 set -euo pipefail
 
 VENV="$(mktemp -d)/adduce-smoke"
@@ -17,11 +18,26 @@ PYTHON="$(command -v python3 || command -v python)"
 echo "==> creating clean venv"
 "$PYTHON" -m venv "$VENV"
 "$VENV/bin/pip" install --quiet --upgrade pip
-echo "==> installing $SPEC from PyPI"
+echo "==> installing $SPEC"
 "$VENV/bin/pip" install --quiet "$SPEC"
 
 echo "==> version"
 "$VENV/bin/adduce" --version
+
+echo "==> RNG diagnostic consent gate"
+if [ -x "$VENV/bin/adduce-rng-audit" ]; then
+  set +e
+  RNG_OUT="$("$VENV/bin/adduce-rng-audit" 2>&1)"
+  RNG_STATUS=$?
+  set -e
+  test "$RNG_STATUS" -eq 2
+  grep -q "refusing execution without explicit --yes" <<< "$RNG_OUT"
+elif [ "$#" -gt 0 ]; then
+  echo "missing adduce-rng-audit entry point in local distribution" >&2
+  exit 1
+else
+  echo "    not present in the current stable package; skipped"
+fi
 
 echo "==> rule registry (packaged rule metadata)"
 RULES_OUT="$("$VENV/bin/adduce" rules)"
@@ -67,4 +83,4 @@ echo "==> badge"
 BADGE_OUT="$("$VENV/bin/adduce" badge "$SAMPLE" --svg)"
 grep -q "<svg" <<< "$BADGE_OUT"
 
-echo "PASS: $SPEC installs and runs from PyPI"
+echo "PASS: $SPEC installs and runs"

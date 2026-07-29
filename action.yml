@@ -62,13 +62,10 @@ runs:
         ADDUCE_INPUT_SARIF_FILE: ${{ inputs.sarif-file }}
         ADDUCE_INPUT_REPORT_FILE: ${{ inputs.report-file }}
       run: |
-        BASE_ARGS=("$ADDUCE_INPUT_PATH" --profile "$ADDUCE_INPUT_PROFILE")
-        GATE_ARGS=("${BASE_ARGS[@]}")
+        BASE_ARGS=("$ADDUCE_INPUT_PATH" --profile "$ADDUCE_INPUT_PROFILE" --fail-under 0)
+        GATE_ARGS=("$ADDUCE_INPUT_PATH" --profile "$ADDUCE_INPUT_PROFILE" --fail-under "$ADDUCE_INPUT_FAIL_UNDER")
         RESULT_FILE="${RUNNER_TEMP:-.}/adduce-result-${GITHUB_RUN_ID:-local}-${GITHUB_RUN_ATTEMPT:-0}.json"
         trap 'rm -f -- "$RESULT_FILE"' EXIT
-        if [ "$ADDUCE_INPUT_FAIL_UNDER" != "0" ]; then
-          GATE_ARGS+=(--fail-under "$ADDUCE_INPUT_FAIL_UNDER")
-        fi
         if [ "$ADDUCE_INPUT_FAIL_ON_REGRESSION" = "true" ]; then
           GATE_ARGS+=(--fail-on-regression)
         fi

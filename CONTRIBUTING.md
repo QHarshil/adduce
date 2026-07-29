@@ -9,9 +9,12 @@ and the design constraints that keep the tool trustworthy.
 git clone https://github.com/QHarshil/adduce
 cd adduce
 python -m venv .venv && source .venv/bin/activate
-pip install -e ".[dev]"
-pytest
-ruff check src tests
+pip install -e ".[dev,release]"
+pytest --cov=adduce --cov-report=term-missing --cov-fail-under=85
+ruff check src tests scripts corpus/scripts
+mypy src/adduce scripts corpus/scripts
+python -m build
+twine check --strict dist/*
 ```
 
 ## Design constraints
@@ -55,5 +58,10 @@ valuable input the project gets.
 ## Pull requests
 
 - Keep changes focused; one rule or one fix per PR.
-- `pytest` and `ruff check src tests` must pass.
+- The coverage, Ruff, mypy, build, and Twine checks from the development setup
+  must pass.
 - New behaviour needs tests; changed behaviour needs updated tests.
+
+Maintainer release gates and the Trusted Publishing boundary are documented in
+[`docs/releasing.md`](docs/releasing.md). A release tag is not part of the
+ordinary contribution workflow.
