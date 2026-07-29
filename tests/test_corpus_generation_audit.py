@@ -11,6 +11,14 @@ import corpus.scripts.audit_sentinel_generation as generation
 import pytest
 from corpus.scripts.clone_repos import repository_tree_sha256
 
+from adduce.ledger import (
+    AnswerLevel,
+    EvidenceItem,
+    EvidenceStrength,
+    Ledger,
+    LedgerEntry,
+)
+
 GENERATED_AT = "2026-07-13T20:00:00+00:00"
 COMMIT = "a" * 40
 
@@ -29,6 +37,13 @@ def _raw_payload() -> dict[str, Any]:
             "files_scanned": 1,
             "input_file_count": 1,
             "input_byte_count": 11,
+        },
+        "configuration": {
+            "source": None,
+            "repository_policy_honored": False,
+            "profile": "default",
+            "ignored_rules": [],
+            "excluded_paths": [],
         },
         "reviewer_time": {
             "low_minutes": 1,
@@ -126,6 +141,7 @@ def _record(
             artifact_name=artifact_name,
         ),
         "generated_text_policy": "evidence_only",
+        "generated_text_provenance": [],
         "counts": generation._expected_counts(entries),
         "entries": entries,
     }
@@ -274,6 +290,49 @@ def test_affirmative_ledger_audit_accepts_strict_direct_evidence(tmp_path):
             "result": "pass",
         }
     ]
+
+
+def test_corpus_auditor_accepts_current_ledger_serialization(tmp_path):
+    context = _context(tmp_path)
+    repository = context.repositories["frl"]
+    artifacts, records = _ledger_fixture(context, repository)
+    entry = LedgerEntry(
+        item_id="documented",
+        question="Is the repository documented?",
+        answer=AnswerLevel.YES,
+        evidence=[
+            EvidenceItem(
+                kind="R-DOC-001",
+                path="README.md",
+                line=1,
+                confidence=0.95,
+                strength=EvidenceStrength.DIRECT,
+            )
+        ],
+        searched=["R-DOC-001"],
+    )
+    records["checklist-neurips.md"] = Ledger(
+        artifact_path="checklist-neurips.md",
+        artifact_sha256=_artifact_sha(artifacts["checklist-neurips.md"]),
+        provenance=generation._expected_provenance(
+            context=context,
+            repository=repository,
+            generated_at=GENERATED_AT,
+            artifact_name="checklist-neurips.md",
+        ),
+        entries=[entry],
+    ).to_dict()
+
+    audited, failures = generation._audit_ledger_bundle(
+        repository=repository,
+        context=context,
+        generated_at=GENERATED_AT,
+        artifact_texts=artifacts,
+        ledger_records=records,
+    )
+
+    assert failures == []
+    assert audited
 
 
 @pytest.mark.parametrize(

@@ -27,10 +27,12 @@ from corpus.scripts.run_contract import (
 )
 from corpus.scripts.run_validation import (
     _checker_environment,
+    _corpus_git_identity,
     _source_tree_sha256,
     _validate_symlink_containment,
     check_repo,
     load_clone_records,
+    require_reconstructable_analyzer,
 )
 
 import adduce
@@ -49,7 +51,13 @@ def _make_repo(path: Path, *, lfs_pointer: bool = False) -> str:
     path.mkdir(parents=True)
     (path / "README.md").write_text("# Fixture\n", encoding="utf-8")
     (path / "train.py").write_text("print('fixture')\n", encoding="utf-8")
-    (path / "adduce.toml").write_text('profile = "acm"\nignore = ["R-DOC-001"]\n', encoding="utf-8")
+    (path / "adduce.toml").write_text(
+        'profile = "acm"\n'
+        'ignore = ["R-DOC-001"]\n'
+        'exclude = ["**/*.py"]\n'
+        "fail_under = 100\n",
+        encoding="utf-8",
+    )
     if lfs_pointer:
         (path / "weights.bin").write_text(
             "version https://git-lfs.github.com/spec/v1\n"
@@ -77,11 +85,48 @@ def _inventory_row(commit: str) -> dict[str, str]:
 
 def test_offline_audit_policy_allows_only_required_read_only_git(tmp_path: Path) -> None:
     repository = tmp_path.resolve()
-    allowed = ["git", "-C", str(repository), "rev-parse", "HEAD"]
+    prefix = [
+        "git",
+        "--no-pager",
+        "-c",
+        "core.fsmonitor=false",
+        "-c",
+        "core.quotePath=true",
+        "-C",
+        str(repository),
+    ]
+    allowed = [*prefix, "rev-parse", "HEAD"]
 
     assert _allowed_git_command("git", allowed, repository)
+    assert _allowed_git_command(
+        "git",
+        [*prefix, "tag", "--points-at", "HEAD"],
+        repository,
+    )
+    assert not _allowed_git_command("git", [*prefix, "tag", "--list"], repository)
+    assert not _allowed_git_command("git", [*prefix, "tag"], repository)
+    assert not _allowed_git_command(
+        "git",
+        [*prefix, "tag", "--points-at", "HEAD", "--contains"],
+        repository,
+    )
     assert not _allowed_git_command("git", [*allowed[:-2], "fetch", "origin"], repository)
     assert not _allowed_git_command("git", allowed, repository / "other")
+    assert not _allowed_git_command(
+        "git",
+        ["git", "-C", str(repository), "rev-parse", "HEAD"],
+        repository,
+    )
+    assert not _allowed_git_command(
+        "git",
+        [*prefix[:3], "core.fsmonitor=true", *prefix[4:], "rev-parse", "HEAD"],
+        repository,
+    )
+    assert not _allowed_git_command(
+        "git",
+        [*prefix[:6], "-c", "protocol.file.allow=always", *prefix[6:], "rev-parse", "HEAD"],
+        repository,
+    )
 
     for event in (
         "socket.__new__",
@@ -101,6 +146,7 @@ def test_offline_audit_policy_allows_only_required_read_only_git(tmp_path: Path)
         _enforce_offline("os.fork", (), repository)
     with pytest.raises(RuntimeError, match="filesystem writes are disabled"):
         _enforce_offline("open", (str(repository / "output"), "w", os.O_WRONLY), repository)
+    _enforce_offline("open", (os.devnull, None, os.O_RDWR), repository)
 
 
 def test_checker_environment_does_not_inherit_host_secrets(
@@ -115,6 +161,72 @@ def test_checker_environment_does_not_inherit_host_secrets(
     assert "GITHUB_TOKEN" not in environment
     assert environment["PYTHONNOUSERSITE"] == "1"
     assert environment["PYTHONDONTWRITEBYTECODE"] == "1"
+
+
+def test_effectiveness_runs_require_a_clean_committed_analyzer() -> None:
+    clean = {
+        "adduce_source_commit": "a" * 40,
+        "adduce_source_dirty": False,
+        "corpus_harness_git_commit": "a" * 40,
+        "corpus_harness_git_dirty": False,
+        "corpus_harness_git_tracked": True,
+    }
+    require_reconstructable_analyzer(clean, "effectiveness")
+    require_reconstructable_analyzer({}, "operational-only")
+
+    for identity in (
+        {"adduce_source_commit": None, "adduce_source_dirty": None},
+        {"adduce_source_commit": "a" * 40, "adduce_source_dirty": True},
+        {"adduce_source_commit": "short", "adduce_source_dirty": False},
+    ):
+        with pytest.raises(RunContractError, match="clean analyzer at a full Git commit"):
+            require_reconstructable_analyzer(identity, "effectiveness")
+
+    for identity in (
+        {**clean, "corpus_harness_git_commit": "b" * 40},
+        {**clean, "corpus_harness_git_dirty": True},
+        {**clean, "corpus_harness_git_tracked": False},
+    ):
+        with pytest.raises(RunContractError, match="complete corpus harness"):
+            require_reconstructable_analyzer(identity, "effectiveness")
+
+
+def test_corpus_git_identity_requires_every_declared_file_tracked_and_clean(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    repository = tmp_path / "repository"
+    corpus = repository / "corpus"
+    corpus.mkdir(parents=True)
+    (corpus / "protocol.txt").write_text("frozen protocol\n", encoding="utf-8")
+    preregistration = corpus / "preregistration.json"
+    preregistration.write_text("{}\n", encoding="utf-8")
+    _git("init", "-q", cwd=repository)
+    _git("config", "user.name", "Corpus Test", cwd=repository)
+    _git("config", "user.email", "corpus@example.invalid", cwd=repository)
+    _git("add", ".", cwd=repository)
+    _git("commit", "-qm", "freeze corpus contract", cwd=repository)
+    commit = _git("rev-parse", "HEAD", cwd=repository)
+    monkeypatch.setattr(run_validation, "CORPUS_DIR", corpus)
+    monkeypatch.setattr(run_validation, "PREREGISTRATION_PATH", preregistration)
+    monkeypatch.setattr(run_validation, "REQUIRED_HARNESS_PATHS", ("protocol.txt",))
+
+    assert _corpus_git_identity() == {
+        "corpus_harness_git_commit": commit,
+        "corpus_harness_git_dirty": False,
+        "corpus_harness_git_tracked": True,
+    }
+
+    (corpus / "protocol.txt").write_text("changed protocol\n", encoding="utf-8")
+    assert _corpus_git_identity()["corpus_harness_git_dirty"] is True
+
+    (corpus / "untracked.txt").write_text("not committed\n", encoding="utf-8")
+    monkeypatch.setattr(
+        run_validation,
+        "REQUIRED_HARNESS_PATHS",
+        ("protocol.txt", "untracked.txt"),
+    )
+    assert _corpus_git_identity()["corpus_harness_git_tracked"] is False
 
 
 def test_malformed_scanner_output_is_a_contract_failure(
@@ -171,9 +283,10 @@ def test_repository_symlinks_must_resolve_inside_the_clone(tmp_path: Path) -> No
 def test_checker_ignores_repository_config_and_records_policy(tmp_path: Path) -> None:
     commit = _make_repo(tmp_path / "repo")
     package_dir = Path(adduce.__file__).resolve().parent
+    source_tree_sha256 = _source_tree_sha256(package_dir)
     environment = os.environ.copy()
     environment["ADDUCE_CORPUS_SOURCE_ROOT"] = str(package_dir.parent)
-    environment["ADDUCE_CORPUS_SOURCE_TREE_SHA256"] = _source_tree_sha256(package_dir)
+    environment["ADDUCE_CORPUS_SOURCE_TREE_SHA256"] = source_tree_sha256
 
     completed = subprocess.run(
         [sys.executable, str(CHECKER), str(tmp_path / "repo")],
@@ -187,16 +300,25 @@ def test_checker_ignores_repository_config_and_records_policy(tmp_path: Path) ->
     payload = json.loads(completed.stdout)
     assert payload["repository"]["commit"] == commit
     assert payload["profile"] == "default"
+    assert payload["configuration"] == {
+        "source": None,
+        "repository_policy_honored": False,
+        "profile": "default",
+        "ignored_rules": [],
+        "excluded_paths": [],
+    }
     peak_rss = payload["corpus_execution"].pop("peak_rss")
     assert payload["corpus_execution"] == {
+        "adduce_check_mode": "reviewer",
         "configuration_mode": "defaults-only-repository-config-disabled",
         "enforcement_scope": "scanner-regression-guard-not-os-sandbox",
         "network_policy": "python-audit-socket-deny",
         "plugins_enabled": False,
         "process_policy": "python-audit-read-only-git-metadata-only",
+        "repository_policy_honored": False,
         "environment_policy": "minimal-no-host-credentials",
         "input_policy": "clone-root-symlink-containment",
-        "adduce_source_tree_sha256": _source_tree_sha256(package_dir),
+        "adduce_source_tree_sha256": source_tree_sha256,
     }
     assert peak_rss["platform"] == sys.platform
     assert peak_rss["unit"] in {"bytes", "kibibytes", "unavailable"}

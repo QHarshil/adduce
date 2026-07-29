@@ -9,7 +9,10 @@ import subprocess
 import sys
 from pathlib import Path
 
+import corpus.scripts.run_validation as run_validation
 import pytest
+from corpus.scripts.claim_ground_truth import TARGETS
+from corpus.scripts.claim_review import initialize_review, merge_independent_reviews
 from corpus.scripts.clone_repos import (
     CLONE_SCHEMA_VERSION,
     read_repos,
@@ -17,6 +20,7 @@ from corpus.scripts.clone_repos import (
 )
 from corpus.scripts.compare_runs import compare
 from corpus.scripts.label_findings import validate as validate_labels
+from corpus.scripts.preregistration import build_preregistration
 from corpus.scripts.run_contract import (
     BADGED_PROVENANCE_FIELDS,
     COMPLETE_MARKER,
@@ -123,6 +127,131 @@ def _write_clone_manifest(clones: Path, repos: Path, commit: str) -> None:
     write_json(clones / "clones_manifest.json", manifest)
 
 
+def _write_accepted_claim_review(
+    claims: Path,
+    review: Path,
+    repos: Path,
+    clones: Path,
+    commit: str,
+    candidate_pair: list[str],
+) -> list[Path]:
+    readme = clones / "fixture" / "README.md"
+    quote = readme.read_text(encoding="utf-8").splitlines()[2]
+    links = []
+    for target in TARGETS:
+        if target == "reported_result":
+            resolution = "resolved"
+            artifacts = [{"kind": "claim_source"}]
+        elif target == "commit":
+            resolution = "resolved"
+            artifacts = [{"kind": "literal", "value": commit}]
+        else:
+            resolution = "not_applicable"
+            artifacts = []
+        links.append(
+            {
+                "target": target,
+                "expected_resolution": resolution,
+                "artifacts": artifacts,
+                "rationale": "The pinned source establishes this expected relationship.",
+            }
+        )
+    truth = {
+        "claim_ground_truth_schema_version": 1,
+        "corpus_inventory_sha256": sha256_file(repos),
+        "clone_manifest_sha256": sha256_file(clones / "clones_manifest.json"),
+        "frozen_at": "2026-07-14T00:00:00+00:00",
+        "claims": [
+            {
+                "claim_id": "fixture-command",
+                "repo_id": "fixture",
+                "repo_commit": commit,
+                "source": {
+                    "kind": "repository_file",
+                    "path": "README.md",
+                    "sha256": sha256_file(readme),
+                    "line_start": 3,
+                    "line_end": 3,
+                    "quote": quote,
+                },
+                "claim": {
+                    "text": "python train.py",
+                    "metric": "documented command",
+                    "value": "python train.py",
+                },
+                "adduce_match": {"headline_contains": "python train.py"},
+                "expected_trail_status": "supported",
+                "expected_links": links,
+                "ground_truth_review": {
+                    "prepared_by": "preparer-a",
+                    "prepared_at": "2026-07-13T22:00:00+00:00",
+                    "verified_by": "verifier-b",
+                    "verified_at": "2026-07-13T23:00:00+00:00",
+                },
+            }
+        ],
+        "unavailable_repositories": [],
+    }
+    write_json(claims, truth)
+    scaffold = initialize_review(truth, sha256_file(claims), candidate_pair)
+    initial_reviews = []
+    for reviewer_id, hour in (("domain-reviewer-a", 10), ("domain-reviewer-b", 11)):
+        initial_reviews.append(
+            {
+                "reviewer_id": reviewer_id,
+                "domain_expertise": "Research-artifact evaluation",
+                "reviewed_at": f"2026-07-15T{hour:02d}:00:00+00:00",
+                "blinding_declaration": {
+                    "independent_review": True,
+                    "other_reviewer_decisions_not_seen": True,
+                    "adduce_claim_link_outputs_not_seen": True,
+                    "declared_at": f"2026-07-15T{hour - 1:02d}:30:00+00:00",
+                },
+                "conflict_of_interest_declaration": {
+                    "scope": {
+                        "repository_id": "fixture",
+                        "artifact_id": "fixture-command",
+                    },
+                    "no_relevant_authorship_or_contribution": True,
+                    "no_close_collaboration_supervision_or_employment": True,
+                    "no_financial_conflict": True,
+                    "no_personal_conflict": True,
+                    "declared_at": f"2026-07-15T{hour - 1:02d}:30:00+00:00",
+                },
+                "claim_decision": "verified",
+                "claim_rationale": "The claim is present in the pinned source.",
+                "claim_evidence": ["README.md:3"],
+                "link_decisions": [
+                    {
+                        "target": target,
+                        "decision": "verified",
+                        "rationale": f"The pinned evidence supports the {target} mapping.",
+                        "evidence": ["README.md:3"],
+                    }
+                    for target in TARGETS
+                ],
+            }
+        )
+    source_paths = [
+        review.with_name("claim-review-reviewer-a.json"),
+        review.with_name("claim-review-reviewer-b.json"),
+    ]
+    source_payloads = []
+    for source_path, initial_review in zip(source_paths, initial_reviews, strict=True):
+        source_payload = json.loads(json.dumps(scaffold))
+        source_payload["claims"][0]["reviews"] = [initial_review]
+        write_json(source_path, source_payload)
+        source_payloads.append(source_payload)
+    payload = merge_independent_reviews(
+        source_payloads,
+        [sha256_file(path) for path in source_paths],
+        truth,
+        sha256_file(claims),
+    )
+    write_json(review, payload)
+    return source_paths
+
+
 def _write_minimal_valid_run(path: Path, *, run_id: str = "test-run") -> None:
     ensure_new_output_directory(path)
     (path / "raw_json").mkdir()
@@ -137,6 +266,13 @@ def _write_minimal_valid_run(path: Path, *, run_id: str = "test-run") -> None:
             "files_scanned": 2,
             "input_file_count": 2,
             "input_byte_count": 42,
+        },
+        "configuration": {
+            "source": None,
+            "repository_policy_honored": False,
+            "profile": "default",
+            "ignored_rules": [],
+            "excluded_paths": [],
         },
         "reviewer_time": {
             "low_minutes": 1,
@@ -174,8 +310,10 @@ def _write_minimal_valid_run(path: Path, *, run_id: str = "test-run") -> None:
             }
         ],
         "corpus_execution": {
+            "adduce_check_mode": "reviewer",
             "configuration_mode": "defaults-only-repository-config-disabled",
             "plugins_enabled": False,
+            "repository_policy_honored": False,
             "network_policy": "python-audit-socket-deny",
             "process_policy": "python-audit-read-only-git-metadata-only",
             "enforcement_scope": "scanner-regression-guard-not-os-sandbox",
@@ -277,6 +415,7 @@ def _write_minimal_valid_run(path: Path, *, run_id: str = "test-run") -> None:
             "environment_policy": "minimal-no-host-credentials",
             "input_policy": "clone-root-symlink-containment",
             "analysis_scope": "operational-only",
+            "adduce_check_mode": "reviewer",
             "configuration_mode": "defaults-only-repository-config-disabled",
             "started_at": "2026-01-01T00:00:00+00:00",
             "completed_at": "2026-01-01T00:00:01+00:00",
@@ -339,6 +478,10 @@ def _rehash_completed_run(run: Path, changed_artifact: str | None = None) -> Non
             metadata["clone_manifest_sha256"] = sha256_file(run / changed_artifact)
         elif changed_artifact == "inputs/repos.csv":
             metadata["repos_file_sha256"] = sha256_file(run / changed_artifact)
+        elif changed_artifact == "inputs/claim_review.json":
+            metadata["claim_review_sha256"] = sha256_file(run / changed_artifact)
+        elif changed_artifact == "inputs/preregistration.json":
+            metadata["preregistration_sha256"] = sha256_file(run / changed_artifact)
     write_json(metadata_path, metadata)
     (run / COMPLETE_MARKER).write_text(
         sha256_file(metadata_path) + "\n", encoding="utf-8", newline="\n"
@@ -490,6 +633,30 @@ def test_raw_rule_census_cannot_silently_omit_a_builtin(tmp_path: Path) -> None:
     _rehash_completed_run(run, "raw_json/repo.json")
 
     with pytest.raises(RunContractError, match="rule census is incomplete"):
+        validate_run(run)
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("adduce_check_mode", "author"),
+        ("repository_policy_honored", True),
+    ],
+)
+def test_raw_corpus_scan_must_use_reviewer_policy_isolation(
+    tmp_path: Path,
+    field: str,
+    value: object,
+) -> None:
+    run = tmp_path / "run"
+    _write_minimal_valid_run(run)
+    raw_path = run / "raw_json" / "repo.json"
+    payload = json.loads(raw_path.read_text(encoding="utf-8"))
+    payload["corpus_execution"][field] = value
+    write_json(raw_path, payload)
+    _rehash_completed_run(run, "raw_json/repo.json")
+
+    with pytest.raises(RunContractError, match="execution policy is invalid"):
         validate_run(run)
 
 
@@ -671,6 +838,156 @@ def test_runner_creates_a_valid_builtins_only_run_and_refuses_reuse(tmp_path: Pa
     assert row["peak_rss_unit"] in {"bytes", "kibibytes", "unavailable"}
     assert repeated.returncode != 0
     assert "refusing to overwrite" in repeated.stderr
+
+
+def test_effectiveness_runner_requires_claim_review_before_creating_output(
+    tmp_path: Path,
+) -> None:
+    run = tmp_path / "candidate-a"
+    completed = subprocess.run(
+        [
+            sys.executable,
+            str(RUNNER),
+            "--claims",
+            str(tmp_path / "claims.json"),
+            "--out",
+            str(run),
+        ],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+    )
+
+    assert completed.returncode != 0
+    assert "effectiveness run requires --claim-review" in completed.stderr
+    assert not run.exists()
+
+
+def test_effectiveness_runner_binds_accepted_review_before_scanning(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    clones = tmp_path / "clones"
+    commit = _make_git_repo(clones / "fixture")
+    repos = tmp_path / "repos.csv"
+    _write_repos(repos, commit)
+    _write_clone_manifest(clones, repos, commit)
+    run = tmp_path / "candidate-a"
+    claims = tmp_path / "claims.json"
+    review = tmp_path / "claim-review.json"
+    source_paths = _write_accepted_claim_review(
+        claims,
+        review,
+        repos,
+        clones,
+        commit,
+        [run.name, "candidate-b"],
+    )
+
+    observed_identity = run_validation.source_identity
+
+    def clean_committed_identity() -> dict[str, object]:
+        identity = observed_identity()
+        identity["adduce_source_commit"] = "a" * 40
+        identity["adduce_source_dirty"] = False
+        identity["corpus_harness_git_commit"] = "a" * 40
+        identity["corpus_harness_git_dirty"] = False
+        identity["corpus_harness_git_tracked"] = True
+        return identity
+
+    monkeypatch.setattr(run_validation, "source_identity", clean_committed_identity)
+    badged_provenance = repos.parent / "badged-provenance.csv"
+    _, harness_files = run_validation.harness_snapshot(
+        badged_provenance=badged_provenance
+    )
+    preregistration = tmp_path / "pilot-r4-preregistration.json"
+    preregistration_payload = build_preregistration(
+        protocol_id="fixture-r3",
+        candidate_pair=[run.name, "candidate-b"],
+        schema_data=harness_files["preregistration.schema.json"],
+        repos_data=repos.read_bytes(),
+        clone_manifest_data=(clones / "clones_manifest.json").read_bytes(),
+        claim_ground_truth_data=claims.read_bytes(),
+        claim_review_schema_data=harness_files["claim-review.schema.json"],
+        badged_provenance_data=harness_files["badged-provenance.csv"],
+        analysis_plan_files=run_validation.preregistration_analysis_plan(harness_files),
+        source_identity=clean_committed_identity(),
+        timeout_seconds=30,
+    )
+    write_json(preregistration, preregistration_payload)
+    monkeypatch.setattr(run_validation, "PREREGISTRATION_PATH", preregistration)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            str(RUNNER),
+            "--repos",
+            str(repos),
+            "--clones",
+            str(clones),
+            "--badged-provenance",
+            str(repos.parent / "badged-provenance.csv"),
+            "--claims",
+            str(claims),
+            "--claim-review",
+            str(review),
+            "--claim-review-source",
+            str(source_paths[0]),
+            "--claim-review-source",
+            str(source_paths[1]),
+            "--out",
+            str(run),
+            "--timeout",
+            "30",
+        ],
+    )
+
+    def dirty_harness_identity() -> dict[str, object]:
+        identity = clean_committed_identity()
+        identity["corpus_harness_git_dirty"] = True
+        return identity
+
+    monkeypatch.setattr(run_validation, "source_identity", dirty_harness_identity)
+    with pytest.raises(SystemExit, match="complete corpus harness"):
+        run_validation.main()
+    assert not run.exists()
+    monkeypatch.setattr(run_validation, "source_identity", clean_committed_identity)
+    sys.argv[-1] = "31"
+    with pytest.raises(SystemExit, match="execution contract differs"):
+        run_validation.main()
+    assert not run.exists()
+    sys.argv[-1] = "30"
+    assert run_validation.main() == 0
+    metadata = validate_run(run)
+    assert metadata["analysis_scope"] == "effectiveness"
+    assert metadata["candidate_run_name"] == run.name
+    assert metadata["claim_ground_truth_sha256"] == sha256_file(claims)
+    assert metadata["claim_review_sha256"] == sha256_file(review)
+    assert metadata["preregistration_sha256"] == sha256_file(preregistration)
+    assert (run / "inputs" / "claim_ground_truth.json").read_bytes() == claims.read_bytes()
+    assert (run / "inputs" / "claim_review.json").read_bytes() == review.read_bytes()
+    assert (run / "inputs" / "preregistration.json").read_bytes() == preregistration.read_bytes()
+    assert {
+        (run / "inputs" / "claim_review_source_1.json").read_bytes(),
+        (run / "inputs" / "claim_review_source_2.json").read_bytes(),
+    } == {path.read_bytes() for path in source_paths}
+
+    copied_review = json.loads((run / "inputs" / "claim_review.json").read_text(encoding="utf-8"))
+    copied_review["claims"][0]["reviews"].pop()
+    write_json(run / "inputs" / "claim_review.json", copied_review)
+    _rehash_completed_run(run, "inputs/claim_review.json")
+    with pytest.raises(RunContractError, match="lacks two independent reviews"):
+        validate_run(run)
+
+    (run / "inputs" / "claim_review.json").write_bytes(review.read_bytes())
+    _rehash_completed_run(run, "inputs/claim_review.json")
+    copied_preregistration = json.loads(
+        (run / "inputs" / "preregistration.json").read_text(encoding="utf-8")
+    )
+    copied_preregistration["execution_contract"]["timeout_seconds"] = 31
+    write_json(run / "inputs" / "preregistration.json", copied_preregistration)
+    _rehash_completed_run(run, "inputs/preregistration.json")
+    with pytest.raises(RunContractError, match="preregistration violates its contract"):
+        validate_run(run)
 
 
 def test_runner_rejects_clone_changed_after_manifest(tmp_path: Path) -> None:

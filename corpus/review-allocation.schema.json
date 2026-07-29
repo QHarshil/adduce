@@ -1,0 +1,176 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/QHarshil/adduce/blob/main/corpus/review-allocation.schema.json",
+  "title": "Adduce corpus finding-review allocation",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "review_allocation_schema_version",
+    "algorithm",
+    "selector_sha256",
+    "schema_sha256",
+    "seed",
+    "run_binding",
+    "sources",
+    "population",
+    "calibration_count",
+    "second_review_rate",
+    "second_review_count",
+    "calibration",
+    "second_review"
+  ],
+  "properties": {
+    "review_allocation_schema_version": {"const": 1},
+    "algorithm": {"const": "sha256-balanced-repository-status-v1"},
+    "selector_sha256": {"$ref": "#/$defs/sha256"},
+    "schema_sha256": {"$ref": "#/$defs/sha256"},
+    "seed": {"type": "integer"},
+    "run_binding": {"$ref": "#/$defs/runBinding"},
+    "sources": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/source"}
+    },
+    "population": {"$ref": "#/$defs/population"},
+    "calibration_count": {"type": "integer", "minimum": 1},
+    "second_review_rate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["numerator", "denominator"],
+      "properties": {
+        "numerator": {"const": 1},
+        "denominator": {"const": 5}
+      }
+    },
+    "second_review_count": {"type": "integer", "minimum": 1},
+    "calibration": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/reference"}
+    },
+    "second_review": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/reference"}
+    }
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "runBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "run_schema_version",
+        "run_id",
+        "adduce_version",
+        "run_meta_sha256",
+        "corpus_harness_sha256",
+        "claim_ground_truth_sha256"
+      ],
+      "properties": {
+        "run_schema_version": {"type": "integer", "minimum": 1},
+        "run_id": {"type": "string", "minLength": 1},
+        "adduce_version": {"type": "string", "minLength": 1},
+        "run_meta_sha256": {"$ref": "#/$defs/sha256"},
+        "corpus_harness_sha256": {"$ref": "#/$defs/sha256"},
+        "claim_ground_truth_sha256": {
+          "oneOf": [{"$ref": "#/$defs/sha256"}, {"type": "null"}]
+        }
+      }
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_id",
+        "initial_source_sha256",
+        "source_identity_sha256",
+        "sample_set_sha256",
+        "entry_count",
+        "layer_b_entry_count",
+        "excluded_stress_entry_count"
+      ],
+      "properties": {
+        "source_id": {"type": "string", "minLength": 1},
+        "initial_source_sha256": {"$ref": "#/$defs/sha256"},
+        "source_identity_sha256": {"$ref": "#/$defs/sha256"},
+        "sample_set_sha256": {"$ref": "#/$defs/sha256"},
+        "entry_count": {"type": "integer", "minimum": 1},
+        "layer_b_entry_count": {"type": "integer", "minimum": 0},
+        "excluded_stress_entry_count": {"type": "integer", "minimum": 0}
+      }
+    },
+    "stratum": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repo_id",
+        "decision_group",
+        "population_count",
+        "calibration_count",
+        "second_review_count"
+      ],
+      "properties": {
+        "repo_id": {"type": "string", "minLength": 1},
+        "decision_group": {"enum": ["emitted", "pass", "abstention"]},
+        "population_count": {"type": "integer", "minimum": 1},
+        "calibration_count": {"type": "integer", "minimum": 0},
+        "second_review_count": {"type": "integer", "minimum": 0}
+      }
+    },
+    "population": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "cohorts",
+        "entry_count",
+        "repository_count",
+        "finding_fingerprint_set_sha256",
+        "strata"
+      ],
+      "properties": {
+        "cohorts": {
+          "const": ["badged_functional", "unvetted"]
+        },
+        "entry_count": {"type": "integer", "minimum": 1},
+        "repository_count": {"type": "integer", "minimum": 1},
+        "finding_fingerprint_set_sha256": {"$ref": "#/$defs/sha256"},
+        "strata": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/stratum"}
+        }
+      }
+    },
+    "reference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_id",
+        "source_entry_number",
+        "finding_fingerprint",
+        "repo_id",
+        "cohort",
+        "rule_id",
+        "category",
+        "finding_status",
+        "decision_group",
+        "rank_sha256"
+      ],
+      "properties": {
+        "source_id": {"type": "string", "minLength": 1},
+        "source_entry_number": {"type": "integer", "minimum": 1},
+        "finding_fingerprint": {"type": "string", "pattern": "^v1:[0-9a-f]{64}$"},
+        "repo_id": {"type": "string", "minLength": 1},
+        "cohort": {"enum": ["badged_functional", "unvetted"]},
+        "rule_id": {"type": "string", "minLength": 1},
+        "category": {"type": "string", "minLength": 1},
+        "finding_status": {
+          "enum": ["pass", "partial", "fail", "unknown", "not-applicable"]
+        },
+        "decision_group": {"enum": ["emitted", "pass", "abstention"]},
+        "rank_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    }
+  }
+}

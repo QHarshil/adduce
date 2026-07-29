@@ -17,23 +17,34 @@ import importlib.metadata
 import io
 import os
 import platform
+import re
 import subprocess
 import sys
 import time
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import cast
+from typing import Any, cast
 
 import adduce
 from adduce.rules import discover_rules
 
 if __package__:
     from .claim_ground_truth import ClaimGroundTruthError, validate_ground_truth_bytes
+    from .claim_review import (
+        ClaimReviewError,
+        validate_review_for_candidate_run,
+        verify_independent_review_sources,
+    )
     from .clone_repos import (
         CLONE_SCHEMA_VERSION,
         CORPUS_DIR,
         MANIFEST_NAME,
         repository_tree_sha256,
+    )
+    from .preregistration import (
+        PREREGISTRATION_ANALYSIS_PLAN_PATHS,
+        PreregistrationError,
+        validate_preregistration_bytes,
     )
     from .run_contract import (
         REQUIRED_HARNESS_PATHS,
@@ -50,11 +61,21 @@ if __package__:
     )
 else:
     from claim_ground_truth import ClaimGroundTruthError, validate_ground_truth_bytes
+    from claim_review import (
+        ClaimReviewError,
+        validate_review_for_candidate_run,
+        verify_independent_review_sources,
+    )
     from clone_repos import (
         CLONE_SCHEMA_VERSION,
         CORPUS_DIR,
         MANIFEST_NAME,
         repository_tree_sha256,
+    )
+    from preregistration import (
+        PREREGISTRATION_ANALYSIS_PLAN_PATHS,
+        PreregistrationError,
+        validate_preregistration_bytes,
     )
     from run_contract import (
         REQUIRED_HARNESS_PATHS,
@@ -71,8 +92,11 @@ else:
     )
 
 BUILTIN_CHECKER = Path(__file__).with_name("check_builtin.py")
+PREREGISTRATION_PATH = CORPUS_DIR / "pilot-r4-preregistration.json"
 CONFIGURATION_MODE = "defaults-only-repository-config-disabled"
+ADDUCE_CHECK_MODE = "reviewer"
 SUCCESS_STATUSES = frozenset({"succeeded", "succeeded_with_partial_acquisition"})
+_COMMIT_RE = re.compile(r"^[0-9a-f]{40}$")
 
 _GIT_ENVIRONMENT_KEYS = frozenset(
     {
@@ -259,6 +283,56 @@ def _source_tree_sha256(package_dir: Path) -> str:
     return digest.hexdigest()
 
 
+def _corpus_git_identity() -> dict[str, object]:
+    """Prove that the prospective effectiveness harness is tracked and clean."""
+    unavailable: dict[str, object] = {
+        "corpus_harness_git_commit": None,
+        "corpus_harness_git_dirty": None,
+        "corpus_harness_git_tracked": False,
+    }
+    root_result = _git("rev-parse", "--show-toplevel", cwd=CORPUS_DIR)
+    if root_result.returncode != 0:
+        return unavailable
+    try:
+        repository_root = Path(root_result.stdout.strip()).resolve(strict=True)
+        corpus_relative = CORPUS_DIR.resolve(strict=True).relative_to(repository_root)
+        preregistration_relative = PREREGISTRATION_PATH.resolve(strict=True).relative_to(
+            repository_root
+        )
+    except (OSError, ValueError):
+        return unavailable
+    paths = sorted(
+        {
+            (corpus_relative / Path(*name.split("/"))).as_posix()
+            for name in REQUIRED_HARNESS_PATHS
+        }
+        | {preregistration_relative.as_posix()}
+    )
+    head = _git("rev-parse", "HEAD", cwd=repository_root)
+    status = _git(
+        "status",
+        "--porcelain=v1",
+        "--untracked-files=all",
+        "--",
+        *paths,
+        cwd=repository_root,
+    )
+    tracked = _git("ls-files", "--stage", "--", *paths, cwd=repository_root)
+    if head.returncode != 0 or status.returncode != 0 or tracked.returncode != 0:
+        return unavailable
+    tracked_paths = {
+        line.split("\t", 1)[1]
+        for line in tracked.stdout.splitlines()
+        if "\t" in line
+    }
+    commit = head.stdout.strip().lower()
+    return {
+        "corpus_harness_git_commit": commit if _COMMIT_RE.fullmatch(commit) else None,
+        "corpus_harness_git_dirty": bool(status.stdout.strip()),
+        "corpus_harness_git_tracked": tracked_paths == set(paths),
+    }
+
+
 def source_identity() -> dict[str, object]:
     """Describe the exact built-in analyzer used by this run."""
     package_dir = Path(adduce.__file__).resolve().parent
@@ -283,7 +357,33 @@ def source_identity() -> dict[str, object]:
         "builtin_rule_ids": rule_ids,
         "builtin_rule_count": len(rule_ids),
         "dependency_versions": dependency_versions,
+        **_corpus_git_identity(),
     }
+
+
+def require_reconstructable_analyzer(identity: dict[str, object], analysis_scope: str) -> None:
+    """Require a clean committed analyzer before effectiveness evidence is created."""
+    if analysis_scope != "effectiveness":
+        return
+    commit = identity.get("adduce_source_commit")
+    if (
+        not isinstance(commit, str)
+        or not _COMMIT_RE.fullmatch(commit)
+        or identity.get("adduce_source_dirty") is not False
+    ):
+        raise RunContractError(
+            "effectiveness runs require a clean analyzer at a full Git commit; "
+            "commit the candidate implementation before scanning"
+        )
+    if (
+        identity.get("corpus_harness_git_commit") != commit
+        or identity.get("corpus_harness_git_dirty") is not False
+        or identity.get("corpus_harness_git_tracked") is not True
+    ):
+        raise RunContractError(
+            "effectiveness runs require the preregistration and complete corpus harness "
+            "to be tracked, clean, and committed with the analyzer"
+        )
 
 
 def harness_snapshot(
@@ -297,6 +397,8 @@ def harness_snapshot(
             if name == "badged-provenance.csv" and badged_provenance is not None
             else CORPUS_DIR / Path(*name.split("/"))
         )
+        if path.is_symlink():
+            raise RunContractError(f"corpus harness file must not be a symlink: {path}")
         try:
             snapshots[name] = path.read_bytes()
         except OSError as exc:
@@ -311,6 +413,20 @@ def harness_snapshot(
         "corpus_harness_files": files,
     }
     return identity, snapshots
+
+
+def preregistration_analysis_plan(
+    harness_files: dict[str, bytes],
+) -> dict[str, bytes]:
+    """Select the exact prospective analysis files frozen by preregistration."""
+    expected = set(REQUIRED_HARNESS_PATHS) - {"badged-provenance.csv"}
+    declared = set(PREREGISTRATION_ANALYSIS_PLAN_PATHS)
+    if declared != expected:
+        raise RunContractError(
+            "preregistration analysis-plan inventory differs from the run harness "
+            f"(missing={sorted(expected - declared)}, extra={sorted(declared - expected)})"
+        )
+    return {name: harness_files[name] for name in PREREGISTRATION_ANALYSIS_PLAN_PATHS}
 
 
 def harness_identity(*, badged_provenance: Path | None = None) -> dict[str, object]:
@@ -503,6 +619,19 @@ def main() -> int:
         help="frozen claim-ground-truth JSON required for an effectiveness run",
     )
     parser.add_argument(
+        "--claim-review",
+        type=Path,
+        default=None,
+        help="accepted pre-scan human review required for an effectiveness run",
+    )
+    parser.add_argument(
+        "--claim-review-source",
+        type=Path,
+        action="append",
+        default=[],
+        help="one of exactly two separately completed blinded reviewer files",
+    )
+    parser.add_argument(
         "--badged-provenance",
         type=Path,
         default=CORPUS_DIR / "badged-provenance.csv",
@@ -517,7 +646,7 @@ def main() -> int:
         "--out", type=Path, default=None, help="defaults to corpus/outputs/<adduce-version>/"
     )
     parser.add_argument(
-        "--timeout", type=int, default=120, help="per-repository timeout in seconds"
+        "--timeout", type=int, default=300, help="per-repository timeout in seconds"
     )
     args = parser.parse_args()
 
@@ -527,12 +656,29 @@ def main() -> int:
         sys.exit("--claims and --operational-only are mutually exclusive")
     if args.claims is None and not args.operational_only:
         sys.exit("provide --claims, or explicitly select --operational-only")
+    if args.claims is not None and args.claim_review is None:
+        sys.exit("an effectiveness run requires --claim-review")
+    if args.claim_review is not None and args.claims is None:
+        sys.exit("--claim-review requires --claims")
+    if args.claims is not None and len(args.claim_review_source) != 2:
+        sys.exit("an effectiveness run requires exactly two --claim-review-source inputs")
+    if args.claims is None and args.claim_review_source:
+        sys.exit("--claim-review-source requires --claims")
+    started_at = _utc_now()
     claim_ground_truth_sha256: str | None = None
     claim_truth_data: bytes | None = None
+    claim_review_sha256: str | None = None
+    claim_review_data: bytes | None = None
+    claim_review_source_data: list[bytes] = []
+    claim_review_source_sha256: list[str] | None = None
+    preregistration_data: bytes | None = None
+    preregistration_sha256: str | None = None
     analysis_scope = "operational-only" if args.operational_only else "effectiveness"
     try:
         harness_meta, harness_files = harness_snapshot(badged_provenance=args.badged_provenance)
+        analysis_plan_files = preregistration_analysis_plan(harness_files)
         identity = {**source_identity(), **harness_meta}
+        require_reconstructable_analyzer(identity, analysis_scope)
         version = str(identity["adduce_version"])
         out_dir = args.out or (CORPUS_DIR / "outputs" / version)
         ensure_output_outside(out_dir, [args.clones])
@@ -569,11 +715,80 @@ def main() -> int:
                     "claim ground truth must be frozen before the corpus run starts"
                 )
             claim_ground_truth_sha256 = hashlib.sha256(claim_truth_data).hexdigest()
+            try:
+                preregistration_data = PREREGISTRATION_PATH.read_bytes()
+            except OSError as exc:
+                raise PreregistrationError(
+                    f"cannot read effectiveness preregistration {PREREGISTRATION_PATH}: {exc}"
+                ) from exc
+            preregistration = validate_preregistration_bytes(
+                preregistration_data,
+                schema_data=harness_files["preregistration.schema.json"],
+                repos_data=repos_data,
+                clone_manifest_data=clone_manifest_data,
+                claim_ground_truth_data=claim_truth_data,
+                claim_review_schema_data=harness_files["claim-review.schema.json"],
+                badged_provenance_data=harness_files["badged-provenance.csv"],
+                analysis_plan_files=analysis_plan_files,
+                source_identity=identity,
+                candidate_run_name=out_dir.name,
+                timeout_seconds=args.timeout,
+            )
+            preregistration_sha256 = hashlib.sha256(preregistration_data).hexdigest()
+            try:
+                claim_review_data = args.claim_review.read_bytes()
+            except OSError as exc:
+                raise ClaimReviewError(
+                    f"cannot read claim review {args.claim_review}: {exc}"
+                ) from exc
+            claim_review = load_json_object_bytes(claim_review_data, str(args.claim_review))
+            if claim_review.get("candidate_pair") != preregistration["candidate_pair"]:
+                raise ClaimReviewError(
+                    "claim review candidate pair differs from the effectiveness preregistration"
+                )
+            validate_review_for_candidate_run(
+                claim_review,
+                claim_truth,
+                claim_ground_truth_sha256,
+                out_dir.name,
+                started_at,
+            )
+            claim_review_sha256 = hashlib.sha256(claim_review_data).hexdigest()
+            independent_reviews: list[dict[str, Any]] = []
+            source_digests: list[str] = []
+            source_data_by_digest: dict[str, bytes] = {}
+            for source_path in args.claim_review_source:
+                try:
+                    source_data = source_path.read_bytes()
+                except OSError as exc:
+                    raise ClaimReviewError(
+                        f"cannot read independent claim review {source_path}: {exc}"
+                    ) from exc
+                source_digest = hashlib.sha256(source_data).hexdigest()
+                source_digests.append(source_digest)
+                independent_reviews.append(load_json_object_bytes(source_data, str(source_path)))
+                source_data_by_digest[source_digest] = source_data
+            verify_independent_review_sources(
+                claim_review,
+                independent_reviews,
+                source_digests,
+                claim_truth,
+                claim_ground_truth_sha256,
+            )
+            source_records = claim_review["initial_review_sources"]
+            claim_review_source_sha256 = [str(record["sha256"]) for record in source_records]
+            claim_review_source_data = [
+                source_data_by_digest[digest] for digest in claim_review_source_sha256
+            ]
         ensure_new_output_directory(out_dir)
-    except (ClaimGroundTruthError, RunContractError) as exc:
+    except (
+        ClaimGroundTruthError,
+        ClaimReviewError,
+        PreregistrationError,
+        RunContractError,
+    ) as exc:
         sys.exit(str(exc))
 
-    started_at = _utc_now()
     run_stamp = started_at.replace("-", "").replace(":", "").replace(".", "").replace("+0000", "Z")
     run_id = f"{version}-{str(identity['adduce_source_tree_sha256'])[:12]}-{run_stamp}"
     raw_dir = out_dir / "raw_json"
@@ -586,6 +801,12 @@ def main() -> int:
     (input_dir / MANIFEST_NAME).write_bytes(clone_manifest_data)
     if claim_truth_data is not None:
         (input_dir / "claim_ground_truth.json").write_bytes(claim_truth_data)
+    if claim_review_data is not None:
+        (input_dir / "claim_review.json").write_bytes(claim_review_data)
+    if preregistration_data is not None:
+        (input_dir / "preregistration.json").write_bytes(preregistration_data)
+    for number, data in enumerate(claim_review_source_data, 1):
+        (input_dir / f"claim_review_source_{number}.json").write_bytes(data)
     for relative, data in harness_files.items():
         target = harness_dir / Path(*relative.split("/"))
         target.parent.mkdir(parents=True, exist_ok=True)
@@ -689,6 +910,9 @@ def main() -> int:
         "adduce_source_commit",
         "adduce_source_dirty",
         "adduce_source_tree_sha256",
+        "corpus_harness_git_commit",
+        "corpus_harness_git_dirty",
+        "corpus_harness_git_tracked",
         "builtin_rule_ids",
         "builtin_rule_count",
         "dependency_versions",
@@ -710,6 +934,12 @@ def main() -> int:
         "inputs/repos.csv",
         f"inputs/{MANIFEST_NAME}",
         *(["inputs/claim_ground_truth.json"] if args.claims is not None else []),
+        *(["inputs/claim_review.json"] if args.claim_review is not None else []),
+        *(["inputs/preregistration.json"] if preregistration_data is not None else []),
+        *[
+            f"inputs/claim_review_source_{number}.json"
+            for number in range(1, len(claim_review_source_data) + 1)
+        ],
         *[f"harness/{name}" for name in REQUIRED_HARNESS_PATHS],
         *[
             f"raw_json/{row['id']}.json"
@@ -726,6 +956,7 @@ def main() -> int:
         "environment_policy": "minimal-no-host-credentials",
         "input_policy": "clone-root-symlink-containment",
         "analysis_scope": analysis_scope,
+        "adduce_check_mode": ADDUCE_CHECK_MODE,
         "configuration_mode": CONFIGURATION_MODE,
         "python": {
             "version": platform.python_version(),
@@ -737,6 +968,11 @@ def main() -> int:
             "repos": str(args.repos),
             "clones": str(args.clones),
             "claims": str(args.claims) if args.claims is not None else None,
+            "claim_review": str(args.claim_review) if args.claim_review is not None else None,
+            "claim_review_sources": [str(path) for path in args.claim_review_source],
+            "preregistration": (
+                str(PREREGISTRATION_PATH) if preregistration_data is not None else None
+            ),
             "badged_provenance": str(args.badged_provenance),
             "operational_only": args.operational_only,
             "out": str(out_dir),
@@ -749,6 +985,10 @@ def main() -> int:
         "clone_manifest": str(clone_manifest_path),
         "clone_manifest_sha256": hashlib.sha256(clone_manifest_data).hexdigest(),
         "claim_ground_truth_sha256": claim_ground_truth_sha256,
+        "claim_review_sha256": claim_review_sha256,
+        "claim_review_source_sha256": claim_review_source_sha256,
+        "preregistration_sha256": preregistration_sha256,
+        "candidate_run_name": out_dir.name if args.claim_review is not None else None,
         "n_repositories": len(output_rows),
         "n_acquisition_failed": sum(1 for row in output_rows if row["acquisition_failed"]),
         "n_acquisition_partial": sum(

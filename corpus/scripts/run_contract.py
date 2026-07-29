@@ -30,15 +30,23 @@ HARNESS_DIRECTORY = "harness"
 REQUIRED_HARNESS_PATHS = (
     "ANNOTATION_GUIDE.md",
     "PILOT_PROTOCOL.md",
+    "README.md",
     "badged-provenance.csv",
     "claim-ground-truth.schema.json",
+    "claim-review.schema.json",
+    "finding-review.schema.json",
     "generation-audit.schema.json",
+    "preregistration.schema.json",
+    "review-allocation.schema.json",
     "scripts/audit_sentinel_generation.py",
     "scripts/check_builtin.py",
+    "scripts/claim_review.py",
     "scripts/claim_ground_truth.py",
     "scripts/clone_repos.py",
     "scripts/compare_runs.py",
     "scripts/label_findings.py",
+    "scripts/preregistration.py",
+    "scripts/review_allocation.py",
     "scripts/run_contract.py",
     "scripts/run_validation.py",
     "scripts/sample_findings.py",
@@ -412,11 +420,78 @@ def _validate_metadata(metadata: dict[str, Any]) -> None:
         or not _SHA256_RE.fullmatch(claim_ground_truth_sha256)
     ):
         raise RunContractError("run metadata has an invalid claim-ground-truth digest")
+    claim_review_sha256 = metadata.get("claim_review_sha256")
+    if claim_review_sha256 is not None and (
+        not isinstance(claim_review_sha256, str) or not _SHA256_RE.fullmatch(claim_review_sha256)
+    ):
+        raise RunContractError("run metadata has an invalid claim-review digest")
+    preregistration_sha256 = metadata.get("preregistration_sha256")
+    if preregistration_sha256 is not None and (
+        not isinstance(preregistration_sha256, str)
+        or not _SHA256_RE.fullmatch(preregistration_sha256)
+    ):
+        raise RunContractError("run metadata has an invalid preregistration digest")
+    claim_review_source_sha256 = metadata.get("claim_review_source_sha256")
+    if claim_review_source_sha256 is not None and (
+        not isinstance(claim_review_source_sha256, list)
+        or len(claim_review_source_sha256) != 2
+        or len(set(claim_review_source_sha256)) != 2
+        or any(
+            not isinstance(digest, str) or not _SHA256_RE.fullmatch(digest)
+            for digest in claim_review_source_sha256
+        )
+    ):
+        raise RunContractError("run metadata has invalid independent claim-review digests")
+    candidate_run_name = metadata.get("candidate_run_name")
+    if candidate_run_name is not None and (
+        not isinstance(candidate_run_name, str) or not _SAFE_ID_RE.fullmatch(candidate_run_name)
+    ):
+        raise RunContractError("run metadata has an invalid candidate-run name")
     analysis_scope = metadata["analysis_scope"]
     if analysis_scope not in {"effectiveness", "operational-only"}:
         raise RunContractError("run metadata has an invalid analysis scope")
     if (analysis_scope == "effectiveness") != (claim_ground_truth_sha256 is not None):
         raise RunContractError("run analysis scope and claim-ground-truth binding disagree")
+    if (analysis_scope == "effectiveness") != (
+        claim_review_sha256 is not None
+        and claim_review_source_sha256 is not None
+        and preregistration_sha256 is not None
+        and candidate_run_name is not None
+    ):
+        raise RunContractError(
+            "run analysis scope and effectiveness-input bindings disagree"
+        )
+    source_commit = metadata.get("adduce_source_commit")
+    source_dirty = metadata.get("adduce_source_dirty")
+    harness_commit = metadata.get("corpus_harness_git_commit")
+    harness_dirty = metadata.get("corpus_harness_git_dirty")
+    harness_tracked = metadata.get("corpus_harness_git_tracked")
+    if source_commit is not None and (
+        not isinstance(source_commit, str) or not _COMMIT_RE.fullmatch(source_commit)
+    ):
+        raise RunContractError("run metadata has an invalid analyzer commit")
+    if source_dirty is not None and not isinstance(source_dirty, bool):
+        raise RunContractError("run metadata has invalid analyzer dirty-state evidence")
+    if harness_commit is not None and (
+        not isinstance(harness_commit, str) or not _COMMIT_RE.fullmatch(harness_commit)
+    ):
+        raise RunContractError("run metadata has an invalid corpus-harness commit")
+    if harness_dirty is not None and not isinstance(harness_dirty, bool):
+        raise RunContractError("run metadata has invalid corpus-harness dirty-state evidence")
+    if not isinstance(harness_tracked, bool) and harness_tracked is not None:
+        raise RunContractError("run metadata has invalid corpus-harness tracking evidence")
+    if analysis_scope == "effectiveness" and (source_commit is None or source_dirty is not False):
+        raise RunContractError(
+            "effectiveness run analyzer is not reconstructable from a clean Git commit"
+        )
+    if analysis_scope == "effectiveness" and (
+        harness_commit != source_commit
+        or harness_dirty is not False
+        or harness_tracked is not True
+    ):
+        raise RunContractError(
+            "effectiveness run corpus harness is not tracked and clean at the analyzer commit"
+        )
     if metadata.get("execution_mode") != "offline-builtins-only":
         raise RunContractError("run did not use the offline built-ins-only corpus mode")
     if metadata.get("environment_policy") != "minimal-no-host-credentials":
@@ -433,6 +508,8 @@ def _validate_metadata(metadata: dict[str, Any]) -> None:
     timeout = _positive_int(metadata.get("timeout_seconds"), "timeout_seconds")
     if metadata.get("configuration_mode") != "defaults-only-repository-config-disabled":
         raise RunContractError("run did not use the uniform configuration-free corpus mode")
+    if metadata.get("adduce_check_mode") != "reviewer":
+        raise RunContractError("run did not use adduce check reviewer mode")
     rule_ids = metadata.get("builtin_rule_ids")
     if (
         not isinstance(rule_ids, list)
@@ -684,6 +761,7 @@ def validate_raw_payload(
         {
             "tool",
             "repository",
+            "configuration",
             "reviewer_time",
             "claims",
             "total",
@@ -701,6 +779,16 @@ def validate_raw_payload(
         raise RunContractError(f"raw JSON tool identity mismatch for {repo_id}")
     if not isinstance(repository, dict) or repository.get("commit") != resolved_sha:
         raise RunContractError(f"raw JSON commit mismatch for {repo_id}")
+    configuration = payload.get("configuration")
+    expected_configuration: dict[str, object] = {
+        "source": None,
+        "repository_policy_honored": False,
+        "profile": "default",
+        "ignored_rules": [],
+        "excluded_paths": [],
+    }
+    if not isinstance(configuration, dict) or configuration != expected_configuration:
+        raise RunContractError(f"raw JSON configuration policy is invalid for {repo_id}")
     _exact_keys(
         repository,
         {
@@ -786,8 +874,10 @@ def validate_raw_payload(
     _exact_keys(
         execution,
         {
+            "adduce_check_mode",
             "configuration_mode",
             "plugins_enabled",
+            "repository_policy_honored",
             "network_policy",
             "process_policy",
             "enforcement_scope",
@@ -799,8 +889,10 @@ def validate_raw_payload(
         f"raw JSON execution policy for {repo_id}",
     )
     expected_execution = {
+        "adduce_check_mode": "reviewer",
         "configuration_mode": "defaults-only-repository-config-disabled",
         "plugins_enabled": False,
+        "repository_policy_honored": False,
         "network_policy": "python-audit-socket-deny",
         "process_policy": "python-audit-read-only-git-metadata-only",
         "enforcement_scope": "scanner-regression-guard-not-os-sandbox",
@@ -1324,7 +1416,10 @@ def _validate_claim_truth_copy(
 
 
 def _validate_input_copies(
-    metadata: dict[str, Any], combined_rows: list[dict[str, str]], artifacts: dict[str, bytes]
+    metadata: dict[str, Any],
+    combined_rows: list[dict[str, str]],
+    artifacts: dict[str, bytes],
+    run_dir: Path,
 ) -> None:
     repos_data = artifacts["inputs/repos.csv"]
     clones_data = artifacts["inputs/clones_manifest.json"]
@@ -1340,6 +1435,36 @@ def _validate_input_copies(
         claims_data is None or hashlib.sha256(claims_data).hexdigest() != claims_digest
     ):
         raise RunContractError("copied claim ground truth does not match run metadata")
+    review_digest = metadata.get("claim_review_sha256")
+    review_data = artifacts.get("inputs/claim_review.json")
+    if review_digest is None and review_data is not None:
+        raise RunContractError("run contains an unbound claim review")
+    if review_digest is not None and (
+        review_data is None or hashlib.sha256(review_data).hexdigest() != review_digest
+    ):
+        raise RunContractError("copied claim review does not match run metadata")
+    preregistration_digest = metadata.get("preregistration_sha256")
+    preregistration_data = artifacts.get("inputs/preregistration.json")
+    if preregistration_digest is None and preregistration_data is not None:
+        raise RunContractError("run contains an unbound effectiveness preregistration")
+    if preregistration_digest is not None and (
+        preregistration_data is None
+        or hashlib.sha256(preregistration_data).hexdigest() != preregistration_digest
+    ):
+        raise RunContractError("copied preregistration does not match run metadata")
+    source_digests = metadata.get("claim_review_source_sha256")
+    source_data = [
+        artifacts.get("inputs/claim_review_source_1.json"),
+        artifacts.get("inputs/claim_review_source_2.json"),
+    ]
+    if source_digests is None and any(data is not None for data in source_data):
+        raise RunContractError("run contains unbound independent claim-review sources")
+    if source_digests is not None and (
+        any(data is None for data in source_data)
+        or [hashlib.sha256(data).hexdigest() for data in source_data if data is not None]
+        != source_digests
+    ):
+        raise RunContractError("copied independent claim reviews do not match run metadata")
 
     inventory_fields, inventory_rows = _read_csv(repos_data, "inputs/repos.csv")
     required = {"id", "cohort", "repo_url", "commit_sha"}
@@ -1394,6 +1519,105 @@ def _validate_input_copies(
     if claims_data is not None:
         claim_payload = load_json_object_bytes(claims_data, "inputs/claim_ground_truth.json")
         _validate_claim_truth_copy(claim_payload, metadata, inventory)
+        if review_data is None:
+            raise RunContractError("effectiveness run lacks its accepted claim review")
+        if preregistration_data is None:
+            raise RunContractError("effectiveness run lacks its preregistration")
+        review_payload = load_json_object_bytes(review_data, "inputs/claim_review.json")
+        try:
+            if __package__:
+                from .claim_review import (  # noqa: PLC0415
+                    ClaimReviewError,
+                    validate_review_for_candidate_run,
+                    verify_independent_review_sources,
+                )
+            else:
+                from claim_review import (  # noqa: PLC0415
+                    ClaimReviewError,
+                    validate_review_for_candidate_run,
+                    verify_independent_review_sources,
+                )
+            if __package__:
+                from .preregistration import (  # noqa: PLC0415
+                    PREREGISTRATION_ANALYSIS_PLAN_PATHS,
+                    PreregistrationError,
+                    validate_preregistration_bytes,
+                )
+            else:
+                from preregistration import (  # noqa: PLC0415
+                    PREREGISTRATION_ANALYSIS_PLAN_PATHS,
+                    PreregistrationError,
+                    validate_preregistration_bytes,
+                )
+            candidate_name = metadata.get("candidate_run_name")
+            if candidate_name != run_dir.name:
+                raise RunContractError(
+                    "candidate run directory name does not match immutable run metadata"
+                )
+            expected_analysis_plan = set(REQUIRED_HARNESS_PATHS) - {
+                "badged-provenance.csv"
+            }
+            if set(PREREGISTRATION_ANALYSIS_PLAN_PATHS) != expected_analysis_plan:
+                raise RunContractError(
+                    "preregistration analysis-plan inventory differs from the run harness"
+                )
+            preregistration = validate_preregistration_bytes(
+                preregistration_data,
+                schema_data=artifacts[f"{HARNESS_DIRECTORY}/preregistration.schema.json"],
+                repos_data=repos_data,
+                clone_manifest_data=clones_data,
+                claim_ground_truth_data=claims_data,
+                claim_review_schema_data=artifacts[
+                    f"{HARNESS_DIRECTORY}/claim-review.schema.json"
+                ],
+                badged_provenance_data=provenance_data,
+                analysis_plan_files={
+                    name: artifacts[f"{HARNESS_DIRECTORY}/{name}"]
+                    for name in PREREGISTRATION_ANALYSIS_PLAN_PATHS
+                },
+                source_identity={
+                    "adduce_version": metadata["adduce_version"],
+                    "adduce_source_commit": metadata["adduce_source_commit"],
+                    "adduce_source_tree_sha256": metadata["adduce_source_tree_sha256"],
+                    "builtin_rule_ids": metadata["builtin_rule_ids"],
+                    "dependency_versions": metadata["dependency_versions"],
+                    "corpus_harness_git_commit": metadata[
+                        "corpus_harness_git_commit"
+                    ],
+                },
+                candidate_run_name=str(candidate_name),
+                timeout_seconds=metadata["timeout_seconds"],
+            )
+            if review_payload.get("candidate_pair") != preregistration["candidate_pair"]:
+                raise RunContractError(
+                    "copied claim review candidate pair differs from preregistration"
+                )
+            validate_review_for_candidate_run(
+                review_payload,
+                claim_payload,
+                str(claims_digest),
+                str(candidate_name),
+                metadata.get("started_at"),
+            )
+            if source_digests is None or any(data is None for data in source_data):
+                raise RunContractError("effectiveness run lacks independent review sources")
+            verify_independent_review_sources(
+                review_payload,
+                [
+                    load_json_object_bytes(data, f"inputs/claim_review_source_{number}.json")
+                    for number, data in enumerate(source_data, 1)
+                    if data is not None
+                ],
+                source_digests,
+                claim_payload,
+                str(claims_digest),
+            )
+        except ClaimReviewError as exc:
+            raise RunContractError(f"copied claim review violates its contract: {exc}") from exc
+        except PreregistrationError as exc:
+            raise RunContractError(
+                f"copied preregistration violates its contract: {exc}"
+            ) from exc
 
 
 def _validate_combined_rows(
@@ -1628,6 +1852,12 @@ def _validate_artifacts(run_dir: Path, metadata: dict[str, Any]) -> dict[str, by
     required.update(f"{HARNESS_DIRECTORY}/{path}" for path in REQUIRED_HARNESS_PATHS)
     if metadata.get("claim_ground_truth_sha256") is not None:
         required.add("inputs/claim_ground_truth.json")
+    if metadata.get("claim_review_sha256") is not None:
+        required.add("inputs/claim_review.json")
+    if metadata.get("claim_review_source_sha256") is not None:
+        required.update({"inputs/claim_review_source_1.json", "inputs/claim_review_source_2.json"})
+    if metadata.get("preregistration_sha256") is not None:
+        required.add("inputs/preregistration.json")
     missing = required - set(artifacts)
     if missing:
         raise RunContractError(
@@ -1704,7 +1934,7 @@ def _validate_contents(
     artifacts = _validate_artifacts(run_dir, metadata)
     _validate_exact_tree(run_dir, set(artifacts), marker_name)
     rows = _validate_combined_rows(metadata, artifacts)
-    _validate_input_copies(metadata, rows, artifacts)
+    _validate_input_copies(metadata, rows, artifacts, run_dir)
     return artifacts, rows
 
 

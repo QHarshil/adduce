@@ -92,9 +92,16 @@ _SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 _COMMIT_RE = re.compile(r"^[0-9a-f]{40}$")
 _SAFE_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 _EXECUTION_CLAIM_RE = re.compile(
-    r"\b(?:results? (?:reproduce|were reproduced|have been reproduced|were verified)"
-    r"|verified by execution|runs agree|successfully (?:ran|executed|reproduced)"
-    r"|we (?:ran|executed|reproduced))\b",
+    r"\bresults?\s+(?:were|was|have been|has been)\s+"
+    r"(?:reproduced|replicated|rerun|re-run|executed)\b"
+    r"|\b(?:we|adduce)\s+(?:have\s+)?(?:successfully\s+)?"
+    r"(?:ran|reran|executed|reproduced|replicated)\b"
+    r"|\b(?:all\s+)?(?:experiments?|runs?)\s+(?:were|have been)\s+"
+    r"(?:executed|run|rerun|re-run|reproduced|replicated)\b"
+    r"|\b(?:verified|validated)\s+by\s+execution\b"
+    r"|\bruns?\s+agree(?:d|s)?\b"
+    r"|\bmatched\s+(?:all\s+)?(?:the\s+)?(?:reported\s+)?"
+    r"(?:results?|numbers?|metrics?)\b",
     re.IGNORECASE,
 )
 _COUNTS_KEYS = frozenset(
@@ -442,6 +449,7 @@ def _deterministic_projection(payload: dict[str, Any]) -> dict[str, Any]:
     required = {
         "tool",
         "repository",
+        "configuration",
         "reviewer_time",
         "claims",
         "total",
@@ -473,6 +481,7 @@ def _deterministic_projection(payload: dict[str, Any]) -> dict[str, Any]:
     return {
         "tool": payload["tool"],
         "repository": repository_projection,
+        "configuration": payload["configuration"],
         "reviewer_time": payload["reviewer_time"],
         "claims": payload["claims"],
         "total": payload["total"],
@@ -802,6 +811,7 @@ def _audit_ledger_bundle(
                 "artifact_sha256",
                 "provenance",
                 "generated_text_policy",
+                "generated_text_provenance",
                 "counts",
                 "entries",
             },
@@ -814,6 +824,10 @@ def _audit_ledger_bundle(
             raise GenerationAuditError(f"ledger artifact hash mismatch for {artifact_name}")
         if record["generated_text_policy"] != "evidence_only":
             raise GenerationAuditError(f"unsupported generated-text policy for {artifact_name}")
+        if record["generated_text_provenance"] != []:
+            raise GenerationAuditError(
+                f"offline sentinel generation recorded provider-text provenance for {artifact_name}"
+            )
 
         provenance = record["provenance"]
         if not isinstance(provenance, dict):

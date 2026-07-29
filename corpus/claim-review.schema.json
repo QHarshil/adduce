@@ -1,0 +1,260 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/QHarshil/adduce/blob/main/corpus/claim-review.schema.json",
+  "title": "Adduce corpus human claim review",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "claim_review_schema_version",
+    "claim_ground_truth_sha256",
+    "corpus_inventory_sha256",
+    "candidate_pair",
+    "review_policy",
+    "initial_review_sources",
+    "claims"
+  ],
+  "properties": {
+    "claim_review_schema_version": {"const": 1},
+    "claim_ground_truth_sha256": {"$ref": "#/$defs/sha256"},
+    "corpus_inventory_sha256": {"$ref": "#/$defs/sha256"},
+    "candidate_pair": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/identifier"}
+    },
+    "review_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "required_independent_reviews_per_claim",
+        "blind_to_other_reviewer_decisions",
+        "blind_to_adduce_claim_link_outputs",
+        "independent_adjudication_of_decision_disagreements",
+        "conflicted_assignments_reassigned"
+      ],
+      "properties": {
+        "required_independent_reviews_per_claim": {"const": 2},
+        "blind_to_other_reviewer_decisions": {"const": true},
+        "blind_to_adduce_claim_link_outputs": {"const": true},
+        "independent_adjudication_of_decision_disagreements": {"const": true},
+        "conflicted_assignments_reassigned": {"const": true}
+      }
+    },
+    "initial_review_sources": {
+      "type": "array",
+      "maxItems": 2,
+      "items": {"$ref": "#/$defs/initialReviewSource"}
+    },
+    "claims": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/claimReview"}
+    }
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "identifier": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+    },
+    "target": {
+      "enum": [
+        "code",
+        "reported_result",
+        "run",
+        "output",
+        "command",
+        "configuration",
+        "data",
+        "environment",
+        "seed",
+        "commit"
+      ]
+    },
+    "decision": {
+      "enum": ["verified", "revision_required", "unclear"]
+    },
+    "evidence": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "initialReviewSource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reviewer_id", "sha256"],
+      "properties": {
+        "reviewer_id": {"$ref": "#/$defs/identifier"},
+        "sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "linkBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["target", "link_record_sha256"],
+      "properties": {
+        "target": {"$ref": "#/$defs/target"},
+        "link_record_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "linkDecision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["target", "decision", "rationale", "evidence"],
+      "properties": {
+        "target": {"$ref": "#/$defs/target"},
+        "decision": {"$ref": "#/$defs/decision"},
+        "rationale": {"type": "string", "minLength": 1},
+        "evidence": {"$ref": "#/$defs/evidence"}
+      }
+    },
+    "blindingDeclaration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "independent_review",
+        "other_reviewer_decisions_not_seen",
+        "adduce_claim_link_outputs_not_seen",
+        "declared_at"
+      ],
+      "properties": {
+        "independent_review": {"const": true},
+        "other_reviewer_decisions_not_seen": {"const": true},
+        "adduce_claim_link_outputs_not_seen": {"const": true},
+        "declared_at": {"type": "string", "format": "date-time"}
+      }
+    },
+    "conflictScope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository_id", "artifact_id"],
+      "properties": {
+        "repository_id": {"$ref": "#/$defs/identifier"},
+        "artifact_id": {"$ref": "#/$defs/identifier"}
+      }
+    },
+    "conflictOfInterestDeclaration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scope",
+        "no_relevant_authorship_or_contribution",
+        "no_close_collaboration_supervision_or_employment",
+        "no_financial_conflict",
+        "no_personal_conflict",
+        "declared_at"
+      ],
+      "properties": {
+        "scope": {"$ref": "#/$defs/conflictScope"},
+        "no_relevant_authorship_or_contribution": {"const": true},
+        "no_close_collaboration_supervision_or_employment": {"const": true},
+        "no_financial_conflict": {"const": true},
+        "no_personal_conflict": {"const": true},
+        "declared_at": {"type": "string", "format": "date-time"}
+      }
+    },
+    "initialReview": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "reviewer_id",
+        "domain_expertise",
+        "reviewed_at",
+        "blinding_declaration",
+        "conflict_of_interest_declaration",
+        "claim_decision",
+        "claim_rationale",
+        "claim_evidence",
+        "link_decisions"
+      ],
+      "properties": {
+        "reviewer_id": {"$ref": "#/$defs/identifier"},
+        "domain_expertise": {"type": "string", "minLength": 1},
+        "reviewed_at": {"type": "string", "format": "date-time"},
+        "blinding_declaration": {"$ref": "#/$defs/blindingDeclaration"},
+        "conflict_of_interest_declaration": {
+          "$ref": "#/$defs/conflictOfInterestDeclaration"
+        },
+        "claim_decision": {"$ref": "#/$defs/decision"},
+        "claim_rationale": {"type": "string", "minLength": 1},
+        "claim_evidence": {"$ref": "#/$defs/evidence"},
+        "link_decisions": {
+          "type": "array",
+          "minItems": 10,
+          "maxItems": 10,
+          "items": {"$ref": "#/$defs/linkDecision"}
+        }
+      }
+    },
+    "adjudication": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "adjudicator_id",
+        "domain_expertise",
+        "adjudicated_at",
+        "conflict_of_interest_declaration",
+        "claim_decision",
+        "claim_rationale",
+        "claim_evidence",
+        "link_decisions"
+      ],
+      "properties": {
+        "adjudicator_id": {"$ref": "#/$defs/identifier"},
+        "domain_expertise": {"type": "string", "minLength": 1},
+        "adjudicated_at": {"type": "string", "format": "date-time"},
+        "conflict_of_interest_declaration": {
+          "$ref": "#/$defs/conflictOfInterestDeclaration"
+        },
+        "claim_decision": {"$ref": "#/$defs/decision"},
+        "claim_rationale": {"type": "string", "minLength": 1},
+        "claim_evidence": {"$ref": "#/$defs/evidence"},
+        "link_decisions": {
+          "type": "array",
+          "minItems": 10,
+          "maxItems": 10,
+          "items": {"$ref": "#/$defs/linkDecision"}
+        }
+      }
+    },
+    "claimReview": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "claim_id",
+        "repo_id",
+        "repo_commit",
+        "claim_record_sha256",
+        "links",
+        "reviews",
+        "adjudication"
+      ],
+      "properties": {
+        "claim_id": {"$ref": "#/$defs/identifier"},
+        "repo_id": {"$ref": "#/$defs/identifier"},
+        "repo_commit": {"$ref": "#/$defs/commit"},
+        "claim_record_sha256": {"$ref": "#/$defs/sha256"},
+        "links": {
+          "type": "array",
+          "minItems": 10,
+          "maxItems": 10,
+          "items": {"$ref": "#/$defs/linkBinding"}
+        },
+        "reviews": {
+          "type": "array",
+          "maxItems": 2,
+          "items": {"$ref": "#/$defs/initialReview"}
+        },
+        "adjudication": {
+          "oneOf": [
+            {"type": "null"},
+            {"$ref": "#/$defs/adjudication"}
+          ]
+        }
+      }
+    }
+  }
+}

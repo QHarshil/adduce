@@ -120,6 +120,11 @@ The pilot uses `run_validation.py` with a 300-second per-repository timeout.
   mutations in the scanner process. The child receives a minimal,
   credential-free environment. These are regression guards around the Python
   scanner, not an operating-system security sandbox.
+- Repository metadata uses only an allowlisted read-only Git operation after
+  `--no-pager -c core.fsmonitor=false -c core.quotePath=true -C <root>`.
+  Git-specific host environment variables and system/global configuration are
+  removed; the audit hook permits the subprocess stdin handle to open only the
+  platform null device and still rejects repository or host-file writes.
 - No repository installation, import hook, dynamic reproduction, online
   resolver, or repository command is invoked.
 - Repository bytes are hashed before and after each scan. A write is a failed
@@ -132,6 +137,10 @@ The pilot uses `run_validation.py` with a 300-second per-repository timeout.
   hashes, resolved repository commits, logical CPU and available memory
   context, cache conditions, scanned file and byte counts, and
   platform-qualified peak resident set size when available.
+- Effectiveness runs require that analyzer tree to be clean and attributable to
+  a full Git commit before any output directory is created. Operational-only
+  development runs may be dirty or outside Git, but cannot support detector,
+  score, or claim-link effectiveness conclusions.
 - A new run directory is mandatory. `_RUN_SUCCESS` is written only after the
   complete output passes the run contract; incomplete or modified output is
   rejected by `validate_run.py`.
@@ -183,9 +192,10 @@ This was a wrapper failure, not a failed evidence-ledger judgement.
 The generation child now sets `PYTHONWARNINGS=ignore::SyntaxWarning` and
 records `ignore-syntaxwarning-only` in its audit policy. All other stderr
 remains a hard failure, and a regression test fixes the exact warning policy.
-Because this changes the immutable harness, the final comparable pair is
-named `pilot-0.1.2dev0-r2-a` and `pilot-0.1.2dev0-r2-b`; the final reports,
-samples, and generation audit target `r2-a`. The repository inventory,
+Because this changed the immutable harness, the resulting historical
+comparable pair is named `pilot-0.1.2dev0-r2-a` and
+`pilot-0.1.2dev0-r2-b`; its retained reports, samples, and generation audit
+target `r2-a`. The repository inventory,
 acquisition records, frozen claim labels, analyzer source, built-in rule set,
 timeout, selection design, and score remain unchanged. No finding review or
 detector change informed this wrapper correction.
@@ -208,6 +218,162 @@ link, create a new versioned truth file and a fresh run pair; do not rewrite the
 r2 evidence. This clarification narrows permitted conclusions and changes no
 inventory, scanner output, score, or frozen artifact.
 
+### Protocol amendment 4: post-change candidate-pair preregistration
+
+Amended: 2026-07-20 (pre-registered before execution)
+
+The r2 pair is immutable historical evidence produced by its frozen harness.
+Current scripts must not validate, compare, sample, label, evaluate, summarize,
+or regenerate r2. If historical verification is needed, use the copies under
+each r2 run's `harness/` directory and do not modify the retained artifacts.
+These read-only commands use only the frozen harness, omit output paths, and
+disable bytecode writes:
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 python -B \
+  corpus/outputs/pilot-0.1.2dev0-r2-a/harness/scripts/validate_run.py \
+  corpus/outputs/pilot-0.1.2dev0-r2-a
+PYTHONDONTWRITEBYTECODE=1 python -B \
+  corpus/outputs/pilot-0.1.2dev0-r2-b/harness/scripts/validate_run.py \
+  corpus/outputs/pilot-0.1.2dev0-r2-b
+PYTHONDONTWRITEBYTECODE=1 python -B \
+  corpus/outputs/pilot-0.1.2dev0-r2-a/harness/scripts/compare_runs.py \
+  corpus/outputs/pilot-0.1.2dev0-r2-a \
+  corpus/outputs/pilot-0.1.2dev0-r2-b
+```
+
+Do not use current corpus scripts, add `--out`, or otherwise write into either
+historical run directory.
+
+The current trust-milestone candidate pair is pre-registered as
+`pilot-0.1.2dev0-r3-a` and `pilot-0.1.2dev0-r3-b`. Neither candidate directory
+has been executed or created as part of this amendment.
+
+The tracked `corpus/pilot-r3-preregistration.json` is the machine-readable
+prospective lock. It records the exact pair names, 300-second timeout, analyzer,
+rule-set and dependency identity, repository, clone, truth and provenance
+digests, reviewer/offline/no-plugin execution policy, and the complete
+analysis-plan file map. Effectiveness preflight refuses before creating an
+output directory unless the analyzer, preregistration, and every required
+harness file are tracked and clean at one Git `HEAD`. The locked protocol does
+not embed the preregistration file’s own digest because that would be
+self-referential; each run instead records the exact input bytes and SHA-256.
+
+Both candidates retain the frozen inventory, clone manifest, 300-second
+timeout, offline built-in-only execution, default configuration, and one
+headline claim per Layer B repository. The pre-registered candidate truth is
+`corpus/labels/pilot-claims.json` with SHA-256
+`9a26d06c59070173ad89f60bc221a395dd1a487132eeed7415d2cadeff63611e`.
+Before `r3-a` starts, two independent human domain reviewers must review every
+claim and every expected link in separate machine-valid
+`claim-review.schema.json` files. The final merged or adjudicated resolution
+must accept the exact frozen truth. The reviewers must declare that they did
+not see one another's decisions or any Adduce claim-link output for the bound
+truth, including retained r2 evaluations; any decision disagreement requires
+an independent adjudicator. Before any decision, each initial reviewer and
+adjudicator must make a structured, time-stamped declaration scoped to the
+assigned repository and claim. It must affirm no relevant authorship or
+contribution; close collaboration, supervision, or employment; financial
+conflict; or personal conflict. A person who cannot make every affirmation is
+recused and the assignment is transferred; disclosure alone is insufficient.
+A neutral coordinator must issue two identical empty scaffolds and keep the
+completed files mutually inaccessible until both are returned.
+`claim_review.py merge` then combines them deterministically and binds both
+source SHA-256 values and reviewer identities without adding an adjudication.
+If review changes the truth file or its digest, this r3
+preregistration is void: freeze a new truth version, record a new dated
+amendment, and choose new candidate-pair names before any scan.
+
+The effectiveness runner requires the accepted merged review and both
+independent source files as explicit inputs. Before creating either candidate
+directory, it reconstructs the merge and verifies the exact truth digest, the
+candidate label, complete accepted decisions, source hashes, and review and
+adjudication timestamps that precede the run start. It also rejects a dirty or
+unknown analyzer Git state. The runner copies the truth, merged review, and both
+review-source byte streams into the immutable input bundle and records their
+SHA-256 digests. An operational-only run omits these inputs and cannot satisfy
+this effectiveness protocol.
+
+After the pair validates and compares without an unexplained deterministic
+difference, finding review uses the predeclared sentinel census and remaining
+Layer B sample with seed 0. Before annotation, `review_allocation.py` freezes a
+40-finding handbook-calibration allowlist across both pristine sample sources
+and an independent-second-review allowlist of exactly the larger of 40 or 20%
+of all fresh Layer B targets, rounded up. Selection is SHA-256-ranked and
+stratified by repository and emitted, pass, and abstention state. The 40
+calibration findings are a subset of, not an addition to, the second-review
+quota. Stress records are excluded from both allowlists. Any change to these
+inputs, parameters, candidate names, truth digest, or acceptance rules requires
+a new dated amendment before execution.
+
+### Protocol amendment 5: post-harness-change re-lock and candidate rename
+
+Amended: 2026-07-29 (pre-registered before execution)
+
+The `r3` preregistration is void. It locked the analysis-plan bytes as they stood
+on 2026-07-20; eight of its twenty-three analysis-plan files have changed since:
+`ANNOTATION_GUIDE.md`, `PILOT_PROTOCOL.md`, `README.md`,
+`claim-review.schema.json`, `finding-review.schema.json`,
+`scripts/audit_sentinel_generation.py`, `scripts/claim_review.py`, and
+`scripts/label_findings.py`. The `claim-review.schema.json` digest bound in the
+locked inputs changed with them. A lock that does not describe the harness it
+governs cannot constrain anything, so it is retired rather than reinterpreted.
+This amendment changes two further analysis-plan files — `scripts/run_validation.py`,
+whose `PREREGISTRATION_PATH` now targets the `r4` lock and whose `--timeout`
+default is aligned to the protocol's 300 seconds, closing a window in which an
+operational run that omitted the flag would have recorded 120; and
+`scripts/preregistration.py`, a stale diagnostic string — and it further
+modifies `PILOT_PROTOCOL.md` and `README.md`, which were already among the
+eight. The `r4` lock therefore records ten changed analysis-plan digests, and
+is generated from the final bytes of every file it binds, this amendment
+included.
+
+Neither `pilot-0.1.2dev0-r3-a` nor `pilot-0.1.2dev0-r3-b` was created or
+executed. No run output, claim label, sample, review, adjudication, or score is
+affected, and no artifact is discarded. Following amendments 1 and 2, where a
+changed harness produced a newly named comparable pair rather than a reused one,
+the current trust-milestone candidate pair is pre-registered as
+`pilot-0.1.2dev0-r4-a` and `pilot-0.1.2dev0-r4-b`, with the machine-readable
+prospective lock at `corpus/pilot-r4-preregistration.json`. Neither `r4`
+candidate directory has been created or executed as part of this amendment.
+Retaining the `r3` name for different bytes would leave two distinct documents
+each claiming to be the prospective lock, which is the precise ambiguity
+preregistration exists to remove.
+
+This amendment changes no input, parameter, or acceptance rule. Unchanged: the
+frozen repository inventory and its SHA-256, the clone manifest and clone
+snapshot set, the badged provenance record, the 300-second per-repository
+timeout, offline built-in-only execution with plugins disabled, default
+configuration, reviewer mode, the minimal credential-free child environment, the
+sampling design and seed 0, the cohort composition, the sentinel census for FRL,
+SimCSE and Torchtune, the handbook-calibration and second-review quotas, the
+two-independent-reviewer claim-review requirement with its blinding and
+conflict-of-interest conditions and neutral coordination, and every acceptance
+rule. The pre-registered candidate truth remains `corpus/labels/pilot-claims.json`
+with SHA-256
+`9a26d06c59070173ad89f60bc221a395dd1a487132eeed7415d2cadeff63611e`.
+Because that truth file and its digest are unchanged, the void condition
+recorded in amendment 4 for a changed truth was never triggered. The analyzer
+source byte tree also changed, from
+`2bb6b9175f0ba475cbe9be1fdd19ab5b16aef0583cda24ddd57febb70d9e783f` to the
+value recorded in `corpus/pilot-r4-preregistration.json`; the built-in rule
+count of 78, the built-in rule-ID inventory digest, and the dependency-version
+digest are all unchanged, so no detector behaviour is implicated. This document
+distinguishes the analyzer from the corpus harness, and both moved.
+
+Two operational-only runs, `pilot-0.1.2dev0-ops-a` and `-ops-b`, were executed
+against the frozen clone set on 2026-07-29 while the analyzer tree was dirty.
+They are excluded from every effectiveness, score-separation, claim-link, and
+false-positive denominator, and they bind no truth, review, preregistration
+digest, or candidate-run name. Their analyzer source tree differs from the `r1`
+and `r2` pairs, so they are not comparable to them and no cross-pair comparison
+was attempted. They are retained as operational evidence only.
+
+The claim-review and finding-review gates remain open, and the reporting limits
+below continue to apply in full. This amendment was prepared from file digests
+and the retained protocol text alone. No `r3` or `r4` claim-link output exists,
+and no retained `r2` evaluation informed it.
+
 ## Ground truth and review
 
 Before using the pilot for detector changes:
@@ -219,12 +385,21 @@ Before using the pilot for detector changes:
    with `claim_ground_truth.py` and retain their SHA-256. No claim ground-truth
    records are pre-populated by the project. If a labelled snapshot cannot be
    acquired, bind an explicit unavailable record to the failed clone-manifest
-   entry; do not invent a claim source or remove the repository. A distinct
-   human domain reviewer independently verifies every frozen record. Future
-   and confirmatory truth sets complete that review before scanning; the
-   retained r2 candidate follows the blinded exception recorded in protocol
-   clarification 3. Automated checks may validate structure and source
-   identity, but they are not reviewer decisions.
+   entry; do not invent a claim source or remove the repository. Two distinct
+   human domain reviewers independently review every frozen claim and each of
+   its ten expected links in separate copies of one empty scaffold. A neutral
+   coordinator withholds the other copy until both are complete, then performs
+   the deterministic merge. The final merged or adjudicated resolution must
+   accept the exact truth. The machine-valid merged artifact binds the truth
+   SHA-256, both reviewer-source SHA-256 values, evidence, identities,
+   timestamps, blinding and conflict-of-interest declarations, decisions, and
+   any later independent adjudication. Declarations contain stable,
+   non-personal identifiers and assignment scope only; they do not contain
+   names, employers, relationship details, or recusal reasons. Future and
+   confirmatory truth sets complete and accept that
+   review before scanning; the retained r2 candidate follows the historical
+   exception recorded in protocol clarification 3. Automated checks may
+   validate structure and source identity, but they are not reviewer decisions.
 2. Draw an all-status, suppressed-inclusive census and deep-review every
    finding for three predeclared sentinel cases: FRL, SimCSE, and Torchtune.
 3. Draw a fixed, seeded, status-and-category-stratified sample from the other
@@ -258,11 +433,28 @@ reject v1 or mixed samples, changed run identity, deleted or injected records,
 inconsistent bindings, repository commit drift, finding drift, or sampler
 drift. Sample and review files remain outside the immutable run directory.
 
-The first 100–200 reviewed findings should receive at least 20% independent
-second review. Reviewer records remain separate, disagreements receive an
-explicit adjudication record, and agreement counts accompany every descriptive
-aggregate. The review command hides cohort and other reviewers' judgements by
-default. Unweighted reviewed-sample proportions are not corpus rates.
+Before annotation, the allocation artifact binds both pristine sample-source
+SHA-256 values, their immutable identity projections and sample-set hashes, the
+candidate run, the selector source, the seed, every selected fingerprint, and
+repository/status strata. It initializes a primary reviewer file covering the
+complete Layer B population and a secondary reviewer file covering exactly the
+second-review allocation. Forty allocated Layer B findings receive two reviews
+for handbook calibration. Every Layer B target receives a primary review. At
+least 20% of all fresh Layer B review targets, rounded up and stratified
+reproducibly, receive independent second review; the 40 calibration findings
+count toward that quota. Independent files omit cohort assignments and all
+other reviewer decisions. The deterministic merge binds both completed
+reviewer-file SHA-256 values, roles, identities, expertise statements, and
+blinding and conflict-of-interest declarations without changing either initial
+decision. Each reviewer declaration is bound to the exact repository set and
+finding-fingerprint-set digest and precedes the first decision. Disagreements
+receive an explicit adjudication record with its own assignment-scoped
+declaration, and agreement counts accompany every descriptive aggregate.
+Anyone with relevant authorship or contribution; close collaboration,
+supervision, or employment; financial conflict; or personal conflict is
+recused and replaced rather than retained with a disclosure. Stress findings
+never enter either effectiveness assignment. Unweighted reviewed-sample
+proportions are not corpus rates.
 
 Every review and adjudication cites evidence. `unclear` decisions explain what
 could not be resolved, and an adjudicator is independent of the original
@@ -293,9 +485,12 @@ pilot.
 
 ## Reporting limits
 
-The pilot report publishes counts, repository-level distributions, machine-local
-runtime and resource observations, crash/timeout outcomes, reviewer agreement,
-and carefully scoped rule-level observations. With five repositories per
-labelled stratum, all comparisons are exploratory. No score threshold, badge
-prediction, calibrated tier, cross-machine performance comparison, or
-population false-positive claim follows from this pilot alone.
+Before human review is complete, the pilot may report only synthetic-control
+behaviour and operational observations from validated runs. After the claim
+review, finding review, second-review quota, and adjudication gates are complete,
+the pilot may report reviewed counts, repository-level distributions,
+machine-local runtime and resource observations, crash/timeout outcomes,
+reviewer agreement, and carefully scoped rule-level observations. With five
+repositories per labelled stratum, all comparisons remain exploratory. No
+score threshold, badge prediction, calibrated tier, cross-machine performance
+comparison, or population false-positive claim follows from this pilot alone.

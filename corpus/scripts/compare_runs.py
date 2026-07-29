@@ -7,6 +7,7 @@ import argparse
 import json
 import sys
 from pathlib import Path
+from typing import Any, cast
 
 if __package__:
     from .run_contract import (
@@ -32,8 +33,12 @@ IDENTITY_FIELDS = (
     "adduce_source_tree_sha256",
     "adduce_source_commit",
     "adduce_source_dirty",
+    "corpus_harness_git_commit",
+    "corpus_harness_git_dirty",
+    "corpus_harness_git_tracked",
     "builtin_rule_ids",
     "corpus_harness_sha256",
+    "adduce_check_mode",
     "configuration_mode",
     "dependency_versions",
     "python",
@@ -41,6 +46,9 @@ IDENTITY_FIELDS = (
     "repos_file_sha256",
     "clone_manifest_sha256",
     "claim_ground_truth_sha256",
+    "claim_review_sha256",
+    "claim_review_source_sha256",
+    "preregistration_sha256",
     "execution_mode",
     "analysis_scope",
     "timeout_seconds",
@@ -49,8 +57,8 @@ IDENTITY_FIELDS = (
 IGNORED_COMBINED_FIELDS = frozenset({"runtime_seconds", "peak_rss_value"})
 
 
-def _normalized_raw(data: bytes) -> dict:
-    payload = load_json_object_bytes(data, "raw comparison artifact")
+def _normalized_raw(data: bytes) -> dict[str, Any]:
+    payload = cast(dict[str, Any], load_json_object_bytes(data, "raw comparison artifact"))
     # Repository roots are acquisition locations, not analyzer output. All
     # substantive repository identity remains pinned by commit and tree hash.
     repository = payload.get("repository")
