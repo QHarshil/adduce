@@ -18,7 +18,9 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def _entrypoint() -> str:
-    executable = shutil.which("adduce-rng-audit")
+    executable = shutil.which("adduce-rng-audit") or shutil.which(
+        "adduce-rng-audit", path=str(Path(sys.executable).parent)
+    )
     assert executable is not None, "install the project so its console entry points are available"
     return executable
 

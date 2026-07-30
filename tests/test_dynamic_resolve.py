@@ -334,6 +334,7 @@ def test_request_sends_only_fixed_credential_free_headers(monkeypatch):
         ([("Content-Length", "invalid")], b"x" * ((1 << 20) + 1)),
         ([("Content-Length", str((1 << 20) + 1))], b""),
     ],
+    ids=("no-length", "invalid-length", "declared-length"),
 )
 def test_get_enforces_body_limit_with_or_without_valid_length(monkeypatch, headers, body):
     _public_dns(monkeypatch)
