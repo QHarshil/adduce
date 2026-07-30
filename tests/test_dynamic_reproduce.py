@@ -364,6 +364,76 @@ def test_successful_shell_cannot_leave_background_descendant(tmp_path):
     assert not marker.exists()
 
 
+def test_hash_file_and_portable_report_write_pass_binary_flag(tmp_path, monkeypatch):
+    # The O_BINARY term is only meaningful on Windows, so this only regresses
+    # if a call site stops routing through _open_flags and re-inlines its own
+    # flags. Simulate the attribute and capture what os.open actually receives.
+    native_binary = getattr(os, "O_BINARY", 0)
+    sentinel = native_binary or 0x8000
+    if not native_binary:
+        monkeypatch.setattr(os, "O_BINARY", sentinel, raising=False)
+    real_open = os.open
+    captured: list[int] = []
+
+    def spy_open(path, flags, *args, **kwargs):
+        captured.append(flags)
+        # Where O_BINARY is native the flag must still reach the OS, or the
+        # writes below fail in exactly the way the flag exists to prevent.
+        delivered = flags if native_binary else flags & ~sentinel
+        return real_open(path, delivered, *args, **kwargs)
+
+    monkeypatch.setattr(os, "open", spy_open)
+
+    sample = tmp_path / "sample.bin"
+    sample.write_bytes(b"line one\nline two\n")
+    reproduce_module._hash_file(sample)
+    assert captured
+    assert all(flags & sentinel == sentinel for flags in captured)
+
+    captured.clear()
+    directory = tmp_path / "portable-report"
+    directory.mkdir()
+    target = directory / "reproduce-report.json"
+    reproduce_module._write_report_portable(directory, target, b'{"agree": true}\n')
+    assert captured
+    assert all(flags & sentinel == sentinel for flags in captured)
+    assert target.read_bytes() == b'{"agree": true}\n'
+
+
+@pytest.mark.skipif(os.name != "posix", reason="POSIX dir_fd based writer")
+def test_posix_report_write_passes_binary_flag_for_temporary_file(tmp_path, monkeypatch):
+    native_binary = getattr(os, "O_BINARY", 0)
+    sentinel = native_binary or 0x8000
+    if not native_binary:
+        monkeypatch.setattr(os, "O_BINARY", sentinel, raising=False)
+    real_open = os.open
+    captured: list[int] = []
+
+    def spy_open(path, flags, *args, **kwargs):
+        captured.append(flags)
+        # Where O_BINARY is native the flag must still reach the OS, or the
+        # writes below fail in exactly the way the flag exists to prevent.
+        delivered = flags if native_binary else flags & ~sentinel
+        return real_open(path, delivered, *args, **kwargs)
+
+    monkeypatch.setattr(os, "open", spy_open)
+
+    directory = tmp_path / ".adduce"
+    directory.mkdir()
+    reproduce_module._write_report_posix(
+        directory, "reproduce-report.json", b'{"agree": true}\n'
+    )
+
+    # The directory-descriptor open at the top of _write_report_posix has no
+    # data flowing through it and never runs on the platform O_BINARY exists
+    # for (it uses O_DIRECTORY, POSIX-only), so it is excluded on purpose;
+    # only the temporary-file open (identified by O_CREAT) is asserted here.
+    temporary_file_flags = [flags for flags in captured if flags & os.O_CREAT]
+    assert temporary_file_flags
+    assert all(flags & sentinel == sentinel for flags in temporary_file_flags)
+    assert (directory / "reproduce-report.json").read_bytes() == b'{"agree": true}\n'
+
+
 def test_save_report_replaces_regular_file_atomically(tmp_path):
     directory = tmp_path / ".adduce"
     directory.mkdir()
