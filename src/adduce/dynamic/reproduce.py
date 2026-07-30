@@ -128,10 +128,23 @@ class ReproduceReport:
         }
 
 
-def _hash_file(path: Path) -> str:
-    flags = os.O_RDONLY
+def _open_flags(base: int) -> int:
+    """Compose descriptor flags for this module's reads and report writes.
+
+    ``O_BINARY`` only exists on Windows; without it the C runtime rewrites
+    ``\\n`` to ``\\r\\n`` on write and strips ``\\r`` on read. That would make
+    ``_hash_file``'s digest depend on the platform it runs on -- defeating the
+    point of comparing two runs by fingerprint -- and would inflate the report
+    writers' output past their own size checks.
+    """
+    flags = base | getattr(os, "O_BINARY", 0)
     if hasattr(os, "O_NOFOLLOW"):
         flags |= os.O_NOFOLLOW
+    return flags
+
+
+def _hash_file(path: Path) -> str:
+    flags = _open_flags(os.O_RDONLY)
 
     digest = hashlib.sha256()
     descriptor = os.open(path, flags)
@@ -603,9 +616,7 @@ def _write_report_posix(directory: Path, target_name: str, payload: bytes) -> No
             if not stat.S_ISREG(target_metadata.st_mode):
                 raise ValueError("refusing to replace a non-regular reproduction report")
 
-        temporary_flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
-        if hasattr(os, "O_NOFOLLOW"):
-            temporary_flags |= os.O_NOFOLLOW
+        temporary_flags = _open_flags(os.O_WRONLY | os.O_CREAT | os.O_EXCL)
         descriptor = os.open(
             temporary_name,
             temporary_flags,
@@ -640,9 +651,7 @@ def _write_report_posix(directory: Path, target_name: str, payload: bytes) -> No
 
 def _write_report_portable(directory: Path, target: Path, payload: bytes) -> None:
     temporary = directory / f".{target.name}.{secrets.token_hex(8)}.tmp"
-    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
-    if hasattr(os, "O_NOFOLLOW"):
-        flags |= os.O_NOFOLLOW
+    flags = _open_flags(os.O_WRONLY | os.O_CREAT | os.O_EXCL)
     descriptor = os.open(temporary, flags, 0o600)
     try:
         view = memoryview(payload)

@@ -18,6 +18,7 @@ from adduce.safe_write import (
     read_text_regular,
     regular_file_exists,
     replace_text_regular,
+    snapshot_text_regular,
 )
 
 
@@ -240,6 +241,95 @@ def test_directory_create_and_regular_file_probe(tmp_path: Path) -> None:
     non_file.mkdir()
     with pytest.raises(SafeWriteError, match="non-regular artifact"):
         regular_file_exists(non_file, label="artifact")
+
+
+def test_open_flags_include_binary_mode(monkeypatch: pytest.MonkeyPatch) -> None:
+    # os.O_BINARY only exists on Windows; simulate its presence so this test
+    # exercises the getattr(os, "O_BINARY", 0) lookup on every platform.
+    monkeypatch.setattr(os, "O_BINARY", 0x8000, raising=False)
+    assert safe_write._open_flags(os.O_RDONLY) & 0x8000 == 0x8000
+    assert (
+        safe_write._open_flags(os.O_WRONLY | os.O_CREAT | os.O_EXCL) & 0x8000 == 0x8000
+    )
+
+
+def test_every_public_entry_point_passes_binary_flag_to_os_open(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # The unit test above only exercises _open_flags directly, so it would
+    # not notice a call site that stopped routing through it and re-inlined
+    # its own flags without the O_BINARY term. Capture what each public entry
+    # point actually hands to os.open instead.
+    native_binary = getattr(os, "O_BINARY", 0)
+    sentinel = native_binary or 0x8000
+    if not native_binary:
+        monkeypatch.setattr(os, "O_BINARY", sentinel, raising=False)
+    real_open = os.open
+    captured: list[int] = []
+
+    def spy_open(path: object, flags: int, *args: object, **kwargs: object) -> int:
+        captured.append(flags)
+        # Where O_BINARY is native the flag must still reach the OS. Stripping
+        # it would reimpose the text-mode translation this module exists to
+        # prevent, and the writes below would then fail on that platform only.
+        delivered = flags if native_binary else flags & ~sentinel
+        return real_open(path, delivered, *args, **kwargs)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(os, "open", spy_open)
+
+    target = tmp_path / "artifact.txt"
+    create_text_exclusive(target, "first\nsecond\n", label="artifact")
+    assert (
+        snapshot_text_regular(target, label="artifact", parent_label="artifact directory")
+        is not None
+    )
+    append_text_regular(target, "third\n", label="artifact")
+    assert (
+        read_text_regular(target, label="artifact", parent_label="artifact directory")
+        == "first\nsecond\nthird\n"
+    )
+
+    assert len(captured) >= 4
+    assert all(flags & sentinel == sentinel for flags in captured)
+
+
+def test_write_and_read_preserve_newlines_byte_for_byte(tmp_path: Path) -> None:
+    target = tmp_path / "artifact.txt"
+    content = "first\nsecond\nthird\n"
+
+    create_text_exclusive(target, content, label="artifact")
+
+    raw = target.read_bytes()
+    assert len(raw) == len(content.encode("utf-8"))
+    assert raw == content.encode("utf-8")
+
+    read_back = read_text_regular(
+        target,
+        label="artifact",
+        parent_label="artifact directory",
+    )
+    assert read_back == content
+
+
+def test_snapshot_and_append_report_exact_multiline_byte_count(tmp_path: Path) -> None:
+    target = tmp_path / "README.md"
+    original = "first\nsecond\nthird\n"
+    target.write_bytes(original.encode("utf-8"))
+
+    snapshot = snapshot_text_regular(
+        target, label="README", parent_label="README directory"
+    )
+    assert snapshot is not None
+    assert snapshot.size == len(original.encode("utf-8"))
+    assert len(snapshot.payload) == snapshot.size
+
+    append_text_regular(target, "fourth\n", label="README")
+
+    combined = (original + "fourth\n").encode("utf-8")
+    raw = target.read_bytes()
+    assert len(raw) == len(combined)
+    assert raw == combined
 
 
 def test_read_returns_none_for_missing_parent_or_file(tmp_path: Path) -> None:

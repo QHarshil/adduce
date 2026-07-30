@@ -127,6 +127,22 @@ def regular_file_exists(path: Path, *, label: str) -> bool:
     return True
 
 
+def _open_flags(base: int) -> int:
+    """Compose the descriptor flags this module opens files with.
+
+    ``O_BINARY`` is required on platforms that have it (Windows): without it
+    the C runtime opens the descriptor in text mode, which rewrites ``\\n`` to
+    ``\\r\\n`` on write and strips ``\\r`` on read, corrupting the exact-byte
+    payloads and snapshots this module's size and content checks depend on.
+    On POSIX the attribute does not exist; ``getattr`` above evaluates it to
+    0, so this is a no-op there.
+    """
+    flags = base | getattr(os, "O_BINARY", 0)
+    if hasattr(os, "O_NOFOLLOW"):
+        flags |= os.O_NOFOLLOW
+    return flags
+
+
 def _write_all(descriptor: int, payload: bytes) -> None:
     view = memoryview(payload)
     while view:
@@ -170,9 +186,7 @@ def snapshot_text_regular(
     if before.st_nlink != 1:
         raise SafeWriteError(f"refusing multiply-linked {label}")
 
-    flags = os.O_RDONLY
-    if hasattr(os, "O_NOFOLLOW"):
-        flags |= os.O_NOFOLLOW
+    flags = _open_flags(os.O_RDONLY)
     try:
         descriptor = os.open(path, flags)
     except OSError as exc:
@@ -241,9 +255,7 @@ def create_text_exclusive(
         raise SafeWriteError(f"could not encode {label}") from exc
     ensure_safe_directory(path.parent, label=f"{label} parent directory")
 
-    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
-    if hasattr(os, "O_NOFOLLOW"):
-        flags |= os.O_NOFOLLOW
+    flags = _open_flags(os.O_WRONLY | os.O_CREAT | os.O_EXCL)
     try:
         descriptor = os.open(path, flags, mode)
     except FileExistsError as exc:
@@ -290,9 +302,7 @@ def append_text_regular(path: Path, content: str, *, label: str) -> None:
         raise SafeWriteError(f"could not append missing {label}")
 
     temporary = path.parent / f".{path.name}.{secrets.token_hex(8)}.tmp"
-    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
-    if hasattr(os, "O_NOFOLLOW"):
-        flags |= os.O_NOFOLLOW
+    flags = _open_flags(os.O_WRONLY | os.O_CREAT | os.O_EXCL)
     try:
         descriptor = os.open(temporary, flags, 0o600)
     except OSError as exc:
@@ -437,9 +447,7 @@ def read_text_regular(
     if before.st_nlink != 1:
         raise SafeWriteError(f"refusing multiply-linked {label}")
 
-    flags = os.O_RDONLY
-    if hasattr(os, "O_NOFOLLOW"):
-        flags |= os.O_NOFOLLOW
+    flags = _open_flags(os.O_RDONLY)
     try:
         descriptor = os.open(path, flags)
     except OSError as exc:
