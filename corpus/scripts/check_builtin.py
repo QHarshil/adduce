@@ -189,23 +189,26 @@ def main() -> int:
     for key in list(os.environ):
         if key in _GIT_ENVIRONMENT_KEYS or key.startswith("GIT_CONFIG_"):
             os.environ.pop(key, None)
+    # Resolve git against the inherited PATH before narrowing it — os.defpath
+    # (the POSIX fallback baked into the interpreter) is not where git lives
+    # on Windows, so looking it up after the narrowing below made the scan
+    # unable to find git on any Windows host.
+    git = shutil.which("git")
+    if git is None:
+        print("Git is required for attributable corpus scans", file=sys.stderr)
+        return 2
     os.environ.update(
         {
             "GIT_CONFIG_GLOBAL": os.devnull,
             "GIT_CONFIG_NOSYSTEM": "1",
             "GIT_OPTIONAL_LOCKS": "0",
             "GIT_TERMINAL_PROMPT": "0",
-            "PATH": os.defpath,
+            "PATH": str(Path(git).resolve().parent),
             "PYTHONDONTWRITEBYTECODE": "1",
             "PYTHONHASHSEED": "0",
             "PYTHONNOUSERSITE": "1",
         }
     )
-    git = shutil.which("git")
-    if git is None:
-        print("Git is required for attributable corpus scans", file=sys.stderr)
-        return 2
-    os.environ["PATH"] = str(Path(git).resolve().parent)
     sys.addaudithook(lambda event, event_args: _enforce_offline(event, event_args, repository))
     try:
         source_path = Path(source_root).resolve(strict=True)

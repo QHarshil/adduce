@@ -18,6 +18,7 @@ import io
 import os
 import platform
 import re
+import shutil
 import subprocess
 import sys
 import time
@@ -194,6 +195,10 @@ def _git_environment() -> dict[str, str]:
             environment.pop(key, None)
     environment.update(
         {
+            # os.devnull is 'nul' on Windows, a reserved device name rather
+            # than a real path, but Git opens config paths like any other
+            # file and a device name resolves to an always-empty read there
+            # too, so this is intentional rather than a POSIX-only assumption.
             "GIT_CONFIG_GLOBAL": os.devnull,
             "GIT_CONFIG_NOSYSTEM": "1",
             "GIT_OPTIONAL_LOCKS": "0",
@@ -221,9 +226,12 @@ def _checker_environment() -> dict[str, str]:
         )
         if key in os.environ
     }
+    # Resolve git against the inherited PATH before narrowing it below —
+    # os.defpath is a POSIX-only fallback and never contains git on Windows.
+    git = shutil.which("git")
     retained.update(
         {
-            "PATH": os.defpath,
+            "PATH": str(Path(git).resolve().parent) if git else os.defpath,
             "PYTHONHASHSEED": "0",
             "PYTHONNOUSERSITE": "1",
             "PYTHONDONTWRITEBYTECODE": "1",
