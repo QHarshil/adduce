@@ -5,6 +5,7 @@ from __future__ import annotations
 import csv
 import json
 import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -161,6 +162,17 @@ def test_checker_environment_does_not_inherit_host_secrets(
     assert "GITHUB_TOKEN" not in environment
     assert environment["PYTHONNOUSERSITE"] == "1"
     assert environment["PYTHONDONTWRITEBYTECODE"] == "1"
+
+
+def test_checker_environment_resolves_git_when_defpath_lacks_it(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """os.defpath is a POSIX-only fallback; git must resolve from inherited PATH."""
+    monkeypatch.setattr(os, "defpath", "/nonexistent")
+
+    environment = _checker_environment()
+
+    assert shutil.which("git", path=environment["PATH"]) is not None
 
 
 def test_effectiveness_runs_require_a_clean_committed_analyzer() -> None:
@@ -326,6 +338,39 @@ def test_checker_ignores_repository_config_and_records_policy(tmp_path: Path) ->
     assert payload["repository"]["input_byte_count"] > 0
 
 
+def test_checker_resolves_git_when_defpath_lacks_it(tmp_path: Path) -> None:
+    """Reproduces the Windows condition (os.defpath has no git) on any platform."""
+    commit = _make_repo(tmp_path / "repo")
+    package_dir = Path(adduce.__file__).resolve().parent
+    source_tree_sha256 = _source_tree_sha256(package_dir)
+    environment = os.environ.copy()
+    environment["ADDUCE_CORPUS_SOURCE_ROOT"] = str(package_dir.parent)
+    environment["ADDUCE_CORPUS_SOURCE_TREE_SHA256"] = source_tree_sha256
+
+    driver = tmp_path / "stub_defpath_driver.py"
+    driver.write_text(
+        "import os\n"
+        "os.defpath = '/nonexistent'\n"
+        "import runpy\n"
+        "import sys\n"
+        f"sys.argv = [{str(CHECKER)!r}, {str(tmp_path / 'repo')!r}]\n"
+        f"runpy.run_path({str(CHECKER)!r}, run_name='__main__')\n",
+        encoding="utf-8",
+    )
+
+    completed = subprocess.run(
+        [sys.executable, str(driver)],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        env=environment,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    payload = json.loads(completed.stdout)
+    assert payload["repository"]["commit"] == commit
+
+
 def test_worktree_digest_tracks_empty_directories_and_symlink_targets(tmp_path: Path) -> None:
     repository = tmp_path / "repo"
     repository.mkdir()
@@ -412,6 +457,46 @@ def test_runner_rechecks_origin_and_acquisition_digest(tmp_path: Path) -> None:
     _git("remote", "set-url", "origin", "https://example.invalid/changed", cwd=clone)
     with pytest.raises(RunContractError, match="clone origin changed"):
         load_clone_records(clones, repos_data, [row], expected_clone_tool_sha256="a" * 64)
+
+
+def test_clone_and_audit_agree_on_line_endings_under_ambient_autocrlf(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """core.autocrlf=true reproduces on POSIX too; acquisition must ignore it."""
+    origin = tmp_path / "origin"
+    commit = _make_repo(origin)
+    ambient_config = tmp_path / "ambient-gitconfig"
+    ambient_config.write_text("[core]\n\tautocrlf = true\n", encoding="utf-8")
+    monkeypatch.setenv("GIT_CONFIG_GLOBAL", str(ambient_config))
+    monkeypatch.setenv("GIT_CONFIG_NOSYSTEM", "1")
+
+    clones = tmp_path / "clones"
+    row = {"id": "fixture", "cohort": "unvetted", "repo_url": str(origin), "commit_sha": ""}
+    record = clone_one(row, clones)
+
+    assert record["error"] is None, record["error"]
+    assert record["resolved_sha"] == commit
+    assert (clones / "fixture" / "README.md").read_bytes().count(b"\r\n") == 0
+
+    repos = tmp_path / "repos.csv"
+    repos.write_text(
+        f"id,cohort,repo_url,commit_sha\nfixture,unvetted,{origin},\n",
+        encoding="utf-8",
+    )
+    write_json(
+        clones / "clones_manifest.json",
+        {
+            "clone_schema_version": CLONE_SCHEMA_VERSION,
+            "repos_file_sha256": sha256_file(repos),
+            "clone_tool_sha256": "a" * 64,
+            "records": [record],
+        },
+    )
+
+    loaded, _, _ = load_clone_records(
+        clones, repos.read_bytes(), [row], expected_clone_tool_sha256="a" * 64
+    )
+    assert loaded["fixture"]["worktree_sha256"] == record["worktree_sha256"]
 
 
 def test_runner_keeps_acquisition_failure_separate_from_scanner_crash(tmp_path: Path) -> None:

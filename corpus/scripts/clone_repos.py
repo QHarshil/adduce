@@ -173,12 +173,39 @@ def read_repos(path: Path) -> list[dict[str, str]]:
     return rows
 
 
+_GIT_ENVIRONMENT_KEYS = frozenset(
+    {
+        "GIT_ALTERNATE_OBJECT_DIRECTORIES",
+        "GIT_COMMON_DIR",
+        "GIT_DIR",
+        "GIT_INDEX_FILE",
+        "GIT_NAMESPACE",
+        "GIT_OBJECT_DIRECTORY",
+        "GIT_WORK_TREE",
+    }
+)
+
+
 def _git(*args: str, cwd: Path | None = None) -> subprocess.CompletedProcess[str]:
+    """Run git in the same isolated configuration run_validation audits clones with.
+
+    Acquisition must not depend on the operator's global or system Git
+    config (for example core.autocrlf), or a clone written under one config
+    and later audited under another disagrees on worktree bytes and every
+    clone is reported dirty.
+    """
     environment = os.environ.copy()
+    for key in list(environment):
+        if key in _GIT_ENVIRONMENT_KEYS or key.startswith("GIT_CONFIG_"):
+            environment.pop(key, None)
     environment.update(
         {
+            "GIT_CONFIG_GLOBAL": os.devnull,
+            "GIT_CONFIG_NOSYSTEM": "1",
             "GIT_LFS_SKIP_SMUDGE": "1",
+            "GIT_OPTIONAL_LOCKS": "0",
             "GIT_TERMINAL_PROMPT": "0",
+            "LC_ALL": "C",
         }
     )
     return subprocess.run(
