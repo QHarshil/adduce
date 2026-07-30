@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import runpy
 import shutil
 import subprocess
@@ -22,6 +23,13 @@ def _entrypoint() -> str:
     return executable
 
 
+def _subprocess_env() -> dict[str, str]:
+    env = dict(os.environ)
+    env.pop("PYTHONWARNINGS", None)
+    env.pop("PYTHONDEVMODE", None)
+    return env
+
+
 def _run_hook(script: Path, *arguments: str) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         [
@@ -34,6 +42,7 @@ def _run_hook(script: Path, *arguments: str) -> subprocess.CompletedProcess[str]
         check=False,
         capture_output=True,
         text=True,
+        env=_subprocess_env(),
     )
 
 
@@ -171,16 +180,42 @@ def test_failed_stdlib_seed_is_not_recorded(tmp_path: Path) -> None:
     script.write_text(
         "import random\n"
         "try:\n"
-        "    random.seed(object())\n"
+        "    random.seed([1, 2, 3])\n"
         "except TypeError:\n"
         "    pass\n"
+        "else:\n"
+        "    raise SystemExit(91)\n"
         "random.random()\n",
         encoding="utf-8",
     )
 
     completed = _run_hook(script)
 
-    assert completed.returncode == 1
+    assert completed.returncode == 1, "stdlib seed must fail on every supported Python"
+    assert "seed: random.seed" not in completed.stderr
+    assert "first draw (random.random) before a seed" in completed.stderr
+
+
+def test_failed_stdlib_seed_is_not_recorded_when_ambient_warnings_are_hostile(
+    tmp_path: Path, monkeypatch
+) -> None:
+    monkeypatch.setenv("PYTHONWARNINGS", "error")
+    script = tmp_path / "target.py"
+    script.write_text(
+        "import random\n"
+        "try:\n"
+        "    random.seed([1, 2, 3])\n"
+        "except TypeError:\n"
+        "    pass\n"
+        "else:\n"
+        "    raise SystemExit(91)\n"
+        "random.random()\n",
+        encoding="utf-8",
+    )
+
+    completed = _run_hook(script)
+
+    assert completed.returncode == 1, "stdlib seed must fail on every supported Python"
     assert "seed: random.seed" not in completed.stderr
     assert "first draw (random.random) before a seed" in completed.stderr
 
