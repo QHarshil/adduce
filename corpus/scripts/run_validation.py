@@ -92,7 +92,7 @@ else:
     )
 
 BUILTIN_CHECKER = Path(__file__).with_name("check_builtin.py")
-PREREGISTRATION_PATH = CORPUS_DIR / "pilot-r4-preregistration.json"
+PREREGISTRATION_PATH = CORPUS_DIR / "pilot-r5-preregistration.json"
 CONFIGURATION_MODE = "defaults-only-repository-config-disabled"
 ADDUCE_CHECK_MODE = "reviewer"
 SUCCESS_STATUSES = frozenset({"succeeded", "succeeded_with_partial_acquisition"})

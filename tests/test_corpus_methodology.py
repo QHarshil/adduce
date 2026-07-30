@@ -2185,6 +2185,12 @@ def test_preregistration_builder_rejects_unsafe_candidate_pairs(
         )
 
 
+def _load_checked_in_preregistration(
+    name: str = "pilot-r5-preregistration.json",
+) -> dict[str, Any]:
+    return json.loads((ROOT / "corpus" / name).read_text(encoding="utf-8"))
+
+
 def test_review_schemas_are_valid_and_accept_generated_draft_artifacts(
     tmp_path: Path,
 ) -> None:
@@ -2197,55 +2203,15 @@ def test_review_schemas_are_valid_and_accept_generated_draft_artifacts(
     finding_review_schema = json.loads(
         (ROOT / "corpus" / "finding-review.schema.json").read_text(encoding="utf-8")
     )
-    preregistration_schema_path = ROOT / "corpus" / "preregistration.schema.json"
     preregistration_schema = json.loads(
-        preregistration_schema_path.read_text(encoding="utf-8")
+        (ROOT / "corpus" / "preregistration.schema.json").read_text(encoding="utf-8")
     )
-    checked_in_preregistration = json.loads(
-        (ROOT / "corpus" / "pilot-r4-preregistration.json").read_text(encoding="utf-8")
-    )
+    checked_in_preregistration = _load_checked_in_preregistration()
     Draft202012Validator.check_schema(allocation_schema)
     Draft202012Validator.check_schema(claim_review_schema)
     Draft202012Validator.check_schema(finding_review_schema)
     Draft202012Validator.check_schema(preregistration_schema)
     Draft202012Validator(preregistration_schema).validate(checked_in_preregistration)
-    assert checked_in_preregistration["schema_sha256"] == sha256_file(
-        preregistration_schema_path
-    )
-    assert checked_in_preregistration["analysis_plan"] == analysis_plan_identity(
-        {
-            name: (ROOT / "corpus" / name).read_bytes()
-            for name in PREREGISTRATION_ANALYSIS_PLAN_PATHS
-        }
-    )
-    assert checked_in_preregistration["adduce"]["source_tree_sha256"] == (
-        _source_tree_sha256(Path(adduce.__file__).resolve().parent)
-    )
-    assert checked_in_preregistration["adduce"]["builtin_rule_ids_sha256"] == (
-        builtin_rule_ids_sha256(
-            [rule.id for rule in discover_rules(include_plugins=False)]
-        )
-    )
-    assert checked_in_preregistration["inputs"]["repos_file_sha256"] == sha256_file(
-        ROOT / "corpus" / "repos.csv"
-    )
-    assert checked_in_preregistration["inputs"]["badged_provenance_sha256"] == (
-        sha256_file(ROOT / "corpus" / "badged-provenance.csv")
-    )
-    assert checked_in_preregistration["inputs"]["claim_review_schema_sha256"] == (
-        sha256_file(ROOT / "corpus" / "claim-review.schema.json")
-    )
-    assert checked_in_preregistration["candidate_pair"] == [
-        "pilot-0.1.2dev0-r4-a",
-        "pilot-0.1.2dev0-r4-b",
-    ]
-    assert checked_in_preregistration["execution_contract"]["timeout_seconds"] == 300
-    assert checked_in_preregistration["inputs"]["repository_count"] == 15
-    assert checked_in_preregistration["inputs"]["cohort_counts"] == {
-        "badged_functional": 5,
-        "stress": 5,
-        "unvetted": 5,
-    }
 
     allocation_sources = _allocation_sources()
     allocation = build_review_allocation(
@@ -2291,3 +2257,46 @@ def test_review_schemas_are_valid_and_accept_generated_draft_artifacts(
     truth = _claim_payload(repos, clones, commit)
     claim_review = initialize_review(truth, "a" * 64, ["candidate-a", "candidate-b"])
     Draft202012Validator(claim_review_schema).validate(claim_review)
+
+
+def test_preregistration_lock_matches_live_source_tree_and_analysis_plan() -> None:
+    preregistration_schema_path = ROOT / "corpus" / "preregistration.schema.json"
+    checked_in_preregistration = _load_checked_in_preregistration()
+
+    assert checked_in_preregistration["schema_sha256"] == sha256_file(
+        preregistration_schema_path
+    )
+    assert checked_in_preregistration["analysis_plan"] == analysis_plan_identity(
+        {
+            name: (ROOT / "corpus" / name).read_bytes()
+            for name in PREREGISTRATION_ANALYSIS_PLAN_PATHS
+        }
+    )
+    assert checked_in_preregistration["adduce"]["source_tree_sha256"] == (
+        _source_tree_sha256(Path(adduce.__file__).resolve().parent)
+    )
+    assert checked_in_preregistration["adduce"]["builtin_rule_ids_sha256"] == (
+        builtin_rule_ids_sha256(
+            [rule.id for rule in discover_rules(include_plugins=False)]
+        )
+    )
+    assert checked_in_preregistration["inputs"]["repos_file_sha256"] == sha256_file(
+        ROOT / "corpus" / "repos.csv"
+    )
+    assert checked_in_preregistration["inputs"]["badged_provenance_sha256"] == (
+        sha256_file(ROOT / "corpus" / "badged-provenance.csv")
+    )
+    assert checked_in_preregistration["inputs"]["claim_review_schema_sha256"] == (
+        sha256_file(ROOT / "corpus" / "claim-review.schema.json")
+    )
+    assert checked_in_preregistration["candidate_pair"] == [
+        "pilot-0.1.2-r5-a",
+        "pilot-0.1.2-r5-b",
+    ]
+    assert checked_in_preregistration["execution_contract"]["timeout_seconds"] == 300
+    assert checked_in_preregistration["inputs"]["repository_count"] == 15
+    assert checked_in_preregistration["inputs"]["cohort_counts"] == {
+        "badged_functional": 5,
+        "stress": 5,
+        "unvetted": 5,
+    }
