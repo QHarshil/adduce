@@ -374,6 +374,72 @@ below continue to apply in full. This amendment was prepared from file digests
 and the retained protocol text alone. No `r3` or `r4` claim-link output exists,
 and no retained `r2` evaluation informed it.
 
+### Protocol amendment 6: post-version-bump re-lock and candidate rename
+
+Amended: 2026-07-29 (pre-registered before execution)
+
+The `r4` preregistration is void. The release of 0.1.2 changed the analyzer:
+`src/adduce/__init__.py` carries `__version__`, and that file lives inside the
+byte tree that `_source_tree_sha256` hashes, so bumping the stable version
+changed both the recorded `adduce.version` (`0.1.2.dev0` → `0.1.2`) and the
+analyzer source-tree digest. The digest moved from
+`c0f588b73be710b970a179679900d6334f4c1c56fcc048d747b9c0bdf358ff99`, the value
+recorded in `corpus/pilot-r4-preregistration.json`, to the value recorded in
+the new `corpus/pilot-r5-preregistration.json`.
+
+Amendment 5 left open whether a never-executed candidate pair may have its
+lock regenerated in place, or whether any analyzer or harness byte change
+forces a new dated amendment and a new pair name. Owner decision, 2026-07-29:
+the strict reading governs — a new dated amendment and a new candidate-pair
+name, always. In-place regeneration of a lock is not permitted. This is a
+standing rule, not merely this amendment's choice, and the question does not
+reopen. The reasoning, following amendment 5: retaining a name for different
+bytes would leave two distinct documents each claiming to be the prospective
+lock, which is the precise ambiguity preregistration exists to remove.
+
+Neither `pilot-0.1.2dev0-r4-a` nor `pilot-0.1.2dev0-r4-b` was ever created or
+executed, so no run output, claim label, sample, review, adjudication, or
+score is affected, and no artifact is discarded. Following the standing rule
+above and amendments 1, 2, and 5, the current trust-milestone candidate pair
+is pre-registered as `pilot-0.1.2-r5-a` and `pilot-0.1.2-r5-b`, with the
+machine-readable prospective lock at `corpus/pilot-r5-preregistration.json`
+and protocol ID `pilot-0.1.2-r5`. The name drops the `dev0` suffix because the
+analyzer under test is now the stable 0.1.2, not a development build. Neither
+`r5` candidate directory has been created or executed as part of this
+amendment.
+
+This amendment changes `PILOT_PROTOCOL.md` itself and `README.md`, and it
+changes `scripts/run_validation.py`, whose `PREREGISTRATION_PATH` now targets
+the `r5` lock. The `r5` lock is generated from the final bytes of every file
+it binds, this amendment included.
+
+This amendment changes no input, parameter, or acceptance rule beyond the
+re-lock and rename above. Unchanged: the frozen repository inventory and its
+SHA-256, the clone manifest and clone snapshot set, the badged provenance
+record, the 300-second per-repository timeout, offline built-in-only
+execution with plugins disabled, default configuration, reviewer mode, the
+minimal credential-free child environment, the sampling design and seed 0,
+the cohort composition (5 badged_functional, 5 stress, 5 unvetted, 15
+repositories), the sentinel census for FRL, SimCSE and Torchtune, the
+handbook-calibration and second-review quotas, the two-independent-reviewer
+claim-review requirement with its blinding and conflict-of-interest
+conditions and neutral coordination, and every acceptance rule. The
+pre-registered candidate truth remains `corpus/labels/pilot-claims.json` with
+SHA-256 `9a26d06c59070173ad89f60bc221a395dd1a487132eeed7415d2cadeff63611e`.
+Because that truth file and its digest are unchanged, the void condition
+recorded in amendment 4 for a changed truth was never triggered. The built-in
+rule count of 78, the built-in rule-ID inventory digest, and the
+dependency-version digest are all unchanged: the change is a version string
+and nothing else, so no detector behaviour is implicated.
+
+The claim-review and finding-review gates remain open. The
+two-independent-human-reviewer claim review has not been performed; the `r4`
+review scaffolds were issued but returned empty, so no human decision exists
+for any candidate pair. New scaffolds bound to the `r5` pair will be issued
+before `r5-a` starts. No `r3`, `r4`, or `r5` claim-link output exists. This
+amendment was prepared from file digests and the retained protocol text
+alone; no retained `r2` evaluation informed it.
+
 ## Ground truth and review
 
 Before using the pilot for detector changes:
