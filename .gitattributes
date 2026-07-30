@@ -1,2 +1,7 @@
+# Force LF everywhere so bytes read from a checkout match the bytes git has
+# stored, regardless of platform; without this, core.autocrlf can rewrite LF
+# to CRLF on checkout and invalidate every digest computed over those files.
+* text=auto eol=lf
+
 # Preserve the authoritative OASIS schema bytes, including upstream CRLF.
 tests/schemas/sarif-schema-2.1.0.json -text -diff
