@@ -9,7 +9,7 @@ pipx install adduce        # or: pip install adduce / uvx adduce
 adduce check .
 ```
 
-[PyPI `0.1.1`](https://pypi.org/project/adduce/0.1.1/) is the current release.
+[PyPI `0.1.2`](https://pypi.org/project/adduce/0.1.2/) is the current release.
 
 Adduce is beta software. Findings are static-analysis signals for review, and
 scores, tiers, and reviewer-time estimates are provisional pending calibration
@@ -237,7 +237,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: QHarshil/adduce@v0.1.1
+      - uses: QHarshil/adduce@v0.1.2
         with:
           profile: neurips
           report-file: adduce-report.md   # lands in the job summary

@@ -30,9 +30,9 @@ inputs:
     required: false
     default: ""
   version:
-    description: "Exact adduce release version to install from PyPI (for example, 0.1.1)."
+    description: "Exact adduce release version to install from PyPI (for example, 0.1.2)."
     required: false
-    default: "0.1.1"
+    default: "0.1.2"
 
 outputs:
   score:

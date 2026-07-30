@@ -6,6 +6,23 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-07-29
+
+### Validation status
+
+Operational corpus validation is complete: 15/15 real repositories succeeded
+in two independent runs, with 0 crashes, 0 timeouts, and 0 repository-byte
+modifications. Comparing all 15 analyzer output artifacts pairwise under the
+harness's own normalisation found no differing artifact; the runs were
+deterministic apart from resource measurements — peak resident memory and
+wall-clock runtime. These operational runs were produced by an analyzer
+source tree (`c0f588b7…`) byte-identical to the released tree except for the
+`__version__` string, uncommitted at run time (`adduce_source_dirty: true`,
+version `0.1.2.dev0`). The effectiveness pilot's two-independent-human-
+reviewer claim-review gate has not been completed, so this release reports no
+false-positive rate, no score separation, and no claim-link accuracy figure.
+Those numbers remain developmental until that review gate closes.
+
 ### Added
 
 - Added a security policy and threat model covering offline analysis, opt-in

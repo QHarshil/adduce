@@ -4,8 +4,8 @@ title: "adduce: a local research-artifact auditor"
 type: software
 authors:
   - family-names: "Chudasama"
-    given-names: "Harsh"
+    given-names: "Harshil"
 repository-code: "https://github.com/QHarshil/adduce"
 license: MIT
-date-released: "2026-07-12"
-version: "0.1.1"
+date-released: "2026-07-29"
+version: "0.1.2"
