@@ -4,13 +4,13 @@ build-backend = "hatchling.build"
 
 [project]
 name = "adduce"
-version = "0.1.2.dev0"
+version = "0.1.2"
 description = "A local research-artifact auditor: checks that a paper's claims, code, configs, data, and results still agree, and produces the artifacts reviewers ask for."
 readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.10"
 authors = [
-    { name = "Harsh Chudasama", email = "chudasama.h@northeastern.edu" },
+    { name = "Harshil Chudasama", email = "chudasama.h@northeastern.edu" },
 ]
 keywords = [
     "reproducibility",
