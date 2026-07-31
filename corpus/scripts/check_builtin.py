@@ -8,6 +8,7 @@ import hashlib
 import json
 import os
 import shutil
+import subprocess
 import sys
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -93,19 +94,83 @@ def _peak_rss_observation() -> dict[str, object]:
     }
 
 
+def _split_windows_command_line(command_line: str) -> list[str] | None:
+    """Recover an argument vector from a ``subprocess.list2cmdline`` string.
+
+    Windows fires the ``subprocess.Popen`` audit event after collapsing the
+    argument list with ``subprocess.list2cmdline``, and without deriving
+    ``executable`` from ``args[0]`` the way the POSIX path does. The vector this
+    module validates therefore has to be rebuilt before the same checks can run.
+    The rules below mirror ``CommandLineToArgvW``, which is what the C runtime
+    uses to split the string again in the child: a quote toggles quoting, ``2n``
+    backslashes before a quote collapse to ``n`` and toggle, and ``2n+1``
+    collapse to ``n`` and emit a literal quote. Returns ``None`` for a string
+    that cannot be split, so an unrecognised shape is refused, not guessed at.
+    """
+    tokens: list[str] = []
+    token: list[str] = []
+    backslashes = 0
+    quoted = False
+    started = False
+    for character in command_line:
+        if character == "\\":
+            backslashes += 1
+            started = True
+            continue
+        if character == '"':
+            token.append("\\" * (backslashes // 2))
+            if backslashes % 2:
+                token.append('"')
+            else:
+                quoted = not quoted
+            backslashes = 0
+            started = True
+            continue
+        token.append("\\" * backslashes)
+        backslashes = 0
+        if not quoted and character in " \t":
+            if started:
+                tokens.append("".join(token))
+                token = []
+                started = False
+            continue
+        token.append(character)
+        started = True
+    if quoted:
+        return None
+    token.append("\\" * backslashes)
+    if started:
+        tokens.append("".join(token))
+    return tokens
+
+
 def _allowed_git_command(
     executable: object, arguments: object, repository: Path | None = None
 ) -> bool:
     """Permit only hardened, read-only Git queries used by repository ingestion."""
-    if not isinstance(executable, (str, bytes, os.PathLike)) or not isinstance(
-        arguments, (list, tuple)
-    ):
-        return False
-    try:
-        executable_name = Path(os.fsdecode(executable)).name
-        command = [os.fsdecode(token) for token in arguments]
-    except (TypeError, ValueError):
-        return False
+    if executable is None and isinstance(arguments, str):
+        recovered = _split_windows_command_line(arguments)
+        # Accept only a line ``list2cmdline`` itself would have produced.
+        # Splitting alone is not sufficient to authorise: CreateProcess resolves
+        # the program from the raw string by rules the CRT's argv split does not
+        # share, so a non-canonical line such as ``"C:\\x\\g""it" --no-pager ...``
+        # splits to a token named ``git`` while Windows launches ``C:\x\g.exe``.
+        # Requiring the round trip makes the accepted set exactly the shapes
+        # Windows ``Popen`` emits, and refuses every crafted equivalent.
+        if not recovered or subprocess.list2cmdline(recovered) != arguments:
+            return False
+        command = recovered
+        executable_name = Path(command[0]).name
+    else:
+        if not isinstance(executable, (str, bytes, os.PathLike)) or not isinstance(
+            arguments, (list, tuple)
+        ):
+            return False
+        try:
+            executable_name = Path(os.fsdecode(executable)).name
+            command = [os.fsdecode(token) for token in arguments]
+        except (TypeError, ValueError):
+            return False
     if executable_name != "git" or not command or Path(command[0]).name != "git":
         return False
     expected_prefix = [
