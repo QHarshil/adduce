@@ -35,17 +35,6 @@ class RegularTextSnapshot:
     modified_ns: int
     changed_ns: int
 
-    def matches(self, metadata: os.stat_result) -> bool:
-        return (
-            self.device == metadata.st_dev
-            and self.inode == metadata.st_ino
-            and self.size == metadata.st_size
-            and self.mode == stat.S_IMODE(metadata.st_mode)
-            and self.links == metadata.st_nlink
-            and self.modified_ns == metadata.st_mtime_ns
-            and self.changed_ns == metadata.st_ctime_ns
-        )
-
 
 def _same_file(left: os.stat_result, right: os.stat_result) -> bool:
     return left.st_dev == right.st_dev and left.st_ino == right.st_ino
@@ -167,6 +156,17 @@ def _scanner_text(payload: bytes) -> str:
     return payload.decode("utf-8", errors="replace").replace("\r\n", "\n").replace("\r", "\n")
 
 
+# An ``st_ctime_ns`` read by ``lstat`` and one read by ``fstat`` denote the same
+# instant everywhere except Windows. There, CPython's ``win32_xstat()`` ends with
+# ``result->st_ctime = result->st_birthtime`` (CreationTime), while
+# ``_Py_fstat_noraise()`` reaches ``_Py_attribute_data_to_stat()``, which takes
+# ``basic_info->ChangeTime`` (metadata-change time) and never applies that
+# overwrite. Comparing one against the other therefore fails for every file
+# modified after it was created, refusing files that have not changed at all.
+# Same-source comparisons stay unconditional; only the cross-source one is gated.
+_CTIME_COMPARABLE_ACROSS_LSTAT_AND_FSTAT = os.name != "nt"
+
+
 def snapshot_text_regular(
     path: Path,
     *,
@@ -202,7 +202,10 @@ def snapshot_text_regular(
             or not _same_file(opened, current)
             or before.st_size != opened.st_size
             or before.st_mtime_ns != opened.st_mtime_ns
-            or before.st_ctime_ns != opened.st_ctime_ns
+            or (
+                _CTIME_COMPARABLE_ACROSS_LSTAT_AND_FSTAT
+                and before.st_ctime_ns != opened.st_ctime_ns
+            )
             or opened.st_nlink != 1
         ):
             raise SafeWriteError(f"refusing changed {label}")

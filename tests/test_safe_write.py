@@ -349,3 +349,119 @@ def test_read_returns_none_for_missing_parent_or_file(tmp_path: Path) -> None:
         )
         is None
     )
+
+
+def _stat_replacing(
+    real: os.stat_result, *, size: int | None = None, ctime_ns: int | None = None
+) -> os.stat_result:
+    # Copies every field safe_write reads verbatim except the one under test —
+    # st_mode, st_ino, st_dev, st_nlink, st_size, st_mtime_ns, st_ctime_ns — so
+    # the fake cannot coincidentally diverge on anything the caller did not ask
+    # it to. Reconstructing through os.stat_result does drop the extended
+    # fields (st_blksize, st_blocks, st_rdev, st_flags, st_birthtime) and the
+    # sub-second precision of the float timestamps; safe_write reads none of
+    # them, but do not reuse this helper anywhere that does.
+    sequence = list(real)
+    if size is not None:
+        sequence[6] = size  # st_size
+    return os.stat_result(
+        tuple(sequence),
+        {
+            "st_atime_ns": real.st_atime_ns,
+            "st_mtime_ns": real.st_mtime_ns,
+            "st_ctime_ns": real.st_ctime_ns if ctime_ns is None else ctime_ns,
+        },
+    )
+
+
+def test_snapshot_ignores_incomparable_cross_source_ctime_on_simulated_windows(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # Reproduces the Windows divergence on macOS: lstat() and fstat() read
+    # different Windows file-time fields into st_ctime_ns (CreationTime vs
+    # ChangeTime), so an untouched file can show a real, non-zero difference
+    # between an lstat-derived and an fstat-derived st_ctime_ns. Only the
+    # descriptor opened for `target` is affected; every other fd (including
+    # ones pytest itself holds open) still gets the real fstat().
+    target = tmp_path / "artifact.txt"
+    target.write_text("content\n", encoding="utf-8")
+    identity = target.lstat()
+    # A full day's offset: unmistakably synthetic, never a plausible collision
+    # with the real ctime or with ordinary clock jitter between two stat calls.
+    divergent_ctime_ns = identity.st_ctime_ns + 86_400 * 1_000_000_000
+    real_fstat = os.fstat
+
+    def patched_fstat(descriptor: int) -> os.stat_result:
+        actual = real_fstat(descriptor)
+        if actual.st_dev != identity.st_dev or actual.st_ino != identity.st_ino:
+            return actual
+        return _stat_replacing(actual, ctime_ns=divergent_ctime_ns)
+
+    monkeypatch.setattr(safe_write.os, "fstat", patched_fstat)
+    monkeypatch.setattr(safe_write, "_CTIME_COMPARABLE_ACROSS_LSTAT_AND_FSTAT", False)
+
+    snapshot = snapshot_text_regular(
+        target, label="artifact", parent_label="artifact directory"
+    )
+
+    assert snapshot is not None
+    assert snapshot.changed_ns == divergent_ctime_ns
+
+
+def test_snapshot_still_refuses_genuine_size_change_on_simulated_windows(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # Suppressing the cross-source ctime comparison must not blunt the rest
+    # of the check: a descriptor that reads back a different size still has
+    # to be refused, ctime gate or not.
+    target = tmp_path / "artifact.txt"
+    target.write_text("content\n", encoding="utf-8")
+    identity = target.lstat()
+    real_fstat = os.fstat
+
+    def patched_fstat(descriptor: int) -> os.stat_result:
+        actual = real_fstat(descriptor)
+        if actual.st_dev != identity.st_dev or actual.st_ino != identity.st_ino:
+            return actual
+        return _stat_replacing(actual, size=actual.st_size + 1)
+
+    monkeypatch.setattr(safe_write.os, "fstat", patched_fstat)
+    monkeypatch.setattr(safe_write, "_CTIME_COMPARABLE_ACROSS_LSTAT_AND_FSTAT", False)
+
+    with pytest.raises(SafeWriteError, match="refusing changed artifact"):
+        snapshot_text_regular(target, label="artifact", parent_label="artifact directory")
+
+
+@pytest.mark.skipif(
+    os.name == "nt",
+    reason="the cross-source ctime comparison is deliberately disabled on Windows",
+)
+def test_snapshot_still_enforces_cross_source_ctime_where_it_is_comparable(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # The mirror of the suppression test, and the one that keeps the gate
+    # honest. Both other tests patch the constant to False, so widening
+    # `os.name != "nt"` to every platform would leave the suite green while
+    # silently dropping the check on POSIX. This test patches no constant: on
+    # any platform where the two sources are comparable, a divergent
+    # cross-source ctime must still be refused.
+    target = tmp_path / "artifact.txt"
+    target.write_text("content\n", encoding="utf-8")
+    identity = target.lstat()
+    divergent_ctime_ns = identity.st_ctime_ns + 86_400 * 1_000_000_000
+    real_fstat = os.fstat
+
+    def patched_fstat(descriptor: int) -> os.stat_result:
+        actual = real_fstat(descriptor)
+        if actual.st_dev != identity.st_dev or actual.st_ino != identity.st_ino:
+            return actual
+        return _stat_replacing(actual, ctime_ns=divergent_ctime_ns)
+
+    monkeypatch.setattr(safe_write.os, "fstat", patched_fstat)
+    assert safe_write._CTIME_COMPARABLE_ACROSS_LSTAT_AND_FSTAT is True
+
+    with pytest.raises(SafeWriteError, match="refusing changed artifact"):
+        snapshot_text_regular(target, label="artifact", parent_label="artifact directory")
