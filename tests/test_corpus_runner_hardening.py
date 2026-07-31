@@ -150,6 +150,85 @@ def test_offline_audit_policy_allows_only_required_read_only_git(tmp_path: Path)
     _enforce_offline("open", (os.devnull, None, os.O_RDWR), repository)
 
 
+def test_checker_allows_git_audit_event_in_the_windows_popen_shape(tmp_path: Path) -> None:
+    """Windows reports Popen with executable unset and argv already collapsed.
+
+    ``subprocess._execute_child`` on Windows rewrites ``args`` with
+    ``list2cmdline`` and never derives ``executable`` from ``args[0]``, so the
+    audit event carries ``(None, "<one string>")`` where POSIX carries
+    ``("git", [tokens])``. Gating on the POSIX shape alone refused every git
+    query the scan makes, on every Windows host.
+    """
+    repository = tmp_path.resolve()
+    prefix = [
+        "git",
+        "--no-pager",
+        "-c",
+        "core.fsmonitor=false",
+        "-c",
+        "core.quotePath=true",
+        "-C",
+        str(repository),
+    ]
+    allowed = [*prefix, "rev-parse", "HEAD"]
+
+    # The POSIX shape keeps working, byte for byte.
+    assert _allowed_git_command("git", allowed, repository)
+
+    # The Windows shape, built with the exact function Windows uses to build it.
+    assert _allowed_git_command(None, subprocess.list2cmdline(allowed), repository)
+    assert _allowed_git_command(
+        None,
+        subprocess.list2cmdline([*prefix, "ls-files"]),
+        repository,
+    )
+
+    # Still fails closed in the Windows shape.
+    assert not _allowed_git_command(
+        None, subprocess.list2cmdline([*prefix, "fetch", "origin"]), repository
+    )
+    assert not _allowed_git_command(
+        None, subprocess.list2cmdline([sys.executable, "-V"]), repository
+    )
+    assert not _allowed_git_command(
+        None, subprocess.list2cmdline([*prefix, "rev-parse", "HEAD"]), repository / "other"
+    )
+    assert not _allowed_git_command(None, 'git --no-pager -c "unterminated', repository)
+    assert not _allowed_git_command(None, "", repository)
+    assert not _allowed_git_command(None, None, repository)
+
+    # A non-canonical line that the CRT would split to a token named "git"
+    # while CreateProcess resolves the program by its own rules and launches
+    # something else. Splitting is not authorisation: only a line that
+    # list2cmdline would itself have produced is accepted.
+    tail = f"--no-pager -c core.fsmonitor=false -c core.quotePath=true -C {repository} ls-files"
+    for crafted in (
+        f'"C:\\evil\\g""it" {tail}',
+        f'g""it {tail}',
+        f'""git {tail}',
+    ):
+        assert not _allowed_git_command(None, crafted, repository), crafted
+
+    # A repository path containing a space must survive the list2cmdline
+    # round trip, because that is exactly the case naive whitespace splitting
+    # gets wrong and Windows temp paths can contain one.
+    spaced = tmp_path / "dir with space"
+    spaced.mkdir()
+    spaced_command = [*prefix[:7], str(spaced.resolve()), "rev-parse", "HEAD"]
+    assert _allowed_git_command(
+        None, subprocess.list2cmdline(spaced_command), spaced.resolve()
+    )
+
+    # And the hook itself admits the allowed shape while still refusing others.
+    _enforce_offline("subprocess.Popen", (None, subprocess.list2cmdline(allowed)), repository)
+    with pytest.raises(RuntimeError, match="process execution is disabled"):
+        _enforce_offline(
+            "subprocess.Popen",
+            (None, subprocess.list2cmdline([sys.executable, "-V"])),
+            repository,
+        )
+
+
 def test_checker_environment_does_not_inherit_host_secrets(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
