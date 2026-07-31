@@ -537,7 +537,25 @@ def load_clone_records(
             raise RunContractError(f"clone Git tree changed after manifest creation: {row['id']}")
         dirty = _git("status", "--porcelain", "--untracked-files=all", cwd=clone_path)
         if dirty.returncode != 0 or dirty.stdout.strip():
-            raise RunContractError(f"clone is dirty after manifest creation: {row['id']}")
+            # Name what is dirty. A bare verdict is unactionable, and the entries
+            # are the only evidence that distinguishes real tampering from a
+            # platform artefact. Bounded deliberately: an unbounded dump of a
+            # large worktree is how a single log line reached 1 MiB and stalled
+            # a CI runner for hours.
+            parts = []
+            if dirty.returncode != 0:
+                # Never dropped in favour of the entries: a partial git failure
+                # and a genuinely dirty worktree are different findings.
+                parts.append(f"git status exited {dirty.returncode}: {dirty.stderr.strip()[:200]}")
+            entries = dirty.stdout.splitlines()
+            if entries:
+                shown = "; ".join(entry.strip() for entry in entries[:20])
+                remainder = len(entries) - 20
+                parts.append(shown + (f"; (+{remainder} more)" if remainder > 0 else ""))
+            detail = " | ".join(parts) if parts else "no detail reported"
+            raise RunContractError(
+                f"clone is dirty after manifest creation: {row['id']}: {detail}"
+            )
         recorded_worktree = record.get("worktree_sha256")
         if not isinstance(recorded_worktree, str) or len(recorded_worktree) != 64:
             raise RunContractError(f"clone manifest lacks worktree digest for {row['id']}")
