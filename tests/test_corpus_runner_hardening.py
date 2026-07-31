@@ -302,11 +302,32 @@ def test_corpus_git_identity_requires_every_declared_file_tracked_and_clean(
     monkeypatch.setattr(run_validation, "PREREGISTRATION_PATH", preregistration)
     monkeypatch.setattr(run_validation, "REQUIRED_HARNESS_PATHS", ("protocol.txt",))
 
-    assert _corpus_git_identity() == {
+    identity = _corpus_git_identity()
+    # The assertion message is only evaluated on failure, so these probes cost
+    # nothing on a green run. They exist because this expectation has failed on
+    # Windows and been attributed twice to a mechanism that later proved wrong;
+    # the porcelain output and the effective config are the evidence that
+    # distinguishes a real dirty worktree from a platform artefact. Every probe
+    # is caught: a probe that raised would replace the AssertionError and
+    # destroy exactly the evidence this exists to capture.
+    def _probe(description: str, *arguments: str) -> str:
+        try:
+            completed = run_validation._git(*arguments, cwd=repository)
+        except Exception as error:  # noqa: BLE001 - a probe must never mask the assertion
+            return f"{description}=<probe failed: {error!r}>"
+        return f"{description}={completed.stdout!r} (rc={completed.returncode})"
+
+    assert identity == {
         "corpus_harness_git_commit": commit,
         "corpus_harness_git_dirty": False,
         "corpus_harness_git_tracked": True,
-    }
+    }, "; ".join(
+        [
+            f"identity={identity}",
+            _probe("isolated status", "status", "--porcelain=v1", "-uall"),
+            _probe("effective config", "config", "-l", "--show-origin"),
+        ]
+    )
 
     (corpus / "protocol.txt").write_text("changed protocol\n", encoding="utf-8")
     assert _corpus_git_identity()["corpus_harness_git_dirty"] is True
