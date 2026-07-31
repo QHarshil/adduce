@@ -48,10 +48,22 @@ def _git(*args: str, cwd: Path) -> str:
     return completed.stdout.strip()
 
 
+def _write(path: Path, text: str) -> None:
+    """Write LF bytes into a fixture worktree on every platform.
+
+    ``Path.write_text`` opens in text mode, so on Windows it translates every
+    ``\\n`` to ``\\r\\n``. The worktree then holds CRLF while ``git add`` under
+    an ambient ``core.autocrlf=true`` stores an LF blob, and the runner, which
+    audits with that config suppressed, correctly reports the clone dirty and
+    refuses to scan it.
+    """
+    path.write_bytes(text.encode("utf-8"))
+
+
 def _make_git_repo(path: Path) -> str:
     path.mkdir(parents=True)
-    (path / "README.md").write_text("# Fixture\n\nRun with `python train.py`.\n", encoding="utf-8")
-    (path / "train.py").write_text("print('fixture')\n", encoding="utf-8")
+    _write(path / "README.md", "# Fixture\n\nRun with `python train.py`.\n")
+    _write(path / "train.py", "print('fixture')\n")
     _git("init", "-q", cwd=path)
     _git("config", "user.name", "Corpus Test", cwd=path)
     _git("config", "user.email", "corpus@example.invalid", cwd=path)
@@ -997,7 +1009,7 @@ def test_runner_rejects_clone_changed_after_manifest(tmp_path: Path) -> None:
     repos = tmp_path / "repos.csv"
     _write_repos(repos, commit)
     _write_clone_manifest(clones, repos, commit)
-    (clone / "untracked.txt").write_text("changed\n", encoding="utf-8")
+    _write(clone / "untracked.txt", "changed\n")
     run = tmp_path / "run"
 
     completed = subprocess.run(

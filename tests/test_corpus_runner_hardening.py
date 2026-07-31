@@ -44,27 +44,48 @@ RUNNER = ROOT / "corpus" / "scripts" / "run_validation.py"
 
 
 def _git(*args: str, cwd: Path) -> str:
+    # Deliberately run under the ambient Git configuration, unlike the harness
+    # helpers of the same name in clone_repos.py and run_validation.py. A
+    # fixture built the way an operator's Git would build it is what makes a
+    # CRLF worktree observable at all: ambient core.autocrlf=true normalises the
+    # blob to LF, so a fixture holding CRLF is genuinely dirty and the harness
+    # says so. Suppressing the ambient config here would store CRLF in the blob
+    # too, hide the mismatch, and mask the defect that
+    # test_ambient_autocrlf_makes_a_crlf_worktree_genuinely_dirty pins.
     completed = subprocess.run(["git", *args], cwd=cwd, capture_output=True, text=True, check=True)
     return completed.stdout.strip()
 
 
+def _write(path: Path, text: str) -> None:
+    """Write LF bytes into a fixture worktree on every platform.
+
+    ``Path.write_text`` opens in text mode, so on Windows it translates every
+    ``\\n`` to ``\\r\\n``. A tracked fixture file written that way holds CRLF
+    while ``git add`` under an ambient ``core.autocrlf=true`` stores an LF blob;
+    the harness then audits with that config suppressed, compares CRLF against
+    LF, and correctly reports the worktree as modified. Writing bytes keeps the
+    fixture byte-identical on every platform, so its digests are too.
+    """
+    path.write_bytes(text.encode("utf-8"))
+
+
 def _make_repo(path: Path, *, lfs_pointer: bool = False) -> str:
     path.mkdir(parents=True)
-    (path / "README.md").write_text("# Fixture\n", encoding="utf-8")
-    (path / "train.py").write_text("print('fixture')\n", encoding="utf-8")
-    (path / "adduce.toml").write_text(
+    _write(path / "README.md", "# Fixture\n")
+    _write(path / "train.py", "print('fixture')\n")
+    _write(
+        path / "adduce.toml",
         'profile = "acm"\n'
         'ignore = ["R-DOC-001"]\n'
         'exclude = ["**/*.py"]\n'
         "fail_under = 100\n",
-        encoding="utf-8",
     )
     if lfs_pointer:
-        (path / "weights.bin").write_text(
+        _write(
+            path / "weights.bin",
             "version https://git-lfs.github.com/spec/v1\n"
             "oid sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\n"
             "size 100\n",
-            encoding="utf-8",
         )
     _git("init", "-q", cwd=path)
     _git("config", "user.name", "Corpus Test", cwd=path)
@@ -289,9 +310,9 @@ def test_corpus_git_identity_requires_every_declared_file_tracked_and_clean(
     repository = tmp_path / "repository"
     corpus = repository / "corpus"
     corpus.mkdir(parents=True)
-    (corpus / "protocol.txt").write_text("frozen protocol\n", encoding="utf-8")
+    _write(corpus / "protocol.txt", "frozen protocol\n")
     preregistration = corpus / "preregistration.json"
-    preregistration.write_text("{}\n", encoding="utf-8")
+    _write(preregistration, "{}\n")
     _git("init", "-q", cwd=repository)
     _git("config", "user.name", "Corpus Test", cwd=repository)
     _git("config", "user.email", "corpus@example.invalid", cwd=repository)
@@ -329,10 +350,10 @@ def test_corpus_git_identity_requires_every_declared_file_tracked_and_clean(
         ]
     )
 
-    (corpus / "protocol.txt").write_text("changed protocol\n", encoding="utf-8")
+    _write(corpus / "protocol.txt", "changed protocol\n")
     assert _corpus_git_identity()["corpus_harness_git_dirty"] is True
 
-    (corpus / "untracked.txt").write_text("not committed\n", encoding="utf-8")
+    _write(corpus / "untracked.txt", "not committed\n")
     monkeypatch.setattr(
         run_validation,
         "REQUIRED_HARNESS_PATHS",
@@ -559,6 +580,67 @@ def test_runner_rechecks_origin_and_acquisition_digest(tmp_path: Path) -> None:
         load_clone_records(clones, repos_data, [row], expected_clone_tool_sha256="a" * 64)
 
 
+def test_ambient_autocrlf_makes_a_crlf_worktree_genuinely_dirty(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A CRLF worktree over an LF blob is dirty, and acquisition is right to say so.
+
+    This is the mechanism behind the Windows-only corpus-harness failures:
+    fixtures written with ``Path.write_text`` hold CRLF there, ``git add``
+    under the runner's ambient ``core.autocrlf=true`` stores LF, and the audit,
+    which suppresses that config on purpose, sees the two disagree. The
+    fixtures now write bytes, so this test plants the CRLF explicitly to keep
+    the mechanism pinned on every platform. It also guards the ambient ``_git``
+    above: making that helper hermetic would store CRLF in the blob, hide the
+    mismatch, and turn this assertion green for the wrong reason.
+    """
+    ambient_config = tmp_path / "ambient-gitconfig"
+    _write(ambient_config, "[core]\n\tautocrlf = true\n")
+    monkeypatch.setenv("GIT_CONFIG_GLOBAL", str(ambient_config))
+    monkeypatch.setenv("GIT_CONFIG_NOSYSTEM", "1")
+
+    clones = tmp_path / "clones"
+    clone = clones / "fixture"
+    clone.mkdir(parents=True)
+    crlf = b"# Fixture\r\n"
+    # The CRLF has to predate the commit, exactly as it does on Windows: Git
+    # records the worktree size in the index, and a size that disagrees is
+    # reported modified without the clean filter ever running. Planting the
+    # CRLF afterwards would therefore look dirty to ambient Git too and would
+    # test a different, easier thing.
+    (clone / "README.md").write_bytes(crlf)
+    _git("init", "-q", cwd=clone)
+    _git("config", "user.name", "Corpus Test", cwd=clone)
+    _git("config", "user.email", "corpus@example.invalid", cwd=clone)
+    _git("remote", "add", "origin", "https://example.invalid/fixture", cwd=clone)
+    _git("add", ".", cwd=clone)
+    _git("commit", "-qm", "fixture", cwd=clone)
+    commit = _git("rev-parse", "HEAD", cwd=clone)
+    # Rewriting the identical bytes moves the mtime while leaving the size
+    # alone, so Git compares content rather than trusting the cached stat.
+    # Without it the result depends on residual racy-clean state left by the
+    # commit, measured to hold 392 runs in 400; the residual 2% is the case
+    # where the plant and the commit's index write straddle a second.
+    (clone / "README.md").write_bytes(crlf)
+
+    assert _git("cat-file", "-s", "HEAD:README.md", cwd=clone) == str(len(b"# Fixture\n"))
+    assert (clone / "README.md").read_bytes() == crlf
+    # Ambient Git applies the clean filter and so sees nothing wrong, which is
+    # why the mismatch stays invisible until something audits without it.
+    # --no-optional-locks is load-bearing rather than tidiness: a plain status
+    # rewrites .git/index with refreshed stat data, and an entry Git no longer
+    # treats as racily clean is short-circuited by the isolated audit below,
+    # which then reports a clean clone and fails the assertion that follows.
+    # Measured flaky at roughly 1 run in 80 without it, and always failing once
+    # a second elapses between the write above and this line.
+    assert _git("--no-optional-locks", "status", "--porcelain", cwd=clone) == ""
+
+    record = clone_one(_inventory_row(commit), clones)
+
+    assert record["dirty"] is True
+    assert record["error"] == "clone has tracked or untracked changes"
+
+
 def test_clone_and_audit_agree_on_line_endings_under_ambient_autocrlf(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -566,7 +648,7 @@ def test_clone_and_audit_agree_on_line_endings_under_ambient_autocrlf(
     origin = tmp_path / "origin"
     commit = _make_repo(origin)
     ambient_config = tmp_path / "ambient-gitconfig"
-    ambient_config.write_text("[core]\n\tautocrlf = true\n", encoding="utf-8")
+    _write(ambient_config, "[core]\n\tautocrlf = true\n")
     monkeypatch.setenv("GIT_CONFIG_GLOBAL", str(ambient_config))
     monkeypatch.setenv("GIT_CONFIG_NOSYSTEM", "1")
 
