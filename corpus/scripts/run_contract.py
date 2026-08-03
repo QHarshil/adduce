@@ -571,6 +571,33 @@ def _validate_metadata(metadata: dict[str, Any]) -> None:
     if observed_harness.hexdigest() != harness_digest:
         raise RunContractError("corpus harness aggregate digest is inconsistent")
 
+    clone_tool_sha256 = metadata.get("clone_tool_sha256")
+    matches_live = metadata.get("clone_tool_sha256_matches_live")
+    # Present-together, like a matched pair rather than two independent optional
+    # fields: a run produced before either existed carries neither, and validates
+    # exactly as it did at that HEAD. Only a run declaring one without the other
+    # is refused here.
+    if (clone_tool_sha256 is None) != (matches_live is None):
+        raise RunContractError(
+            "run metadata clone-tool digest and live-agreement disclosure "
+            "must both be present or both be absent"
+        )
+    if clone_tool_sha256 is not None:
+        if not isinstance(matches_live, bool):
+            raise RunContractError("run metadata has invalid clone-tool live-agreement evidence")
+        # Both operands are already elsewhere in this same metadata: clone_tool_sha256
+        # (the manifest's acquisition-time declaration) and corpus_harness_files
+        # ["scripts/clone_repos.py"] (this run's own live-at-run-time snapshot). This
+        # is self-consistency of the recorded disclosure, not a reintroduction of the
+        # retired live-vs-declared gate: a run where the two digests genuinely differ,
+        # and matches_live correctly says False, still validates. Only a disclosure
+        # that misreports its own already-recorded fields is refused.
+        live_matches = clone_tool_sha256 == harness_files["scripts/clone_repos.py"]
+        if matches_live != live_matches:
+            raise RunContractError(
+                "run metadata clone-tool live-agreement disclosure disagrees with its own digests"
+            )
+
     n_repositories = _nonnegative_int(metadata.get("n_repositories"), "n_repositories")
     n_succeeded = _nonnegative_int(metadata.get("n_succeeded"), "n_succeeded")
     n_crashed = _nonnegative_int(metadata.get("n_crashed"), "n_crashed")
@@ -1143,7 +1170,7 @@ def _validate_raw_payload(
 
 
 def _validate_clone_manifest(
-    payload: dict[str, Any], inventory_sha: str, clone_tool_sha256: str
+    payload: dict[str, Any], inventory_sha: str, clone_tool_sha256: str | None
 ) -> dict[str, dict[str, Any]]:
     if payload.get("clone_schema_version") != 2:
         raise RunContractError("copied clone manifest has an unsupported schema")
@@ -1152,7 +1179,11 @@ def _validate_clone_manifest(
         raise RunContractError("copied clone manifest lacks its inventory path")
     if payload.get("repos_file_sha256") != inventory_sha:
         raise RunContractError("copied clone manifest inventory digest is inconsistent")
-    if payload.get("clone_tool_sha256") != clone_tool_sha256:
+    # None means this run predates the field (enforced in _validate_metadata via
+    # presence-together with clone_tool_sha256_matches_live): nothing to compare a
+    # pre-field artifact's declared tool digest against, so it is left unchecked
+    # here rather than refused.
+    if clone_tool_sha256 is not None and payload.get("clone_tool_sha256") != clone_tool_sha256:
         raise RunContractError("copied clone manifest was produced by a different clone harness")
     records = payload.get("records")
     if not isinstance(records, list):
@@ -1477,9 +1508,23 @@ def _validate_input_copies(
         raise RunContractError("copied inventory IDs do not match combined.csv")
 
     clone_payload = _load_json_bytes(clones_data, "inputs/clones_manifest.json")
-    clone_tool_digest = metadata["corpus_harness_files"]["scripts/clone_repos.py"]
+    # Compared against what this run itself recorded (metadata["clone_tool_sha256"]),
+    # never against the live clone harness: a later patch to that harness cannot
+    # retroactively alter bytes an earlier acquisition already produced. This is
+    # not a value compared to itself — the copied manifest and run_meta.json are
+    # independent artifacts, so the check still catches either one being changed
+    # (by tampering or by a producer bug) without the other. Optional, like its
+    # sibling digests above: a run produced before this field existed carries
+    # neither it nor its live-agreement disclosure (paired in _validate_metadata),
+    # and validates as it did before either field existed.
+    declared_clone_tool_sha256 = metadata.get("clone_tool_sha256")
+    if declared_clone_tool_sha256 is not None and (
+        not isinstance(declared_clone_tool_sha256, str)
+        or not _SHA256_RE.fullmatch(declared_clone_tool_sha256)
+    ):
+        raise RunContractError("run metadata lacks a well-formed clone-tool digest")
     clones = _validate_clone_manifest(
-        clone_payload, metadata["repos_file_sha256"], clone_tool_digest
+        clone_payload, metadata["repos_file_sha256"], declared_clone_tool_sha256
     )
     if set(clones) != set(combined):
         raise RunContractError("copied clone manifest IDs do not match combined.csv")

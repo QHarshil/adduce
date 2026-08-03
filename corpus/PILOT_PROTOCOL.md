@@ -440,6 +440,130 @@ before `r5-a` starts. No `r3`, `r4`, or `r5` claim-link output exists. This
 amendment was prepared from file digests and the retained protocol text
 alone; no retained `r2` evaluation informed it.
 
+### Protocol amendment 7: post-platform-fix re-lock and candidate rename
+
+Amended: 2026-07-31 (pre-registered before execution)
+
+The `r5` preregistration is void. Correcting a set of Windows-specific defects
+changed both the analyzer and the harness. Descriptors in the write boundary and
+in the execution layer were opened in the C runtime's default text mode, so on
+Windows a written newline became a carriage-return/newline pair, the on-disk
+size then exceeded the payload length, and adduce could not write its own
+artifacts; and the corpus harness resolved Git after narrowing its child
+environment, and acquired clones under a different Git configuration than it
+later audited them with. The fixes moved `src/adduce/safe_write.py` and
+`src/adduce/dynamic/reproduce.py`, which lie inside the byte tree that
+`_source_tree_sha256` hashes, and `scripts/check_builtin.py`,
+`scripts/clone_repos.py` and `scripts/run_validation.py`, which lie inside the
+analysis plan. The recorded `adduce.version` is unchanged at `0.1.2`: this is a
+correctness fix on a prepared release, not a new release.
+
+Amendment 6 stated that the `r4` review scaffolds "were issued but returned
+empty". That clause is withdrawn. This protocol defines a returned review as a
+reviewer's handoff of a completed file to the coordinator, and no reviewer ever
+received either `r4` file, so no return occurred and none can be reported. The
+conclusion amendment 6 drew from that clause stands, and is restated here on its
+own evidence: no human claim-review decision exists for any candidate pair.
+Amendment 6's recorded text is left exactly as written. A preregistration is a
+record of what was believed and when it was believed, so an error in one is
+superseded by a later dated amendment, never edited in place.
+
+Neither `pilot-0.1.2-r5-a` nor `pilot-0.1.2-r5-b` was ever created or executed,
+so no run output, claim label, sample, review, adjudication, or score is
+affected, and no artifact is discarded. Following the standing rule recorded in
+amendment 6, the current trust-milestone candidate pair is pre-registered as
+`pilot-0.1.2-r6-a` and `pilot-0.1.2-r6-b`, with the machine-readable prospective
+lock at `corpus/pilot-r6-preregistration.json` and protocol ID `pilot-0.1.2-r6`.
+Neither `r6` candidate directory has been created or executed as part of this
+amendment.
+
+This amendment changes `PILOT_PROTOCOL.md` itself and `README.md`, and it
+changes `scripts/run_validation.py`, whose `PREREGISTRATION_PATH` now targets
+the `r6` lock, and `scripts/run_contract.py`. The `r6` lock is generated from
+the final bytes of every file it binds, this amendment included.
+
+The analyzer and harness were exercised on the supported platform matrix before
+this amendment was prepared. Continuous-integration run `30616431576` covers the
+Windows platform fixes named above and reports exactly one failing test on every
+leg, including Windows: the lock-identity check this amendment resolves. The
+retired acceptance check recorded below landed after that run, so it will be
+covered by continuous integration on the commit that registers this amendment,
+and that leg is to be read before any `r6` candidate is executed. Locking ahead
+of either would have pre-registered a harness that no supported platform had
+exercised.
+
+One acceptance check is retired here, and the reason is recorded rather than
+left to inference. `run_validation.py` recomputed the expected clone-tool digest
+from the live `scripts/clone_repos.py` and refused any run whose clone manifest
+declared a different one. The frozen clone set was acquired on 2026-07-13, and
+the Windows fix named above changed that tool afterwards, so from that point
+`run_validation.py` refused every new run over the frozen corpus before creating
+an output directory. `run_contract.py` carried the same comparison at run
+finalisation, against the harness digest each run recorded for itself; it never
+refused anything, because the earlier check always stopped the run first, and it
+continues to accept the retained runs, whose recorded digest matched their
+manifest at the time. Lifting only the first check made the second one refuse in
+its place, at the end of an otherwise complete run. A later patch to an
+acquisition tool cannot alter bytes already acquired, so the refusal was
+incorrect rather than protective, and both comparisons against a
+later-than-acquisition digest are removed. What establishes
+clone integrity is unchanged and is re-verified on every load: the per-clone
+`git_tree_sha`, `worktree_sha256` and `repository_tree_sha256`, with the origin
+and `HEAD` re-checks beside them. What establishes manifest authenticity for an
+effectiveness run is this lock, because validation rebuilds the entire expected
+payload from live inputs, so `inputs.clone_manifest_sha256` binds the manifest
+bytes and the acquisition-tool digest recorded inside them. A manifest must
+still declare a well-formed digest or the run is refused; every run now records
+that digest and whether it matches the current tool; and run finalisation
+compares the copied manifest against the value the run itself recorded, so a
+manifest substituted after a run is still refused. No acceptance rule bearing on
+any pilot conclusion changes.
+
+This amendment changes no input, parameter, or acceptance rule beyond the
+re-lock, the rename, and the retired check recorded above. Unchanged: the frozen
+repository inventory and its SHA-256, the clone manifest including the
+acquisition-tool digest it records, the clone snapshot set, the badged provenance
+record, the 300-second per-repository timeout, offline built-in-only execution
+with plugins disabled, default configuration, reviewer mode, the minimal
+credential-free child environment, the sampling design and seed 0, the cohort
+composition (5 badged_functional, 5 stress, 5 unvetted, 15 repositories), the
+sentinel census for FRL, SimCSE and Torchtune, the handbook-calibration and
+second-review quotas, the two-independent-reviewer claim-review requirement with
+its blinding and conflict-of-interest conditions and neutral coordination, and
+every acceptance rule. The pre-registered candidate truth remains
+`corpus/labels/pilot-claims.json` with SHA-256
+`9a26d06c59070173ad89f60bc221a395dd1a487132eeed7415d2cadeff63611e`. Because that
+truth file and its digest are unchanged, the void condition recorded in
+amendment 4 for a changed truth was never triggered. The built-in rule count of
+78 and the built-in rule-ID inventory digest are unchanged, and no rule function
+was edited.
+
+Unlike amendment 6, observable behaviour is implicated, on one platform, and the
+finding is stronger than a detector defect. Before these fixes adduce could not
+write its own artifacts on Windows at all: the write boundary opened descriptors
+in text mode, a written newline became a carriage-return/newline pair, the
+resulting file exceeded the payload length, the boundary correctly refused, and
+the partially written file was removed. Every command that writes therefore
+exited 2 on Windows, so no artifact and no evidence-ledger record was produced
+and no generation observation was obtainable there. The write boundary was
+working as designed; what was wrong was the descriptor mode beneath it. No
+built-in rule is implicated, the rule inventory is unchanged, and no rule
+function was edited. No candidate pair has ever been executed on Windows, so no
+recorded pilot observation is affected, and any Windows observation predating
+this amendment would have to be discarded rather than interpreted.
+
+The claim-review and finding-review gates remain open. The
+two-independent-human-reviewer claim review has not been performed, and no human
+decision exists for any candidate pair. The two empty scaffolds bound to the
+`r5` pair are void with the `r5` lock; no reviewer has held either, so nothing
+is lost. New scaffolds bound to the `r6` pair will be issued before `r6-a`
+starts, and the `r4` and `r5` scaffolds are not distributed. No `r3`,
+`r4`, `r5`, or `r6` claim-link output exists. Effectiveness gate 1, a clean
+committed analyzer with the preregistration tracked at one Git `HEAD`, is not
+satisfied until the `r6` lock is generated, tracked, and clean. This amendment
+was prepared from file digests, the recorded Git history of the files it names,
+and the retained protocol text alone; no retained `r2` evaluation informed it.
+
 ## Ground truth and review
 
 Before using the pilot for detector changes:

@@ -1,8 +1,8 @@
 # Validation corpus
 
-Adduce uses three separate evidence layers because detector regression,
-reviewed decision correctness and claim-link behaviour, and operational
-robustness are different questions.
+Adduce uses three separate evidence layers because the questions they answer
+are distinct: detector regression; reviewed decision correctness and
+claim-link behaviour; and operational robustness.
 The [pilot protocol](PILOT_PROTOCOL.md) freezes the initial inventory,
 selection rules, execution contract, review method, and reporting limits before
 any pilot output is inspected.
@@ -116,16 +116,16 @@ command below writes an empty scaffold; it does not create, infer, or
 pre-populate a human decision:
 
 ```bash
-CLAIM_REVIEW_A=corpus/labels/pilot-claim-review-r5-reviewer-a.json
-CLAIM_REVIEW_B=corpus/labels/pilot-claim-review-r5-reviewer-b.json
-CLAIM_REVIEW=corpus/labels/pilot-claim-review-r5-merged.json
+CLAIM_REVIEW_A=corpus/labels/pilot-claim-review-r6-reviewer-a.json
+CLAIM_REVIEW_B=corpus/labels/pilot-claim-review-r6-reviewer-b.json
+CLAIM_REVIEW=corpus/labels/pilot-claim-review-r6-merged.json
 
 python corpus/scripts/claim_review.py init \
   --claims corpus/labels/pilot-claims.json \
   --repos corpus/repos.csv \
   --clones corpus/clones/pilot-2026-07-13 \
-  --candidate-run pilot-0.1.2-r5-a \
-  --candidate-run pilot-0.1.2-r5-b \
+  --candidate-run pilot-0.1.2-r6-a \
+  --candidate-run pilot-0.1.2-r6-b \
   --out "$CLAIM_REVIEW_A"
 
 cp "$CLAIM_REVIEW_A" "$CLAIM_REVIEW_B"
@@ -158,7 +158,7 @@ The merge records both source-file SHA-256 values and reviewer identities and
 never adds an adjudication. An independent adjudicator resolves every decision
 disagreement in the merged file. The adjudicator makes the same assignment-
 scoped conflict declaration after the initial reviews and before recording a
-decision; a conflicted adjudication is reassigned. Before `r5-a` starts, the
+decision; a conflicted adjudication is reassigned. Before `r6-a` starts, the
 completed artifact and its two immutable sources must pass:
 
 ```bash
@@ -184,7 +184,7 @@ against socket and non-metadata subprocess activity, and hashes repository
 bytes before and after each check. The audit guard detects scanner regressions;
 it is not an operating-system sandbox.
 
-The [2026-07-29 protocol amendment](PILOT_PROTOCOL.md#protocol-amendment-6-post-version-bump-re-lock-and-candidate-rename)
+The [2026-07-31 protocol amendment](PILOT_PROTOCOL.md#protocol-amendment-7-post-platform-fix-re-lock-and-candidate-rename)
 pre-registers the fresh pair below. These commands are prospective: the pair
 must not run until the claim-review gate above passes and the candidate source
 and harness have stabilized. Effectiveness runs also require Adduce source at a
@@ -192,7 +192,7 @@ full, clean Git commit so the analyzer can be reconstructed; a release tag or
 package publication is not required for this candidate evidence.
 
 The tracked
-[`pilot-r5-preregistration.json`](pilot-r5-preregistration.json) is the
+[`pilot-r6-preregistration.json`](pilot-r6-preregistration.json) is the
 machine-readable prospective lock. It freezes the exact candidate names,
 300-second timeout, analyzer, rule-set and dependency identity, repository,
 clone, truth and provenance digests, reviewer/offline/no-plugin execution
@@ -205,8 +205,11 @@ names it. Protocol amendment 5 voided that lock, and it is retained only as a
 historical artifact: no script, test, or run loads it.
 `pilot-r4-preregistration.json` is also present because protocol amendment 5
 names it. Protocol amendment 6 voids that lock, and it is retained only as a
+historical artifact: no script, test, or run loads it.
+`pilot-r5-preregistration.json` is also present because protocol amendment 6
+names it. Protocol amendment 7 voids that lock, and it is retained only as a
 historical artifact: no script, test, or run loads it, and
-`pilot-r5-preregistration.json` is the live prospective lock.
+`pilot-r6-preregistration.json` is the live prospective lock.
 
 ```bash
 python corpus/scripts/run_validation.py \
@@ -216,11 +219,11 @@ python corpus/scripts/run_validation.py \
   --claim-review "$CLAIM_REVIEW" \
   --claim-review-source "$CLAIM_REVIEW_A" \
   --claim-review-source "$CLAIM_REVIEW_B" \
-  --out corpus/outputs/pilot-0.1.2-r5-a \
+  --out corpus/outputs/pilot-0.1.2-r6-a \
   --timeout 300
 
 python corpus/scripts/validate_run.py \
-  corpus/outputs/pilot-0.1.2-r5-a
+  corpus/outputs/pilot-0.1.2-r6-a
 
 python corpus/scripts/run_validation.py \
   --repos corpus/repos.csv \
@@ -229,16 +232,16 @@ python corpus/scripts/run_validation.py \
   --claim-review "$CLAIM_REVIEW" \
   --claim-review-source "$CLAIM_REVIEW_A" \
   --claim-review-source "$CLAIM_REVIEW_B" \
-  --out corpus/outputs/pilot-0.1.2-r5-b \
+  --out corpus/outputs/pilot-0.1.2-r6-b \
   --timeout 300
 
 python corpus/scripts/validate_run.py \
-  corpus/outputs/pilot-0.1.2-r5-b
+  corpus/outputs/pilot-0.1.2-r6-b
 
 python corpus/scripts/compare_runs.py \
-  corpus/outputs/pilot-0.1.2-r5-a \
-  corpus/outputs/pilot-0.1.2-r5-b \
-  --out corpus/reports/pilot-determinism-r5.json
+  corpus/outputs/pilot-0.1.2-r6-a \
+  corpus/outputs/pilot-0.1.2-r6-b \
+  --out corpus/reports/pilot-determinism-r6.json
 
 python corpus/scripts/claim_review.py validate \
   --review "$CLAIM_REVIEW" \
@@ -246,8 +249,8 @@ python corpus/scripts/claim_review.py validate \
   --initial-review "$CLAIM_REVIEW_A" \
   --initial-review "$CLAIM_REVIEW_B" \
   --require-accepted \
-  --run corpus/outputs/pilot-0.1.2-r5-a \
-  --run corpus/outputs/pilot-0.1.2-r5-b
+  --run corpus/outputs/pilot-0.1.2-r6-a \
+  --run corpus/outputs/pilot-0.1.2-r6-b
 ```
 
 A run directory is never reused. `_RUNNING` marks interrupted output;
@@ -278,7 +281,7 @@ stopped on a repository `SyntaxWarning`; the narrowly amended r2 harness then
 produced a valid deterministic pair and generation audit. All preflights, r1,
 and r2 remain immutable historical evidence. Current scripts have changed and
 must not reinterpret any of those directories; historical verification uses
-only each run's frozen `harness/` copy. The preregistered r5 pair is the next
+only each run's frozen `harness/` copy. The preregistered r6 pair is the next
 candidate and has not been run as part of this documentation change.
 
 The following historical checks are read-only. They invoke only the frozen r2
@@ -307,8 +310,8 @@ Reports are written outside the immutable run directory.
 
 ```bash
 python corpus/scripts/summarize.py \
-  --run corpus/outputs/pilot-0.1.2-r5-a \
-  --out corpus/reports/pilot-summary-r5.md
+  --run corpus/outputs/pilot-0.1.2-r6-a \
+  --out corpus/reports/pilot-summary-r6.md
 ```
 
 The report keeps evaluated, unvetted, and stress roles distinct. A frequent
@@ -322,16 +325,16 @@ Use the operational definitions and edge-case rules in the
 samples and outputs remain immutable historical evidence. Because
 `label_findings.py` is part of the run-bound harness, the current reporter must
 not reinterpret those samples after its source changes. Draw new bound samples
-only from the validated r5 candidate. Do not point any current command at r2:
+only from the validated r6 candidate. Do not point any current command at r2:
 
 ```bash
-RUN=corpus/outputs/pilot-0.1.2-r5-a
-SENTINELS=corpus/labels/pilot-sentinels-r5.jsonl
-SAMPLE=corpus/labels/pilot-layer-b-sample-r5.jsonl
-ALLOCATION=corpus/labels/pilot-review-allocation-r5.json
-PRIMARY_REVIEW=corpus/labels/pilot-findings-r5-primary.json
-SECONDARY_REVIEW=corpus/labels/pilot-findings-r5-secondary.json
-MERGED_REVIEW=corpus/labels/pilot-findings-r5-merged.json
+RUN=corpus/outputs/pilot-0.1.2-r6-a
+SENTINELS=corpus/labels/pilot-sentinels-r6.jsonl
+SAMPLE=corpus/labels/pilot-layer-b-sample-r6.jsonl
+ALLOCATION=corpus/labels/pilot-review-allocation-r6.json
+PRIMARY_REVIEW=corpus/labels/pilot-findings-r6-primary.json
+SECONDARY_REVIEW=corpus/labels/pilot-findings-r6-secondary.json
+MERGED_REVIEW=corpus/labels/pilot-findings-r6-merged.json
 ```
 
 First draw a complete census of all findings for the predeclared FRL, SimCSE,
@@ -603,8 +606,8 @@ python corpus/scripts/claim_ground_truth.py evaluate \
   --claims corpus/labels/pilot-claims.json \
   --repos corpus/repos.csv \
   --clones corpus/clones/pilot-2026-07-13 \
-  --run corpus/outputs/pilot-0.1.2-r5-a \
-  --out corpus/reports/pilot-claim-links-r5-a.json
+  --run corpus/outputs/pilot-0.1.2-r6-a \
+  --out corpus/reports/pilot-claim-links-r6-a.json
 ```
 
 Incorrect links are more serious than missing links: no claim trail should be
@@ -622,13 +625,13 @@ machine-checkable audit manifest.
 
 ```bash
 python corpus/scripts/audit_sentinel_generation.py generate \
-  --run corpus/outputs/pilot-0.1.2-r5-a \
+  --run corpus/outputs/pilot-0.1.2-r6-a \
   --clones corpus/clones/pilot-2026-07-13 \
-  --out corpus/reports/pilot-generation-audit-r5-a
+  --out corpus/reports/pilot-generation-audit-r6-a
 
 python corpus/scripts/audit_sentinel_generation.py validate \
-  --bundle corpus/reports/pilot-generation-audit-r5-a \
-  --run corpus/outputs/pilot-0.1.2-r5-a \
+  --bundle corpus/reports/pilot-generation-audit-r6-a \
+  --run corpus/outputs/pilot-0.1.2-r6-a \
   --clones corpus/clones/pilot-2026-07-13
 ```
 
