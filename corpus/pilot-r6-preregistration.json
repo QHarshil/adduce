@@ -1,0 +1,68 @@
+{
+  "adduce": {
+    "builtin_rule_count": 78,
+    "builtin_rule_ids_sha256": "dee5b483be8596cdac0acb94c4879a8245da82441a6428ef8f2b9a42864a6a14",
+    "dependency_versions_sha256": "2879dd0e4851e8b8c23c2760f1c8c43e735a4e3360bf00691024e38e11aa673d",
+    "source_tree_sha256": "1b24ccf68aba75cfeb75825817497dbefc9132cb5173e5e2f80fa857a7867485",
+    "version": "0.1.2"
+  },
+  "analysis_plan": {
+    "files": {
+      "ANNOTATION_GUIDE.md": "df0b106bbdb2ab818c28da66283cfe13c1c30e200345431d6d9436e1174f652c",
+      "PILOT_PROTOCOL.md": "ee15b1537b63adcb28e62c3664e0cf0bbd8ab6f1ad243544a84d84e299f00fd6",
+      "README.md": "0ec62377e8c72ac889ed88e4e8369848dec49cf9da6443c74998b8ff18dea003",
+      "claim-ground-truth.schema.json": "5a0c9d2f57d7b973983ef8d0c0d13300dd2d9636e0dbe955e83bcc32b1fb28f2",
+      "claim-review.schema.json": "c2a27e12d155d2e6b5ba0ea44445c826bc50244b10436c1545dcb9aaf055b317",
+      "finding-review.schema.json": "a609e250a9c2d99336c8d15c761eb33bec4db4aa9ed6d388a66b346a591807d3",
+      "generation-audit.schema.json": "cbcff3466255b697c2b181d588db958e4e6d92c6e8ca7c7b5a60aad18ac166e4",
+      "preregistration.schema.json": "b9624b833ef0e60a286b701769972d5e2a5cdc4214ced0eaa2772d100edf2c9e",
+      "review-allocation.schema.json": "5c7530684b251aabef05f25aa72cc433030328728862c5e7dda5673a073cf2e0",
+      "scripts/audit_sentinel_generation.py": "59b869e0f8b25142630e1a3554a84c110c8a7b58ea539339017a853ea4d104d6",
+      "scripts/check_builtin.py": "851240df89e4c2f90369c94efe030e960448a113cf6682cfbedeca67001e5537",
+      "scripts/claim_ground_truth.py": "0541d677e9ad1839f8642a15d57b176566a3475a09660bed1326a8bd6a5a5d6f",
+      "scripts/claim_review.py": "9aef0834d29838df0785703d51c8bf6e9f5fbc984c2495c28f850e2fd0dc43c6",
+      "scripts/clone_repos.py": "fd5eb6a74db6f92ced8e5ef9b400dc13a10d35de789a5bda2f0fa932669c5502",
+      "scripts/compare_runs.py": "2f1a4a36d51d2678273b0e06571b6fdb94904d5c75994c7038b6328f9b3d18d2",
+      "scripts/label_findings.py": "333e0d8f93be5f951d651ee78203df5b8ff959c5d2a87ada9d125bc89d25595b",
+      "scripts/preregistration.py": "fcda2c2c27288dd46b3edc7bcc4e9e2a8d0c9502a774e47f9ee9726724fad1b9",
+      "scripts/review_allocation.py": "1e8daa74816c6e359298cb5f41a880e9359ca5b87640e7b0e74a6b6c72966db6",
+      "scripts/run_contract.py": "d618362baee6d13c68f6eb5725d20842b5e62cacd42d6085dfa8bb100edd732d",
+      "scripts/run_validation.py": "b142ed944f12887ccd6ac9effaa5b322381afa55a1f71265d4ac522c10769637",
+      "scripts/sample_findings.py": "049d0dd61ac3fce462e300b780f614faf97941b4f97581b823c276ff2fa8d7ca",
+      "scripts/summarize.py": "6152be978028cc254a6308d7975b5c1a527cf3ffde57e6b8c5bd4466f7fffadd",
+      "scripts/validate_run.py": "d3a3f696351da1cfde6ac5ae69e02dc36907049a286f116b86236f62002d4a4e"
+    },
+    "sha256": "1c1e726137911ec9127858bc598cc7b81e71b0ea021127ac892ce426da3d4151"
+  },
+  "analysis_scope": "effectiveness",
+  "candidate_pair": [
+    "pilot-0.1.2-r6-a",
+    "pilot-0.1.2-r6-b"
+  ],
+  "execution_contract": {
+    "adduce_check_mode": "reviewer",
+    "configuration_mode": "defaults-only-repository-config-disabled",
+    "environment_policy": "minimal-no-host-credentials",
+    "execution_mode": "offline-builtins-only",
+    "input_policy": "clone-root-symlink-containment",
+    "plugins_enabled": false,
+    "timeout_seconds": 300
+  },
+  "inputs": {
+    "badged_provenance_sha256": "7119028796ce55c5fe6a4024f1ed435b2cc859fd6cdd06a12df11d21e391dd5f",
+    "claim_ground_truth_sha256": "9a26d06c59070173ad89f60bc221a395dd1a487132eeed7415d2cadeff63611e",
+    "claim_review_schema_sha256": "c2a27e12d155d2e6b5ba0ea44445c826bc50244b10436c1545dcb9aaf055b317",
+    "clone_manifest_sha256": "2fcefb2503e60d4a04a0b4a343056a99ad00294ae3d5ee5c8f430d0b79435b94",
+    "clone_snapshot_set_sha256": "9a171656825240a0b8371833f69c3b25b570e9bb74c4e6bd5f5cab618de06c31",
+    "cohort_counts": {
+      "badged_functional": 5,
+      "stress": 5,
+      "unvetted": 5
+    },
+    "repos_file_sha256": "859fded20ca432fdd02a135b690ecaac75e5c2d457a2b7b2ea62dfc738107fd9",
+    "repository_count": 15
+  },
+  "preregistration_schema_version": 1,
+  "protocol_id": "pilot-0.1.2-r6",
+  "schema_sha256": "b9624b833ef0e60a286b701769972d5e2a5cdc4214ced0eaa2772d100edf2c9e"
+}

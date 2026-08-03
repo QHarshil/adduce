@@ -93,11 +93,12 @@ else:
     )
 
 BUILTIN_CHECKER = Path(__file__).with_name("check_builtin.py")
-PREREGISTRATION_PATH = CORPUS_DIR / "pilot-r5-preregistration.json"
+PREREGISTRATION_PATH = CORPUS_DIR / "pilot-r6-preregistration.json"
 CONFIGURATION_MODE = "defaults-only-repository-config-disabled"
 ADDUCE_CHECK_MODE = "reviewer"
 SUCCESS_STATUSES = frozenset({"succeeded", "succeeded_with_partial_acquisition"})
 _COMMIT_RE = re.compile(r"^[0-9a-f]{40}$")
+_SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 
 _GIT_ENVIRONMENT_KEYS = frozenset(
     {
@@ -471,10 +472,15 @@ def load_clone_records(
     clones_dir: Path,
     repos_data: bytes,
     rows: list[dict[str, str]],
-    *,
-    expected_clone_tool_sha256: str,
-) -> tuple[dict[str, dict], Path, bytes]:
-    """Verify that clone metadata and current worktrees still agree."""
+) -> tuple[dict[str, dict], Path, bytes, str]:
+    """Verify that clone metadata and current worktrees still agree.
+
+    The manifest's declared ``clone_tool_sha256`` is required to be
+    well-formed but is never compared against the live clone harness here: a
+    later patch to that harness cannot retroactively alter bytes an earlier
+    version already acquired, so the caller records the declared digest and
+    its agreement with the live tool as an observation instead.
+    """
     manifest_path = clones_dir / MANIFEST_NAME
     try:
         manifest_data = manifest_path.read_bytes()
@@ -485,8 +491,11 @@ def load_clone_records(
         raise RunContractError("unsupported or missing clone-manifest schema")
     if manifest.get("repos_file_sha256") != hashlib.sha256(repos_data).hexdigest():
         raise RunContractError("clone manifest was produced from different repository metadata")
-    if manifest.get("clone_tool_sha256") != expected_clone_tool_sha256:
-        raise RunContractError("clone manifest was produced by a different clone harness")
+    declared_clone_tool_sha256 = manifest.get("clone_tool_sha256")
+    if not isinstance(declared_clone_tool_sha256, str) or not _SHA256_RE.fullmatch(
+        declared_clone_tool_sha256
+    ):
+        raise RunContractError("clone manifest lacks a well-formed clone-tool digest")
     records = manifest.get("records")
     if not isinstance(records, list):
         raise RunContractError("clone manifest records must be a list")
@@ -562,7 +571,7 @@ def load_clone_records(
         if repository_tree_sha256(clone_path) != recorded_worktree:
             raise RunContractError(f"clone bytes changed after manifest creation: {row['id']}")
         _validate_symlink_containment(clone_path)
-    return by_id, manifest_path, manifest_data
+    return by_id, manifest_path, manifest_data, declared_clone_tool_sha256
 
 
 def check_repo(repo_path: Path, timeout: int) -> tuple[dict | None, str | None, str | None, float]:
@@ -712,14 +721,15 @@ def main() -> int:
         if not rows:
             raise RunContractError("no repositories in the corpus file")
         validate_badged_provenance_bytes(harness_files["badged-provenance.csv"], rows)
-        clone_records, clone_manifest_path, clone_manifest_data = load_clone_records(
-            args.clones,
-            repos_data,
-            rows,
-            expected_clone_tool_sha256=str(
-                hashlib.sha256(harness_files["scripts/clone_repos.py"]).hexdigest()
-            ),
-        )
+        (
+            clone_records,
+            clone_manifest_path,
+            clone_manifest_data,
+            declared_clone_tool_sha256,
+        ) = load_clone_records(args.clones, repos_data, rows)
+        live_clone_tool_sha256 = cast(dict[str, str], identity["corpus_harness_files"])[
+            "scripts/clone_repos.py"
+        ]
         if args.claims is not None:
             try:
                 claim_truth_data = args.claims.read_bytes()
@@ -1010,6 +1020,8 @@ def main() -> int:
         "repos_file_sha256": hashlib.sha256(repos_data).hexdigest(),
         "clone_manifest": str(clone_manifest_path),
         "clone_manifest_sha256": hashlib.sha256(clone_manifest_data).hexdigest(),
+        "clone_tool_sha256": declared_clone_tool_sha256,
+        "clone_tool_sha256_matches_live": declared_clone_tool_sha256 == live_clone_tool_sha256,
         "claim_ground_truth_sha256": claim_ground_truth_sha256,
         "claim_review_sha256": claim_review_sha256,
         "claim_review_source_sha256": claim_review_source_sha256,

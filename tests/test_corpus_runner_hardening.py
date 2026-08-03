@@ -33,6 +33,7 @@ from corpus.scripts.run_validation import (
     _validate_symlink_containment,
     check_repo,
     load_clone_records,
+    load_inventory_snapshot,
     require_reconstructable_analyzer,
 )
 
@@ -41,6 +42,7 @@ import adduce
 ROOT = Path(__file__).resolve().parent.parent
 CHECKER = ROOT / "corpus" / "scripts" / "check_builtin.py"
 RUNNER = ROOT / "corpus" / "scripts" / "run_validation.py"
+FROZEN_CLONES_DIR = ROOT / "corpus" / "clones" / "pilot-2026-07-13"
 
 
 def _git(*args: str, cwd: Path) -> str:
@@ -565,19 +567,76 @@ def test_runner_rechecks_origin_and_acquisition_digest(tmp_path: Path) -> None:
     )
 
     repos_data = repos.read_bytes()
-    loaded, _, _ = load_clone_records(
-        clones, repos_data, [row], expected_clone_tool_sha256="a" * 64
-    )
+    loaded, _, _, declared = load_clone_records(clones, repos_data, [row])
     assert loaded["fixture"]["worktree_sha256"] == record["worktree_sha256"]
+    assert declared == "a" * 64
 
     (clone / "untracked-empty-directory").mkdir()
     with pytest.raises(RunContractError, match="clone bytes changed"):
-        load_clone_records(clones, repos_data, [row], expected_clone_tool_sha256="a" * 64)
+        load_clone_records(clones, repos_data, [row])
     (clone / "untracked-empty-directory").rmdir()
 
     _git("remote", "set-url", "origin", "https://example.invalid/changed", cwd=clone)
     with pytest.raises(RunContractError, match="clone origin changed"):
-        load_clone_records(clones, repos_data, [row], expected_clone_tool_sha256="a" * 64)
+        load_clone_records(clones, repos_data, [row])
+
+
+@pytest.mark.skipif(
+    not FROZEN_CLONES_DIR.is_dir(),
+    reason="local-only frozen corpus acquisition is not present in this checkout",
+)
+def test_runner_accepts_the_real_frozen_corpus_despite_its_stale_clone_tool_digest() -> None:
+    """The 2026-07-13 acquisition predates 8799e09's clone_repos.py fix; must not refuse.
+
+    A later patch to the clone harness cannot retroactively alter bytes an
+    earlier version already acquired, so a disagreement here is evidence
+    about tool history, never grounds to refuse the run.
+    """
+    repos_data, rows = load_inventory_snapshot(ROOT / "corpus" / "repos.csv")
+
+    loaded, _, manifest_data, declared = load_clone_records(FROZEN_CLONES_DIR, repos_data, rows)
+
+    manifest = json.loads(manifest_data)
+    assert declared == manifest["clone_tool_sha256"]
+    live_clone_tool_sha256 = sha256_file(ROOT / "corpus" / "scripts" / "clone_repos.py")
+    # This is the real, historical mismatch the defect was about, not a
+    # coincidental one: assert it rather than assume it.
+    assert declared != live_clone_tool_sha256
+    assert set(loaded) == {row["id"] for row in rows}
+
+
+_MISSING_CLONE_TOOL_DIGEST = object()
+
+
+@pytest.mark.parametrize(
+    "clone_tool_sha256",
+    [_MISSING_CLONE_TOOL_DIGEST, 12345, "a" * 63, "a" * 65, "g" * 64, "A" * 64, ""],
+    ids=["missing", "non-string", "too-short", "too-long", "non-hex", "uppercase", "empty"],
+)
+def test_load_clone_records_refuses_a_malformed_clone_tool_digest(
+    tmp_path: Path, clone_tool_sha256: object
+) -> None:
+    clones = tmp_path / "clones"
+    commit = _make_repo(clones / "fixture")
+    row = _inventory_row(commit)
+    record = clone_one(row, clones)
+    repos = tmp_path / "repos.csv"
+    repos.write_text(
+        "id,cohort,repo_url,commit_sha\n"
+        f"fixture,unvetted,https://example.invalid/fixture,{commit}\n",
+        encoding="utf-8",
+    )
+    manifest: dict[str, object] = {
+        "clone_schema_version": CLONE_SCHEMA_VERSION,
+        "repos_file_sha256": sha256_file(repos),
+        "records": [record],
+    }
+    if clone_tool_sha256 is not _MISSING_CLONE_TOOL_DIGEST:
+        manifest["clone_tool_sha256"] = clone_tool_sha256
+    write_json(clones / "clones_manifest.json", manifest)
+
+    with pytest.raises(RunContractError, match="well-formed clone-tool digest"):
+        load_clone_records(clones, repos.read_bytes(), [row])
 
 
 def test_ambient_autocrlf_makes_a_crlf_worktree_genuinely_dirty(
@@ -675,9 +734,7 @@ def test_clone_and_audit_agree_on_line_endings_under_ambient_autocrlf(
         },
     )
 
-    loaded, _, _ = load_clone_records(
-        clones, repos.read_bytes(), [row], expected_clone_tool_sha256="a" * 64
-    )
+    loaded, _, _, _ = load_clone_records(clones, repos.read_bytes(), [row])
     assert loaded["fixture"]["worktree_sha256"] == record["worktree_sha256"]
 
 

@@ -2185,10 +2185,10 @@ def test_preregistration_builder_rejects_unsafe_candidate_pairs(
         )
 
 
-def _load_checked_in_preregistration(
-    name: str = "pilot-r5-preregistration.json",
-) -> dict[str, Any]:
-    return json.loads((ROOT / "corpus" / name).read_text(encoding="utf-8"))
+def _load_checked_in_preregistration() -> dict[str, Any]:
+    return json.loads(
+        (ROOT / "corpus" / "pilot-r6-preregistration.json").read_text(encoding="utf-8")
+    )
 
 
 def test_review_schemas_are_valid_and_accept_generated_draft_artifacts(
@@ -2290,9 +2290,19 @@ def test_preregistration_lock_matches_live_source_tree_and_analysis_plan() -> No
         sha256_file(ROOT / "corpus" / "claim-review.schema.json")
     )
     assert checked_in_preregistration["candidate_pair"] == [
-        "pilot-0.1.2-r5-a",
-        "pilot-0.1.2-r5-b",
+        "pilot-0.1.2-r6-a",
+        "pilot-0.1.2-r6-b",
     ]
+    # Pinned deliberately. The pair names alone do not distinguish one lock from
+    # another: a lock regenerated in place would keep them while silently
+    # carrying a different protocol ID, analyzer version, or frozen truth. The
+    # standing rule in protocol amendment 6 forbids that, and these three
+    # assertions are what would catch it.
+    assert checked_in_preregistration["protocol_id"] == "pilot-0.1.2-r6"
+    assert checked_in_preregistration["adduce"]["version"] == "0.1.2"
+    assert checked_in_preregistration["inputs"]["claim_ground_truth_sha256"] == (
+        "9a26d06c59070173ad89f60bc221a395dd1a487132eeed7415d2cadeff63611e"
+    )
     assert checked_in_preregistration["execution_contract"]["timeout_seconds"] == 300
     assert checked_in_preregistration["inputs"]["repository_count"] == 15
     assert checked_in_preregistration["inputs"]["cohort_counts"] == {

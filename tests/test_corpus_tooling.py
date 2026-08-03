@@ -433,6 +433,8 @@ def _write_minimal_valid_run(path: Path, *, run_id: str = "test-run") -> None:
             "completed_at": "2026-01-01T00:00:01+00:00",
             "repos_file_sha256": sha256_file(path / "inputs" / "repos.csv"),
             "clone_manifest_sha256": sha256_file(path / "inputs" / "clones_manifest.json"),
+            "clone_tool_sha256": harness_files["scripts/clone_repos.py"],
+            "clone_tool_sha256_matches_live": True,
             "builtin_rule_ids": ["R-TEST-001"],
             "builtin_rule_count": 1,
             "python": {"version": "3.test", "implementation": "test"},
@@ -550,6 +552,200 @@ def test_completion_marker_is_written_only_after_contract_validation(tmp_path: P
 
     assert (run / RUNNING_MARKER).is_file()
     assert not (run / COMPLETE_MARKER).exists()
+
+
+def test_finalize_run_refuses_a_clone_tool_digest_disagreeing_with_the_copied_manifest(
+    tmp_path: Path,
+) -> None:
+    """metadata["clone_tool_sha256"] and the copied manifest are independent records;
+    a run whose two copies disagree must still be refused, even though neither side
+    is compared against the live clone harness any more."""
+    run = tmp_path / "run"
+    _write_minimal_valid_run(run)
+    metadata = json.loads((run / "run_meta.json").read_text(encoding="utf-8"))
+    metadata.pop("complete")
+    metadata.pop("run_schema_version")
+    manifest = json.loads((run / "inputs" / "clones_manifest.json").read_text(encoding="utf-8"))
+    assert metadata["clone_tool_sha256"] == manifest["clone_tool_sha256"]
+    metadata["clone_tool_sha256"] = "f" * 64
+    # Kept internally consistent with the mutation above (both sides genuinely
+    # disagree with corpus_harness_files here) so this exercises the copied-manifest
+    # check below, not the metadata self-consistency check that would otherwise
+    # intercept an honestly-disclosed disagreement first.
+    metadata["clone_tool_sha256_matches_live"] = False
+    (run / COMPLETE_MARKER).replace(run / RUNNING_MARKER)
+    (run / "run_meta.json").unlink()
+
+    with pytest.raises(RunContractError, match="different clone harness"):
+        finalize_run(run, metadata)
+
+
+def test_finalize_run_refuses_a_malformed_clone_tool_digest_in_run_metadata(
+    tmp_path: Path,
+) -> None:
+    run = tmp_path / "run"
+    _write_minimal_valid_run(run)
+    metadata = json.loads((run / "run_meta.json").read_text(encoding="utf-8"))
+    metadata.pop("complete")
+    metadata.pop("run_schema_version")
+    metadata["clone_tool_sha256"] = "g" * 64  # present, but not valid hex
+    # Keeps the pair present and its disclosure honest (the malformed digest
+    # genuinely differs from the live harness snapshot too), so this exercises the
+    # well-formedness check below rather than the metadata self-consistency check.
+    metadata["clone_tool_sha256_matches_live"] = False
+    (run / COMPLETE_MARKER).replace(run / RUNNING_MARKER)
+    (run / "run_meta.json").unlink()
+
+    with pytest.raises(RunContractError, match="well-formed clone-tool digest"):
+        finalize_run(run, metadata)
+
+
+def test_validate_run_still_refuses_a_missing_clone_tool_digest_in_the_copied_manifest(
+    tmp_path: Path,
+) -> None:
+    """Preserved: _validate_clone_manifest's own check on the copied file is untouched."""
+    run = tmp_path / "run"
+    _write_minimal_valid_run(run)
+    manifest_path = run / "inputs" / "clones_manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    del manifest["clone_tool_sha256"]
+    write_json(manifest_path, manifest)
+    _rehash_completed_run(run, "inputs/clones_manifest.json")
+
+    with pytest.raises(RunContractError, match="different clone harness"):
+        validate_run(run)
+
+
+def test_validate_run_accepts_a_pre_field_run_meta_missing_both_clone_tool_fields(
+    tmp_path: Path,
+) -> None:
+    """Shaped like the real pilot-0.1.2dev0-ops-{a,b} runs: predates both fields entirely.
+
+    clone_tool_sha256 and clone_tool_sha256_matches_live are required present-together,
+    not each unconditionally required, precisely so an artifact produced before either
+    field existed still validates as it did at that HEAD.
+    """
+    run = tmp_path / "run"
+    _write_minimal_valid_run(run)
+    metadata_path = run / "run_meta.json"
+    metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+    del metadata["clone_tool_sha256"]
+    del metadata["clone_tool_sha256_matches_live"]
+    write_json(metadata_path, metadata)
+    (run / COMPLETE_MARKER).write_text(
+        sha256_file(metadata_path) + "\n", encoding="utf-8", newline="\n"
+    )
+
+    result = validate_run(run)
+
+    assert "clone_tool_sha256" not in result
+    assert "clone_tool_sha256_matches_live" not in result
+
+
+def test_finalize_run_refuses_a_clone_tool_digest_without_its_live_agreement_disclosure(
+    tmp_path: Path,
+) -> None:
+    run = tmp_path / "run"
+    _write_minimal_valid_run(run)
+    metadata = json.loads((run / "run_meta.json").read_text(encoding="utf-8"))
+    metadata.pop("complete")
+    metadata.pop("run_schema_version")
+    del metadata["clone_tool_sha256_matches_live"]
+    (run / COMPLETE_MARKER).replace(run / RUNNING_MARKER)
+    (run / "run_meta.json").unlink()
+
+    with pytest.raises(RunContractError, match="must both be present or both be absent"):
+        finalize_run(run, metadata)
+
+
+def test_finalize_run_refuses_a_live_agreement_disclosure_without_a_clone_tool_digest(
+    tmp_path: Path,
+) -> None:
+    run = tmp_path / "run"
+    _write_minimal_valid_run(run)
+    metadata = json.loads((run / "run_meta.json").read_text(encoding="utf-8"))
+    metadata.pop("complete")
+    metadata.pop("run_schema_version")
+    del metadata["clone_tool_sha256"]
+    (run / COMPLETE_MARKER).replace(run / RUNNING_MARKER)
+    (run / "run_meta.json").unlink()
+
+    with pytest.raises(RunContractError, match="must both be present or both be absent"):
+        finalize_run(run, metadata)
+
+
+@pytest.mark.parametrize("bad_value", [1, 0, "false"], ids=["1-for-True", "0-for-False", "string"])
+def test_finalize_run_refuses_a_non_bool_clone_tool_live_agreement_disclosure(
+    tmp_path: Path, bad_value: object
+) -> None:
+    """Python's bool is an int subclass, so a naive truthiness check would accept 1 or 0 here."""
+    run = tmp_path / "run"
+    _write_minimal_valid_run(run)
+    metadata = json.loads((run / "run_meta.json").read_text(encoding="utf-8"))
+    metadata.pop("complete")
+    metadata.pop("run_schema_version")
+    metadata["clone_tool_sha256_matches_live"] = bad_value
+    (run / COMPLETE_MARKER).replace(run / RUNNING_MARKER)
+    (run / "run_meta.json").unlink()
+
+    with pytest.raises(RunContractError, match="invalid clone-tool live-agreement evidence"):
+        finalize_run(run, metadata)
+
+
+def _disagree_clone_tool_digest(run: Path) -> None:
+    """Make clone_tool_sha256 genuinely differ from corpus_harness_files, consistently."""
+    manifest_path = run / "inputs" / "clones_manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["clone_tool_sha256"] = "e" * 64
+    write_json(manifest_path, manifest)
+    metadata_path = run / "run_meta.json"
+    metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+    assert metadata["corpus_harness_files"]["scripts/clone_repos.py"] != "e" * 64
+    metadata["clone_tool_sha256"] = "e" * 64
+    for record in metadata["artifacts"]:
+        if record["path"] == "inputs/clones_manifest.json":
+            record["sha256"] = sha256_file(manifest_path)
+    metadata["clone_manifest_sha256"] = sha256_file(manifest_path)
+    write_json(metadata_path, metadata)
+
+
+def test_validate_run_refuses_a_clone_tool_live_agreement_disclosure_that_lies(
+    tmp_path: Path,
+) -> None:
+    """QA's exact demonstration: a genuine disagreement, dishonestly disclosed as True."""
+    run = tmp_path / "run"
+    _write_minimal_valid_run(run)
+    _disagree_clone_tool_digest(run)
+    metadata_path = run / "run_meta.json"
+    metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+    metadata["clone_tool_sha256_matches_live"] = True  # the lie
+    write_json(metadata_path, metadata)
+    (run / COMPLETE_MARKER).write_text(
+        sha256_file(metadata_path) + "\n", encoding="utf-8", newline="\n"
+    )
+
+    with pytest.raises(RunContractError, match="disagrees with its own digests"):
+        validate_run(run)
+
+
+def test_validate_run_accepts_a_genuine_disagreement_honestly_disclosed_as_false(
+    tmp_path: Path,
+) -> None:
+    """A real disagreement, correctly disclosed as False, is never refused on that account."""
+    run = tmp_path / "run"
+    _write_minimal_valid_run(run)
+    _disagree_clone_tool_digest(run)
+    metadata_path = run / "run_meta.json"
+    metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+    metadata["clone_tool_sha256_matches_live"] = False  # honest
+    write_json(metadata_path, metadata)
+    (run / COMPLETE_MARKER).write_text(
+        sha256_file(metadata_path) + "\n", encoding="utf-8", newline="\n"
+    )
+
+    result = validate_run(run)
+
+    assert result["clone_tool_sha256_matches_live"] is False
 
 
 @pytest.mark.parametrize(
@@ -850,6 +1046,44 @@ def test_runner_creates_a_valid_builtins_only_run_and_refuses_reuse(tmp_path: Pa
     assert row["peak_rss_unit"] in {"bytes", "kibibytes", "unavailable"}
     assert repeated.returncode != 0
     assert "refusing to overwrite" in repeated.stderr
+
+
+def test_runner_records_clone_tool_digest_and_live_agreement(tmp_path: Path) -> None:
+    """The declared acquisition digest and its live agreement are an observation, not a gate."""
+    clones = tmp_path / "clones"
+    clone = clones / "fixture"
+    commit = _make_git_repo(clone)
+    repos = tmp_path / "repos.csv"
+    _write_repos(repos, commit)
+    _write_clone_manifest(clones, repos, commit)
+    run = tmp_path / "run"
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            str(RUNNER),
+            "--repos",
+            str(repos),
+            "--clones",
+            str(clones),
+            "--badged-provenance",
+            str(repos.parent / "badged-provenance.csv"),
+            "--out",
+            str(run),
+            "--timeout",
+            "30",
+            "--operational-only",
+        ],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    metadata = validate_run(run)
+    manifest = json.loads((clones / "clones_manifest.json").read_bytes())
+    assert metadata["clone_tool_sha256"] == manifest["clone_tool_sha256"]
+    assert metadata["clone_tool_sha256_matches_live"] is True
 
 
 def test_effectiveness_runner_requires_claim_review_before_creating_output(
