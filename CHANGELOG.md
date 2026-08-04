@@ -6,22 +6,23 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-## [0.1.2] - 2026-07-29
+## [0.1.2] - 2026-08-04
 
 ### Validation status
 
-Operational corpus validation is complete: 15/15 real repositories succeeded
-in two independent runs, with 0 crashes, 0 timeouts, and 0 repository-byte
+Operational corpus validation is complete, and was carried out on the released
+analyzer tree itself: 15/15 real repositories succeeded in two independent
+runs, with 0 crashes, 0 timeouts, 0 contract failures, and 0 repository-byte
 modifications. Comparing all 15 analyzer output artifacts pairwise under the
 harness's own normalisation found no differing artifact; the runs were
 deterministic apart from resource measurements — peak resident memory and
-wall-clock runtime. These operational runs were produced by an analyzer
-source tree (`c0f588b7…`) byte-identical to the released tree except for the
-`__version__` string, uncommitted at run time (`adduce_source_dirty: true`,
-version `0.1.2.dev0`). The effectiveness pilot's two-independent-human-
-reviewer claim-review gate has not been completed, so this release reports no
-false-positive rate, no score separation, and no claim-link accuracy figure.
-Those numbers remain developmental until that review gate closes.
+wall-clock runtime. Both runs record analyzer source tree `1b24ccf6…` with
+`adduce_source_dirty: false` and version `0.1.2`, which is the tree released
+here and the analyzer digest registered in the pilot preregistration. The
+effectiveness pilot's two-independent-human-reviewer claim-review gate has not
+been completed, so this release reports no false-positive rate, no score
+separation, and no claim-link accuracy figure. Those numbers remain
+developmental until that review gate closes.
 
 ### Added
 
@@ -48,6 +49,11 @@ Those numbers remain developmental until that review gate closes.
 
 ### Changed
 
+- Reduced the README to a landing page and moved its depth into `docs/`, which
+  now carries a navigation index, the concepts and CLI references, CI recipes,
+  the extension guide, the optional LLM layer, and the honest-limits list. The
+  source distribution now ships the whole `docs/` tree, including the per-rule
+  pages its index links to.
 - Restricted online resolution to validated, globally reachable HTTPS
   destinations; bounded redirects, timeouts, response bodies, and cache
   entries; removed ambient proxy, cookie, and authorization-header use; and
@@ -76,6 +82,21 @@ Those numbers remain developmental until that review gate closes.
 
 ### Fixed
 
+- Opened every file descriptor in the write boundary and the reproduction layer
+  in binary mode on Windows. The C runtime's text-mode translation had expanded
+  written newlines to CRLF, which failed the size check guarding each write,
+  after which the boundary removed the file it had just created; no evidence
+  ledger, manifest, checklist, appendix, or submission bundle could be written
+  on that platform. On the read side the same translation stripped carriage
+  returns, so a file already stored with CRLF endings was reported as changed
+  and refused.
+- Compared file change times only between stat sources that denote the same
+  instant. The write boundary captured a file's identity with `lstat` and
+  verified it through the opened descriptor with `fstat`; on Windows those
+  fields hold different instants, so the comparison failed for every file
+  modified after it was created and the snapshot refused a file that had not
+  changed, producing spurious refusals in generation, the evidence ledger, and
+  remote pinning.
 - Propagated opt-in online resolution outcomes into rendered check reports and
   kept resolution failures as unknown evidence rather than proof of remote rot.
 - Isolated plugin discovery failures and made rule and reporter ordering
