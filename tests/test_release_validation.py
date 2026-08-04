@@ -120,3 +120,75 @@ def test_trusted_publishing_workflow_has_narrow_permissions_and_triggers():
     assert "pull_request_target" not in text
     assert "password:" not in text
     assert "secrets." not in text
+
+
+def _sdist_include() -> list[str]:
+    try:
+        import tomllib
+    except ModuleNotFoundError:  # Python 3.10
+        import tomli as tomllib  # type: ignore[no-redef]
+
+    with (ROOT / "pyproject.toml").open("rb") as handle:
+        metadata = tomllib.load(handle)
+    targets = metadata["tool"]["hatch"]["build"]["targets"]
+    include = targets["sdist"]["include"]
+    assert isinstance(include, list)
+    return [str(entry) for entry in include]
+
+
+def _covered_by_sdist(relative: str, include: list[str]) -> bool:
+    """Whether an sdist include entry selects this repository-relative path."""
+    for entry in include:
+        pattern = entry.rstrip("/")
+        if relative == pattern or relative.startswith(f"{pattern}/"):
+            return True
+    return False
+
+
+def test_sdist_ships_every_documentation_page_the_readme_links_to() -> None:
+    """The source distribution carries the docs tree, not a subset of it.
+
+    The README is a landing page that links outward, so a sdist missing
+    ``docs/`` would ship a tarball whose documentation had gone nowhere.
+    """
+    include = _sdist_include()
+
+    pages = sorted(
+        path.relative_to(ROOT).as_posix()
+        for path in (ROOT / "docs").rglob("*.md")
+    )
+    assert pages, "expected documentation pages under docs/"
+
+    uncovered = [page for page in pages if not _covered_by_sdist(page, include)]
+    assert uncovered == [], (
+        "sdist include does not cover these documentation pages: "
+        f"{uncovered[:5]} ({len(uncovered)} total)"
+    )
+
+
+def test_readme_documentation_links_resolve_to_files_in_the_tree() -> None:
+    """Every docs page the README points at exists and ships.
+
+    README is the PyPI long description, so its links are published as
+    immutable metadata; a dangling target cannot be corrected after release.
+    """
+    import re
+
+    text = (ROOT / "README.md").read_text(encoding="utf-8")
+    targets = sorted(
+        set(
+            re.findall(
+                r"https://github\.com/QHarshil/adduce/(?:blob|tree)/main/"
+                r"(docs/[^)#]+)",
+                text,
+            )
+        )
+    )
+    assert targets, "expected the README to link into docs/"
+
+    include = _sdist_include()
+    for target in targets:
+        assert (ROOT / target).exists(), f"README links to missing {target}"
+        assert _covered_by_sdist(target, include), (
+            f"README links to {target}, which the sdist does not ship"
+        )
