@@ -1,5 +1,53 @@
 # Rule reference
 
+78 rules across 17 categories. The evidence collectors make a single offline
+filesystem pass; the rules themselves are pure functions over the typed
+evidence that pass produces, and never touch the filesystem.
+
+Applicability is gated two ways: 64 of the 78 rules override `applies_to` and
+are skipped outright when they do not apply, and the remaining 14 always run but
+report `not-applicable` from the rule body. Either way an inapplicable category
+drops out of scoring entirely rather than counting against a repository — a
+scikit-learn project is not scored against CUDA precision flags. When adding a
+rule, do not assume the framework will gate it for you: override `applies_to`,
+or return `not-applicable` explicitly, or the rule fires everywhere.
+
+## Categories
+
+| Category | Prefix | Examples |
+|---|---|---|
+| Code & Execution | `R-EXEC` | entrypoint, one-command runner, exact reproduce command |
+| Environment & Tooling | `R-ENV` | pinning posture, lockfile, container, Python version, CUDA capture |
+| Dependencies | `R-DEP` | ghost imports, unused declarations, notebook-only imports, system tools |
+| Data | `R-DATA` | provenance, download path, checksums, LFS, access-friction grade A–E |
+| Documentation | `R-DOC` | README sections, hyperparameters recorded, expected results |
+| Determinism & Model | `R-DET` | layered seeds, cuDNN flags, strict mode, both DataLoader RNG sources, `random_state` |
+| Numerical Precision & Hardware | `R-PREC` | undocumented TF32/AMP/bf16, hardware baseline (warnings, never fails) |
+| Paper & Artifact Consistency | `R-DRIFT` | paper hyperparameter vs authoritative config, dataset drift, ablation traces |
+| Result Reconciliation | `R-RES` | reported vs logged metrics, rounding vs material gaps, single-run detection |
+| Run Traceability | `R-RUN` | per-claim commands, materialised Hydra configs vs committed ones, SLURM requests |
+| Checkpoint & Experiment State | `R-CKPT` | optimizer/scheduler/RNG state, epoch, config/commit provenance in checkpoints |
+| Notebooks | `R-NB` | execution order, hidden state, `!pip install` cells, seed-before-draw, script twins |
+| Portability | `R-PORT` | absolute paths, localhost, drive-link data sources, committed secrets |
+| Remote Artifacts & Rot | `R-REMOTE` | unpinned `from_pretrained`, mutable revisions, `torch.hub`, checksum-less downloads |
+| Versioning | `R-VER` | git, tags, commit referenced in docs |
+| Access & Legal | `R-LIC` | LICENSE, CITATION.cff, third-party asset licenses |
+| Archival Readiness | `R-ARC` | DOI/SWHID, archivable size, `.zenodo.json`/`codemeta.json` |
+
+Drift resolution uses an explicit authority ranking: a materialised run config
+(Hydra output, W&B, MLflow) outranks a checked-in config only when an
+author-confirmed claim links that run config; checked-in configs otherwise
+outrank argparse/dataclass defaults. Floats compare with rounding-awareness (a
+paper's 0.814 matches a logged 0.8137); nothing ever auto-edits the `.tex`.
+
+Call resolution goes through an import-alias map (`import torch as th` is
+handled) plus one hop of wrapper resolution: a project-local `set_seed()` that
+calls the primitives counts. Python's dynamism (`getattr`, dynamic import)
+cannot be resolved statically — which is exactly why findings carry a
+confidence, never a verdict.
+
+## All rules
+
 | ID | Category | Severity | Weight | Title |
 |---|---|---|---:|---|
 | [R-EXEC-001](R-EXEC-001.md) | Code & Execution | high | 5 | Discoverable entrypoint |
