@@ -55,6 +55,7 @@ jobs:
             --cov-report=term-missing \
             --cov-fail-under=85
           python scripts/check_markdown_links.py --root .
+          python -B corpus/scripts/check_review_materials.py check --root .
       - name: Build wheel and source distribution
         run: python -m build
       - name: Validate and smoke-test distributions
