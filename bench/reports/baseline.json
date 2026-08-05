@@ -1,0 +1,2013 @@
+{
+  "schema": "adduce-bench/1",
+  "provenance": {
+    "generated_at": "2026-08-05T19:49:54+00:00",
+    "adduce_version": "0.1.2",
+    "git_commit": "3aed837c0923541fd56eb15ff8279e7dafb91430",
+    "git_dirty": true,
+    "python": "3.14.0",
+    "platform": "darwin",
+    "machine": "arm64",
+    "preregistration_digest": null
+  },
+  "strata_manifest": {
+    "path": "bench/strata.json",
+    "gaps": [
+      "No target in the L stratum (150k-1M Python LOC). Recruiting one is a Phase 0 deliverable.",
+      "corpus/repos.csv records has_tex=false for all 15 rows, so LaTeX claim extraction is exercised on synthetic papers only."
+    ]
+  },
+  "summary": {
+    "targets_declared": 20,
+    "targets_measured": 20,
+    "targets_unavailable": 0,
+    "determinism_holds": true
+  },
+  "results": [
+    {
+      "id": "nanogpt",
+      "kind": "clone",
+      "path": "corpus/clones/pilot-2026-07-13/nanogpt",
+      "framework": "pytorch",
+      "default": {
+        "available": true,
+        "adduce_version": "0.1.2",
+        "honor_gitignore": false,
+        "inputs": {
+          "files": 26,
+          "python_files": 15,
+          "python_loc": 1220,
+          "bytes": 579917
+        },
+        "performance": {
+          "cold_runtime_seconds": 0.0975,
+          "repeat_runtime_seconds": 0.0804,
+          "warm_path_exists": false,
+          "files_per_second": 266.6,
+          "python_loc_per_second": 12510.5,
+          "peak_rss": {
+            "available": true,
+            "value": 36225024,
+            "unit": "bytes",
+            "source": "resource.getrusage(RUSAGE_SELF)",
+            "platform": "darwin"
+          },
+          "stage_milliseconds": {
+            "collect.config": 0.009,
+            "collect.data": 0.749,
+            "collect.dependencies": 0.233,
+            "collect.docs": 1.283,
+            "collect.environment": 0.035,
+            "collect.frameworks": 0.018,
+            "collect.git": 0.009,
+            "collect.latex": 0.01,
+            "collect.manifest": 0.224,
+            "collect.notebooks": 1.518,
+            "collect.portability": 18.876,
+            "collect.precision": 0.116,
+            "collect.python": 12.462,
+            "collect.remote": 2.01,
+            "collect.results": 0.028,
+            "collect.run_history": 0.039,
+            "graph": 0.075,
+            "reviewer_time": 0.016,
+            "rules.discover": 9.398,
+            "rules.evaluate": 0.801,
+            "scan": 47.667,
+            "score": 0.057,
+            "total": 97.434
+          },
+          "counters": {
+            "files.inventoried": 26,
+            "files.python": 15,
+            "files.read_cache_hits": 34,
+            "files.read_from_disk": 22,
+            "parse.python.failed": 0,
+            "parse.python.modules": 15,
+            "rules.evaluated": 77,
+            "rules.skipped_inapplicable": 1
+          },
+          "disk_reads_per_inventoried_file": 0.8462
+        },
+        "outcome": {
+          "score": 54.4475,
+          "tier": "Bronze",
+          "findings": 77,
+          "parser_failures": 0
+        },
+        "determinism": {
+          "repeat_render_byte_identical": true,
+          "comparison": "two run_check calls in one process, default JSON report"
+        }
+      },
+      "stratum": "XS",
+      "gitignore": {
+        "available": true,
+        "adduce_version": "0.1.2",
+        "honor_gitignore": true,
+        "inputs": {
+          "files": 26,
+          "python_files": 15,
+          "python_loc": 1220,
+          "bytes": 579917
+        },
+        "performance": {
+          "cold_runtime_seconds": 0.1104,
+          "repeat_runtime_seconds": 0.1049,
+          "warm_path_exists": false,
+          "files_per_second": 235.5,
+          "python_loc_per_second": 11049.2,
+          "peak_rss": {
+            "available": true,
+            "value": 36274176,
+            "unit": "bytes",
+            "source": "resource.getrusage(RUSAGE_SELF)",
+            "platform": "darwin"
+          },
+          "stage_milliseconds": {
+            "collect.config": 0.01,
+            "collect.data": 0.461,
+            "collect.dependencies": 0.195,
+            "collect.docs": 1.147,
+            "collect.environment": 0.036,
+            "collect.frameworks": 0.019,
+            "collect.git": 0.008,
+            "collect.latex": 0.009,
+            "collect.manifest": 0.193,
+            "collect.notebooks": 1.205,
+            "collect.portability": 18.784,
+            "collect.precision": 0.101,
+            "collect.python": 10.614,
+            "collect.remote": 2.001,
+            "collect.results": 0.024,
+            "collect.run_history": 0.023,
+            "graph": 0.078,
+            "reviewer_time": 0.015,
+            "rules.discover": 5.367,
+            "rules.evaluate": 0.793,
+            "scan": 68.473,
+            "score": 0.056,
+            "total": 110.355
+          },
+          "counters": {
+            "files.inventoried": 26,
+            "files.python": 15,
+            "files.read_cache_hits": 34,
+            "files.read_from_disk": 22,
+            "parse.python.failed": 0,
+            "parse.python.modules": 15,
+            "rules.evaluated": 77,
+            "rules.skipped_inapplicable": 1
+          },
+          "disk_reads_per_inventoried_file": 0.8462
+        },
+        "outcome": {
+          "score": 54.4475,
+          "tier": "Bronze",
+          "findings": 77,
+          "parser_failures": 0
+        },
+        "determinism": {
+          "repeat_render_byte_identical": true,
+          "comparison": "two run_check calls in one process, default JSON report"
+        }
+      }
+    },
+    {
+      "id": "mdetr",
+      "kind": "clone",
+      "path": "corpus/clones/pilot-2026-07-13/mdetr",
+      "framework": "pytorch",
+      "default": {
+        "available": true,
+        "adduce_version": "0.1.2",
+        "honor_gitignore": false,
+        "inputs": {
+          "files": 102,
+          "python_files": 67,
+          "python_loc": 16848,
+          "bytes": 1518718
+        },
+        "performance": {
+          "cold_runtime_seconds": 0.2957,
+          "repeat_runtime_seconds": 0.3881,
+          "warm_path_exists": false,
+          "files_per_second": 344.9,
+          "python_loc_per_second": 56969.0,
+          "peak_rss": {
+            "available": true,
+            "value": 48644096,
+            "unit": "bytes",
+            "source": "resource.getrusage(RUSAGE_SELF)",
+            "platform": "darwin"
+          },
+          "stage_milliseconds": {
+            "collect.config": 0.962,
+            "collect.data": 0.351,
+            "collect.dependencies": 0.591,
+            "collect.docs": 1.215,
+            "collect.environment": 0.099,
+            "collect.frameworks": 0.037,
+            "collect.git": 0.008,
+            "collect.latex": 0.021,
+            "collect.manifest": 0.252,
+            "collect.notebooks": 0.019,
+            "collect.portability": 47.81,
+            "collect.precision": 0.557,
+            "collect.python": 135.882,
+            "collect.remote": 23.909,
+            "collect.results": 0.076,
+            "collect.run_history": 0.05,
+            "graph": 0.157,
+            "reviewer_time": 0.02,
+            "rules.discover": 31.434,
+            "rules.evaluate": 1.526,
+            "scan": 49.655,
+            "score": 0.047,
+            "total": 295.659
+          },
+          "counters": {
+            "files.inventoried": 102,
+            "files.python": 67,
+            "files.read_cache_hits": 151,
+            "files.read_from_disk": 99,
+            "parse.python.failed": 0,
+            "parse.python.modules": 67,
+            "rules.evaluated": 69,
+            "rules.skipped_inapplicable": 9
+          },
+          "disk_reads_per_inventoried_file": 0.9706
+        },
+        "outcome": {
+          "score": 39.8773,
+          "tier": "Needs work",
+          "findings": 69,
+          "parser_failures": 0
+        },
+        "determinism": {
+          "repeat_render_byte_identical": true,
+          "comparison": "two run_check calls in one process, default JSON report"
+        }
+      },
+      "stratum": "S",
+      "gitignore": {
+        "available": true,
+        "adduce_version": "0.1.2",
+        "honor_gitignore": true,
+        "inputs": {
+          "files": 102,
+          "python_files": 67,
+          "python_loc": 16848,
+          "bytes": 1518718
+        },
+        "performance": {
+          "cold_runtime_seconds": 0.279,
+          "repeat_runtime_seconds": 0.2745,
+          "warm_path_exists": false,
+          "files_per_second": 365.6,
+          "python_loc_per_second": 60391.1,
+          "peak_rss": {
+            "available": true,
+            "value": 48070656,
+            "unit": "bytes",
+            "source": "resource.getrusage(RUSAGE_SELF)",
+            "platform": "darwin"
+          },
+          "stage_milliseconds": {
+            "collect.config": 0.506,
+            "collect.data": 0.346,
+            "collect.dependencies": 0.434,
+            "collect.docs": 1.125,
+            "collect.environment": 0.102,
+            "collect.frameworks": 0.04,
+            "collect.git": 0.008,
+            "collect.latex": 0.022,
+            "collect.manifest": 0.2,
+            "collect.notebooks": 0.016,
+            "collect.portability": 44.492,
+            "collect.precision": 0.594,
+            "collect.python": 132.892,
+            "collect.remote": 23.537,
+            "collect.results": 0.097,
+            "collect.run_history": 0.057,
+            "graph": 0.226,
+            "reviewer_time": 0.023,
+            "rules.discover": 5.152,
+            "rules.evaluate": 1.92,
+            "scan": 66.186,
+            "score": 0.059,
+            "total": 278.892
+          },
+          "counters": {
+            "files.inventoried": 102,
+            "files.python": 67,
+            "files.read_cache_hits": 151,
+            "files.read_from_disk": 99,
+            "parse.python.failed": 0,
+            "parse.python.modules": 67,
+            "rules.evaluated": 69,
+            "rules.skipped_inapplicable": 9
+          },
+          "disk_reads_per_inventoried_file": 0.9706
+        },
+        "outcome": {
+          "score": 39.8773,
+          "tier": "Needs work",
+          "findings": 69,
+          "parser_failures": 0
+        },
+        "determinism": {
+          "repeat_render_byte_identical": true,
+          "comparison": "two run_check calls in one process, default JSON report"
+        }
+      }
+    },
+    {
+      "id": "vit-pytorch",
+      "kind": "clone",
+      "path": "corpus/clones/pilot-2026-07-13/vit-pytorch",
+      "framework": "pytorch",
+      "default": {
+        "available": true,
+        "adduce_version": "0.1.2",
+        "honor_gitignore": false,
+        "inputs": {
+          "files": 122,
+          "python_files": 81,
+          "python_loc": 18783,
+          "bytes": 12787035
+        },
+        "performance": {
+          "cold_runtime_seconds": 0.3476,
+          "repeat_runtime_seconds": 0.3377,
+          "warm_path_exists": false,
+          "files_per_second": 351.0,
+          "python_loc_per_second": 54041.0,
+          "peak_rss": {
+            "available": true,
+            "value": 54050816,
+            "unit": "bytes",
+            "source": "resource.getrusage(RUSAGE_SELF)",
+            "platform": "darwin"
+          },
+          "stage_milliseconds": {
+            "collect.config": 0.034,
+            "collect.data": 3.106,
+            "collect.dependencies": 0.559,
+            "collect.docs": 8.589,
+            "collect.environment": 0.182,
+            "collect.frameworks": 0.042,
+            "collect.git": 0.01,
+            "collect.latex": 0.031,
+            "collect.manifest": 0.192,
+            "collect.notebooks": 3.311,
+            "collect.portability": 93.728,
+            "collect.precision": 0.742,
+            "collect.python": 160.705,
+            "collect.remote": 24.62,
+            "collect.results": 0.057,
+            "collect.run_history": 0.064,
+            "graph": 0.325,
+            "reviewer_time": 0.012,
+            "rules.discover": 5.283,
+            "rules.evaluate": 0.758,
+            "scan": 43.898,
+            "score": 0.044,
+            "total": 347.086
+          },
+          "counters": {
+            "files.inventoried": 122,
+            "files.python": 81,
+            "files.read_cache_hits": 167,
+            "files.read_from_disk": 84,
+            "parse.python.failed": 0,
+            "parse.python.modules": 81,
+            "rules.evaluated": 77,
+            "rules.skipped_inapplicable": 1
+          },
+          "disk_reads_per_inventoried_file": 0.6885
+        },
+        "outcome": {
+          "score": 38.9719,
+          "tier": "Needs work",
+          "findings": 77,
+          "parser_failures": 0
+        },
+        "determinism": {
+          "repeat_render_byte_identical": true,
+          "comparison": "two run_check calls in one process, default JSON report"
+        }
+      },
+      "stratum": "S",
+      "gitignore": {
+        "available": true,
+        "adduce_version": "0.1.2",
+        "honor_gitignore": true,
+        "inputs": {
+          "files": 122,
+          "python_files": 81,
+          "python_loc": 18783,
+          "bytes": 12787035
+        },
+        "performance": {
+          "cold_runtime_seconds": 0.3553,
+          "repeat_runtime_seconds": 0.3492,
+          "warm_path_exists": false,
+          "files_per_second": 343.4,
+          "python_loc_per_second": 52870.5,
+          "peak_rss": {
+            "available": true,
+            "value": 53985280,
+            "unit": "bytes",
+            "source": "resource.getrusage(RUSAGE_SELF)",
+            "platform": "darwin"
+          },
+          "stage_milliseconds": {
+            "collect.config": 0.028,
+            "collect.data": 3.095,
+            "collect.dependencies": 0.462,
+            "collect.docs": 8.261,
+            "collect.environment": 0.152,
+            "collect.frameworks": 0.031,
+            "collect.git": 0.008,
+            "collect.latex": 0.03,
+            "collect.manifest": 0.174,
+            "collect.notebooks": 2.707,
+            "collect.portability": 93.255,
+            "collect.precision": 0.888,
+            "collect.python": 150.318,
+            "collect.remote": 24.359,
+            "collect.results": 0.057,
+            "collect.run_history": 0.067,
+            "graph": 0.327,
+            "reviewer_time": 0.012,
+            "rules.discover": 5.476,
+            "rules.evaluate": 0.892,
+            "scan": 63.241,
+            "score": 0.049,
+            "total": 354.918
+          },
+          "counters": {
+            "files.inventoried": 122,
+            "files.python": 81,
+            "files.read_cache_hits": 167,
+            "files.read_from_disk": 84,
+            "parse.python.failed": 0,
+            "parse.python.modules": 81,
+            "rules.evaluated": 77,
+            "rules.skipped_inapplicable": 1
+          },
+          "disk_reads_per_inventoried_file": 0.6885
+        },
+        "outcome": {
+          "score": 38.9719,
+          "tier": "Needs work",
+          "findings": 77,
+          "parser_failures": 0
+        },
+        "determinism": {
+          "repeat_render_byte_identical": true,
+          "comparison": "two run_check calls in one process, default JSON report"
+        }
+      }
+    },
+    {
+      "id": "torchtune",
+      "kind": "clone",
+      "path": "corpus/clones/pilot-2026-07-13/torchtune",
+      "framework": "pytorch",
+      "default": {
+        "available": true,
+        "adduce_version": "0.1.2",
+        "honor_gitignore": false,
+        "inputs": {
+          "files": 830,
+          "python_files": 498,
+          "python_loc": 102930,
+          "bytes": 13441774
+        },
+        "performance": {
+          "cold_runtime_seconds": 1.6309,
+          "repeat_runtime_seconds": 1.5734,
+          "warm_path_exists": false,
+          "files_per_second": 508.9,
+          "python_loc_per_second": 63112.3,
+          "peak_rss": {
+            "available": true,
+            "value": 92454912,
+            "unit": "bytes",
+            "source": "resource.getrusage(RUSAGE_SELF)",
+            "platform": "darwin"
+          },
+          "stage_milliseconds": {
+            "collect.config": 388.259,
+            "collect.data": 1.544,
+            "collect.dependencies": 1.264,
+            "collect.docs": 2.212,
+            "collect.environment": 4.397,
+            "collect.frameworks": 0.165,
+            "collect.git": 0.006,
+            "collect.latex": 0.145,
+            "collect.manifest": 0.151,
+            "collect.notebooks": 0.13,
+            "collect.portability": 479.635,
+            "collect.precision": 2.173,
+            "collect.python": 508.985,
+            "collect.remote": 151.933,
+            "collect.results": 0.377,
+            "collect.run_history": 0.718,
+            "graph": 0.88,
+            "reviewer_time": 0.064,
+            "rules.discover": 11.174,
+            "rules.evaluate": 4.23,
+            "scan": 69.845,
+            "score": 0.051,
+            "total": 1629.261
+          },
+          "counters": {
+            "files.inventoried": 830,
+            "files.python": 498,
+            "files.read_cache_hits": 694,
+            "files.read_from_disk": 1325,
+            "parse.python.failed": 0,
+            "parse.python.modules": 498,
+            "rules.evaluated": 69,
+            "rules.skipped_inapplicable": 9
+          },
+          "disk_reads_per_inventoried_file": 1.5964
+        },
+        "outcome": {
+          "score": 50.5503,
+          "tier": "Bronze",
+          "findings": 69,
+          "parser_failures": 0
+        },
+        "determinism": {
+          "repeat_render_byte_identical": true,
+          "comparison": "two run_check calls in one process, default JSON report"
+        }
+      },
+      "stratum": "M",
+      "gitignore": {
+        "available": true,
+        "adduce_version": "0.1.2",
+        "honor_gitignore": true,
+        "inputs": {
+          "files": 830,
+          "python_files": 498,
+          "python_loc": 102930,
+          "bytes": 13441774
+        },
+        "performance": {
+          "cold_runtime_seconds": 1.6874,
+          "repeat_runtime_seconds": 1.6088,
+          "warm_path_exists": false,
+          "files_per_second": 491.9,
+          "python_loc_per_second": 61000.8,
+          "peak_rss": {
+            "available": true,
+            "value": 97845248,
+            "unit": "bytes",
+            "source": "resource.getrusage(RUSAGE_SELF)",
+            "platform": "darwin"
+          },
+          "stage_milliseconds": {
+            "collect.config": 407.219,
+            "collect.data": 1.596,
+            "collect.dependencies": 1.545,
+            "collect.docs": 2.183,
+            "collect.environment": 2.584,
+            "collect.frameworks": 0.175,
+            "collect.git": 0.006,
+            "collect.latex": 0.138,
+            "collect.manifest": 0.139,
+            "collect.notebooks": 0.115,
+            "collect.portability": 475.347,
+            "collect.precision": 1.959,
+            "collect.python": 528.147,
+            "collect.remote": 151.068,
+            "collect.results": 0.343,
+            "collect.run_history": 0.653,
+            "graph": 1.126,
+            "reviewer_time": 0.082,
+            "rules.discover": 12.702,
+            "rules.evaluate": 4.451,
+            "scan": 94.327,
+            "score": 0.064,
+            "total": 1686.771
+          },
+          "counters": {
+            "files.inventoried": 830,
+            "files.python": 498,
+            "files.read_cache_hits": 694,
+            "files.read_from_disk": 1325,
+            "parse.python.failed": 0,
+            "parse.python.modules": 498,
+            "rules.evaluated": 69,
+            "rules.skipped_inapplicable": 9
+          },
+          "disk_reads_per_inventoried_file": 1.5964
+        },
+        "outcome": {
+          "score": 50.5503,
+          "tier": "Bronze",
+          "findings": 69,
+          "parser_failures": 0
+        },
+        "determinism": {
+          "repeat_render_byte_identical": true,
+          "comparison": "two run_check calls in one process, default JSON report"
+        }
+      }
+    },
+    {
+      "id": "transformers",
+      "kind": "clone",
+      "path": "corpus/clones/pilot-2026-07-13/transformers",
+      "framework": "mixed",
+      "default": {
+        "available": true,
+        "adduce_version": "0.1.2",
+        "honor_gitignore": false,
+        "inputs": {
+          "files": 6282,
+          "python_files": 4643,
+          "python_loc": 1687480,
+          "bytes": 91893834
+        },
+        "performance": {
+          "cold_runtime_seconds": 21.6713,
+          "repeat_runtime_seconds": 22.5171,
+          "warm_path_exists": false,
+          "files_per_second": 289.9,
+          "python_loc_per_second": 77867.1,
+          "peak_rss": {
+            "available": true,
+            "value": 628064256,
+            "unit": "bytes",
+            "source": "resource.getrusage(RUSAGE_SELF)",
+            "platform": "darwin"
+          },
+          "stage_milliseconds": {
+            "collect.config": 4.908,
+            "collect.data": 11.424,
+            "collect.dependencies": 8.549,
+            "collect.docs": 4.547,
+            "collect.environment": 25.235,
+            "collect.frameworks": 1.412,
+            "collect.git": 0.008,
+            "collect.latex": 1.104,
+            "collect.manifest": 0.3,
+            "collect.notebooks": 0.936,
+            "collect.portability": 5893.288,
+            "collect.precision": 45.438,
+            "collect.python": 12380.973,
+            "collect.remote": 2908.083,
+            "collect.results": 4.538,
+            "collect.run_history": 3.25,
+            "graph": 19.606,
+            "reviewer_time": 0.13,
+            "rules.discover": 13.231,
+            "rules.evaluate": 34.698,
+            "scan": 306.175,
+            "score": 0.305,
+            "total": 21669.056
+          },
+          "counters": {
+            "files.inventoried": 6282,
+            "files.python": 4643,
+            "files.read_cache_hits": 68,
+            "files.read_from_disk": 15583,
+            "parse.python.failed": 0,
+            "parse.python.modules": 4643,
+            "rules.evaluated": 70,
+            "rules.skipped_inapplicable": 8
+          },
+          "disk_reads_per_inventoried_file": 2.4806
+        },
+        "outcome": {
+          "score": 57.3122,
+          "tier": "Bronze",
+          "findings": 70,
+          "parser_failures": 0
+        },
+        "determinism": {
+          "repeat_render_byte_identical": true,
+          "comparison": "two run_check calls in one process, default JSON report"
+        }
+      },
+      "stratum": "XL",
+      "gitignore": {
+        "available": true,
+        "adduce_version": "0.1.2",
+        "honor_gitignore": true,
+        "inputs": {
+          "files": 6282,
+          "python_files": 4643,
+          "python_loc": 1687480,
+          "bytes": 91893834
+        },
+        "performance": {
+          "cold_runtime_seconds": 18.5183,
+          "repeat_runtime_seconds": 20.2433,
+          "warm_path_exists": false,
+          "files_per_second": 339.2,
+          "python_loc_per_second": 91124.8,
+          "peak_rss": {
+            "available": true,
+            "value": 635420672,
+            "unit": "bytes",
+            "source": "resource.getrusage(RUSAGE_SELF)",
+            "platform": "darwin"
+          },
+          "stage_milliseconds": {
+            "collect.config": 3.089,
+            "collect.data": 10.68,
+            "collect.dependencies": 6.407,
+            "collect.docs": 3.841,
+            "collect.environment": 20.539,
+            "collect.frameworks": 1.06,
+            "collect.git": 0.006,
+            "collect.latex": 0.923,
+            "collect.manifest": 0.166,
+            "collect.notebooks": 0.905,
+            "collect.portability": 4812.116,
+            "collect.precision": 39.039,
+            "collect.python": 10459.802,
+            "collect.remote": 2762.29,
+            "collect.results": 3.943,
+            "collect.run_history": 3.115,
+            "graph": 14.989,
+            "reviewer_time": 0.088,
+            "rules.discover": 5.613,
+            "rules.evaluate": 30.181,
+            "scan": 336.27,
+            "score": 0.258,
+            "total": 18516.651
+          },
+          "counters": {
+            "files.inventoried": 6282,
+            "files.python": 4643,
+            "files.read_cache_hits": 68,
+            "files.read_from_disk": 15583,
+            "parse.python.failed": 0,
+            "parse.python.modules": 4643,
+            "rules.evaluated": 70,
+            "rules.skipped_inapplicable": 8
+          },
+          "disk_reads_per_inventoried_file": 2.4806
+        },
+        "outcome": {
+          "score": 57.3122,
+          "tier": "Bronze",
+          "findings": 70,
+          "parser_failures": 0
+        },
+        "determinism": {
+          "repeat_render_byte_identical": true,
+          "comparison": "two run_check calls in one process, default JSON report"
+        }
+      }
+    },
+    {
+      "id": "adduce-self",
+      "kind": "self",
+      "path": ".",
+      "framework": "python",
+      "default": {
+        "available": true,
+        "adduce_version": "0.1.2",
+        "honor_gitignore": false,
+        "inputs": {
+          "files": 8843,
+          "python_files": 6014,
+          "python_loc": 2056298,
+          "bytes": 214391877
+        },
+        "performance": {
+          "cold_runtime_seconds": 24.6131,
+          "repeat_runtime_seconds": 27.1758,
+          "warm_path_exists": false,
+          "files_per_second": 359.3,
+          "python_loc_per_second": 83545.0,
+          "peak_rss": {
+            "available": true,
+            "value": 796672000,
+            "unit": "bytes",
+            "source": "resource.getrusage(RUSAGE_SELF)",
+            "platform": "darwin"
+          },
+          "stage_milliseconds": {
+            "collect.config": 390.843,
+            "collect.data": 15.475,
+            "collect.dependencies": 5.371,
+            "collect.docs": 4.812,
+            "collect.environment": 14.415,
+            "collect.frameworks": 2.03,
+            "collect.git": 0.007,
+            "collect.latex": 5.925,
+            "collect.manifest": 0.121,
+            "collect.notebooks": 18.788,
+            "collect.portability": 6751.664,
+            "collect.precision": 50.283,
+            "collect.python": 13202.555,
+            "collect.remote": 3360.894,
+            "collect.results": 37.728,
+            "collect.run_history": 5.985,
+            "graph": 23.443,
+            "reviewer_time": 0.206,
+            "rules.discover": 4.985,
+            "rules.evaluate": 60.078,
+            "scan": 652.881,
+            "score": 0.059,
+            "total": 24609.408
+          },
+          "counters": {
+            "files.inventoried": 8843,
+            "files.python": 6014,
+            "files.read_cache_hits": 57,
+            "files.read_from_disk": 21163,
+            "parse.python.failed": 0,
+            "parse.python.modules": 6014,
+            "rules.evaluated": 78
+          },
+          "disk_reads_per_inventoried_file": 2.3932
+        },
+        "outcome": {
+          "score": 60.5027,
+          "tier": "Bronze",
+          "findings": 78,
+          "parser_failures": 0
+        },
+        "determinism": {
+          "repeat_render_byte_identical": true,
+          "comparison": "two run_check calls in one process, default JSON report"
+        }
+      },
+      "stratum": "XL",
+      "gitignore": {
+        "available": true,
+        "adduce_version": "0.1.2",
+        "honor_gitignore": true,
+        "inputs": {
+          "files": 343,
+          "python_files": 158,
+          "python_loc": 53014,
+          "bytes": 2606666
+        },
+        "performance": {
+          "cold_runtime_seconds": 1.2234,
+          "repeat_runtime_seconds": 1.1933,
+          "warm_path_exists": false,
+          "files_per_second": 280.4,
+          "python_loc_per_second": 43333.7,
+          "peak_rss": {
+            "available": true,
+            "value": 93405184,
+            "unit": "bytes",
+            "source": "resource.getrusage(RUSAGE_SELF)",
+            "platform": "darwin"
+          },
+          "stage_milliseconds": {
+            "collect.config": 0.84,
+            "collect.data": 0.973,
+            "collect.dependencies": 0.757,
+            "collect.docs": 0.956,
+            "collect.environment": 1.319,
+            "collect.frameworks": 0.071,
+            "collect.git": 0.006,
+            "collect.latex": 2.982,
+            "collect.manifest": 0.095,
+            "collect.notebooks": 0.054,
+            "collect.portability": 137.509,
+            "collect.precision": 1.462,
+            "collect.python": 361.17,
+            "collect.remote": 75.073,
+            "collect.results": 0.338,
+            "collect.run_history": 0.311,
+            "graph": 0.511,
+            "reviewer_time": 0.017,
+            "rules.discover": 4.738,
+            "rules.evaluate": 4.253,
+            "scan": 628.753,
+            "score": 0.051,
+            "total": 1222.913
+          },
+          "counters": {
+            "files.inventoried": 343,
+            "files.python": 158,
+            "files.read_cache_hits": 344,
+            "files.read_from_disk": 333,
+            "parse.python.failed": 0,
+            "parse.python.modules": 158,
+            "rules.evaluated": 69,
+            "rules.skipped_inapplicable": 9
+          },
+          "disk_reads_per_inventoried_file": 0.9708
+        },
+        "outcome": {
+          "score": 50.1718,
+          "tier": "Bronze",
+          "findings": 69,
+          "parser_failures": 0
+        },
+        "determinism": {
+          "repeat_render_byte_identical": true,
+          "comparison": "two run_check calls in one process, default JSON report"
+        }
+      }
+    },
+    {
+      "id": "synthetic_docker_claim",
+      "kind": "synthetic",
+      "path": "corpus/synthetic/synthetic_docker_claim",
+      "framework": "python",
+      "default": {
+        "available": true,
+        "adduce_version": "0.1.2",
+        "honor_gitignore": false,
+        "inputs": {
+          "files": 2,
+          "python_files": 1,
+          "python_loc": 6,
+          "bytes": 376
+        },
+        "performance": {
+          "cold_runtime_seconds": 0.0401,
+          "repeat_runtime_seconds": 0.0362,
+          "warm_path_exists": false,
+          "files_per_second": 49.9,
+          "python_loc_per_second": 149.7,
+          "peak_rss": {
+            "available": true,
+            "value": 32768000,
+            "unit": "bytes",
+            "source": "resource.getrusage(RUSAGE_SELF)",
+            "platform": "darwin"
+          },
+          "stage_milliseconds": {
+            "collect.config": 0.003,
+            "collect.data": 0.027,
+            "collect.dependencies": 0.15,
+            "collect.docs": 0.109,
+            "collect.environment": 0.013,
+            "collect.frameworks": 0.006,
+            "collect.git": 0.005,
+            "collect.latex": 0.004,
+            "collect.manifest": 0.099,
+            "collect.notebooks": 0.002,
+            "collect.portability": 0.041,
+            "collect.precision": 0.009,
+            "collect.python": 0.299,
+            "collect.remote": 0.023,
+            "collect.results": 0.005,
+            "collect.run_history": 0.009,
+            "graph": 0.015,
+            "reviewer_time": 0.01,
+            "rules.discover": 4.675,
+            "rules.evaluate": 0.155,
+            "scan": 33.745,
+            "score": 0.034,
+            "total": 40.051
+          },
+          "counters": {
+            "files.inventoried": 2,
+            "files.python": 1,
+            "files.read_cache_hits": 4,
+            "files.read_from_disk": 2,
+            "parse.python.failed": 0,
+            "parse.python.modules": 1,
+            "rules.evaluated": 45,
+            "rules.skipped_inapplicable": 33
+          },
+          "disk_reads_per_inventoried_file": 1.0
+        },
+        "outcome": {
+          "score": 41.9604,
+          "tier": "Needs work",
+          "findings": 45,
+          "parser_failures": 0
+        },
+        "determinism": {
+          "repeat_render_byte_identical": true,
+          "comparison": "two run_check calls in one process, default JSON report"
+        }
+      },
+      "stratum": "XS"
+    },
+    {
+      "id": "synthetic_ghost_dep",
+      "kind": "synthetic",
+      "path": "corpus/synthetic/synthetic_ghost_dep",
+      "framework": "python",
+      "default": {
+        "available": true,
+        "adduce_version": "0.1.2",
+        "honor_gitignore": false,
+        "inputs": {
+          "files": 3,
+          "python_files": 1,
+          "python_loc": 10,
+          "bytes": 389
+        },
+        "performance": {
+          "cold_runtime_seconds": 0.0376,
+          "repeat_runtime_seconds": 0.0353,
+          "warm_path_exists": false,
+          "files_per_second": 79.9,
+          "python_loc_per_second": 266.2,
+          "peak_rss": {
+            "available": true,
+            "value": 32882688,
+            "unit": "bytes",
+            "source": "resource.getrusage(RUSAGE_SELF)",
+            "platform": "darwin"
+          },
+          "stage_milliseconds": {
+            "collect.config": 0.005,
+            "collect.data": 0.028,
+            "collect.dependencies": 0.193,
+            "collect.docs": 0.074,
+            "collect.environment": 0.014,
+            "collect.frameworks": 0.008,
+            "collect.git": 0.005,
+            "collect.latex": 0.004,
+            "collect.manifest": 0.092,
+            "collect.notebooks": 0.003,
+            "collect.portability": 0.038,
+            "collect.precision": 0.009,
+            "collect.python": 0.367,
+            "collect.remote": 0.026,
+            "collect.results": 0.005,
+            "collect.run_history": 0.009,
+            "graph": 0.014,
+            "reviewer_time": 0.012,
+            "rules.discover": 4.553,
+            "rules.evaluate": 0.187,
+            "scan": 31.174,
+            "score": 0.033,
+            "total": 37.508
+          },
+          "counters": {
+            "files.inventoried": 3,
+            "files.python": 1,
+            "files.read_cache_hits": 5,
+            "files.read_from_disk": 3,
+            "parse.python.failed": 0,
+            "parse.python.modules": 1,
+            "rules.evaluated": 46,
+            "rules.skipped_inapplicable": 32
+          },
+          "disk_reads_per_inventoried_file": 1.0
+        },
+        "outcome": {
+          "score": 42.9272,
+          "tier": "Needs work",
+          "findings": 46,
+          "parser_failures": 0
+        },
+        "determinism": {
+          "repeat_render_byte_identical": true,
+          "comparison": "two run_check calls in one process, default JSON report"
+        }
+      },
+      "stratum": "XS"
+    },
+    {
+      "id": "synthetic_hydra_authority",
+      "kind": "synthetic",
+      "path": "corpus/synthetic/synthetic_hydra_authority",
+      "framework": "python",
+      "default": {
+        "available": true,
+        "adduce_version": "0.1.2",
+        "honor_gitignore": false,
+        "inputs": {
+          "files": 6,
+          "python_files": 1,
+          "python_loc": 6,
+          "bytes": 729
+        },
+        "performance": {
+          "cold_runtime_seconds": 0.0491,
+          "repeat_runtime_seconds": 0.0442,
+          "warm_path_exists": false,
+          "files_per_second": 122.2,
+          "python_loc_per_second": 122.2,
+          "peak_rss": {
+            "available": true,
+            "value": 32849920,
+            "unit": "bytes",
+            "source": "resource.getrusage(RUSAGE_SELF)",
+            "platform": "darwin"
+          },
+          "stage_milliseconds": {
+            "collect.config": 0.225,
+            "collect.data": 0.035,
+            "collect.dependencies": 0.152,
+            "collect.docs": 0.1,
+            "collect.environment": 0.018,
+            "collect.frameworks": 0.006,
+            "collect.git": 0.006,
+            "collect.latex": 1.468,
+            "collect.manifest": 0.351,
+            "collect.notebooks": 0.005,
+            "collect.portability": 0.131,
+            "collect.precision": 0.01,
+            "collect.python": 0.282,
+            "collect.remote": 0.022,
+            "collect.results": 0.008,
+            "collect.run_history": 0.094,
+            "graph": 0.011,
+            "reviewer_time": 0.014,
+            "rules.discover": 5.079,
+            "rules.evaluate": 0.282,
+            "scan": 39.981,
+            "score": 0.049,
+            "total": 49.05
+          },
+          "counters": {
+            "files.inventoried": 6,
+            "files.python": 1,
+            "files.read_cache_hits": 7,
+            "files.read_from_disk": 6,
+            "parse.python.failed": 0,
+            "parse.python.modules": 1,
+            "rules.evaluated": 45,
+            "rules.skipped_inapplicable": 33
+          },
+          "disk_reads_per_inventoried_file": 1.0
+        },
+        "outcome": {
+          "score": 51.8291,
+          "tier": "Bronze",
+          "findings": 45,
+          "parser_failures": 0
+        },
+        "determinism": {
+          "repeat_render_byte_identical": true,
+          "comparison": "two run_check calls in one process, default JSON report"
+        }
+      },
+      "stratum": "XS"
+    },
+    {
+      "id": "synthetic_lr_agreement",
+      "kind": "synthetic",
+      "path": "corpus/synthetic/synthetic_lr_agreement",
+      "framework": "python",
+      "default": {
+        "available": true,
+        "adduce_version": "0.1.2",
+        "honor_gitignore": false,
+        "inputs": {
+          "files": 3,
+          "python_files": 0,
+          "python_loc": 0,
+          "bytes": 300
+        },
+        "performance": {
+          "cold_runtime_seconds": 0.0438,
+          "repeat_runtime_seconds": 0.0425,
+          "warm_path_exists": false,
+          "files_per_second": 68.4,
+          "python_loc_per_second": null,
+          "peak_rss": {
+            "available": true,
+            "value": 32849920,
+            "unit": "bytes",
+            "source": "resource.getrusage(RUSAGE_SELF)",
+            "platform": "darwin"
+          },
+          "stage_milliseconds": {
+            "collect.config": 0.261,
+            "collect.data": 0.028,
+            "collect.dependencies": 0.179,
+            "collect.docs": 0.171,
+            "collect.environment": 0.026,
+            "collect.frameworks": 0.006,
+            "collect.git": 0.031,
+            "collect.latex": 1.453,
+            "collect.manifest": 0.097,
+            "collect.notebooks": 0.008,
+            "collect.portability": 0.039,
+            "collect.precision": 0.012,
+            "collect.python": 0.032,
+            "collect.remote": 0.013,
+            "collect.results": 0.01,
+            "collect.run_history": 0.008,
+            "graph": 0.027,
+            "reviewer_time": 0.017,
+            "rules.discover": 4.836,
+            "rules.evaluate": 0.212,
+            "scan": 35.497,
+            "score": 0.036,
+            "total": 43.789
+          },
+          "counters": {
+            "files.inventoried": 3,
+            "files.python": 0,
+            "files.read_cache_hits": 4,
+            "files.read_from_disk": 3,
+            "parse.python.failed": 0,
+            "parse.python.modules": 0,
+            "rules.evaluated": 28,
+            "rules.skipped_inapplicable": 50
+          },
+          "disk_reads_per_inventoried_file": 1.0
+        },
+        "outcome": {
+          "score": 69.8168,
+          "tier": "Bronze",
+          "findings": 28,
+          "parser_failures": 0
+        },
+        "determinism": {
+          "repeat_render_byte_identical": true,
+          "comparison": "two run_check calls in one process, default JSON report"
+        }
+      },
+      "stratum": "XS"
+    },
+    {
+      "id": "synthetic_lr_drift",
+      "kind": "synthetic",
+      "path": "corpus/synthetic/synthetic_lr_drift",
+      "framework": "python",
+      "default": {
+        "available": true,
+        "adduce_version": "0.1.2",
+        "honor_gitignore": false,
+        "inputs": {
+          "files": 3,
+          "python_files": 0,
+          "python_loc": 0,
+          "bytes": 288
+        },
+        "performance": {
+          "cold_runtime_seconds": 0.0428,
+          "repeat_runtime_seconds": 0.0374,
+          "warm_path_exists": false,
+          "files_per_second": 70.1,
+          "python_loc_per_second": null,
+          "peak_rss": {
+            "available": true,
+            "value": 32817152,
+            "unit": "bytes",
+            "source": "resource.getrusage(RUSAGE_SELF)",
+            "platform": "darwin"
+          },
+          "stage_milliseconds": {
+            "collect.config": 0.24,
+            "collect.data": 0.022,
+            "collect.dependencies": 0.158,
+            "collect.docs": 0.134,
+            "collect.environment": 0.017,
+            "collect.frameworks": 0.005,
+            "collect.git": 0.006,
+            "collect.latex": 1.426,
+            "collect.manifest": 0.084,
+            "collect.notebooks": 0.005,
+            "collect.portability": 0.028,
+            "collect.precision": 0.008,
+            "collect.python": 0.029,
+            "collect.remote": 0.011,
+            "collect.results": 0.006,
+            "collect.run_history": 0.012,
+            "graph": 0.02,
+            "reviewer_time": 0.016,
+            "rules.discover": 4.821,
+            "rules.evaluate": 0.202,
+            "scan": 34.67,
+            "score": 0.031,
+            "total": 42.748
+          },
+          "counters": {
+            "files.inventoried": 3,
+            "files.python": 0,
+            "files.read_cache_hits": 4,
+            "files.read_from_disk": 3,
+            "parse.python.failed": 0,
+            "parse.python.modules": 0,
+            "rules.evaluated": 28,
+            "rules.skipped_inapplicable": 50
+          },
+          "disk_reads_per_inventoried_file": 1.0
+        },
+        "outcome": {
+          "score": 58.7057,
+          "tier": "Bronze",
+          "findings": 28,
+          "parser_failures": 0
+        },
+        "determinism": {
+          "repeat_render_byte_identical": true,
+          "comparison": "two run_check calls in one process, default JSON report"
+        }
+      },
+      "stratum": "XS"
+    },
+    {
+      "id": "synthetic_material_mismatch",
+      "kind": "synthetic",
+      "path": "corpus/synthetic/synthetic_material_mismatch",
+      "framework": "python",
+      "default": {
+        "available": true,
+        "adduce_version": "0.1.2",
+        "honor_gitignore": false,
+        "inputs": {
+          "files": 3,
+          "python_files": 0,
+          "python_loc": 0,
+          "bytes": 301
+        },
+        "performance": {
+          "cold_runtime_seconds": 0.0402,
+          "repeat_runtime_seconds": 0.0388,
+          "warm_path_exists": false,
+          "files_per_second": 74.6,
+          "python_loc_per_second": null,
+          "peak_rss": {
+            "available": true,
+            "value": 33013760,
+            "unit": "bytes",
+            "source": "resource.getrusage(RUSAGE_SELF)",
+            "platform": "darwin"
+          },
+          "stage_milliseconds": {
+            "collect.config": 0.005,
+            "collect.data": 0.026,
+            "collect.dependencies": 0.193,
+            "collect.docs": 0.134,
+            "collect.environment": 0.019,
+            "collect.frameworks": 0.007,
+            "collect.git": 0.006,
+            "collect.latex": 1.432,
+            "collect.manifest": 0.1,
+            "collect.notebooks": 0.007,
+            "collect.portability": 0.03,
+            "collect.precision": 0.01,
+            "collect.python": 0.036,
+            "collect.remote": 0.011,
+            "collect.results": 0.076,
+            "collect.run_history": 0.01,
+            "graph": 0.035,
+            "reviewer_time": 0.012,
+            "rules.discover": 5.123,
+            "rules.evaluate": 0.194,
+            "scan": 32.013,
+            "score": 0.03,
+            "total": 40.192
+          },
+          "counters": {
+            "files.inventoried": 3,
+            "files.python": 0,
+            "files.read_cache_hits": 3,
+            "files.read_from_disk": 3,
+            "parse.python.failed": 0,
+            "parse.python.modules": 0,
+            "rules.evaluated": 28,
+            "rules.skipped_inapplicable": 50
+          },
+          "disk_reads_per_inventoried_file": 1.0
+        },
+        "outcome": {
+          "score": 53.9496,
+          "tier": "Bronze",
+          "findings": 28,
+          "parser_failures": 0
+        },
+        "determinism": {
+          "repeat_render_byte_identical": true,
+          "comparison": "two run_check calls in one process, default JSON report"
+        }
+      },
+      "stratum": "XS"
+    },
+    {
+      "id": "synthetic_metric_unrelated_table",
+      "kind": "synthetic",
+      "path": "corpus/synthetic/synthetic_metric_unrelated_table",
+      "framework": "python",
+      "default": {
+        "available": true,
+        "adduce_version": "0.1.2",
+        "honor_gitignore": false,
+        "inputs": {
+          "files": 2,
+          "python_files": 0,
+          "python_loc": 0,
+          "bytes": 462
+        },
+        "performance": {
+          "cold_runtime_seconds": 0.04,
+          "repeat_runtime_seconds": 0.038,
+          "warm_path_exists": false,
+          "files_per_second": 50.0,
+          "python_loc_per_second": null,
+          "peak_rss": {
+            "available": true,
+            "value": 32997376,
+            "unit": "bytes",
+            "source": "resource.getrusage(RUSAGE_SELF)",
+            "platform": "darwin"
+          },
+          "stage_milliseconds": {
+            "collect.config": 0.005,
+            "collect.data": 0.029,
+            "collect.dependencies": 0.156,
+            "collect.docs": 0.138,
+            "collect.environment": 0.016,
+            "collect.frameworks": 0.004,
+            "collect.git": 0.006,
+            "collect.latex": 1.677,
+            "collect.manifest": 0.097,
+            "collect.notebooks": 0.005,
+            "collect.portability": 0.04,
+            "collect.precision": 0.008,
+            "collect.python": 0.033,
+            "collect.remote": 0.011,
+            "collect.results": 0.006,
+            "collect.run_history": 0.01,
+            "graph": 0.016,
+            "reviewer_time": 0.014,
+            "rules.discover": 4.553,
+            "rules.evaluate": 0.128,
+            "scan": 32.343,
+            "score": 0.029,
+            "total": 39.927
+          },
+          "counters": {
+            "files.inventoried": 2,
+            "files.python": 0,
+            "files.read_cache_hits": 3,
+            "files.read_from_disk": 2,
+            "parse.python.failed": 0,
+            "parse.python.modules": 0,
+            "rules.evaluated": 28,
+            "rules.skipped_inapplicable": 50
+          },
+          "disk_reads_per_inventoried_file": 1.0
+        },
+        "outcome": {
+          "score": 50.2041,
+          "tier": "Bronze",
+          "findings": 28,
+          "parser_failures": 0
+        },
+        "determinism": {
+          "repeat_render_byte_identical": true,
+          "comparison": "two run_check calls in one process, default JSON report"
+        }
+      },
+      "stratum": "XS"
+    },
+    {
+      "id": "synthetic_rounding_match",
+      "kind": "synthetic",
+      "path": "corpus/synthetic/synthetic_rounding_match",
+      "framework": "python",
+      "default": {
+        "available": true,
+        "adduce_version": "0.1.2",
+        "honor_gitignore": false,
+        "inputs": {
+          "files": 3,
+          "python_files": 0,
+          "python_loc": 0,
+          "bytes": 313
+        },
+        "performance": {
+          "cold_runtime_seconds": 0.0394,
+          "repeat_runtime_seconds": 0.0366,
+          "warm_path_exists": false,
+          "files_per_second": 76.1,
+          "python_loc_per_second": null,
+          "peak_rss": {
+            "available": true,
+            "value": 32980992,
+            "unit": "bytes",
+            "source": "resource.getrusage(RUSAGE_SELF)",
+            "platform": "darwin"
+          },
+          "stage_milliseconds": {
+            "collect.config": 0.004,
+            "collect.data": 0.028,
+            "collect.dependencies": 0.161,
+            "collect.docs": 0.13,
+            "collect.environment": 0.018,
+            "collect.frameworks": 0.004,
+            "collect.git": 0.006,
+            "collect.latex": 1.425,
+            "collect.manifest": 0.078,
+            "collect.notebooks": 0.006,
+            "collect.portability": 0.028,
+            "collect.precision": 0.008,
+            "collect.python": 0.029,
+            "collect.remote": 0.01,
+            "collect.results": 0.062,
+            "collect.run_history": 0.009,
+            "graph": 0.034,
+            "reviewer_time": 0.014,
+            "rules.discover": 4.641,
+            "rules.evaluate": 0.175,
+            "scan": 31.885,
+            "score": 0.032,
+            "total": 39.371
+          },
+          "counters": {
+            "files.inventoried": 3,
+            "files.python": 0,
+            "files.read_cache_hits": 3,
+            "files.read_from_disk": 3,
+            "parse.python.failed": 0,
+            "parse.python.modules": 0,
+            "rules.evaluated": 28,
+            "rules.skipped_inapplicable": 50
+          },
+          "disk_reads_per_inventoried_file": 1.0
+        },
+        "outcome": {
+          "score": 58.9916,
+          "tier": "Bronze",
+          "findings": 28,
+          "parser_failures": 0
+        },
+        "determinism": {
+          "repeat_render_byte_identical": true,
+          "comparison": "two run_check calls in one process, default JSON report"
+        }
+      },
+      "stratum": "XS"
+    },
+    {
+      "id": "synthetic_secret",
+      "kind": "synthetic",
+      "path": "corpus/synthetic/synthetic_secret",
+      "framework": "python",
+      "default": {
+        "available": true,
+        "adduce_version": "0.1.2",
+        "honor_gitignore": false,
+        "inputs": {
+          "files": 3,
+          "python_files": 1,
+          "python_loc": 6,
+          "bytes": 413
+        },
+        "performance": {
+          "cold_runtime_seconds": 0.0387,
+          "repeat_runtime_seconds": 0.036,
+          "warm_path_exists": false,
+          "files_per_second": 77.5,
+          "python_loc_per_second": 155.1,
+          "peak_rss": {
+            "available": true,
+            "value": 32899072,
+            "unit": "bytes",
+            "source": "resource.getrusage(RUSAGE_SELF)",
+            "platform": "darwin"
+          },
+          "stage_milliseconds": {
+            "collect.config": 0.264,
+            "collect.data": 0.027,
+            "collect.dependencies": 0.142,
+            "collect.docs": 0.087,
+            "collect.environment": 0.016,
+            "collect.frameworks": 0.005,
+            "collect.git": 0.005,
+            "collect.latex": 0.005,
+            "collect.manifest": 0.083,
+            "collect.notebooks": 0.003,
+            "collect.portability": 0.041,
+            "collect.precision": 0.008,
+            "collect.python": 0.275,
+            "collect.remote": 0.021,
+            "collect.results": 0.006,
+            "collect.run_history": 0.007,
+            "graph": 0.015,
+            "reviewer_time": 0.011,
+            "rules.discover": 4.629,
+            "rules.evaluate": 0.166,
+            "scan": 32.152,
+            "score": 0.035,
+            "total": 38.648
+          },
+          "counters": {
+            "files.inventoried": 3,
+            "files.python": 1,
+            "files.read_cache_hits": 5,
+            "files.read_from_disk": 3,
+            "parse.python.failed": 0,
+            "parse.python.modules": 1,
+            "rules.evaluated": 45,
+            "rules.skipped_inapplicable": 33
+          },
+          "disk_reads_per_inventoried_file": 1.0
+        },
+        "outcome": {
+          "score": 42.4681,
+          "tier": "Needs work",
+          "findings": 45,
+          "parser_failures": 0
+        },
+        "determinism": {
+          "repeat_render_byte_identical": true,
+          "comparison": "two run_check calls in one process, default JSON report"
+        }
+      },
+      "stratum": "XS"
+    },
+    {
+      "id": "synthetic_seed_count",
+      "kind": "synthetic",
+      "path": "corpus/synthetic/synthetic_seed_count",
+      "framework": "python",
+      "default": {
+        "available": true,
+        "adduce_version": "0.1.2",
+        "honor_gitignore": false,
+        "inputs": {
+          "files": 6,
+          "python_files": 1,
+          "python_loc": 15,
+          "bytes": 844
+        },
+        "performance": {
+          "cold_runtime_seconds": 0.0409,
+          "repeat_runtime_seconds": 0.0431,
+          "warm_path_exists": false,
+          "files_per_second": 146.6,
+          "python_loc_per_second": 366.6,
+          "peak_rss": {
+            "available": true,
+            "value": 32768000,
+            "unit": "bytes",
+            "source": "resource.getrusage(RUSAGE_SELF)",
+            "platform": "darwin"
+          },
+          "stage_milliseconds": {
+            "collect.config": 0.222,
+            "collect.data": 0.029,
+            "collect.dependencies": 0.202,
+            "collect.docs": 0.083,
+            "collect.environment": 0.457,
+            "collect.frameworks": 0.012,
+            "collect.git": 0.004,
+            "collect.latex": 1.386,
+            "collect.manifest": 0.084,
+            "collect.notebooks": 0.004,
+            "collect.portability": 0.061,
+            "collect.precision": 0.009,
+            "collect.python": 0.395,
+            "collect.remote": 0.04,
+            "collect.results": 0.008,
+            "collect.run_history": 0.038,
+            "graph": 0.016,
+            "reviewer_time": 0.014,
+            "rules.discover": 4.889,
+            "rules.evaluate": 0.287,
+            "scan": 31.995,
+            "score": 0.043,
+            "total": 40.874
+          },
+          "counters": {
+            "files.inventoried": 6,
+            "files.python": 1,
+            "files.read_cache_hits": 10,
+            "files.read_from_disk": 6,
+            "parse.python.failed": 0,
+            "parse.python.modules": 1,
+            "rules.evaluated": 69,
+            "rules.skipped_inapplicable": 9
+          },
+          "disk_reads_per_inventoried_file": 1.0
+        },
+        "outcome": {
+          "score": 53.4991,
+          "tier": "Bronze",
+          "findings": 69,
+          "parser_failures": 0
+        },
+        "determinism": {
+          "repeat_render_byte_identical": true,
+          "comparison": "two run_check calls in one process, default JSON report"
+        }
+      },
+      "stratum": "XS"
+    },
+    {
+      "id": "synthetic_seeds_claimed_not_set",
+      "kind": "synthetic",
+      "path": "corpus/synthetic/synthetic_seeds_claimed_not_set",
+      "framework": "python",
+      "default": {
+        "available": true,
+        "adduce_version": "0.1.2",
+        "honor_gitignore": false,
+        "inputs": {
+          "files": 4,
+          "python_files": 1,
+          "python_loc": 7,
+          "bytes": 433
+        },
+        "performance": {
+          "cold_runtime_seconds": 0.0399,
+          "repeat_runtime_seconds": 0.0374,
+          "warm_path_exists": false,
+          "files_per_second": 100.2,
+          "python_loc_per_second": 175.4,
+          "peak_rss": {
+            "available": true,
+            "value": 32899072,
+            "unit": "bytes",
+            "source": "resource.getrusage(RUSAGE_SELF)",
+            "platform": "darwin"
+          },
+          "stage_milliseconds": {
+            "collect.config": 0.004,
+            "collect.data": 0.028,
+            "collect.dependencies": 0.193,
+            "collect.docs": 0.081,
+            "collect.environment": 0.016,
+            "collect.frameworks": 0.008,
+            "collect.git": 0.004,
+            "collect.latex": 1.39,
+            "collect.manifest": 0.082,
+            "collect.notebooks": 0.004,
+            "collect.portability": 0.037,
+            "collect.precision": 0.009,
+            "collect.python": 0.295,
+            "collect.remote": 0.021,
+            "collect.results": 0.006,
+            "collect.run_history": 0.009,
+            "graph": 0.014,
+            "reviewer_time": 0.01,
+            "rules.discover": 4.6,
+            "rules.evaluate": 0.248,
+            "scan": 32.169,
+            "score": 0.04,
+            "total": 39.868
+          },
+          "counters": {
+            "files.inventoried": 4,
+            "files.python": 1,
+            "files.read_cache_hits": 6,
+            "files.read_from_disk": 4,
+            "parse.python.failed": 0,
+            "parse.python.modules": 1,
+            "rules.evaluated": 69,
+            "rules.skipped_inapplicable": 9
+          },
+          "disk_reads_per_inventoried_file": 1.0
+        },
+        "outcome": {
+          "score": 31.6972,
+          "tier": "Needs work",
+          "findings": 69,
+          "parser_failures": 0
+        },
+        "determinism": {
+          "repeat_render_byte_identical": true,
+          "comparison": "two run_check calls in one process, default JSON report"
+        }
+      },
+      "stratum": "XS"
+    },
+    {
+      "id": "synthetic_tf32",
+      "kind": "synthetic",
+      "path": "corpus/synthetic/synthetic_tf32",
+      "framework": "python",
+      "default": {
+        "available": true,
+        "adduce_version": "0.1.2",
+        "honor_gitignore": false,
+        "inputs": {
+          "files": 3,
+          "python_files": 1,
+          "python_loc": 4,
+          "bytes": 264
+        },
+        "performance": {
+          "cold_runtime_seconds": 0.0374,
+          "repeat_runtime_seconds": 0.0364,
+          "warm_path_exists": false,
+          "files_per_second": 80.3,
+          "python_loc_per_second": 107.0,
+          "peak_rss": {
+            "available": true,
+            "value": 33013760,
+            "unit": "bytes",
+            "source": "resource.getrusage(RUSAGE_SELF)",
+            "platform": "darwin"
+          },
+          "stage_milliseconds": {
+            "collect.config": 0.003,
+            "collect.data": 0.025,
+            "collect.dependencies": 0.19,
+            "collect.docs": 0.083,
+            "collect.environment": 0.014,
+            "collect.frameworks": 0.007,
+            "collect.git": 0.005,
+            "collect.latex": 0.004,
+            "collect.manifest": 0.086,
+            "collect.notebooks": 0.003,
+            "collect.portability": 0.029,
+            "collect.precision": 0.012,
+            "collect.python": 0.275,
+            "collect.remote": 0.018,
+            "collect.results": 0.005,
+            "collect.run_history": 0.008,
+            "graph": 0.015,
+            "reviewer_time": 0.01,
+            "rules.discover": 4.762,
+            "rules.evaluate": 0.252,
+            "scan": 30.881,
+            "score": 0.038,
+            "total": 37.332
+          },
+          "counters": {
+            "files.inventoried": 3,
+            "files.python": 1,
+            "files.read_cache_hits": 5,
+            "files.read_from_disk": 3,
+            "parse.python.failed": 0,
+            "parse.python.modules": 1,
+            "rules.evaluated": 69,
+            "rules.skipped_inapplicable": 9
+          },
+          "disk_reads_per_inventoried_file": 1.0
+        },
+        "outcome": {
+          "score": 32.9497,
+          "tier": "Needs work",
+          "findings": 69,
+          "parser_failures": 0
+        },
+        "determinism": {
+          "repeat_render_byte_identical": true,
+          "comparison": "two run_check calls in one process, default JSON report"
+        }
+      },
+      "stratum": "XS"
+    },
+    {
+      "id": "synthetic_unpinned_remote",
+      "kind": "synthetic",
+      "path": "corpus/synthetic/synthetic_unpinned_remote",
+      "framework": "python",
+      "default": {
+        "available": true,
+        "adduce_version": "0.1.2",
+        "honor_gitignore": false,
+        "inputs": {
+          "files": 3,
+          "python_files": 1,
+          "python_loc": 3,
+          "bytes": 250
+        },
+        "performance": {
+          "cold_runtime_seconds": 0.0382,
+          "repeat_runtime_seconds": 0.0374,
+          "warm_path_exists": false,
+          "files_per_second": 78.5,
+          "python_loc_per_second": 78.5,
+          "peak_rss": {
+            "available": true,
+            "value": 32735232,
+            "unit": "bytes",
+            "source": "resource.getrusage(RUSAGE_SELF)",
+            "platform": "darwin"
+          },
+          "stage_milliseconds": {
+            "collect.config": 0.005,
+            "collect.data": 0.033,
+            "collect.dependencies": 0.274,
+            "collect.docs": 0.091,
+            "collect.environment": 0.017,
+            "collect.frameworks": 0.01,
+            "collect.git": 0.009,
+            "collect.latex": 0.006,
+            "collect.manifest": 0.136,
+            "collect.notebooks": 0.004,
+            "collect.portability": 0.033,
+            "collect.precision": 0.012,
+            "collect.python": 0.351,
+            "collect.remote": 0.033,
+            "collect.results": 0.01,
+            "collect.run_history": 0.009,
+            "graph": 0.031,
+            "reviewer_time": 0.019,
+            "rules.discover": 5.811,
+            "rules.evaluate": 0.352,
+            "scan": 30.205,
+            "score": 0.048,
+            "total": 38.169
+          },
+          "counters": {
+            "files.inventoried": 3,
+            "files.python": 1,
+            "files.read_cache_hits": 5,
+            "files.read_from_disk": 3,
+            "parse.python.failed": 0,
+            "parse.python.modules": 1,
+            "rules.evaluated": 56,
+            "rules.skipped_inapplicable": 22
+          },
+          "disk_reads_per_inventoried_file": 1.0
+        },
+        "outcome": {
+          "score": 26.3139,
+          "tier": "Needs work",
+          "findings": 56,
+          "parser_failures": 0
+        },
+        "determinism": {
+          "repeat_render_byte_identical": true,
+          "comparison": "two run_check calls in one process, default JSON report"
+        }
+      },
+      "stratum": "XS"
+    },
+    {
+      "id": "synthetic_untied_config",
+      "kind": "synthetic",
+      "path": "corpus/synthetic/synthetic_untied_config",
+      "framework": "python",
+      "default": {
+        "available": true,
+        "adduce_version": "0.1.2",
+        "honor_gitignore": false,
+        "inputs": {
+          "files": 3,
+          "python_files": 0,
+          "python_loc": 0,
+          "bytes": 354
+        },
+        "performance": {
+          "cold_runtime_seconds": 0.0384,
+          "repeat_runtime_seconds": 0.0373,
+          "warm_path_exists": false,
+          "files_per_second": 78.1,
+          "python_loc_per_second": null,
+          "peak_rss": {
+            "available": true,
+            "value": 32964608,
+            "unit": "bytes",
+            "source": "resource.getrusage(RUSAGE_SELF)",
+            "platform": "darwin"
+          },
+          "stage_milliseconds": {
+            "collect.config": 0.237,
+            "collect.data": 0.027,
+            "collect.dependencies": 0.165,
+            "collect.docs": 0.128,
+            "collect.environment": 0.018,
+            "collect.frameworks": 0.005,
+            "collect.git": 0.005,
+            "collect.latex": 1.346,
+            "collect.manifest": 0.08,
+            "collect.notebooks": 0.005,
+            "collect.portability": 0.032,
+            "collect.precision": 0.007,
+            "collect.python": 0.028,
+            "collect.remote": 0.008,
+            "collect.results": 0.006,
+            "collect.run_history": 0.006,
+            "graph": 0.015,
+            "reviewer_time": 0.012,
+            "rules.discover": 4.553,
+            "rules.evaluate": 0.13,
+            "scan": 30.937,
+            "score": 0.028,
+            "total": 38.392
+          },
+          "counters": {
+            "files.inventoried": 3,
+            "files.python": 0,
+            "files.read_cache_hits": 4,
+            "files.read_from_disk": 3,
+            "parse.python.failed": 0,
+            "parse.python.modules": 0,
+            "rules.evaluated": 28,
+            "rules.skipped_inapplicable": 50
+          },
+          "disk_reads_per_inventoried_file": 1.0
+        },
+        "outcome": {
+          "score": 61.1931,
+          "tier": "Bronze",
+          "findings": 28,
+          "parser_failures": 0
+        },
+        "determinism": {
+          "repeat_render_byte_identical": true,
+          "comparison": "two run_check calls in one process, default JSON report"
+        }
+      },
+      "stratum": "XS"
+    }
+  ]
+}
