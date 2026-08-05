@@ -55,6 +55,12 @@ corpus/reports/
 corpus/snapshots/
 corpus/derived/
 
+# Reviewer packets and in-progress review workspaces are local working artifacts that may
+# carry reviewer identifiers and expertise statements
+.review-packets/
+.review-workspaces/
+*.review-workspace.json
+
 # Calibration working data (analysis code and metadata are tracked)
 research/calibration/snapshots/
 research/calibration/derived/
