@@ -36,11 +36,25 @@ python bench/runner.py measure --output bench/reports/local.json
 python bench/runner.py measure --output bench/reports/one.json --only torchtune
 python bench/runner.py compare --baseline bench/reports/baseline.json \
                                --current bench/reports/local.json
+python bench/runner.py finding-diff --only adduce-self
 ```
 
 `compare` exits non-zero when, against the baseline, a repeated run stops being
 byte-identical, parser failures rise, a synthetic-corpus score moves, cold
 runtime regresses beyond 25%, or disk reads per inventoried file rise.
+
+`finding-diff` runs each target with the ignore file honoured and ignored, and
+enumerates every rule status that moves between the two. Each move is classified
+as a rule that stopped applying, became not-applicable, dropped, or improved —
+producing no finding at all is a different fact from reaching a new conclusion,
+so the two are never merged. This is the evidence for honouring `.gitignore` by
+default, and on the adduce repository it reports 30 moves: 9 / 13 / 7 / 1 in that
+order.
+
+Both arms pass the ignore setting explicitly, so a change to the shipped default
+cannot silently move a measurement or a baseline comparison. Note that the
+`default` arm of a `measure` report therefore pins the whole-tree scan, which is
+no longer what `adduce check` does without arguments.
 
 Clone targets live under `corpus/clones/`, which is gitignored and ships in no
 archive. They are reported unavailable in CI; the synthetic targets always run.
@@ -59,10 +73,15 @@ Measured on the largest target (`transformers`, 4,643 Python files,
 
 | added operation | cost |
 |---|---|
-| 18 stage context managers | 11.6 µs |
-| counter recording over 8,840 inventoried files | 1,100.5 µs |
+| the 23 stage context managers a default offline run enters | 15.9 µs |
+| `_record_counters`, dominated by one pass over 8,840 inventoried files | 1,100.5 µs |
 | `snapshot()`, only when reporting | 3.3 µs |
 | **total** | **~1.12 ms, or 0.005% of the run** |
+
+The counter row is the whole of `engine._record_counters`, not the `count()` calls
+inside it: those are nine calls taking under a microsecond together, and the cost
+is `repo.python_files()` walking the inventory once. It is charged here in full
+rather than split, because the pass exists only to be counted.
 
 Measured directly, per operation. Establishing the same figure by subtracting
 two whole-run timings does not work on a loaded developer machine: the spread

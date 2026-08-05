@@ -27,7 +27,7 @@ adduce check --mode reviewer         # skeptical framing: what could not be veri
 adduce check --mode ae-chair         # badge prerequisites, blocking issues, burden headline
 adduce check -f json|sarif|markdown|badge|latex -o out
 adduce check ./code --paper ../paper       # paper and code kept in separate repositories
-adduce check --gitignore             # skip paths git ignores (off by default; see below)
+adduce check --no-gitignore          # scan the whole tree, ignore file included (see below)
 adduce check --timings               # per-stage durations and work counters, to stderr
 adduce drift                         # paper ↔ code/config consistency + result reconciliation
 adduce precision                     # TF32/AMP/low-precision audit
@@ -72,33 +72,38 @@ module-level Python, NumPy, and Torch RNG calls and does not observe
 generator-instance methods or library-internal/native draws. Read the
 [security model](security-model.md) before either execution mode.
 
-## Scan scope and `--gitignore`
+## Scan scope and `--no-gitignore`
 
-By default the scan walks every file except a fixed list of build and
-environment directories. It does **not** consult `.gitignore`, so a gitignored
-`data/`, `wandb/`, `outputs/`, or vendored checkout is inventoried, read, and
-allowed to contribute findings — including passing ones — even though it is not
-part of the artifact a reader receives.
+The scan skips paths git ignores, using git's own matcher so nested ignore
+files, negation, anchoring, and directory-only patterns behave exactly as git
+does. A gitignored `data/`, `wandb/`, `outputs/`, or vendored checkout is not
+part of the artifact a reader receives, so it is not evidence about that
+artifact.
 
-`--gitignore` drops those paths, using git's own matcher so nested ignore files,
-negation, and anchoring behave exactly as git does. Two consequences worth
-knowing before enabling it:
+`--no-gitignore` examines the whole tree instead. Three consequences worth
+knowing:
 
-- **It can lower a score, and that is usually the point.** A repository that
-  vendors another project can earn passing statuses from the vendored code. On
-  this repository, enabling it moves 30 rule statuses: nine rules stop applying
-  at all, twelve become not-applicable, and nine that were passing or partial
-  drop — because their evidence came from files belonging to other repositories.
+- **Honouring the ignore file can lower a score, and that is the point.** A
+  repository that vendors another project can otherwise earn passing statuses
+  from the vendored code. Measured on the adduce repository, whose working tree
+  carries fifteen gitignored clones: the scan covers 344 files rather than
+  8,844, the score reads 50.2 rather than 60.5, and 30 rule statuses move —
+  9 rules stop applying, 13 report not-applicable, 7 drop, and 1 improves. Nine
+  of the thirty were reporting PASS on another repository's files, among them
+  cuDNN determinism flags in a project containing no CUDA code.
 - **Tracking beats ignoring**, as in git: a tracked file matching an ignore
   pattern is still scanned.
+- **It never scans less than it reports.** Scanning a directory that is itself
+  gitignored keeps every file, since filtering there would report a clean
+  repository containing nothing. When git is unavailable, the call fails, or the
+  directory is not a repository, the whole tree is scanned.
 
-Scanning a directory that is itself gitignored keeps every file, since
-filtering there would report a clean repository containing nothing. When git is
-unavailable or the directory is not a repository, the flag has no effect: the
-scan includes more, never silently less.
+Ambient git configuration cannot change the answer: system and global config
+are suppressed for the query, so a user's `core.excludesFile` cannot silently
+shrink an audit.
 
-It is off by default while its effect on findings is under review, and is
-planned to become the default in a later release.
+The reproducible measurement behind the numbers above is
+`bench/runner.py finding-diff`.
 
 ## Timings
 

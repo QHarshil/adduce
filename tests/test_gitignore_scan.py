@@ -14,6 +14,7 @@ from pathlib import Path
 
 import pytest
 
+from adduce.engine import run_check
 from adduce.model import scan_repository
 
 _GIT_AVAILABLE = True
@@ -58,7 +59,7 @@ def _paths(root: Path, *, honor: bool) -> set[str]:
 
 
 @requires_git
-def test_gitignored_file_is_scanned_by_default_and_skipped_when_honouring(tmp_path: Path) -> None:
+def test_gitignored_file_is_skipped_by_default_and_scanned_when_asked(tmp_path: Path) -> None:
     _write(tmp_path, ".gitignore", "secret.py\n")
     _write(tmp_path, "secret.py", "x = 1\n")
     _write(tmp_path, "kept.py", "y = 2\n")
@@ -68,6 +69,39 @@ def test_gitignored_file_is_scanned_by_default_and_skipped_when_honouring(tmp_pa
     honoured = _paths(tmp_path, honor=True)
     assert "secret.py" not in honoured
     assert {"kept.py", ".gitignore"} <= honoured
+
+
+@requires_git
+def test_the_walk_honours_gitignore_without_being_asked(tmp_path: Path) -> None:
+    """The default is on, so a caller that says nothing gets the corrected scan.
+
+    Pinned separately from the explicit-argument tests: those pass ``honor``
+    either way and so cannot see which value the default carries.
+    """
+    _write(tmp_path, ".gitignore", "ignored/\n")
+    _write(tmp_path, "ignored/borrowed.py", "import torch\n")
+    _write(tmp_path, "train.py", "import torch\n")
+    _git(tmp_path, "init")
+
+    defaulted = {str(entry.path) for entry in scan_repository(tmp_path).files}
+
+    assert "train.py" in defaulted
+    assert "ignored/borrowed.py" not in defaulted
+    assert defaulted == _paths(tmp_path, honor=True)
+
+
+@requires_git
+def test_run_check_honours_gitignore_without_being_asked(tmp_path: Path) -> None:
+    """The engine default matches the walk default, so no caller opts in."""
+    _write(tmp_path, ".gitignore", "ignored/\n")
+    _write(tmp_path, "ignored/borrowed.py", "import torch\n")
+    _write(tmp_path, "train.py", "import torch\n")
+    _git(tmp_path, "init")
+
+    scanned = {str(entry.path) for entry in run_check(tmp_path).repo.files}
+
+    assert "train.py" in scanned
+    assert "ignored/borrowed.py" not in scanned
 
 
 @requires_git

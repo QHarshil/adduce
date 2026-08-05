@@ -117,7 +117,7 @@ def _run(
     paper: Path | None = None,
     online: bool = False,
     honor_repository_policy: bool = True,
-    honor_gitignore: bool = False,
+    honor_gitignore: bool = True,
 ) -> CheckResult:
     if not path.is_dir():
         err_console.print(f"[red]error:[/red] {path} is not a directory")
@@ -339,11 +339,13 @@ def check(
         typer.Option(
             "--gitignore/--no-gitignore",
             help=(
-                "Skip paths git ignores. Off by default while the effect on findings is "
-                "under review; it will become the default in a later release."
+                "Skip paths git ignores, using git's own matcher. On by default: an "
+                "ignored tree is not part of the artifact, and scanning it lets one "
+                "repository earn a status from another's files. --no-gitignore "
+                "examines the whole tree."
             ),
         ),
-    ] = False,
+    ] = True,
 ) -> None:
     """Scan a repository offline unless the explicit --online option is selected."""
     if output_format not in _FORMATS:

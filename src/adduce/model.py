@@ -237,11 +237,34 @@ def _git_environment() -> dict[str, str]:
     return environment
 
 
+def _git_query(root: Path, *operation: str) -> list[str]:
+    """A hardened, read-only git command vector.
+
+    Every git call the scan makes is built here, so none can omit a guard.
+    ``core.fsmonitor=false`` is the load-bearing one: a repository may configure
+    a filesystem-monitor hook, and git would otherwise execute it — letting a
+    scanned repository run code inside an audit whose whole promise is that it
+    never runs repository code. ``core.quotePath=true`` keeps path encoding
+    identical across call sites.
+    """
+    return [
+        "git",
+        "--no-pager",
+        "-c",
+        "core.fsmonitor=false",
+        "-c",
+        "core.quotePath=true",
+        "-C",
+        str(root),
+        *operation,
+    ]
+
+
 def _is_ignored_directory(root: Path) -> bool:
     """Whether git ignores the scan root itself."""
     try:
         result = subprocess.run(
-            ["git", "--no-pager", "-C", str(root), "check-ignore", "-q", "."],
+            _git_query(root, "check-ignore", "-q", "."),
             capture_output=True,
             timeout=10,
             stdin=subprocess.DEVNULL,
@@ -273,22 +296,17 @@ def _collect_ignored(root: Path) -> tuple[frozenset[str], tuple[str, ...]] | Non
         return None
     try:
         result = subprocess.run(
-            [
-                "git",
-                "--no-pager",
-                "-c",
-                "core.fsmonitor=false",
-                "-c",
-                "core.quotePath=false",
-                "-C",
-                str(root),
+            # ``-z`` makes paths NUL-delimited, which git never quotes, so
+            # core.quotePath cannot affect this output either way.
+            _git_query(
+                root,
                 "ls-files",
                 "-z",
                 "--others",
                 "--ignored",
                 "--exclude-standard",
                 "--directory",
-            ],
+            ),
             capture_output=True,
             timeout=30,
             stdin=subprocess.DEVNULL,
@@ -323,17 +341,7 @@ def _collect_git_info(root: Path) -> GitInfo:
     def run(*args: str) -> str | None:
         try:
             result = subprocess.run(
-                [
-                    "git",
-                    "--no-pager",
-                    "-c",
-                    "core.fsmonitor=false",
-                    "-c",
-                    "core.quotePath=true",
-                    "-C",
-                    str(root),
-                    *args,
-                ],
+                _git_query(root, *args),
                 capture_output=True,
                 text=True,
                 timeout=10,
@@ -362,7 +370,7 @@ def _collect_git_info(root: Path) -> GitInfo:
 def scan_repository(
     root: Path,
     exclude: tuple[str, ...] = (),
-    honor_gitignore: bool = False,
+    honor_gitignore: bool = True,
 ) -> Repo:
     """Walk a directory tree and build the repository model.
 
@@ -370,11 +378,12 @@ def scan_repository(
     Framework detection is filled in later by the evidence collectors, which
     see both imports and declared dependencies.
 
-    ``honor_gitignore`` additionally drops paths git ignores. A gitignored
-    ``data/`` or ``wandb/`` tree is not part of the artifact under review, so
-    scanning it costs time and manufactures findings from files no reader will
-    ever see. The filter is purely subtractive: everything else about the walk,
-    including its refusal to follow symlinks, is unchanged.
+    ``honor_gitignore`` drops paths git ignores, and is on by default. A
+    gitignored ``data/`` or ``wandb/`` tree is not part of the artifact under
+    review, so scanning it costs time and lets one repository earn a status
+    from another repository's files. Pass ``False`` to examine the whole tree
+    regardless. The filter is purely subtractive: everything else about the
+    walk, including its refusal to follow symlinks, is unchanged.
     """
     root = root.resolve()
     extra = frozenset(exclude)

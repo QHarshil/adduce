@@ -90,6 +90,97 @@ def test_the_worker_subprocess_path_produces_a_usable_record(tmp_path: Path) -> 
     assert record["inputs"]["python_files"] == 1
 
 
+# -- finding diff -----------------------------------------------------------
+
+
+def test_rule_statuses_are_absent_unless_the_finding_diff_asks_for_them(
+    tmp_path: Path,
+) -> None:
+    """78 entries per arm would dominate a report meant to be read."""
+    plain = worker.measure(_fixture(tmp_path), honor_gitignore=False)
+    assert "rule_statuses" not in plain["outcome"]
+
+    detailed = worker.measure(_fixture(tmp_path), honor_gitignore=False, rule_statuses=True)
+    statuses = detailed["outcome"]["rule_statuses"]
+    assert len(statuses) == detailed["outcome"]["findings"]
+    assert all(isinstance(status, str) for status in statuses.values())
+
+
+def test_a_rule_that_stops_applying_is_distinguished_from_one_that_changes_verdict() -> None:
+    """Producing no finding is a different fact from reaching a new conclusion."""
+    assert runner._classify_move("pass", None) == "stopped_applying"
+    assert runner._classify_move(None, "pass") == "started_applying"
+    assert runner._classify_move("pass", "not-applicable") == "became_not_applicable"
+    assert runner._classify_move("fail", "not-applicable") == "became_not_applicable"
+    assert runner._classify_move("pass", "fail") == "dropped"
+    assert runner._classify_move("pass", "partial") == "dropped"
+    assert runner._classify_move("partial", "fail") == "dropped"
+    assert runner._classify_move("partial", "pass") == "improved"
+    assert runner._classify_move("fail", "pass") == "improved"
+    # Neither side scores, so calling it a drop or a gain would be an invention.
+    assert runner._classify_move("unknown", "unknown") == "changed_scoring_eligibility"
+
+
+def test_finding_diff_reports_no_movement_when_nothing_is_ignored(tmp_path: Path) -> None:
+    """A repository with no ignored paths must show an empty diff, not an error."""
+    target = _fixture(tmp_path / "repo")
+    strata = tmp_path / "strata.json"
+    strata.write_text(
+        json.dumps(
+            {
+                "loc_strata": _STRATA,
+                "targets": [
+                    {
+                        "id": "fixture",
+                        "kind": "synthetic",
+                        "path": str(target),
+                        "framework": "torch",
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    report = runner.finding_diff(strata)
+
+    assert report["schema"] == "adduce-finding-diff/1"
+    assert report["summary"]["targets_measured"] == 1
+    assert report["summary"]["rules_moved_total"] == 0
+    assert report["summary"]["targets_unchanged"] == 1
+    assert report["results"][0]["moves"] == []
+    # Rendering must not raise on an empty diff.
+    assert "fixture" in runner._render_finding_diff(report)
+
+
+def test_finding_diff_records_an_unavailable_target_with_its_reason(tmp_path: Path) -> None:
+    strata = tmp_path / "strata.json"
+    strata.write_text(
+        json.dumps(
+            {
+                "loc_strata": _STRATA,
+                "targets": [
+                    {
+                        "id": "absent",
+                        "kind": "clone",
+                        "path": str(tmp_path / "nope"),
+                        "framework": "torch",
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    report = runner.finding_diff(strata)
+
+    record = report["results"][0]
+    assert record["available"] is False
+    assert record["reason"]
+    assert report["summary"]["targets_unavailable"] == 1
+    assert report["summary"]["rules_moved_total"] == 0
+
+
 # -- regression detection ---------------------------------------------------
 
 
