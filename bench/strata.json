@@ -1,0 +1,37 @@
+{
+  "schema": "adduce-bench-strata/1",
+  "note": "Benchmark targets. Size strata are assigned from measured Python LOC at run time, never declared here. Clone targets live under a gitignored tree that ships in no archive, so they are absent in CI and are reported unavailable rather than skipped silently.",
+  "loc_strata": [
+    {"id": "XS", "max_python_loc": 2000},
+    {"id": "S", "max_python_loc": 20000},
+    {"id": "M", "max_python_loc": 150000},
+    {"id": "L", "max_python_loc": 1000000},
+    {"id": "XL", "max_python_loc": null}
+  ],
+  "gaps": [
+    "No target in the L stratum (150k-1M Python LOC). Recruiting one is a Phase 0 deliverable.",
+    "corpus/repos.csv records has_tex=false for all 15 rows, so LaTeX claim extraction is exercised on synthetic papers only."
+  ],
+  "targets": [
+    {"id": "nanogpt", "kind": "clone", "path": "corpus/clones/pilot-2026-07-13/nanogpt", "framework": "pytorch", "measure_gitignore_delta": true},
+    {"id": "mdetr", "kind": "clone", "path": "corpus/clones/pilot-2026-07-13/mdetr", "framework": "pytorch", "measure_gitignore_delta": true},
+    {"id": "vit-pytorch", "kind": "clone", "path": "corpus/clones/pilot-2026-07-13/vit-pytorch", "framework": "pytorch", "measure_gitignore_delta": true},
+    {"id": "torchtune", "kind": "clone", "path": "corpus/clones/pilot-2026-07-13/torchtune", "framework": "pytorch", "measure_gitignore_delta": true},
+    {"id": "transformers", "kind": "clone", "path": "corpus/clones/pilot-2026-07-13/transformers", "framework": "mixed", "measure_gitignore_delta": true},
+    {"id": "adduce-self", "kind": "self", "path": ".", "framework": "python", "measure_gitignore_delta": true},
+    {"id": "synthetic_docker_claim", "kind": "synthetic", "path": "corpus/synthetic/synthetic_docker_claim", "framework": "python", "measure_gitignore_delta": false},
+    {"id": "synthetic_ghost_dep", "kind": "synthetic", "path": "corpus/synthetic/synthetic_ghost_dep", "framework": "python", "measure_gitignore_delta": false},
+    {"id": "synthetic_hydra_authority", "kind": "synthetic", "path": "corpus/synthetic/synthetic_hydra_authority", "framework": "python", "measure_gitignore_delta": false},
+    {"id": "synthetic_lr_agreement", "kind": "synthetic", "path": "corpus/synthetic/synthetic_lr_agreement", "framework": "python", "measure_gitignore_delta": false},
+    {"id": "synthetic_lr_drift", "kind": "synthetic", "path": "corpus/synthetic/synthetic_lr_drift", "framework": "python", "measure_gitignore_delta": false},
+    {"id": "synthetic_material_mismatch", "kind": "synthetic", "path": "corpus/synthetic/synthetic_material_mismatch", "framework": "python", "measure_gitignore_delta": false},
+    {"id": "synthetic_metric_unrelated_table", "kind": "synthetic", "path": "corpus/synthetic/synthetic_metric_unrelated_table", "framework": "python", "measure_gitignore_delta": false},
+    {"id": "synthetic_rounding_match", "kind": "synthetic", "path": "corpus/synthetic/synthetic_rounding_match", "framework": "python", "measure_gitignore_delta": false},
+    {"id": "synthetic_secret", "kind": "synthetic", "path": "corpus/synthetic/synthetic_secret", "framework": "python", "measure_gitignore_delta": false},
+    {"id": "synthetic_seed_count", "kind": "synthetic", "path": "corpus/synthetic/synthetic_seed_count", "framework": "python", "measure_gitignore_delta": false},
+    {"id": "synthetic_seeds_claimed_not_set", "kind": "synthetic", "path": "corpus/synthetic/synthetic_seeds_claimed_not_set", "framework": "python", "measure_gitignore_delta": false},
+    {"id": "synthetic_tf32", "kind": "synthetic", "path": "corpus/synthetic/synthetic_tf32", "framework": "python", "measure_gitignore_delta": false},
+    {"id": "synthetic_unpinned_remote", "kind": "synthetic", "path": "corpus/synthetic/synthetic_unpinned_remote", "framework": "python", "measure_gitignore_delta": false},
+    {"id": "synthetic_untied_config", "kind": "synthetic", "path": "corpus/synthetic/synthetic_untied_config", "framework": "python", "measure_gitignore_delta": false}
+  ]
+}
