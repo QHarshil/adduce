@@ -82,6 +82,7 @@ include = [
     "tests",
     "corpus/scripts",
     "corpus/synthetic",
+    "corpus/review",
     "corpus/*.json",
     "corpus/*.md",
     "corpus/*.csv",
