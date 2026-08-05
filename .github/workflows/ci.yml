@@ -34,6 +34,8 @@ jobs:
           --cov-report=term-missing
           --cov-report=xml:coverage.xml
           --cov-fail-under=85
+      - name: Check local Markdown links
+        run: python scripts/check_markdown_links.py --root .
 
   compatibility:
     name: Tests (${{ matrix.os }}, Python ${{ matrix.python-version }})
@@ -78,6 +80,14 @@ jobs:
         run: |
           bash scripts/smoke_install.sh dist/*.whl
           bash scripts/smoke_install.sh dist/*.tar.gz
+      # A relative link can resolve in the repository and dangle in the archive,
+      # so the extracted tree is checked separately from the checkout.
+      - name: Check local Markdown links inside the extracted source distribution
+        run: |
+          mkdir -p "${RUNNER_TEMP}/sdist"
+          tar -xzf dist/*.tar.gz -C "${RUNNER_TEMP}/sdist"
+          extracted="$(find "${RUNNER_TEMP}/sdist" -mindepth 1 -maxdepth 1 -type d)"
+          python scripts/check_markdown_links.py --root "${extracted}"
 
   action-integration:
     name: Composite Action integration
