@@ -1,0 +1,215 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/QHarshil/adduce/blob/main/corpus/reviewer-workspace.schema.json",
+  "title": "Adduce corpus reviewer workspace",
+  "description": "Local sidecar state holding one reviewer's in-progress claim-review entry. A workspace is never a claim-review artifact: it carries no review policy, no merge provenance and no adjudication, it is never merged, and candidate-run validation never accepts it. Every decision, rationale, evidence locator and declaration is entered explicitly by the reviewer; no field records a suggested, recommended, inferred or computed decision, and per-claim completion is derived by validation rather than stored.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "reviewer_workspace_schema_version",
+    "not_final",
+    "workspace_kind",
+    "reviewer_id",
+    "domain_expertise",
+    "scaffold_path",
+    "scaffold_sha256",
+    "claim_ground_truth_sha256",
+    "corpus_inventory_sha256",
+    "candidate_pair",
+    "created_at",
+    "updated_at",
+    "claims"
+  ],
+  "properties": {
+    "reviewer_workspace_schema_version": {"const": 1},
+    "not_final": {
+      "const": true,
+      "description": "Constant marker that this document is in-progress working state. Together with workspace_kind it makes a workspace structurally unable to pass claim-review validation, which rejects unknown top-level fields."
+    },
+    "workspace_kind": {"const": "adduce-claim-review-workspace"},
+    "reviewer_id": {"$ref": "#/$defs/identifier"},
+    "domain_expertise": {"type": "string", "minLength": 1},
+    "scaffold_path": {
+      "$ref": "#/$defs/relativePath",
+      "description": "POSIX path of the bound review scaffold, relative to the working directory used when the workspace was initialized."
+    },
+    "scaffold_sha256": {"$ref": "#/$defs/sha256"},
+    "claim_ground_truth_sha256": {"$ref": "#/$defs/sha256"},
+    "corpus_inventory_sha256": {"$ref": "#/$defs/sha256"},
+    "candidate_pair": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/identifier"}
+    },
+    "created_at": {"$ref": "#/$defs/timestamp"},
+    "updated_at": {"$ref": "#/$defs/timestamp"},
+    "claims": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/claimWorkspace"}
+    }
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "identifier": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+    },
+    "relativePath": {
+      "type": "string",
+      "pattern": "^(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9._][A-Za-z0-9._/-]*$"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$"
+    },
+    "target": {
+      "enum": [
+        "code",
+        "reported_result",
+        "run",
+        "output",
+        "command",
+        "configuration",
+        "data",
+        "environment",
+        "seed",
+        "commit"
+      ]
+    },
+    "decision": {
+      "enum": ["verified", "revision_required", "unclear"]
+    },
+    "evidence": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "blindingDeclaration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "independent_review",
+        "other_reviewer_decisions_not_seen",
+        "adduce_claim_link_outputs_not_seen",
+        "declared_at"
+      ],
+      "properties": {
+        "independent_review": {"const": true},
+        "other_reviewer_decisions_not_seen": {"const": true},
+        "adduce_claim_link_outputs_not_seen": {"const": true},
+        "declared_at": {"$ref": "#/$defs/timestamp"}
+      }
+    },
+    "conflictScope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository_id", "artifact_id"],
+      "properties": {
+        "repository_id": {"$ref": "#/$defs/identifier"},
+        "artifact_id": {"$ref": "#/$defs/identifier"}
+      }
+    },
+    "conflictOfInterestDeclaration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scope",
+        "no_relevant_authorship_or_contribution",
+        "no_close_collaboration_supervision_or_employment",
+        "no_financial_conflict",
+        "no_personal_conflict",
+        "declared_at"
+      ],
+      "properties": {
+        "scope": {"$ref": "#/$defs/conflictScope"},
+        "no_relevant_authorship_or_contribution": {"const": true},
+        "no_close_collaboration_supervision_or_employment": {"const": true},
+        "no_financial_conflict": {"const": true},
+        "no_personal_conflict": {"const": true},
+        "declared_at": {"$ref": "#/$defs/timestamp"}
+      }
+    },
+    "declarations": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["blinding_declaration", "conflict_of_interest_declaration"],
+      "properties": {
+        "blinding_declaration": {"$ref": "#/$defs/blindingDeclaration"},
+        "conflict_of_interest_declaration": {
+          "$ref": "#/$defs/conflictOfInterestDeclaration"
+        }
+      }
+    },
+    "decisionEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["decision", "rationale", "evidence", "recorded_at"],
+      "properties": {
+        "decision": {"$ref": "#/$defs/decision"},
+        "rationale": {"type": "string", "minLength": 1},
+        "evidence": {"$ref": "#/$defs/evidence"},
+        "recorded_at": {"$ref": "#/$defs/timestamp"}
+      }
+    },
+    "linkDecisionEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["target", "decision", "rationale", "evidence", "recorded_at"],
+      "properties": {
+        "target": {"$ref": "#/$defs/target"},
+        "decision": {"$ref": "#/$defs/decision"},
+        "rationale": {"type": "string", "minLength": 1},
+        "evidence": {"$ref": "#/$defs/evidence"},
+        "recorded_at": {"$ref": "#/$defs/timestamp"}
+      }
+    },
+    "claimWorkspace": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "claim_id",
+        "repo_id",
+        "declarations",
+        "claim_decision",
+        "link_decisions",
+        "finalized_at",
+        "notes"
+      ],
+      "properties": {
+        "claim_id": {"$ref": "#/$defs/identifier"},
+        "repo_id": {"$ref": "#/$defs/identifier"},
+        "declarations": {
+          "oneOf": [
+            {"type": "null"},
+            {"$ref": "#/$defs/declarations"}
+          ]
+        },
+        "claim_decision": {
+          "oneOf": [
+            {"type": "null"},
+            {"$ref": "#/$defs/decisionEntry"}
+          ]
+        },
+        "link_decisions": {
+          "type": "array",
+          "maxItems": 10,
+          "items": {"$ref": "#/$defs/linkDecisionEntry"}
+        },
+        "finalized_at": {
+          "oneOf": [
+            {"type": "null"},
+            {"$ref": "#/$defs/timestamp"}
+          ]
+        },
+        "notes": {
+          "type": "string",
+          "description": "Reviewer-entered working notes. Excluded from the exported claim review: the final artifact carries only the fields the claim-review schema defines."
+        }
+      }
+    }
+  }
+}
