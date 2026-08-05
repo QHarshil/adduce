@@ -82,6 +82,7 @@ include = [
     "tests",
     "corpus/scripts",
     "corpus/synthetic",
+    "corpus/review",
     "corpus/*.json",
     "corpus/*.md",
     "corpus/*.csv",
@@ -89,7 +90,11 @@ include = [
     "scripts",
     ".github/workflows/release.yml",
     "action.yml",
-    "README.md",
+    # Anchored: a bare "README.md" is gitignore-style and therefore matches at
+    # any depth, which silently shipped nested READMEs whose relative links
+    # pointed at files the archive did not carry.
+    "/README.md",
+    "CONTRIBUTING.md",
     "SECURITY.md",
     "CITATION.cff",
     "LICENSE",
