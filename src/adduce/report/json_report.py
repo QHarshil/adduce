@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from typing import Any
 
 from .. import __version__
 from ..engine import CheckResult
@@ -10,7 +11,7 @@ from ..engine import CheckResult
 
 def render(result: CheckResult) -> str:
     reviewer_time = result.reviewer_time
-    payload = {
+    payload: dict[str, Any] = {
         "tool": {"name": "adduce", "version": __version__},
         "repository": {
             "root": str(result.repo.root),
@@ -52,4 +53,9 @@ def render(result: CheckResult) -> str:
         ],
         **result.card.to_dict(),
     }
+    # Durations differ between identical runs, so they are absent unless the
+    # caller asked for them. The validation harness compares this report byte
+    # for byte and never asks.
+    if result.telemetry.report:
+        payload["telemetry"] = result.telemetry.snapshot()
     return json.dumps(payload, indent=2)

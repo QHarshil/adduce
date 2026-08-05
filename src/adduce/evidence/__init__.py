@@ -11,6 +11,7 @@ from dataclasses import dataclass, field
 
 from ..manifest import Manifest, load_manifest
 from ..model import FrameworkSet, Repo
+from ..telemetry import Telemetry
 from .config import ConfigEvidence, collect_config
 from .data import DataEvidence, collect_data
 from .dependencies import DependencyEvidence, collect_dependencies
@@ -79,24 +80,46 @@ def _detect_frameworks(repo: Repo, py: PythonEvidence, deps: DependencyEvidence)
     return frameworks
 
 
-def collect(repo: Repo) -> Evidence:
-    """Run all collectors and fill in framework detection on the repo model."""
-    py = collect_python(repo)
-    deps = collect_dependencies(repo)
-    repo.frameworks = _detect_frameworks(repo, py, deps)
-    env = collect_environment(repo)
-    docs = collect_docs(repo)
-    data = collect_data(repo, python_imports=py.imports)
-    git = collect_git(repo, docs)
-    config = collect_config(repo)
-    latex = collect_latex(repo)
-    notebooks = collect_notebooks(repo)
-    portability = collect_portability(repo)
-    precision = collect_precision(py, config)
-    remote = collect_remote(repo, py)
-    results = collect_results(repo)
-    runs = collect_run_history(repo)
-    manifest = load_manifest(repo.root)
+def collect(repo: Repo, *, telemetry: Telemetry | None = None) -> Evidence:
+    """Run all collectors and fill in framework detection on the repo model.
+
+    ``telemetry`` records per-collector durations when supplied. Collector
+    order encodes real dependencies: the Python evidence feeds framework
+    detection, data, precision, and remote; the docs evidence feeds git.
+    """
+    tel = Telemetry() if telemetry is None else telemetry
+    with tel.stage("collect.python"):
+        py = collect_python(repo)
+    with tel.stage("collect.dependencies"):
+        deps = collect_dependencies(repo)
+    with tel.stage("collect.frameworks"):
+        repo.frameworks = _detect_frameworks(repo, py, deps)
+    with tel.stage("collect.environment"):
+        env = collect_environment(repo)
+    with tel.stage("collect.docs"):
+        docs = collect_docs(repo)
+    with tel.stage("collect.data"):
+        data = collect_data(repo, python_imports=py.imports)
+    with tel.stage("collect.git"):
+        git = collect_git(repo, docs)
+    with tel.stage("collect.config"):
+        config = collect_config(repo)
+    with tel.stage("collect.latex"):
+        latex = collect_latex(repo)
+    with tel.stage("collect.notebooks"):
+        notebooks = collect_notebooks(repo)
+    with tel.stage("collect.portability"):
+        portability = collect_portability(repo)
+    with tel.stage("collect.precision"):
+        precision = collect_precision(py, config)
+    with tel.stage("collect.remote"):
+        remote = collect_remote(repo, py)
+    with tel.stage("collect.results"):
+        results = collect_results(repo)
+    with tel.stage("collect.run_history"):
+        runs = collect_run_history(repo)
+    with tel.stage("collect.manifest"):
+        manifest = load_manifest(repo.root)
     return Evidence(
         repo=repo,
         py=py,

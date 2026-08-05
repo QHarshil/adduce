@@ -27,6 +27,8 @@ adduce check --mode reviewer         # skeptical framing: what could not be veri
 adduce check --mode ae-chair         # badge prerequisites, blocking issues, burden headline
 adduce check -f json|sarif|markdown|badge|latex -o out
 adduce check ./code --paper ../paper       # paper and code kept in separate repositories
+adduce check --gitignore             # skip paths git ignores (off by default; see below)
+adduce check --timings               # per-stage durations and work counters, to stderr
 adduce drift                         # paper ↔ code/config consistency + result reconciliation
 adduce precision                     # TF32/AMP/low-precision audit
 adduce deps                          # ghost/unused/notebook dependency analysis
@@ -69,6 +71,42 @@ selected script without a sandbox; it reports ordering only for supported
 module-level Python, NumPy, and Torch RNG calls and does not observe
 generator-instance methods or library-internal/native draws. Read the
 [security model](security-model.md) before either execution mode.
+
+## Scan scope and `--gitignore`
+
+By default the scan walks every file except a fixed list of build and
+environment directories. It does **not** consult `.gitignore`, so a gitignored
+`data/`, `wandb/`, `outputs/`, or vendored checkout is inventoried, read, and
+allowed to contribute findings — including passing ones — even though it is not
+part of the artifact a reader receives.
+
+`--gitignore` drops those paths, using git's own matcher so nested ignore files,
+negation, and anchoring behave exactly as git does. Two consequences worth
+knowing before enabling it:
+
+- **It can lower a score, and that is usually the point.** A repository that
+  vendors another project can earn passing statuses from the vendored code. On
+  this repository, enabling it moves 30 rule statuses: nine rules stop applying
+  at all, twelve become not-applicable, and nine that were passing or partial
+  drop — because their evidence came from files belonging to other repositories.
+- **Tracking beats ignoring**, as in git: a tracked file matching an ignore
+  pattern is still scanned.
+
+Scanning a directory that is itself gitignored keeps every file, since
+filtering there would report a clean repository containing nothing. When git is
+unavailable or the directory is not a repository, the flag has no effect: the
+scan includes more, never silently less.
+
+It is off by default while its effect on findings is under review, and is
+planned to become the default in a later release.
+
+## Timings
+
+`--timings` reports per-stage durations and work counters on stderr, and adds a
+`telemetry` block to `--format json`. Durations differ between identical runs,
+so they are absent unless requested and the default report stays byte-stable.
+The counters include `files.read_from_disk` against `files.inventoried`, which
+is how much file decoding a run repeats.
 
 `adduce pin-remotes` resolves current revisions and drafts
 `revision="<sha>"` edits as diffs (libcst codemods, applied only with
