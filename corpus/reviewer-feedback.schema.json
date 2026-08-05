@@ -1,0 +1,109 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/QHarshil/adduce/blob/main/corpus/reviewer-feedback.schema.json",
+  "title": "Adduce corpus reviewer process feedback",
+  "description": "One reviewer's report of the burden of completing a blinded claim review. This artifact records review-process burden only. It must never contain a name, an email address, an employer, a relationship detail, a reason for a conflict or a recusal, another reviewer's identity, or another reviewer's decisions. The document has two states: a started document carries only the fields written when it is created, and the submission fields are then present together or not at all. Ordering that JSON Schema cannot express and the recording tool enforces: completed_at must not precede started_at, and submitted_at must not precede completed_at.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "reviewer_feedback_schema_version",
+    "reviewer_id",
+    "review_artifact_sha256",
+    "started_at",
+    "minutes_by_claim"
+  ],
+  "dependentRequired": {
+    "completed_at": ["ratings", "submitted_at"],
+    "ratings": ["completed_at", "submitted_at"],
+    "validator_failure_count": ["completed_at", "submitted_at"],
+    "clarification_request_count": ["completed_at", "submitted_at"],
+    "most_confusing_instruction": ["completed_at", "submitted_at"],
+    "missing_tool_or_material": ["completed_at", "submitted_at"],
+    "submitted_at": [
+      "completed_at",
+      "ratings",
+      "validator_failure_count",
+      "clarification_request_count",
+      "most_confusing_instruction",
+      "missing_tool_or_material"
+    ]
+  },
+  "properties": {
+    "reviewer_feedback_schema_version": {"const": 1},
+    "reviewer_id": {
+      "$ref": "#/$defs/identifier",
+      "description": "The same stable non-personal identifier the reviewer used for the review itself."
+    },
+    "review_artifact_sha256": {
+      "$ref": "#/$defs/sha256",
+      "description": "SHA-256 of the completed single-reviewer claim-review file this feedback describes. The feedback tool hashes that file and reads its claim identifiers; it never reads a decision."
+    },
+    "started_at": {
+      "$ref": "#/$defs/timestamp",
+      "description": "When the feedback document was created."
+    },
+    "completed_at": {
+      "$ref": "#/$defs/timestamp",
+      "description": "When the reviewer completed the feedback answers. Must not precede started_at."
+    },
+    "minutes_by_claim": {
+      "type": "object",
+      "additionalProperties": {"type": "number", "minimum": 0},
+      "propertyNames": {"$ref": "#/$defs/identifier"},
+      "description": "Self-reported minutes spent per claim, keyed by claim identifier. A claim absent from this object has no recorded time and is outside the denominator of every duration figure."
+    },
+    "validator_failure_count": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Entry attempts the tool refused, as counted by the reviewer. This measures how often the apparatus obstructed the work."
+    },
+    "clarification_request_count": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Clarifications the reviewer had to request from the coordinator."
+    },
+    "ratings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "decision_vocabulary_clear",
+        "evidence_was_locatable",
+        "tool_prevented_invalid_states",
+        "felt_pressure_to_verify"
+      ],
+      "properties": {
+        "decision_vocabulary_clear": {"$ref": "#/$defs/rating"},
+        "evidence_was_locatable": {"$ref": "#/$defs/rating"},
+        "tool_prevented_invalid_states": {"$ref": "#/$defs/rating"},
+        "felt_pressure_to_verify": {"$ref": "#/$defs/rating"}
+      },
+      "description": "Four ordinal responses, each supplied by the reviewer. No rating has a default and no rating is suggested by the tool."
+    },
+    "most_confusing_instruction": {
+      "type": "string",
+      "description": "Free text. An empty string means the reviewer chose not to answer, which is different from the field being absent: absent means the feedback was never submitted."
+    },
+    "missing_tool_or_material": {
+      "type": "string",
+      "description": "Free text. An empty string means the reviewer chose not to answer, which is different from the field being absent: absent means the feedback was never submitted."
+    },
+    "submitted_at": {
+      "$ref": "#/$defs/timestamp",
+      "description": "When the submitted artifact was written. Must not precede completed_at."
+    }
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "identifier": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+    },
+    "timestamp": {"type": "string", "format": "date-time"},
+    "rating": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 5,
+      "description": "An ordinal response from 1 to 5 inclusive, recorded exactly as the reviewer gave it."
+    }
+  }
+}
