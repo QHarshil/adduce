@@ -36,6 +36,8 @@ jobs:
           --cov-fail-under=85
       - name: Check local Markdown links
         run: python scripts/check_markdown_links.py --root .
+      - name: Check reviewer material for coordinator-only content
+        run: python -B corpus/scripts/check_review_materials.py check --root .
 
   compatibility:
     name: Tests (${{ matrix.os }}, Python ${{ matrix.python-version }})
