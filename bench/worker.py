@@ -74,7 +74,7 @@ def _python_loc(root: Path, relative_paths: list[str]) -> int:
     return total
 
 
-def measure(path: Path, *, honor_gitignore: bool) -> dict[str, Any]:
+def measure(path: Path, *, honor_gitignore: bool, rule_statuses: bool = False) -> dict[str, Any]:
     from adduce import __version__
     from adduce.engine import run_check
     from adduce.report.json_report import render
@@ -91,6 +91,21 @@ def measure(path: Path, *, honor_gitignore: bool) -> dict[str, Any]:
     python_paths = [str(entry.path) for entry in first.repo.python_files()]
     file_count = len(first.repo.files)
     python_loc = _python_loc(first.repo.root, python_paths)
+
+    outcome: dict[str, Any] = {
+        "score": round(first.card.total, 4),
+        "tier": first.card.tier,
+        "findings": len(first.card.findings),
+        "parser_failures": telemetry["counters"].get("parse.python.failed", 0),
+    }
+    if rule_statuses:
+        # Opt-in: 78 entries per arm would triple the size of a report that
+        # exists to be read by a human, and only the finding diff needs them.
+        # A rule absent from this map produced no finding at all, which is a
+        # different fact from any status it could carry.
+        outcome["rule_statuses"] = {
+            finding.rule_id: finding.status.value for finding in first.card.findings
+        }
 
     return {
         "available": True,
@@ -122,12 +137,7 @@ def measure(path: Path, *, honor_gitignore: bool) -> dict[str, Any]:
                 else None
             ),
         },
-        "outcome": {
-            "score": round(first.card.total, 4),
-            "tier": first.card.tier,
-            "findings": len(first.card.findings),
-            "parser_failures": telemetry["counters"].get("parse.python.failed", 0),
-        },
+        "outcome": outcome,
         "determinism": {
             "repeat_render_byte_identical": render(first) == render(second),
             "comparison": "two run_check calls in one process, default JSON report",
@@ -139,6 +149,11 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--path", required=True, type=Path)
     parser.add_argument("--gitignore", action="store_true")
+    parser.add_argument(
+        "--rule-statuses",
+        action="store_true",
+        help="include a rule-id to status map, which only the finding diff reads",
+    )
     arguments = parser.parse_args(argv)
 
     path: Path = arguments.path
@@ -148,7 +163,14 @@ def main(argv: list[str] | None = None) -> int:
             sys.stdout,
         )
         return 0
-    json.dump(measure(path, honor_gitignore=bool(arguments.gitignore)), sys.stdout)
+    json.dump(
+        measure(
+            path,
+            honor_gitignore=bool(arguments.gitignore),
+            rule_statuses=bool(arguments.rule_statuses),
+        ),
+        sys.stdout,
+    )
     return 0
 
 

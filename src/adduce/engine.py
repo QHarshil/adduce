@@ -57,7 +57,7 @@ def run_check(
     paper: Path | None = None,
     online: bool = False,
     honor_repository_policy: bool = True,
-    honor_gitignore: bool = False,
+    honor_gitignore: bool = True,
 ) -> CheckResult:
     """Run the full pipeline against a repository root.
 

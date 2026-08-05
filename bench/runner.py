@@ -33,9 +33,11 @@ if str(_REPOSITORY_ROOT / "src") not in sys.path:
     sys.path.insert(0, str(_REPOSITORY_ROOT / "src"))
 
 from adduce import __version__  # noqa: E402
+from adduce.rules.base import Status  # noqa: E402
 from adduce.safe_write import replace_text_regular  # noqa: E402
 
 REPORT_SCHEMA = "adduce-bench/1"
+FINDING_DIFF_SCHEMA = "adduce-finding-diff/1"
 _WORKER_TIMEOUT_SECONDS = 900
 
 #: Fractional cold-runtime growth tolerated before ``compare`` fails. Wall clock
@@ -82,10 +84,14 @@ def _stratum(python_loc: int, strata: list[dict[str, Any]]) -> str:
     return "unclassified"
 
 
-def _run_worker(path: Path, *, honor_gitignore: bool) -> dict[str, Any]:
+def _run_worker(
+    path: Path, *, honor_gitignore: bool, rule_statuses: bool = False
+) -> dict[str, Any]:
     command = [sys.executable, "-W", "ignore", str(_BENCH_ROOT / "worker.py"), "--path", str(path)]
     if honor_gitignore:
         command.append("--gitignore")
+    if rule_statuses:
+        command.append("--rule-statuses")
     try:
         result = subprocess.run(
             command,
@@ -157,6 +163,134 @@ def measure(strata_path: Path, only: str | None = None) -> dict[str, Any]:
         },
         "results": results,
     }
+
+
+def _classify_move(before: str | None, after: str | None) -> str:
+    """Name what happened to one rule when the ignore file was honoured.
+
+    ``None`` means the rule produced no finding at all, which is a different
+    fact from any status it could have carried: the rule stopped applying to
+    the repository, rather than reaching a different conclusion about it.
+    """
+    if after is None:
+        return "stopped_applying"
+    if before is None:
+        return "started_applying"
+    if after == Status.NOT_APPLICABLE.value:
+        return "became_not_applicable"
+    before_value = Status(before).score_value
+    after_value = Status(after).score_value
+    if before_value is None or after_value is None:
+        return "changed_scoring_eligibility"
+    if after_value < before_value:
+        return "dropped"
+    return "improved"
+
+
+def finding_diff(strata_path: Path, only: str | None = None) -> dict[str, Any]:
+    """Every rule status that moves when the ignore file is honoured.
+
+    This is the evidence for honouring ``.gitignore`` by default. A rule that
+    passes on a gitignored file is passing on evidence that is not part of the
+    artifact, and the only way to say so credibly is to enumerate the moves.
+    """
+    manifest = json.loads(strata_path.read_text(encoding="utf-8"))
+    results: list[dict[str, Any]] = []
+
+    for target in manifest["targets"]:
+        if only is not None and target["id"] != only:
+            continue
+        path = _REPOSITORY_ROOT / target["path"]
+        print(f"diffing {target['id']} ...", file=sys.stderr, flush=True)
+        whole_tree = _run_worker(path, honor_gitignore=False, rule_statuses=True)
+        honoured = _run_worker(path, honor_gitignore=True, rule_statuses=True)
+
+        record: dict[str, Any] = {"id": target["id"], "kind": target["kind"]}
+        if not (whole_tree.get("available") and honoured.get("available")):
+            record["available"] = False
+            record["reason"] = whole_tree.get("reason") or honoured.get("reason") or "unavailable"
+            results.append(record)
+            continue
+
+        before: dict[str, str] = whole_tree["outcome"]["rule_statuses"]
+        after: dict[str, str] = honoured["outcome"]["rule_statuses"]
+        moves = [
+            {
+                "rule_id": rule_id,
+                "from": before.get(rule_id),
+                "to": after.get(rule_id),
+                "classification": _classify_move(before.get(rule_id), after.get(rule_id)),
+            }
+            for rule_id in sorted(set(before) | set(after))
+            if before.get(rule_id) != after.get(rule_id)
+        ]
+        tally: dict[str, int] = {}
+        for move in moves:
+            classification = str(move["classification"])
+            tally[classification] = tally.get(classification, 0) + 1
+
+        record.update(
+            {
+                "available": True,
+                "files": {
+                    "whole_tree": whole_tree["inputs"]["files"],
+                    "honoured": honoured["inputs"]["files"],
+                },
+                "score": {
+                    "whole_tree": whole_tree["outcome"]["score"],
+                    "honoured": honoured["outcome"]["score"],
+                },
+                "cold_runtime_seconds": {
+                    "whole_tree": whole_tree["performance"]["cold_runtime_seconds"],
+                    "honoured": honoured["performance"]["cold_runtime_seconds"],
+                },
+                "rules_moved": len(moves),
+                "classification_tally": dict(sorted(tally.items())),
+                "moves": moves,
+            }
+        )
+        results.append(record)
+
+    measured = [r for r in results if r.get("available")]
+    return {
+        "schema": FINDING_DIFF_SCHEMA,
+        "provenance": _provenance(),
+        "summary": {
+            "targets_measured": len(measured),
+            "targets_unavailable": len(results) - len(measured),
+            "targets_unchanged": sum(1 for r in measured if r["rules_moved"] == 0),
+            "rules_moved_total": sum(int(r["rules_moved"]) for r in measured),
+        },
+        "results": results,
+    }
+
+
+def _render_finding_diff(report: dict[str, Any]) -> str:
+    lines: list[str] = []
+    for record in report["results"]:
+        if not record.get("available"):
+            lines.append(f"{record['id']:34s} unavailable: {record.get('reason')}")
+            continue
+        files = record["files"]
+        score = record["score"]
+        lines.append(
+            f"{record['id']:34s} files {files['whole_tree']:>6d} -> {files['honoured']:<6d} "
+            f"score {score['whole_tree']:>6.1f} -> {score['honoured']:<6.1f} "
+            f"moved {record['rules_moved']:>3d} {record['classification_tally'] or ''}"
+        )
+    for record in report["results"]:
+        for move in record.get("moves", []):
+            lines.append(
+                f"  {record['id']} {move['rule_id']:<14s} "
+                f"{str(move['from']):>14s} -> {str(move['to']):<14s} {move['classification']}"
+            )
+    summary = report["summary"]
+    lines.append(
+        f"\n{summary['targets_measured']} measured, "
+        f"{summary['targets_unchanged']} unchanged, "
+        f"{summary['rules_moved_total']} rule statuses moved in total"
+    )
+    return "\n".join(lines)
 
 
 def _regressions(baseline: dict[str, Any], current: dict[str, Any]) -> list[str]:
@@ -259,7 +393,29 @@ def main(argv: list[str] | None = None) -> int:
     compare_parser.add_argument("--baseline", type=Path, required=True)
     compare_parser.add_argument("--current", type=Path, required=True)
 
+    diff_parser = subparsers.add_parser(
+        "finding-diff", help="enumerate every rule status that honouring .gitignore moves"
+    )
+    diff_parser.add_argument("--strata", type=Path, default=_BENCH_ROOT / "strata.json")
+    diff_parser.add_argument("--output", type=Path)
+    diff_parser.add_argument("--only", help="diff a single target by id")
+
     arguments = parser.parse_args(argv)
+
+    if arguments.command == "finding-diff":
+        report = finding_diff(arguments.strata, only=arguments.only)
+        print(_render_finding_diff(report))
+        if arguments.output is not None:
+            rendered = json.dumps(report, indent=2, sort_keys=False, allow_nan=False) + "\n"
+            arguments.output.parent.mkdir(parents=True, exist_ok=True)
+            replace_text_regular(
+                arguments.output,
+                rendered,
+                label="finding diff report",
+                parent_label="finding diff report directory",
+            )
+            print(f"written to {arguments.output}", file=sys.stderr)
+        return 0
 
     if arguments.command == "measure":
         report = measure(arguments.strata, only=arguments.only)
