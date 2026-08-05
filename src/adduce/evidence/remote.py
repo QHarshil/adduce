@@ -167,8 +167,16 @@ def _collect_from_text(repo: Repo, evidence: RemoteEvidence) -> None:
         rel = str(entry.path)
         lines = text.splitlines()
         for lineno, line in enumerate(lines, start=1):
-            checksum_bound = _download_has_bound_checksum(lines, lineno - 1)
-            for match in _URL_RE.finditer(line):
+            url_matches = list(_URL_RE.finditer(line))
+            bucket_matches = list(_BUCKET_RE.finditer(line))
+            # The probe searches this line for a download target and reads up to
+            # three more. Only the two loops below read its answer, and they run
+            # only when this line carries a reference, so lines without one --
+            # almost every line in the repository -- need never ask.
+            checksum_bound = bool(url_matches or bucket_matches) and (
+                _download_has_bound_checksum(lines, lineno - 1)
+            )
+            for match in url_matches:
                 url = match.group(1)
                 kind = "gdrive" if "drive.google.com" in url else "url"
                 evidence.references.append(
@@ -192,7 +200,7 @@ def _collect_from_text(repo: Repo, evidence: RemoteEvidence) -> None:
                         pin_detail="none",
                     )
                 )
-            for match in _BUCKET_RE.finditer(line):
+            for match in bucket_matches:
                 evidence.references.append(
                     RemoteRef(
                         kind="bucket",
