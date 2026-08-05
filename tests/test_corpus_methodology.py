@@ -2191,6 +2191,61 @@ def _load_checked_in_preregistration() -> dict[str, Any]:
     )
 
 
+#: The r6 analyzer lock is void, deliberately and exactly once.
+#:
+#: The approved plan of 2026-08-05 rebuilds the analyzer before human review
+#: begins: instrumentation, single-pass inventory, a normalized evidence graph,
+#: claim resolution, an incremental cache, framework adapters, non-expert
+#: output, and isolated dynamic execution. Every one of those changes bytes
+#: under ``src/adduce/``, which the lock hashes. Invalidating r6 now costs
+#: nothing, because no human reviewer decision exists yet; the same change after
+#: the reviews begin would cost 220 decisions. So the lock is broken once, on
+#: purpose, and re-registered at the end rather than after each phase.
+#:
+#: Only the analyzer digest is affected. Every other frozen input — the schema,
+#: all 23 analysis-plan files, the rule-ID set, the corpus inventory, and the
+#: frozen truth — is still asserted to match below, and a change to any of them
+#: is a real failure.
+#:
+#: Expiry: protocol amendment 8 registers an ``r7`` lock against the finished
+#: analyzer. At that point ``_load_checked_in_preregistration`` is repointed at
+#: the r7 file, and this record together with ``_assert_analyzer_lock_is_void``
+#: is deleted so the plain equality assertion returns. The check below fails if
+#: the repointing ever happens without that deletion.
+_R6_VOID: dict[str, str] = {
+    "protocol_id": "pilot-0.1.2-r6",
+    "analyzer_source_tree_sha256": (
+        "1b24ccf68aba75cfeb75825817497dbefc9132cb5173e5e2f80fa857a7867485"
+    ),
+    "reason": "analyzer rebuilt under the approved evidence-engine plan",
+    "successor": "protocol amendment 8 plus a fresh r7 candidate pair",
+}
+
+
+def _assert_analyzer_lock_is_void(checked_in_preregistration: dict[str, Any]) -> None:
+    """Assert the recorded void, and that the record has not gone stale.
+
+    Three ways this fails, each of them something a reader needs to know:
+    a successor lock is checked in and this scaffolding was left behind; the
+    record disagrees with the lock it claims to describe; or the live analyzer
+    matches r6 again, meaning the rebuild was reverted.
+    """
+    assert checked_in_preregistration["protocol_id"] == _R6_VOID["protocol_id"], (
+        "a successor lock is checked in, so the r6 void record has expired: "
+        "delete _R6_VOID and _assert_analyzer_lock_is_void, and assert the "
+        "analyzer digest matches the live tree again"
+    )
+    assert checked_in_preregistration["adduce"]["source_tree_sha256"] == (
+        _R6_VOID["analyzer_source_tree_sha256"]
+    ), "the r6 void record does not describe the lock it names"
+
+    live_analyzer_sha256 = _source_tree_sha256(Path(adduce.__file__).resolve().parent)
+    assert live_analyzer_sha256 != _R6_VOID["analyzer_source_tree_sha256"], (
+        "the live analyzer tree matches the r6 lock again, so this record is "
+        f"stale: either the rebuild was reverted, or {_R6_VOID['successor']} is due"
+    )
+
+
 def test_review_schemas_are_valid_and_accept_generated_draft_artifacts(
     tmp_path: Path,
 ) -> None:
@@ -2272,9 +2327,9 @@ def test_preregistration_lock_matches_live_source_tree_and_analysis_plan() -> No
             for name in PREREGISTRATION_ANALYSIS_PLAN_PATHS
         }
     )
-    assert checked_in_preregistration["adduce"]["source_tree_sha256"] == (
-        _source_tree_sha256(Path(adduce.__file__).resolve().parent)
-    )
+    # The analyzer digest is the one frozen input that no longer matches, and it
+    # is void on purpose. See _R6_VOID for the reason and the expiry condition.
+    _assert_analyzer_lock_is_void(checked_in_preregistration)
     assert checked_in_preregistration["adduce"]["builtin_rule_ids_sha256"] == (
         builtin_rule_ids_sha256(
             [rule.id for rule in discover_rules(include_plugins=False)]

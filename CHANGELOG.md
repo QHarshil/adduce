@@ -6,6 +6,62 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Validation status
+
+The `r6` effectiveness preregistration lock is void, deliberately and once. Its
+analyzer digest binds the `src/adduce` byte tree, and the work in this release
+changes that tree. Invalidating it now costs nothing, because no human reviewer
+decision has been collected; the same change after the claim review begins would
+cost 220 decisions. Every other frozen input is unchanged and still verified: the
+preregistration schema, all 23 analysis-plan files, the built-in rule-ID set, the
+corpus inventory, and the frozen claim truth `9a26d06c…`. A successor lock will be
+registered under a dated protocol amendment against the finished analyzer, and no
+effectiveness, calibration, or false-positive figure is stated in the meantime.
+
+### Added
+
+- Added per-stage timing and work counters to the check pipeline, reported by
+  `adduce check --timings` and as a `telemetry` block in the JSON report.
+  Durations differ between identical runs, so they are omitted unless requested
+  and the default report remains byte-for-byte stable. Measured cost of the
+  instrumentation on the largest corpus repository, per operation rather than by
+  subtracting two whole-run timings: 11.6 µs for the eighteen stage timers,
+  1.1 ms for counter recording over 8,840 inventoried files, and 3.3 µs for a
+  snapshot — about 0.005% of a 21-second run.
+- Added `adduce check --gitignore`, which drops paths git ignores using git's own
+  matcher, so nested ignore files, negation, and anchoring behave as git does. A
+  scan root that is itself gitignored keeps every file, and an unavailable git or
+  a non-repository directory leaves the scan unchanged: the option can only
+  remove paths, never silently reduce a scan to nothing. Off by default while its
+  effect on findings is under review.
+- Added a benchmark harness under `bench/` with a committed baseline covering
+  five real repositories, this repository, and the fourteen synthetic
+  positive-control repositories. It records cold runtime, repeat runtime, peak
+  resident memory with its platform's unit, files and lines per second, per-stage
+  timings, disk reads per inventoried file, parser failures, and whether a
+  repeated run renders byte-identically. A target that is absent or fails to
+  measure is recorded with the reason rather than defaulted. `bench/runner.py
+  compare` fails on a regression and now gates CI.
+
+### Fixed
+
+- The default scan inventoried gitignored files, so a repository containing a
+  vendored or ignored working copy could earn passing rule statuses from files
+  that are not part of its artifact. Measured on this repository, whose tree
+  carries fifteen gitignored clones: enabling `--gitignore` moves thirty rule
+  statuses — nine rules stop applying, twelve become not-applicable, and nine
+  that were passing or partial drop, among them cuDNN determinism flags that were
+  detected only in another repository's code. Scanning also fell from 8,843 to
+  343 files, 24.6 s to 1.2 s, and 435 MB to 65 MB of peak resident memory. The
+  correction is available behind the new option in this release and is planned to
+  become the default.
+
+### Changed
+
+- `Repo` exposes `read_cache_stats()`, and `evidence.collect` accepts an optional
+  `telemetry` keyword. Both are additive; rule and reporter plugins are
+  unaffected.
+
 ## [0.1.2] - 2026-08-04
 
 ### Validation status
