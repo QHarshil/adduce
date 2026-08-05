@@ -26,10 +26,25 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git cat-file -t "refs/tags/${GITHUB_REF_NAME}")" = "tag"
-          git merge-base --is-ancestor \
-            "$(git rev-parse "refs/tags/${GITHUB_REF_NAME}^{commit}")" \
-            refs/remotes/origin/main
+          # actions/checkout resolves the pushed ref and re-fetches it as
+          # "+<sha>:refs/tags/<tag>", which replaces the annotated tag object
+          # with a ref pointing straight at the commit. Restore the tag object
+          # before inspecting its type, or the check below can never pass.
+          git fetch --force --no-recurse-submodules origin \
+            "+refs/tags/${GITHUB_REF_NAME}:refs/tags/${GITHUB_REF_NAME}"
+          tag_object_type="$(git cat-file -t "refs/tags/${GITHUB_REF_NAME}")"
+          if [ "$tag_object_type" != "tag" ]; then
+            echo "release tag ${GITHUB_REF_NAME} is a ${tag_object_type}," \
+              "not an annotated tag" >&2
+            exit 1
+          fi
+          tag_commit="$(git rev-parse "refs/tags/${GITHUB_REF_NAME}^{commit}")"
+          if ! git merge-base --is-ancestor \
+            "${tag_commit}" refs/remotes/origin/main; then
+            echo "release tag ${GITHUB_REF_NAME} commit ${tag_commit} is not" \
+              "an ancestor of origin/main" >&2
+            exit 1
+          fi
           python scripts/validate_release.py --tag "${GITHUB_REF_NAME}"
       - name: Run release quality gates
         run: |
