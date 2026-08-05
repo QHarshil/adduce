@@ -304,10 +304,7 @@ def test_an_empty_rationale_is_refused(bench: Bench, rationale: str) -> None:
     assert "rationale must be a non-empty string" in str(error.value)
 
 
-@pytest.mark.parametrize(
-    "locator", ["", "   ", "N/A", "n/a", "none", "None", "-", "--", "TBD", "unknown"]
-)
-def test_placeholder_evidence_is_refused(bench: Bench, locator: str) -> None:
+def _refuse_evidence(bench: Bench, locator: str) -> str:
     review_fixtures.declare_claim(bench.workspace, FIRST_CLAIM, bench.clock)
     with pytest.raises(SystemExit) as error:
         main(
@@ -320,9 +317,30 @@ def test_placeholder_evidence_is_refused(bench: Bench, locator: str) -> None:
             ],
             clock=bench.clock,
         )
-    message = str(error.value)
-    assert "whitespace-only evidence locator" in message or "is a placeholder" in message
     assert _document(bench.workspace)["claims"][0]["link_decisions"] == []
+    return str(error.value)
+
+
+@pytest.mark.parametrize(
+    "locator", ["", "   ", "N/A", "n/a", "none", "None", "-", "TBD", "unknown"]
+)
+def test_placeholder_evidence_is_refused(bench: Bench, locator: str) -> None:
+    message = _refuse_evidence(bench, locator)
+    assert "whitespace-only evidence locator" in message or "is a placeholder" in message
+
+
+def test_a_bare_double_dash_evidence_locator_is_refused(bench: Bench) -> None:
+    """A literal ``--`` locator is refused on every supported interpreter.
+
+    Which guard rejects it is not pinned: argparse hands a ``--`` option value to
+    the command differently across 3.10 and 3.14, so on one it reaches the
+    placeholder rule as the string "--" and on the other it arrives as a
+    non-string and is refused a step earlier. Both refuse and neither records a
+    decision, which is the property that matters; asserting one message made this
+    pass locally and fail on 3.10.
+    """
+    message = _refuse_evidence(bench, "--")
+    assert "evidence locator" in message
 
 
 def test_missing_evidence_is_refused(bench: Bench) -> None:
