@@ -10,7 +10,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 
-from ..model import Repo
+from ..model import FileEntry, Repo
 
 _SCANNABLE_SUFFIXES = frozenset(
     {
@@ -68,25 +68,44 @@ class PortabilityEvidence:
         return [h for h in self.hits if h.kind == kind]
 
 
-def collect_portability(repo: Repo) -> PortabilityEvidence:
-    evidence = PortabilityEvidence()
-    for entry in repo.files:
-        if entry.suffix not in _SCANNABLE_SUFFIXES or entry.size > _MAX_SCAN_BYTES:
-            continue
+class PortabilityConsumer:
+    """The per-file half of this collector, for the shared read pass.
+
+    Holds no state beyond the evidence it is accumulating, so running it inside
+    the shared pass and running it over its own walk produce the same result.
+    """
+
+    def __init__(self) -> None:
+        self.evidence = PortabilityEvidence()
+
+    def wants(self, entry: FileEntry) -> bool:
+        return (
+            entry.suffix in _SCANNABLE_SUFFIXES
+            and entry.size <= _MAX_SCAN_BYTES
+            and not str(entry.path).startswith(".adduce/cache/")
+        )
+
+    def feed(self, entry: FileEntry, text: str) -> None:
         rel = str(entry.path)
-        if rel.startswith(".adduce/cache/"):
-            continue
-        text = repo.read_text(rel)
-        if text is None:
-            continue
+        hits = self.evidence.hits
         for lineno, line in enumerate(text.splitlines(), start=1):
             for match in _ABS_PATH_RE.finditer(line):
-                evidence.hits.append(
-                    PortabilityHit("abs_path", match.group(0), rel, lineno)
-                )
+                hits.append(PortabilityHit("abs_path", match.group(0), rel, lineno))
             if localhost := _LOCALHOST_RE.search(line):
-                evidence.hits.append(PortabilityHit("localhost", localhost.group(0), rel, lineno))
+                hits.append(PortabilityHit("localhost", localhost.group(0), rel, lineno))
             for kind, pattern in _SECRET_PATTERNS:
                 if pattern.search(line):
-                    evidence.hits.append(PortabilityHit("secret", kind, rel, lineno))
-    return evidence
+                    hits.append(PortabilityHit("secret", kind, rel, lineno))
+
+
+def collect_portability(repo: Repo) -> PortabilityEvidence:
+    """Walk and scan in one call, for a caller outside the shared pass."""
+    consumer = PortabilityConsumer()
+    for entry in repo.files:
+        if not consumer.wants(entry):
+            continue
+        text = repo.read_text(entry.path)
+        if text is None:
+            continue
+        consumer.feed(entry, text)
+    return consumer.evidence
