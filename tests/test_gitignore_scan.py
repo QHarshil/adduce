@@ -16,6 +16,7 @@ import pytest
 
 from adduce.engine import run_check
 from adduce.model import scan_repository
+from adduce.scoring import MINIMUM_ANALYSABLE_LINES, UNRATED_TIER
 
 _GIT_AVAILABLE = True
 try:
@@ -210,6 +211,52 @@ def test_scanning_a_gitignored_directory_still_finds_its_files(tmp_path: Path) -
     honoured = _paths(inner, honor=True)
     assert honoured == _paths(inner, honor=False)
     assert {"train.py", "README.md"} <= honoured
+
+
+def test_a_repository_of_plausible_but_empty_files_is_not_given_a_tier(
+    tmp_path: Path,
+) -> None:
+    """The reported case: junk files walking a score up to a respectable tier.
+
+    Each file here is the shape a rule looks for and nothing more — a README
+    with the right headings, pinned requirements nothing imports, a config no
+    code reads, a Dockerfile, a results file produced by nothing. Rules that
+    look for a problem find none, rules that look for an artifact see one, and
+    the weighted average used to read as a verdict. The score is still reported;
+    the tier is withheld, because ten lines of source cannot support one.
+    """
+    _write(tmp_path, "train.py", "import torch\ntorch.manual_seed(0)\n")
+    _write(tmp_path, "requirements.txt", "torch==2.1.0\n")
+    _write(tmp_path, "requirements.lock", "torch==2.1.0\n")
+    _write(
+        tmp_path,
+        "README.md",
+        "# P\n\n## Installation\n\n```bash\npip install -r requirements.txt\n```\n\n"
+        "## Reproducing results\n\n```bash\npython train.py\n```\n\n"
+        "## Citation\n\n```bibtex\n@article{x}\n```\n",
+    )
+    _write(tmp_path, "LICENSE", "MIT License\n")
+    _write(tmp_path, "Dockerfile", "FROM python:3.11-slim\n")
+    _write(tmp_path, "config.yaml", "learning_rate: 0.0003\nseed: 0\n")
+    _write(tmp_path, "results.csv", "metric,value\naccuracy,0.924\n")
+
+    card = run_check(tmp_path).card
+
+    assert card.rated is False
+    assert card.tier == UNRATED_TIER
+    assert card.analysable_lines < MINIMUM_ANALYSABLE_LINES
+    # The score is a real measurement and is still reported, unchanged.
+    assert card.total > 0
+    assert card.to_dict()["evidence_base"]["rated"] is False
+
+
+def test_an_empty_directory_is_not_given_a_tier(tmp_path: Path) -> None:
+    """Nothing to examine is the clearest case of nothing to conclude."""
+    card = run_check(tmp_path).card
+
+    assert card.rated is False
+    assert card.tier == UNRATED_TIER
+    assert card.analysable_lines == 0
 
 
 @requires_git

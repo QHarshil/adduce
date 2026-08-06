@@ -18,11 +18,16 @@ frozen claim truth `9a26d06c…`. A successor lock will be registered under a da
 protocol amendment against the finished analyzer, and no effectiveness,
 calibration, or false-positive figure is stated in the meantime.
 
-One analysis-plan file changed: `corpus/scripts/check_builtin.py` permits the two
-read-only git queries that honouring `.gitignore` requires. Its offline
+Two analysis-plan files changed. `corpus/scripts/check_builtin.py` permits the
+two read-only git queries that honouring `.gitignore` requires; its offline
 enforcement is otherwise unchanged, and the queries are measured to be a no-op on
 the pilot corpus — all fifteen pinned clones report zero ignored paths, so no
-finding, score, or status moves for any of them.
+finding, score, or status moves for any of them. `corpus/scripts/run_contract.py`
+stops recomputing a tier from a score, which is no longer a valid invariant now
+that a tier is withheld when the analyzer parsed too little source; it validates
+the new `evidence_base` block instead. Both changes are recorded against the
+digests the lock still carries, and the record asserts that exactly those two
+files moved.
 
 ### Added
 
@@ -73,9 +78,46 @@ finding, score, or status moves for any of them.
 - `Repo` exposes `read_cache_stats()`, and `evidence.collect` accepts an optional
   `telemetry` keyword. Both are additive; rule and reporter plugins are
   unaffected.
+- The JSON report gains an `evidence_base` block recording `rated`,
+  `evaluated_rules`, `considered_rules`, `coverage_percent`, and
+  `analysable_lines`, so a consumer can see how much the score rests on rather
+  than inferring it. Existing keys are unchanged. `ScoreCard` gains the matching
+  fields and a `coverage` property, all defaulted, and `score()` takes an
+  optional `analysable_lines` keyword — a caller that omits it still gets a tier,
+  so plugins scoring findings directly are unaffected.
+- `corpus/scripts/run_contract.py` no longer recomputes a tier from a score
+  unconditionally. That invariant held only while a tier was a pure function of
+  the score, and enforcing it would now reject a correct artifact for any
+  repository the analyzer could not read. It validates the `evidence_base` block
+  and checks the scored population exactly instead.
 
 ### Fixed
 
+- **A repository with almost nothing in it could earn a respectable tier.** Most
+  rules are assertions about code: given none, the ones that look for a problem
+  find none and pass, and the ones that look for an artifact are satisfied by its
+  bare presence. The weighted average of those passes was then presented as a
+  tier. Measured: a directory containing eleven plausible-looking but meaningless
+  files — a README with the right headings, pinned requirements nothing imports, a
+  config no code reads, a Dockerfile, a results file produced by nothing — reached
+  **72/100 and "Silver"** on ten lines of source. An **empty directory scored
+  47.1/100**.
+
+  A tier is now assigned only when the analyzer parsed at least
+  `MINIMUM_ANALYSABLE_LINES` (100) physical lines of source; below that the tier
+  reads `Unrated (insufficient evidence)`. The score itself is unchanged and still
+  reported, because it is a real measurement of the checks that ran — what was
+  wrong was calling it Silver. Measured across the corpus, the separation is not
+  marginal: the largest synthetic fixture carries 15 lines and the smallest real
+  repository 1,220, so every value in between behaves identically and the exact
+  threshold is not load-bearing.
+
+  This is a floor on whether anything can be said, **not a defence against
+  deliberate gaming** — padding a file defeats it, and is meant to.
+
+  Two repositories in the pilot corpus are now unrated, both correctly: an
+  adversarial fixture, and `md-ml`, which contains no Python at all and previously
+  scored 61.4/Bronze on source the analyzer never read.
 - The scan inventoried gitignored files, so a repository containing a vendored or
   ignored working copy could earn passing rule statuses from files that are not
   part of its artifact. Measured on this repository, whose working tree carries

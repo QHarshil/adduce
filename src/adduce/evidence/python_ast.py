@@ -193,6 +193,9 @@ class ModuleAnalysis:
     dataclass_defaults: list[CliArg] = field(default_factory=list)
     has_main_guard: bool = False
     parse_error: bool = False
+    #: Physical lines in this module. Zero when the module did not parse, so a
+    #: sum over modules measures source actually analysed rather than present.
+    line_count: int = 0
 
 
 class _ModuleVisitor(ast.NodeVisitor):
@@ -580,6 +583,7 @@ def collect_python(repo: Repo) -> PythonEvidence:
         analysis = visitor.analysis
         analysis.suppressions = _parse_suppressions(source)
         analysis.has_main_guard = bool(_MAIN_GUARD_RE.search(source))
+        analysis.line_count = source.count("\n") + (0 if source.endswith("\n") else 1)
         evidence.modules.append(analysis)
 
         evidence.imports |= analysis.imports

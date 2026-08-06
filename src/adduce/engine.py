@@ -132,7 +132,11 @@ def run_check(
                 telemetry.count("rules.evaluated")
 
         with telemetry.stage("score"):
-            card = score(findings, profile)
+            card = score(
+                findings,
+                profile,
+                analysable_lines=sum(module.line_count for module in evidence.py.modules),
+            )
         with telemetry.stage("graph"):
             graph = build_graph(evidence)
         with telemetry.stage("reviewer_time"):

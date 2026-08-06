@@ -2215,11 +2215,18 @@ def _load_checked_in_preregistration() -> dict[str, Any]:
 #: without that deletion.
 #:
 #: ``analysis_plan_files`` names each hashed analysis-plan file edited while the
-#: lock is void, against the digest the lock still carries for it. Honouring
-#: ``.gitignore`` during ingestion takes two further read-only git queries, and
+#: lock is void, against the digest the lock still carries for it. Every
+#: analysis-plan file not listed here must still match the lock exactly.
+#:
 #: ``check_builtin.py`` enforces an explicit allowlist of the git commands a
-#: corpus scan may run, so the allowlist had to name them. Every analysis-plan
-#: file not listed here must still match the lock exactly.
+#: corpus scan may run, and honouring ``.gitignore`` during ingestion takes two
+#: further read-only queries, so the allowlist had to name them.
+#:
+#: ``run_contract.py`` recomputed a tier from a score and rejected any artifact
+#: where the two disagreed. A tier is now withheld when the analyzer parsed too
+#: little source for one to mean anything, so that invariant no longer holds and
+#: the contract would have rejected a correct artifact. This is not hypothetical
+#: for the pilot: ``md-ml`` carries no Python at all and comes back unrated.
 _R6_VOID: dict[str, Any] = {
     "protocol_id": "pilot-0.1.2-r6",
     "analyzer_source_tree_sha256": (
@@ -2228,6 +2235,9 @@ _R6_VOID: dict[str, Any] = {
     "analysis_plan_files": {
         "scripts/check_builtin.py": (
             "851240df89e4c2f90369c94efe030e960448a113cf6682cfbedeca67001e5537"
+        ),
+        "scripts/run_contract.py": (
+            "d618362baee6d13c68f6eb5725d20842b5e62cacd42d6085dfa8bb100edd732d"
         ),
     },
     "reason": "analyzer rebuilt under the approved evidence-engine plan",
@@ -2296,68 +2306,67 @@ def _assert_analysis_plan_lock_is_void(
 # able to fail. These drive it with fabricated locks: a guard that cannot fail
 # is worse than the failure it stands in for.
 
-_PROBE_RECORDED = "scripts/check_builtin.py"
-_PROBE_OTHER = "PILOT_PROTOCOL.md"
+#: A file the record does not name, so it stands for any unrecorded change.
+_PROBE_UNRECORDED = "PILOT_PROTOCOL.md"
 
 
-def _probe_lock(recorded_digest: str) -> dict[str, Any]:
-    return {
-        "analysis_plan": {
-            "files": {_PROBE_RECORDED: recorded_digest, _PROBE_OTHER: "unchanged"}
-        }
+def _probe_lock(**overrides: str) -> dict[str, Any]:
+    """A lock carrying every recorded file plus one the record does not name."""
+    files = dict(_R6_VOID["analysis_plan_files"])
+    files[_PROBE_UNRECORDED] = "unchanged"
+    files.update(overrides)
+    return {"analysis_plan": {"files": files}}
+
+
+def _probe_plan(*, moved: bool = True, unrecorded_moved: bool = False) -> dict[str, Any]:
+    """A live plan in which the recorded files have, or have not, moved.
+
+    Derived from the record rather than naming a file, so adding a second
+    deliberate edit does not silently stop exercising these paths.
+    """
+    files = {
+        name: ("edited" if moved else digest)
+        for name, digest in _R6_VOID["analysis_plan_files"].items()
     }
-
-
-def _probe_plan(recorded_digest: str, other_digest: str = "unchanged") -> dict[str, Any]:
-    return {"files": {_PROBE_RECORDED: recorded_digest, _PROBE_OTHER: other_digest}}
-
-
-def _locked_digest_of_the_recorded_file() -> str:
-    digest: str = _R6_VOID["analysis_plan_files"][_PROBE_RECORDED]
-    return digest
+    files[_PROBE_UNRECORDED] = "also edited" if unrecorded_moved else "unchanged"
+    return {"files": files}
 
 
 def test_the_analysis_plan_void_guard_accepts_exactly_the_recorded_change() -> None:
-    locked = _locked_digest_of_the_recorded_file()
-    _assert_analysis_plan_lock_is_void(_probe_lock(locked), _probe_plan("edited"))
+    _assert_analysis_plan_lock_is_void(_probe_lock(), _probe_plan())
 
 
 def test_the_analysis_plan_void_guard_rejects_a_reverted_recorded_change() -> None:
-    """Reverting the edit expires the record, so the entry must be deleted."""
-    locked = _locked_digest_of_the_recorded_file()
+    """Reverting an edit expires that entry, so the record must drop it."""
     with pytest.raises(AssertionError, match="does not match the r6 void record"):
-        _assert_analysis_plan_lock_is_void(_probe_lock(locked), _probe_plan(locked))
+        _assert_analysis_plan_lock_is_void(_probe_lock(), _probe_plan(moved=False))
 
 
 def test_the_analysis_plan_void_guard_rejects_a_second_unrecorded_change() -> None:
-    locked = _locked_digest_of_the_recorded_file()
     with pytest.raises(AssertionError, match="does not match the r6 void record"):
         _assert_analysis_plan_lock_is_void(
-            _probe_lock(locked), _probe_plan("edited", other_digest="also edited")
+            _probe_lock(), _probe_plan(unrecorded_moved=True)
         )
 
 
 def test_the_analysis_plan_void_guard_rejects_an_unrecorded_change_alone() -> None:
-    locked = _locked_digest_of_the_recorded_file()
     with pytest.raises(AssertionError, match="does not match the r6 void record"):
         _assert_analysis_plan_lock_is_void(
-            _probe_lock(locked), _probe_plan(locked, other_digest="also edited")
+            _probe_lock(), _probe_plan(moved=False, unrecorded_moved=True)
         )
 
 
 def test_the_analysis_plan_void_guard_rejects_a_record_that_drifted_from_the_lock() -> None:
+    drifted = dict.fromkeys(_R6_VOID["analysis_plan_files"], "a digest the record does not know")
     with pytest.raises(AssertionError, match="is not the one the lock carries"):
-        _assert_analysis_plan_lock_is_void(
-            _probe_lock("a lock digest the record does not know"), _probe_plan("edited")
-        )
+        _assert_analysis_plan_lock_is_void(_probe_lock(**drifted), _probe_plan())
 
 
 def test_the_analysis_plan_void_guard_rejects_a_changed_file_set() -> None:
-    locked = _locked_digest_of_the_recorded_file()
+    shrunk = _probe_plan()
+    shrunk["files"].pop(_PROBE_UNRECORDED)
     with pytest.raises(AssertionError, match="analysis-plan file set itself changed"):
-        _assert_analysis_plan_lock_is_void(
-            _probe_lock(locked), {"files": {_PROBE_RECORDED: "edited"}}
-        )
+        _assert_analysis_plan_lock_is_void(_probe_lock(), shrunk)
 
 
 def test_review_schemas_are_valid_and_accept_generated_draft_artifacts(
