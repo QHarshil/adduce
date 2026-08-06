@@ -105,6 +105,52 @@ shrink an audit.
 The reproducible measurement behind the numbers above is
 `bench/runner.py finding-diff`.
 
+## Scores, tiers, and when no tier is given
+
+The score is a category-weighted average over the rules that applied. Rules that
+do not apply are excluded in both directions, so a scikit-learn project is never
+scored against CUDA determinism.
+
+That exclusion has a consequence worth stating plainly: **most rules are
+assertions about code, so a repository with very little code has very little to
+be wrong about.** Rules that look for a problem find none and pass. Rules that
+look for an artifact are satisfied by its presence. A directory of
+plausible-looking but meaningless files — a README with the right headings,
+pinned requirements nothing imports, a config no code reads — measured
+72/100 and "Silver" on ten lines of source, and an empty directory measured 47.
+
+So a tier is assigned only when at least 100 physical lines of source were
+actually parsed. Below that the tier reads:
+
+```
+Reproducibility  72/100   Unrated (insufficient evidence)
+```
+
+The score is still shown, because it is a real measurement of the checks that
+ran. What it is a score *of* is what the tier cannot vouch for.
+
+`--format json` carries the same information in an `evidence_base` block:
+
+```json
+"evidence_base": {
+  "rated": false,
+  "evaluated_rules": 34,
+  "considered_rules": 68,
+  "coverage_percent": 50.0,
+  "analysable_lines": 10
+}
+```
+
+Two limits, both deliberate:
+
+- **This is not a defence against deliberate gaming.** Padding a file with a
+  hundred lines defeats it. It exists so an audit does not present a verdict on a
+  repository that has not shown enough to support one.
+- **A repository adduce cannot read is unrated, not bad.** A project written
+  entirely in R or MATLAB parses to zero Python lines and receives no tier. That
+  is an honest statement about the analyzer's reach, not a judgement about the
+  work.
+
 ## Timings
 
 `--timings` reports per-stage durations and work counters on stderr, and adds a

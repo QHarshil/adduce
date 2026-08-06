@@ -84,6 +84,10 @@ _ACQUISITION_STATES = frozenset({"complete", "partial", "failed"})
 _SUCCESS_RUN_STATES = frozenset({"succeeded", "succeeded_with_partial_acquisition"})
 _FAILED_RUN_STATES = frozenset({"scanner_crash", "scanner_timeout", "contract_failed"})
 _FINDING_STATES = frozenset({"pass", "partial", "fail", "unknown", "not-applicable"})
+#: The states that contribute to a score. Unknown and not-applicable are
+#: excluded from scoring entirely, so they are counted as considered but never
+#: as evaluated.
+_SCORING_STATUSES = frozenset({"pass", "partial", "fail"})
 _REQUIRED_COMBINED_COLUMNS = frozenset(
     {
         "id",
@@ -794,6 +798,7 @@ def validate_raw_payload(
             "total",
             "tier",
             "profile",
+            "evidence_base",
             "categories",
             "findings",
             "corpus_execution",
@@ -1079,16 +1084,70 @@ def validate_raw_payload(
         raise RunContractError(
             f"raw JSON total score is not supported by its findings for {repo_id}"
         )
-    expected_tier = next(
-        name
-        for threshold, name in (
-            (85.0, "Gold"),
-            (70.0, "Silver"),
-            (50.0, "Bronze"),
-            (0.0, "Needs work"),
-        )
-        if total >= threshold
+    # A tier is a function of the score only when the analyzer had enough parsed
+    # source for the score to be a statement about anything. Below that floor it
+    # reports no tier, so recomputing one from the score here would reject a
+    # correct artifact. The evidence base carries which case applies, and both
+    # branches are still checked exactly.
+    evidence_base = payload.get("evidence_base")
+    if not isinstance(evidence_base, dict):
+        raise RunContractError(f"raw JSON evidence base is invalid for {repo_id}")
+    _exact_keys(
+        evidence_base,
+        {
+            "rated",
+            "evaluated_rules",
+            "considered_rules",
+            "coverage_percent",
+            "analysable_lines",
+        },
+        f"raw JSON evidence base for {repo_id}",
     )
+    rated = evidence_base["rated"]
+    if not isinstance(rated, bool):
+        raise RunContractError(f"raw JSON evidence-base rating is invalid for {repo_id}")
+    evaluated = evidence_base["evaluated_rules"]
+    considered = evidence_base["considered_rules"]
+    for label, value in (("evaluated", evaluated), ("considered", considered)):
+        if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+            raise RunContractError(f"raw JSON {label}-rule count is invalid for {repo_id}")
+    if evaluated > considered:
+        raise RunContractError(f"raw JSON evaluated rules exceed those considered for {repo_id}")
+    # The corpus census pads this list to the full built-in rule set, adding a
+    # not-applicable entry for every rule that emitted nothing, so the findings
+    # here are a superset of what the analyzer itself considered. What must
+    # agree exactly is the scored population: a rule reached a verdict or it did
+    # not, and no padding can change that count.
+    if considered > len(payload["findings"]):
+        raise RunContractError(
+            f"raw JSON considered-rule count exceeds its findings for {repo_id}"
+        )
+    scored_findings = sum(
+        1 for finding in payload["findings"] if finding.get("status") in _SCORING_STATUSES
+    )
+    if evaluated != scored_findings:
+        raise RunContractError(
+            f"raw JSON evaluated-rule count disagrees with its findings for {repo_id}"
+        )
+    if not isinstance(evidence_base["analysable_lines"], int) or (
+        isinstance(evidence_base["analysable_lines"], bool)
+        or evidence_base["analysable_lines"] < 0
+    ):
+        raise RunContractError(f"raw JSON analysable-line count is invalid for {repo_id}")
+
+    if rated:
+        expected_tier = next(
+            name
+            for threshold, name in (
+                (85.0, "Gold"),
+                (70.0, "Silver"),
+                (50.0, "Bronze"),
+                (0.0, "Needs work"),
+            )
+            if total >= threshold
+        )
+    else:
+        expected_tier = "Unrated (insufficient evidence)"
     if payload["tier"] != expected_tier:
         raise RunContractError(f"raw JSON tier is inconsistent with its score for {repo_id}")
 

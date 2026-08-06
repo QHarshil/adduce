@@ -297,6 +297,15 @@ def _write_minimal_valid_run(path: Path, *, run_id: str = "test-run") -> None:
         "total": 0.0,
         "tier": "Needs work",
         "profile": "default",
+        "evidence_base": {
+            # Rated, so the contract still recomputes the tier from the score.
+            # considered_rules must equal the number of findings below.
+            "rated": True,
+            "evaluated_rules": 1,
+            "considered_rules": 1,
+            "coverage_percent": 100.0,
+            "analysable_lines": 500,
+        },
         "categories": [
             {
                 "category": "Documentation",

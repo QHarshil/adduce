@@ -4,7 +4,13 @@ from __future__ import annotations
 
 from adduce.profiles import load_profile
 from adduce.rules.base import Category, Finding, Status
-from adduce.scoring import score, tier_for, top_fixes
+from adduce.scoring import (
+    MINIMUM_ANALYSABLE_LINES,
+    UNRATED_TIER,
+    score,
+    tier_for,
+    top_fixes,
+)
 
 
 def _finding(rule_id, category, status, weight, suppressed=False):
@@ -100,6 +106,87 @@ def test_tiers():
     assert tier_for(75) == "Silver"
     assert tier_for(55) == "Bronze"
     assert tier_for(20) == "Needs work"
+
+
+# -- the evidence base a score rests on -------------------------------------
+#
+# A repository of plausible but empty files reached 72/100 and "Silver" on ten
+# lines of source: rules that look for a problem find none and pass, rules that
+# look for an artifact are satisfied by its bare presence, and the weighted
+# average of those passes reads as a verdict. The score is still reported; the
+# tier is not.
+
+
+def _passing_findings() -> list[Finding]:
+    return [
+        _finding("A", Category.CODE_EXECUTION, Status.PASS, 5),
+        _finding("B", Category.DATA, Status.PASS, 5),
+    ]
+
+
+def test_a_repository_with_too_little_source_gets_no_tier():
+    card = score(
+        _passing_findings(),
+        load_profile("default"),
+        analysable_lines=MINIMUM_ANALYSABLE_LINES - 1,
+    )
+
+    assert card.rated is False
+    assert card.tier == UNRATED_TIER
+    # The score itself is untouched: it is a real measurement of what ran.
+    assert card.total == 100.0
+
+
+def test_the_same_findings_over_enough_source_are_tiered_normally():
+    card = score(
+        _passing_findings(),
+        load_profile("default"),
+        analysable_lines=MINIMUM_ANALYSABLE_LINES,
+    )
+
+    assert card.rated is True
+    assert card.tier == "Gold"
+    assert card.total == 100.0
+
+
+def test_a_caller_that_does_not_measure_source_still_gets_a_tier():
+    """Plugins and tests score findings directly; they must not be penalised."""
+    card = score(_passing_findings(), load_profile("default"))
+
+    assert card.rated is True
+    assert card.tier == "Gold"
+    assert card.analysable_lines == 0
+
+
+def test_coverage_counts_only_findings_that_reached_a_verdict():
+    findings = [
+        _finding("SCORED-PASS", Category.CODE_EXECUTION, Status.PASS, 5),
+        _finding("SCORED-FAIL", Category.DATA, Status.FAIL, 5),
+        _finding("EXCLUDED", Category.DETERMINISM, Status.NOT_APPLICABLE, 5),
+        _finding("UNKNOWN", Category.DOCUMENTATION, Status.UNKNOWN, 5),
+    ]
+
+    card = score(findings, load_profile("default"), analysable_lines=1000)
+
+    assert card.evaluated_rules == 2
+    assert card.considered_rules == 4
+    assert card.coverage == 50.0
+
+
+def test_the_evidence_base_is_reported_additively():
+    card = score(_passing_findings(), load_profile("default"), analysable_lines=10)
+    payload = card.to_dict()
+
+    # Existing keys are untouched, so current consumers keep working.
+    assert payload["total"] == 100.0
+    assert set(payload) >= {"total", "tier", "profile", "categories", "findings"}
+    assert payload["evidence_base"] == {
+        "rated": False,
+        "evaluated_rules": 2,
+        "considered_rules": 2,
+        "coverage_percent": 100.0,
+        "analysable_lines": 10,
+    }
 
 
 def test_profiles_load_and_differ():
