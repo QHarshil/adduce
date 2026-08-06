@@ -170,6 +170,35 @@ def test_named_checksum_command_covers_its_raw_download(make_evidence):
     assert RawUrlRule().evaluate(ev).status is Status.PASS
 
 
+def test_checksum_probe_is_only_consulted_for_lines_carrying_a_reference(
+    make_evidence, monkeypatch
+):
+    """The probe answers a question only the URL and bucket branches ask.
+
+    It searches its own line for a download target and reads up to three more,
+    so consulting it once per line made every line of every shell script and
+    module pay for a question almost none of them raise.
+    """
+    from adduce.evidence import remote as remote_module
+
+    original = remote_module._download_has_bound_checksum
+    consulted: list[int] = []
+
+    def counted(lines: list[str], index: int) -> bool:
+        consulted.append(index)
+        return original(lines, index)
+
+    monkeypatch.setattr(remote_module, "_download_has_bound_checksum", counted)
+
+    filler = "".join(f"value_{n}={n}\n" for n in range(200))
+    ev = make_evidence(
+        {"get.sh": filler + "curl https://example.org/model.bin -o model.bin\n"}
+    )
+
+    assert consulted == [200]
+    assert [r.pin_detail for r in ev.remote.references if r.kind == "url"] == ["none"]
+
+
 def test_precision_collector(make_evidence):
     source = (
         "import torch\n"

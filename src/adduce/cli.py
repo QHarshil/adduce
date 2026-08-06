@@ -71,6 +71,7 @@ from .safe_write import (
     replace_text_regular_if_unchanged,
     snapshot_text_regular,
 )
+from .telemetry import Telemetry
 
 app = typer.Typer(
     name="adduce",
@@ -116,6 +117,7 @@ def _run(
     paper: Path | None = None,
     online: bool = False,
     honor_repository_policy: bool = True,
+    honor_gitignore: bool = True,
 ) -> CheckResult:
     if not path.is_dir():
         err_console.print(f"[red]error:[/red] {path} is not a directory")
@@ -142,6 +144,7 @@ def _run(
             paper=paper,
             online=online,
             honor_repository_policy=honor_repository_policy,
+            honor_gitignore=honor_gitignore,
         )
     except ValueError as exc:  # unknown profile, malformed config
         err_console.print(f"[red]error:[/red] {exc}")
@@ -226,6 +229,34 @@ def _print_generation_summary(
         err_console.print("Review required before submission — this draft is not submission-ready.")
 
 
+def _print_timings(telemetry: Telemetry) -> None:
+    """Per-stage durations and work counters, to stderr.
+
+    Stages are ordered by cost, because "what took the time" is the question
+    anyone reading this is asking.
+    """
+    snapshot = telemetry.snapshot()
+    stages: dict[str, float] = snapshot["stage_milliseconds"]
+    counters: dict[str, int] = snapshot["counters"]
+    total = stages.get("total") or 0.0
+
+    table = Table(box=None, pad_edge=False, header_style="bold dim")
+    table.add_column("Stage")
+    table.add_column("ms", justify="right")
+    table.add_column("share", justify="right")
+    for name, milliseconds in sorted(stages.items(), key=lambda item: (-item[1], item[0])):
+        share = f"{100.0 * milliseconds / total:.1f}%" if total and name != "total" else ""
+        table.add_row(name, f"{milliseconds:.1f}", share)
+    err_console.print(table)
+
+    for name, value in counters.items():
+        err_console.print(f"{name}: {value}")
+    inventoried = counters.get("files.inventoried", 0)
+    if inventoried:
+        reads = counters.get("files.read_from_disk", 0)
+        err_console.print(f"disk reads per inventoried file: {reads / inventoried:.2f}")
+
+
 def _print_category_findings(result: CheckResult, categories: set[Category]) -> None:
     table = Table(box=None, pad_edge=False, header_style="bold dim")
     table.add_column("Rule")
@@ -293,6 +324,28 @@ def check(
         typer.Option("--paper", help="LaTeX sources kept outside this repository (a directory or a .tex file)."),
     ] = None,
     verbose: Annotated[bool, typer.Option("--verbose", "-v", help="Show every finding, not just the summary.")] = False,
+    timings: Annotated[
+        bool,
+        typer.Option(
+            "--timings",
+            help=(
+                "Report per-stage durations and work counters. Durations differ between "
+                "identical runs, so they are omitted unless asked for."
+            ),
+        ),
+    ] = False,
+    gitignore: Annotated[
+        bool,
+        typer.Option(
+            "--gitignore/--no-gitignore",
+            help=(
+                "Skip paths git ignores, using git's own matcher. On by default: an "
+                "ignored tree is not part of the artifact, and scanning it lets one "
+                "repository earn a status from another's files. --no-gitignore "
+                "examines the whole tree."
+            ),
+        ),
+    ] = True,
 ) -> None:
     """Scan a repository offline unless the explicit --online option is selected."""
     if output_format not in _FORMATS:
@@ -314,12 +367,19 @@ def check(
         paper=paper,
         online=online,
         honor_repository_policy=mode is Mode.AUTHOR,
+        honor_gitignore=gitignore,
     )
+    result.telemetry.report = timings
 
     if output_format == "terminal":
         terminal_report.render(result, console, verbose=verbose, mode=mode)
     else:
         _write_or_print(RENDERERS[output_format](result), output)
+
+    if timings:
+        # Diagnostics go to stderr so a machine-readable document on stdout
+        # stays valid.
+        _print_timings(result.telemetry)
 
     if online:
         # Online diagnostics go to stderr so JSON/SARIF/Markdown written to

@@ -60,6 +60,19 @@ def _render_summary(result: CheckResult, console: Console) -> None:
         (f"   ·   profile: {card.profile_name}", "dim"),
     )
     console.print(Panel(summary, title=header, title_align="left", border_style="dim"))
+    if not card.rated:
+        # The score above is real; what it is a score *of* is the problem. Say
+        # so next to it rather than letting a tier imply a judgement the
+        # evidence does not support.
+        console.print(
+            Text(
+                f"No tier assigned: only {card.analysable_lines} lines of source were "
+                f"parsed, and {card.evaluated_rules} of {card.considered_rules} checks "
+                "reached a verdict. Most checks are statements about code, so with "
+                "this little of it they are answered by absence rather than evidence.",
+                style="yellow",
+            )
+        )
     console.print(Text(result.reviewer_time.headline, style="bold"))
     for factor in result.reviewer_time.factors[:4]:
         console.print(Text(f"  - {factor}", style="dim"))

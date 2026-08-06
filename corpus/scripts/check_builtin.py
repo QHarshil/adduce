@@ -192,6 +192,12 @@ def _allowed_git_command(
         ("tag", "--points-at", "HEAD"),
         ("ls-files",),
         ("remote", "-v"),
+        # Ingestion honours .gitignore, which takes two further read-only
+        # queries: whether the scan root is itself ignored, and the set of
+        # ignored paths below it. Both are reads, both carry the same hardened
+        # prefix as the five above, and neither can write or reach the network.
+        ("check-ignore", "-q", "."),
+        ("ls-files", "-z", "--others", "--ignored", "--exclude-standard", "--directory"),
     }
 
 
