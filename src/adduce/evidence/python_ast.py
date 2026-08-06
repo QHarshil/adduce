@@ -19,7 +19,7 @@ import re
 from dataclasses import dataclass, field
 from pathlib import PurePosixPath
 
-from ..model import Repo
+from ..model import FileEntry, Repo
 
 _SUPPRESS_RE = re.compile(r"#\s*adduce:\s*ignore\s*=\s*([A-Z0-9,\-\s]+)")
 _MAIN_GUARD_RE = re.compile(r"__name__\s*==\s*[\"']__main__[\"']")
@@ -561,42 +561,80 @@ class PythonEvidence:
         return [e for e in self.estimators if not e.has_random_state]
 
 
-def collect_python(repo: Repo) -> PythonEvidence:
-    """Analyse all Python files and build the aggregated evidence."""
-    evidence = PythonEvidence()
-    project_functions: dict[str, set[str]] = {}
+class PythonConsumer:
+    """The per-file half of this collector, for the shared read pass.
 
+    ``finish`` performs the cross-file indexing, which cannot run until every
+    module has been fed.
+    """
+
+    def __init__(self) -> None:
+        self.evidence = PythonEvidence()
+        self.project_functions: dict[str, set[str]] = {}
+
+    def wants(self, entry: FileEntry) -> bool:
+        return entry.suffix == ".py"
+
+    def feed(self, entry: FileEntry, text: str) -> None:
+        _analyse_module(self.evidence, self.project_functions, entry, text)
+
+    def finish(self) -> PythonEvidence:
+        _index_evidence(self.evidence, self.project_functions)
+        return self.evidence
+
+
+def _analyse_module(
+    evidence: PythonEvidence,
+    project_functions: dict[str, set[str]],
+    entry: FileEntry,
+    source: str,
+) -> None:
+    """Parse and analyse one module into the aggregate evidence."""
+    rel = str(entry.path)
+    visitor = _ModuleVisitor(path=rel, module_name=_module_name_for(entry.path))
+    try:
+        tree = ast.parse(source)
+    except (SyntaxError, ValueError):
+        evidence.modules.append(
+            ModuleAnalysis(path=rel, module_name=visitor.analysis.module_name, parse_error=True)
+        )
+        return
+    visitor.visit(tree)
+    analysis = visitor.analysis
+    analysis.suppressions = _parse_suppressions(source)
+    analysis.has_main_guard = bool(_MAIN_GUARD_RE.search(source))
+    analysis.line_count = source.count("\n") + (0 if source.endswith("\n") else 1)
+    evidence.modules.append(analysis)
+
+    evidence.imports |= analysis.imports
+    evidence.env_sets |= analysis.env_sets
+    evidence.dataloaders.extend(analysis.dataloaders)
+    evidence.torch_saves.extend(analysis.torch_saves)
+    evidence.cli_args.extend(analysis.cli_args)
+    evidence.dataclass_defaults.extend(analysis.dataclass_defaults)
+    if analysis.suppressions:
+        evidence.suppressions[rel] = analysis.suppressions
+    for name, called in analysis.functions.items():
+        project_functions.setdefault(name, set()).update(called)
+
+
+def collect_python(repo: Repo) -> PythonEvidence:
+    """Analyse all Python files and build the aggregated evidence.
+
+    Walks and reads in one call, for a caller outside the shared read pass.
+    """
+    consumer = PythonConsumer()
     for entry in repo.python_files():
         source = repo.read_text(entry.path)
         if source is None:
             continue
-        rel = str(entry.path)
-        visitor = _ModuleVisitor(path=rel, module_name=_module_name_for(entry.path))
-        try:
-            tree = ast.parse(source)
-        except (SyntaxError, ValueError):
-            evidence.modules.append(
-                ModuleAnalysis(path=rel, module_name=visitor.analysis.module_name, parse_error=True)
-            )
-            continue
-        visitor.visit(tree)
-        analysis = visitor.analysis
-        analysis.suppressions = _parse_suppressions(source)
-        analysis.has_main_guard = bool(_MAIN_GUARD_RE.search(source))
-        analysis.line_count = source.count("\n") + (0 if source.endswith("\n") else 1)
-        evidence.modules.append(analysis)
+        consumer.feed(entry, source)
+    return consumer.finish()
 
-        evidence.imports |= analysis.imports
-        evidence.env_sets |= analysis.env_sets
-        evidence.dataloaders.extend(analysis.dataloaders)
-        evidence.torch_saves.extend(analysis.torch_saves)
-        evidence.cli_args.extend(analysis.cli_args)
-        evidence.dataclass_defaults.extend(analysis.dataclass_defaults)
-        if analysis.suppressions:
-            evidence.suppressions[rel] = analysis.suppressions
-        for name, called in analysis.functions.items():
-            project_functions.setdefault(name, set()).update(called)
 
+def _index_evidence(
+    evidence: PythonEvidence, project_functions: dict[str, set[str]]
+) -> PythonEvidence:
     # Index direct calls and assignments.
     for module in evidence.modules:
         for site in module.calls:

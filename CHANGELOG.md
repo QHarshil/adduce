@@ -47,6 +47,10 @@ files moved.
   repeated run renders byte-identically. A target that is absent or fails to
   measure is recorded with the reason rather than defaulted. `bench/runner.py
   compare` fails on a regression and now gates CI.
+- Added `src/adduce/content.py`, which walks the inventory once and hands each
+  file's text to every collector that wants it. Setting `ADDUCE_DEBUG_STRICT=1`
+  makes a second read of the same path within one pass an error rather than a
+  silent regression.
 - Added `bench/runner.py finding-diff`, which enumerates every rule status that
   honouring `.gitignore` moves, and classifies each move as a rule that stopped
   applying, became not-applicable, dropped, or improved. It exists so the
@@ -54,6 +58,37 @@ files moved.
 
 ### Changed
 
+- **Each source file is now read and decoded once per run, not three times.**
+  The AST analysis, the portability scan, and the remote-reference scan each
+  walked the repository independently, so every Python file was opened, decoded
+  from UTF-8, and split into lines three times over. Measured on the largest
+  corpus repository: 15,583 reads over 6,246 files, 4,648 of them read exactly
+  three times. The inventory is now walked once and each file's text is handed
+  to every collector that wants it, then released before the next file is read.
+
+  Reads per file fall from **2.48 to 1.01**, and cold runtime from **21.7 s to
+  16.7 s** at the largest stratum and 1.63 s to 1.39 s at the medium one.
+  Verified to change no output: the JSON report is byte-identical across all
+  fifteen pinned corpus repositories and all fourteen synthetic ones. The
+  thirtieth target is adduce's own tree, where the only difference is its own
+  changed line count and no rule status moves.
+
+  Caching the text was considered and rejected on measurement. The passes were
+  sequential and each covered the whole repository, so any cache smaller than
+  the working set is evicted before the second pass reaches it — which is what
+  the previous 512-entry cache did, at a 0.3% hit rate. Holding everything was
+  not available either: the decoded Python source of the largest corpus
+  repository is 135 MB, and reducing peak memory is a goal of this work, not a
+  budget to spend. Sharing the read in time costs one file of text at a time.
+
+  Peak memory is **unchanged** by this, and the runtime reduction is well short
+  of the 40% the plan projected for the stratum. Both follow from the same
+  measured fact: reading and decoding was about a second of a twenty-second run.
+  The remainder is AST traversal, which is a separate change.
+
+  `collect_python`, `collect_portability`, and `collect_remote` keep their
+  signatures and still walk and read on their own, so a plugin or a caller
+  outside the shared pass is unaffected. A test asserts the two paths agree.
 - **`.gitignore` is now honoured by default.** An ignored `data/`, `wandb/`,
   `outputs/`, or vendored checkout is not part of the artifact under review, so
   it is no longer scanned and can no longer contribute findings. `--no-gitignore`
