@@ -159,10 +159,43 @@ entry is re-validated, every node is re-hashed against its recorded
 does not verify raises; the correct response is to rebuild, never to proceed
 with whatever could be read.
 
+## What is a node, and what is not
+
+A call site is not a node. adduce indexes every call so that a rule can ask
+about any qualified name, and almost none of that index is evidence about
+anything: over the largest corpus repository, 7,657 of 386,146 call sites are
+reachable through everything the 78 rules ask for — 1.98%, and 0.34% at the
+medium stratum — while the most frequent names are `super`, `len` and
+`isinstance`.
+
+So the graph carries resolved operations, and the general call index stays in
+the evidence layer where `ev.py.calls` can still answer for a name no producer
+enumerated in advance. The graph is additive: it does not replace the index,
+and its node count is an honest cost rather than a saving.
+
+How a name was resolved decides what its fact is worth:
+
+- a fully qualified call is `ast_resolved`
+- a bare terminal match — `model.half()`, or `from_pretrained` on a receiver
+  static analysis cannot type — is `lexical_match`, because the receiver is a
+  guess
+
+Neither may carry full confidence, which is correct: both are inferences about
+what a name refers to.
+
 ## Status
 
-The graph is being built producer by producer. Today the configuration
-producer emits `ConfigurationSnapshot`, `ConfigurationValue` and inferred
-`DependencyDeclaration` nodes. Rules do not yet read from the graph — they
-still read the evidence dataclasses, unchanged — so nothing in a check depends
-on it yet.
+The graph is being built producer by producer.
+
+| producer | emits |
+| --- | --- |
+| configuration | `ConfigurationSnapshot`, `ConfigurationValue`, inferred `DependencyDeclaration` |
+| python | `SourceFile`, `SeedOperation`, `ModelReference`, `DatasetReference`, `CheckpointReference`, `ExecutionCommand`, `EnvironmentConstraint` |
+
+`Symbol` is deliberately not emitted yet: nothing reads it. Adding 39,397 nodes
+at the largest stratum for no consumer is how the memory problem this project
+already has was created in the first place, so it waits for claim retrieval,
+which is what needs it.
+
+Rules do not yet read from the graph — they still read the evidence
+dataclasses, unchanged — so nothing in a check depends on it.

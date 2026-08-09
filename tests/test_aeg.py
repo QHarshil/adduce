@@ -390,14 +390,20 @@ def test_two_files_implying_one_dependency_do_not_conflict(tmp_path: Path) -> No
     assert len(graph.edges_to("dependency:hydra-core", EdgeType.DEPENDS_ON)) == 2
 
 
-def test_no_builtin_logical_id_encodes_a_line_number(tmp_path: Path) -> None:
-    """§5.3: identity must survive a reformat, so it cannot name a line."""
-    graph = built_graph(a_repository(tmp_path, "optim:\n  lr: 0.1\n  wd: 0.2\nseed: 42\n"))
-    assert graph.nodes
-    for node in graph.nodes:
-        for location in node.locations:
-            if location.line is not None:
-                assert str(location.line) not in node.logical_id.rsplit(":", 1)[-1]
+def test_a_configuration_identity_survives_a_reformat(tmp_path: Path) -> None:
+    """§5.3: identity must survive a reformat, so it cannot name a line.
+
+    Tested by reformatting rather than by looking for a digit in the string: a
+    path that happens to contain a line number would pass that check by
+    accident. The same property over source lines is in ``test_aeg_python``.
+    """
+    dense = built_graph(a_repository(tmp_path, "optim:\n  lr: 0.1\n  wd: 0.2\nseed: 42\n"))
+    spread = built_graph(
+        a_repository(tmp_path, "\n\noptim:\n\n  lr: 0.1\n\n  wd: 0.2\n\nseed: 42\n")
+    )
+    assert dense.nodes
+    assert [node.logical_id for node in dense.nodes] == [node.logical_id for node in spread.nodes]
+    assert dense.content_id == spread.content_id
 
 
 def test_a_repository_with_no_configuration_yields_an_empty_graph(tmp_path: Path) -> None:

@@ -36,8 +36,9 @@ class Producer(Protocol):
 
 def builtin_producers() -> tuple[Producer, ...]:
     from .config import ConfigProducer
+    from .python import PythonProducer
 
-    return (ConfigProducer(),)
+    return (ConfigProducer(), PythonProducer())
 
 
 def produce(evidence: Evidence, *, producers: tuple[Producer, ...] | None = None) -> Graph:
