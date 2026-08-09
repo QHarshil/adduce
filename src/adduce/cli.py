@@ -475,6 +475,56 @@ def deps(path: Annotated[Path, typer.Argument(help="Repository root to scan.")] 
     _print_category_findings(result, {Category.DEPENDENCIES, Category.ENVIRONMENT})
 
 
+@app.command("graph")
+def evidence_graph(
+    path: Annotated[Path, typer.Argument(help="Repository root to scan.")] = Path("."),
+    output: Annotated[Path | None, typer.Option("--output", "-o", help="Write to a file instead of stdout.")] = None,
+    fmt: Annotated[str, typer.Option("--format", help="summary or json.")] = "summary",
+    store: Annotated[
+        bool,
+        typer.Option("--store", help="Also write nodes.jsonl and edges.jsonl under .adduce/aeg/."),
+    ] = False,
+) -> None:
+    """Inspect the evidence graph built from this repository (offline).
+
+    Diagnostic only: the graph is a view of what was detected, and building it
+    changes nothing about a check."""
+    from .aeg import canonical_json
+    from .aeg.producers import produce
+    from .aeg.store import write_graph
+
+    if fmt not in {"summary", "json"}:
+        err_console.print(f"[red]error:[/red] unknown format {fmt}; expected summary or json")
+        raise typer.Exit(code=2)
+    result = _run(path)
+    built = produce(result.evidence)
+    if store:
+        try:
+            directory = write_graph(built, result.repo.root)
+        except SafeWriteError as exc:
+            _generation_write_error(exc)
+        err_console.print(f"graph written to {directory}")
+    if fmt == "json":
+        rendered = canonical_json(
+            {
+                "aeg_schema_version": built.schema_version,
+                "content_id": built.content_id,
+                "counts_by_type": built.counts_by_type(),
+                "edges": [edge.envelope() for edge in built.edges],
+                "nodes": [node.envelope() for node in built.nodes],
+            }
+        )
+        _write_or_print(rendered, output)
+        return
+    table = Table(title=f"evidence graph · {len(built)} nodes · {len(built.edges)} edges")
+    table.add_column("node type")
+    table.add_column("count", justify="right")
+    for name, count in built.counts_by_type().items():
+        table.add_row(name, str(count))
+    console.print(table)
+    console.print(f"content id: {built.content_id}")
+
+
 # --------------------------------------------------------------------------
 # manifest / checklist / appendix / exports
 # --------------------------------------------------------------------------
