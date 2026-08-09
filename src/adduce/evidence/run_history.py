@@ -12,6 +12,7 @@ often gitignored, so an unlinked record may belong to a different experiment.
 from __future__ import annotations
 
 import contextlib
+import fnmatch
 import re
 from dataclasses import dataclass, field
 from typing import Any
@@ -20,6 +21,9 @@ import yaml
 
 from ..model import Repo
 from .config import flatten
+
+#: Glob for a path that names an ablation, applied to the whole relative path.
+ABLATION_PATTERN = "*ablat*"
 
 _PY_COMMAND_RE = re.compile(
     r"^\s*(?:srun\s+|uv\s+run\s+|poetry\s+run\s+)?"
@@ -62,6 +66,11 @@ class RunHistoryEvidence:
     commands: list[RunCommand] = field(default_factory=list)
     slurm_scripts: list[SlurmScript] = field(default_factory=list)
     materialized: list[MaterializedConfig] = field(default_factory=list)
+    #: Repository paths naming an ablation, in inventory order. Carried here so
+    #: a rule does not glob the inventory from inside ``evaluate``. Matched with
+    #: ``fnmatch``, which normalises case on Windows and not on POSIX; a
+    #: lower-cased substring test would quietly change findings on one platform.
+    ablation_paths: list[str] = field(default_factory=list)
 
     @property
     def any_seeded_command(self) -> bool:
@@ -148,6 +157,9 @@ def collect_run_history(repo: Repo) -> RunHistoryEvidence:
     for entry in repo.files:
         rel = str(entry.path)
         name = entry.name
+
+        if fnmatch.fnmatch(rel, ABLATION_PATTERN):
+            evidence.ablation_paths.append(rel)
 
         if entry.suffix in {".sh", ".bash", ".slurm", ".sbatch"} or name in {"Makefile", "makefile", "justfile"}:
             _scan_script(repo, rel, evidence)
