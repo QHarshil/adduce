@@ -88,6 +88,7 @@ include = [
     "corpus/*.csv",
     "docs",
     "scripts",
+    "bench",
     ".github/workflows/release.yml",
     "action.yml",
     # Anchored: a bare "README.md" is gitignore-style and therefore matches at
@@ -137,5 +138,6 @@ module = [
     "adduce.report.*",
     "adduce.rules.base",
     "adduce.rules.registry",
+    "adduce.telemetry",
 ]
 disallow_untyped_defs = true

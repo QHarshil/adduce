@@ -192,6 +192,15 @@ class Repo:
         """Read a file as UTF-8 text, or None when missing or undecodable."""
         return self._read_cached(str(relative))
 
+    def read_cache_stats(self) -> tuple[int, int]:
+        """Content-cache hits and disk reads so far, for telemetry.
+
+        Several collectors inspect the same file, so the gap between these two
+        numbers is how much decoding work the run repeated.
+        """
+        info = self._read_cached.cache_info()
+        return info.hits, info.misses
+
     def _read_uncached(self, relative: str) -> str | None:
         target = self.root / relative
         try:
@@ -205,12 +214,18 @@ def _is_excluded(path: PurePosixPath, extra_excludes: frozenset[str]) -> bool:
     return bool(parts & DEFAULT_EXCLUDES) or bool(parts & extra_excludes)
 
 
-def _collect_git_info(root: Path) -> GitInfo:
-    git_environment = os.environ.copy()
-    for key in list(git_environment):
+def _git_environment() -> dict[str, str]:
+    """A git environment that cannot be steered by ambient configuration.
+
+    System and global config are suppressed so two machines auditing the same
+    tree see the same repository, and so a user's ``core.excludesFile`` cannot
+    silently change which files an audit examines.
+    """
+    environment = os.environ.copy()
+    for key in list(environment):
         if key.startswith("GIT_"):
-            git_environment.pop(key, None)
-    git_environment.update(
+            environment.pop(key, None)
+    environment.update(
         {
             "GIT_CONFIG_GLOBAL": os.devnull,
             "GIT_CONFIG_NOSYSTEM": "1",
@@ -219,21 +234,114 @@ def _collect_git_info(root: Path) -> GitInfo:
             "GIT_TERMINAL_PROMPT": "0",
         }
     )
+    return environment
+
+
+def _git_query(root: Path, *operation: str) -> list[str]:
+    """A hardened, read-only git command vector.
+
+    Every git call the scan makes is built here, so none can omit a guard.
+    ``core.fsmonitor=false`` is the load-bearing one: a repository may configure
+    a filesystem-monitor hook, and git would otherwise execute it — letting a
+    scanned repository run code inside an audit whose whole promise is that it
+    never runs repository code. ``core.quotePath=true`` keeps path encoding
+    identical across call sites.
+    """
+    return [
+        "git",
+        "--no-pager",
+        "-c",
+        "core.fsmonitor=false",
+        "-c",
+        "core.quotePath=true",
+        "-C",
+        str(root),
+        *operation,
+    ]
+
+
+def _is_ignored_directory(root: Path) -> bool:
+    """Whether git ignores the scan root itself."""
+    try:
+        result = subprocess.run(
+            _git_query(root, "check-ignore", "-q", "."),
+            capture_output=True,
+            timeout=10,
+            stdin=subprocess.DEVNULL,
+            env=_git_environment(),
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+    return result.returncode == 0
+
+
+def _collect_ignored(root: Path) -> tuple[frozenset[str], tuple[str, ...]] | None:
+    """Paths git ignores, as an exact file set plus directory prefixes.
+
+    Git's own matcher is used rather than a reimplementation: nested
+    ``.gitignore`` files, negation, anchoring, and directory-only patterns are
+    subtle enough that agreeing with git by construction is worth one
+    subprocess. Returns None when the answer is unavailable — not a repository,
+    no git, or a failed call — so the caller can fall back to scanning
+    everything rather than silently examining less than it reports.
+
+    ``--directory`` collapses a wholly ignored directory to its prefix, so a
+    500,000-file ignored dataset costs one entry instead of half a million.
+    """
+    if _is_ignored_directory(root):
+        # Auditing a gitignored working copy is legitimate, and every path
+        # below an ignored root is ignored. Filtering here would empty the
+        # inventory and report a clean repository with nothing in it. Current
+        # git happens to fail this query outright; not relying on that.
+        return None
+    try:
+        result = subprocess.run(
+            # ``-z`` makes paths NUL-delimited, which git never quotes, so
+            # core.quotePath cannot affect this output either way.
+            _git_query(
+                root,
+                "ls-files",
+                "-z",
+                "--others",
+                "--ignored",
+                "--exclude-standard",
+                "--directory",
+            ),
+            capture_output=True,
+            timeout=30,
+            stdin=subprocess.DEVNULL,
+            env=_git_environment(),
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    if result.returncode != 0:
+        return None
+
+    files: set[str] = set()
+    directories: list[str] = []
+    for raw in result.stdout.split(b"\0"):
+        if not raw:
+            continue
+        try:
+            entry = raw.decode("utf-8")
+        except UnicodeDecodeError:
+            # A path this process cannot name is a path it cannot match
+            # against the inventory; leaving it out only scans more.
+            continue
+        if entry.endswith("/"):
+            directories.append(entry)
+        else:
+            files.add(entry)
+    return frozenset(files), tuple(sorted(directories))
+
+
+def _collect_git_info(root: Path) -> GitInfo:
+    git_environment = _git_environment()
 
     def run(*args: str) -> str | None:
         try:
             result = subprocess.run(
-                [
-                    "git",
-                    "--no-pager",
-                    "-c",
-                    "core.fsmonitor=false",
-                    "-c",
-                    "core.quotePath=true",
-                    "-C",
-                    str(root),
-                    *args,
-                ],
+                _git_query(root, *args),
                 capture_output=True,
                 text=True,
                 timeout=10,
@@ -259,21 +367,39 @@ def _collect_git_info(root: Path) -> GitInfo:
     return GitInfo(is_repo=True, head_commit=head, tags=tags, tracked_files=tracked, remotes=remotes)
 
 
-def scan_repository(root: Path, exclude: tuple[str, ...] = ()) -> Repo:
+def scan_repository(
+    root: Path,
+    exclude: tuple[str, ...] = (),
+    honor_gitignore: bool = True,
+) -> Repo:
     """Walk a directory tree and build the repository model.
 
     ``exclude`` adds directory names (path segments) to the default skip list.
     Framework detection is filled in later by the evidence collectors, which
     see both imports and declared dependencies.
+
+    ``honor_gitignore`` drops paths git ignores, and is on by default. A
+    gitignored ``data/`` or ``wandb/`` tree is not part of the artifact under
+    review, so scanning it costs time and lets one repository earn a status
+    from another repository's files. Pass ``False`` to examine the whole tree
+    regardless. The filter is purely subtractive: everything else about the
+    walk, including its refusal to follow symlinks, is unchanged.
     """
     root = root.resolve()
     extra = frozenset(exclude)
+    ignored_files: frozenset[str] = frozenset()
+    ignored_directories: tuple[str, ...] = ()
+    if honor_gitignore and (ignored := _collect_ignored(root)) is not None:
+        ignored_files, ignored_directories = ignored
     entries: list[FileEntry] = []
     for path in sorted(root.rglob("*")):
         if not path.is_file() or path.is_symlink():
             continue
         rel = PurePosixPath(path.relative_to(root).as_posix())
         if _is_excluded(rel, extra):
+            continue
+        text = str(rel)
+        if text in ignored_files or any(text.startswith(prefix) for prefix in ignored_directories):
             continue
         try:
             size = path.stat().st_size

@@ -12,7 +12,7 @@ import re
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
-from ..model import Repo
+from ..model import FileEntry, Repo
 from .python_ast import PythonEvidence
 
 if TYPE_CHECKING:
@@ -154,78 +154,117 @@ def _download_has_bound_checksum(lines: list[str], index: int) -> bool:
     return False
 
 
+class RemoteTextConsumer:
+    """The per-file half of this collector, for the shared read pass.
+
+    Only the text scan participates: the AST half needs the completed Python
+    evidence and so cannot run while that evidence is still being built.
+    """
+
+    def __init__(self, evidence: RemoteEvidence) -> None:
+        self.evidence = evidence
+
+    def wants(self, entry: FileEntry) -> bool:
+        return entry.suffix in {".sh", ".bash", ".py"} or entry.name in {
+            "Makefile",
+            "makefile",
+        }
+
+    def feed(self, entry: FileEntry, text: str) -> None:
+        _scan_text(self.evidence, entry, text)
+
+
 def _collect_from_text(repo: Repo, evidence: RemoteEvidence) -> None:
-    scannable = [
-        f
-        for f in repo.files
-        if f.suffix in {".sh", ".bash", ".py"} or f.name in {"Makefile", "makefile"}
-    ]
-    for entry in scannable:
+    """Walk and scan in one call, for a caller outside the shared pass."""
+    consumer = RemoteTextConsumer(evidence)
+    for entry in repo.files:
+        if not consumer.wants(entry):
+            continue
         text = repo.read_text(entry.path)
         if text is None:
             continue
-        rel = str(entry.path)
-        lines = text.splitlines()
-        for lineno, line in enumerate(lines, start=1):
-            checksum_bound = _download_has_bound_checksum(lines, lineno - 1)
-            for match in _URL_RE.finditer(line):
-                url = match.group(1)
-                kind = "gdrive" if "drive.google.com" in url else "url"
-                evidence.references.append(
-                    RemoteRef(
-                        kind=kind,
-                        spec=url,
-                        file=rel,
-                        line=lineno,
-                        pinned=checksum_bound,
-                        pin_detail="checksum" if checksum_bound else "none",
-                    )
+        consumer.feed(entry, text)
+
+
+def _scan_text(evidence: RemoteEvidence, entry: FileEntry, text: str) -> None:
+    """Scan one file's text for remote references."""
+    rel = str(entry.path)
+    lines = text.splitlines()
+    for lineno, line in enumerate(lines, start=1):
+        url_matches = list(_URL_RE.finditer(line))
+        bucket_matches = list(_BUCKET_RE.finditer(line))
+        # The probe searches this line for a download target and reads up to
+        # three more. Only the two loops below read its answer, and they run
+        # only when this line carries a reference, so lines without one --
+        # almost every line in the repository -- need never ask.
+        checksum_bound = bool(url_matches or bucket_matches) and (
+            _download_has_bound_checksum(lines, lineno - 1)
+        )
+        for match in url_matches:
+            url = match.group(1)
+            kind = "gdrive" if "drive.google.com" in url else "url"
+            evidence.references.append(
+                RemoteRef(
+                    kind=kind,
+                    spec=url,
+                    file=rel,
+                    line=lineno,
+                    pinned=checksum_bound,
+                    pin_detail="checksum" if checksum_bound else "none",
                 )
-            if _GDOWN_RE.search(line):
-                evidence.references.append(
-                    RemoteRef(
-                        kind="gdrive",
-                        spec=line.strip()[:200],
-                        file=rel,
-                        line=lineno,
-                        pinned=False,
-                        pin_detail="none",
-                    )
-                )
-            for match in _BUCKET_RE.finditer(line):
-                evidence.references.append(
-                    RemoteRef(
-                        kind="bucket",
-                        spec=match.group(1)[:200],
-                        file=rel,
-                        line=lineno,
-                        pinned=checksum_bound,
-                        pin_detail="checksum" if checksum_bound else "none",
-                    )
-                )
-            bare_drive_link = (
-                entry.suffix in {".sh", ".bash"}
-                and _DRIVE_URL_RE.search(line)
-                and not any(tool in line for tool in ("wget", "curl", "gdown"))
             )
-            if bare_drive_link:
-                evidence.references.append(
-                    RemoteRef(
-                        kind="gdrive",
-                        spec=line.strip()[:200],
-                        file=rel,
-                        line=lineno,
-                        pinned=False,
-                        pin_detail="none",
-                    )
+        if _GDOWN_RE.search(line):
+            evidence.references.append(
+                RemoteRef(
+                    kind="gdrive",
+                    spec=line.strip()[:200],
+                    file=rel,
+                    line=lineno,
+                    pinned=False,
+                    pin_detail="none",
                 )
+            )
+        for match in bucket_matches:
+            evidence.references.append(
+                RemoteRef(
+                    kind="bucket",
+                    spec=match.group(1)[:200],
+                    file=rel,
+                    line=lineno,
+                    pinned=checksum_bound,
+                    pin_detail="checksum" if checksum_bound else "none",
+                )
+            )
+        bare_drive_link = (
+            entry.suffix in {".sh", ".bash"}
+            and _DRIVE_URL_RE.search(line)
+            and not any(tool in line for tool in ("wget", "curl", "gdown"))
+        )
+        if bare_drive_link:
+            evidence.references.append(
+                RemoteRef(
+                    kind="gdrive",
+                    spec=line.strip()[:200],
+                    file=rel,
+                    line=lineno,
+                    pinned=False,
+                    pin_detail="none",
+                )
+            )
 
 
-def collect_remote(repo: Repo, py: PythonEvidence) -> RemoteEvidence:
-    """Collect remote references and reference-bound integrity evidence."""
+def complete_remote(py: PythonEvidence, scanned: RemoteEvidence) -> RemoteEvidence:
+    """Add the AST-derived references to ones already scanned from text.
+
+    The AST references are inserted first and the scanned ones appended, which
+    is the order a single pass produced. The sort below is stable and its key
+    omits ``pinned`` and ``resolver_kind``, so two references agreeing on the
+    other five fields keep their insertion order — preserving it is what makes
+    sharing the read provably free of output changes.
+    """
     evidence = RemoteEvidence()
     _collect_from_ast(py, evidence)
-    _collect_from_text(repo, evidence)
+    evidence.references.extend(scanned.references)
     evidence.references.sort(
         key=lambda reference: (
             reference.file,
@@ -236,3 +275,10 @@ def collect_remote(repo: Repo, py: PythonEvidence) -> RemoteEvidence:
         )
     )
     return evidence
+
+
+def collect_remote(repo: Repo, py: PythonEvidence) -> RemoteEvidence:
+    """Collect remote references and reference-bound integrity evidence."""
+    scanned = RemoteEvidence()
+    _collect_from_text(repo, scanned)
+    return complete_remote(py, scanned)

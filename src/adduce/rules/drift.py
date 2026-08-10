@@ -354,7 +354,7 @@ class AblationTraceRule(Rule):
             return self.finding(Status.NOT_APPLICABLE, confidence=0.6, message="No ablations mentioned in the paper.")
         artifacts = [f.path for f in ev.config.files if "ablat" in f.path.lower()]
         artifacts += [c.command for c in ev.runs.commands if "ablat" in c.command.lower()]
-        artifacts += [str(f.path) for f in ev.repo.find("*ablat*")]
+        artifacts += list(ev.runs.ablation_paths)
         if artifacts:
             return self.finding(
                 Status.PASS,

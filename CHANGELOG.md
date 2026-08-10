@@ -6,6 +6,180 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Validation status
+
+The `r6` effectiveness preregistration lock is void, deliberately and once. Its
+analyzer digest binds the `src/adduce` byte tree, and the work in this release
+changes that tree. Invalidating it now costs nothing, because no human reviewer
+decision has been collected; the same change after the claim review begins would
+cost 220 decisions. Every other frozen input is unchanged and still verified: the
+preregistration schema, the built-in rule-ID set, the corpus inventory, and the
+frozen claim truth `9a26d06c…`. A successor lock will be registered under a dated
+protocol amendment against the finished analyzer, and no effectiveness,
+calibration, or false-positive figure is stated in the meantime.
+
+Two analysis-plan files changed. `corpus/scripts/check_builtin.py` permits the
+two read-only git queries that honouring `.gitignore` requires; its offline
+enforcement is otherwise unchanged, and the queries are measured to be a no-op on
+the pilot corpus — all fifteen pinned clones report zero ignored paths, so no
+finding, score, or status moves for any of them. `corpus/scripts/run_contract.py`
+stops recomputing a tier from a score, which is no longer a valid invariant now
+that a tier is withheld when the analyzer parsed too little source; it validates
+the new `evidence_base` block instead. Both changes are recorded against the
+digests the lock still carries, and the record asserts that exactly those two
+files moved.
+
+### Added
+
+- Added per-stage timing and work counters to the check pipeline, reported by
+  `adduce check --timings` and as a `telemetry` block in the JSON report. A
+  default offline run records 23 stage durations and 8 counters. Durations differ
+  between identical runs, so they are omitted unless requested and the default
+  report remains byte-for-byte stable. Measured cost on the largest corpus
+  repository, per operation rather than by subtracting two whole-run timings:
+  11.6 µs for the stage timers, 1.1 ms for counter recording over 8,840
+  inventoried files, and 3.3 µs for a snapshot — about 0.005% of a 21-second run.
+- Added a benchmark harness under `bench/` with a committed baseline covering
+  five real repositories, this repository, and the fourteen synthetic
+  positive-control repositories. It records cold runtime, repeat runtime, peak
+  resident memory with its platform's unit, files and lines per second, per-stage
+  timings, disk reads per inventoried file, parser failures, and whether a
+  repeated run renders byte-identically. A target that is absent or fails to
+  measure is recorded with the reason rather than defaulted. `bench/runner.py
+  compare` fails on a regression and now gates CI.
+- Added `src/adduce/content.py`, which walks the inventory once and hands each
+  file's text to every collector that wants it. Setting `ADDUCE_DEBUG_STRICT=1`
+  makes a second read of the same path within one pass an error rather than a
+  silent regression.
+- Added `bench/runner.py finding-diff`, which enumerates every rule status that
+  honouring `.gitignore` moves, and classifies each move as a rule that stopped
+  applying, became not-applicable, dropped, or improved. It exists so the
+  behaviour change below is reproducible rather than asserted.
+
+### Changed
+
+- **Each source file is now read and decoded once per run, not three times.**
+  The AST analysis, the portability scan, and the remote-reference scan each
+  walked the repository independently, so every Python file was opened, decoded
+  from UTF-8, and split into lines three times over. Measured on the largest
+  corpus repository: 15,583 reads over 6,246 files, 4,648 of them read exactly
+  three times. The inventory is now walked once and each file's text is handed
+  to every collector that wants it, then released before the next file is read.
+
+  Reads per file fall from **2.48 to 1.01**, and cold runtime from **21.7 s to
+  16.7 s** at the largest stratum and 1.63 s to 1.39 s at the medium one.
+  Verified to change no output: the JSON report is byte-identical across all
+  fifteen pinned corpus repositories and all fourteen synthetic ones. The
+  thirtieth target is adduce's own tree, where the only difference is its own
+  changed line count and no rule status moves.
+
+  Caching the text was considered and rejected on measurement. The passes were
+  sequential and each covered the whole repository, so any cache smaller than
+  the working set is evicted before the second pass reaches it — which is what
+  the previous 512-entry cache did, at a 0.3% hit rate. Holding everything was
+  not available either: the decoded Python source of the largest corpus
+  repository is 135 MB, and reducing peak memory is a goal of this work, not a
+  budget to spend. Sharing the read in time costs one file of text at a time.
+
+  Peak memory is **unchanged** by this, and the runtime reduction is well short
+  of the 40% the plan projected for the stratum. Both follow from the same
+  measured fact: reading and decoding was about a second of a twenty-second run.
+  The remainder is AST traversal, which is a separate change.
+
+  `collect_python`, `collect_portability`, and `collect_remote` keep their
+  signatures and still walk and read on their own, so a plugin or a caller
+  outside the shared pass is unaffected. A test asserts the two paths agree.
+- **`.gitignore` is now honoured by default.** An ignored `data/`, `wandb/`,
+  `outputs/`, or vendored checkout is not part of the artifact under review, so
+  it is no longer scanned and can no longer contribute findings. `--no-gitignore`
+  restores the previous whole-tree scan. This changes findings on any repository
+  with an ignored tree; see the correctness fix below for the measurement. Git's
+  own matcher decides, so nested ignore files, negation, anchoring, and
+  directory-only patterns behave exactly as git does, and a tracked file matching
+  an ignore pattern is still scanned.
+
+  It never scans less than it reports: a scan root that is itself gitignored
+  keeps every file, and an unavailable git, a failed query, or a directory that
+  is not a repository leaves the whole tree in scope. System and global git
+  config are suppressed for the query, so a user's `core.excludesFile` cannot
+  silently shrink an audit.
+
+  The answer costs two read-only git queries per scan, about 12 ms, and that is
+  a fixed cost rather than a proportional one. On a repository with nothing
+  ignored it is therefore pure overhead: measured on the smallest corpus
+  repository, 26 files, a run goes from 72.8 ms to 84.7 ms, and by 122 files it
+  is no longer distinguishable from noise. Repositories that do ignore a tree
+  gain far more than they pay — 24.6 s to 1.2 s in the case below.
+- `Repo` exposes `read_cache_stats()`, and `evidence.collect` accepts an optional
+  `telemetry` keyword. Both are additive; rule and reporter plugins are
+  unaffected.
+- The JSON report gains an `evidence_base` block recording `rated`,
+  `evaluated_rules`, `considered_rules`, `coverage_percent`, and
+  `analysable_lines`, so a consumer can see how much the score rests on rather
+  than inferring it. Existing keys are unchanged. `ScoreCard` gains the matching
+  fields and a `coverage` property, all defaulted, and `score()` takes an
+  optional `analysable_lines` keyword — a caller that omits it still gets a tier,
+  so plugins scoring findings directly are unaffected.
+- `corpus/scripts/run_contract.py` no longer recomputes a tier from a score
+  unconditionally. That invariant held only while a tier was a pure function of
+  the score, and enforcing it would now reject a correct artifact for any
+  repository the analyzer could not read. It validates the `evidence_base` block
+  and checks the scored population exactly instead.
+
+### Fixed
+
+- **A repository with almost nothing in it could earn a respectable tier.** Most
+  rules are assertions about code: given none, the ones that look for a problem
+  find none and pass, and the ones that look for an artifact are satisfied by its
+  bare presence. The weighted average of those passes was then presented as a
+  tier. Measured: a directory containing eleven plausible-looking but meaningless
+  files — a README with the right headings, pinned requirements nothing imports, a
+  config no code reads, a Dockerfile, a results file produced by nothing — reached
+  **72/100 and "Silver"** on ten lines of source. An **empty directory scored
+  47.1/100**.
+
+  A tier is now assigned only when the analyzer parsed at least
+  `MINIMUM_ANALYSABLE_LINES` (100) physical lines of source; below that the tier
+  reads `Unrated (insufficient evidence)`. The score itself is unchanged and still
+  reported, because it is a real measurement of the checks that ran — what was
+  wrong was calling it Silver. Measured across the corpus, the separation is not
+  marginal: the largest synthetic fixture carries 15 lines and the smallest real
+  repository 1,220, so every value in between behaves identically and the exact
+  threshold is not load-bearing.
+
+  This is a floor on whether anything can be said, **not a defence against
+  deliberate gaming** — padding a file defeats it, and is meant to.
+
+  Two repositories in the pilot corpus are now unrated, both correctly: an
+  adversarial fixture, and `md-ml`, which contains no Python at all and previously
+  scored 61.4/Bronze on source the analyzer never read.
+- The scan inventoried gitignored files, so a repository containing a vendored or
+  ignored working copy could earn passing rule statuses from files that are not
+  part of its artifact. Measured on this repository, whose working tree carries
+  fifteen gitignored clones: 30 rule statuses move — 9 rules stop applying, 13
+  report not-applicable, 7 drop, and 1 improves. Nine of the thirty were
+  reporting PASS on another repository's files, among them cuDNN determinism
+  flags in a project that contains no CUDA code. The score reads 50.2 rather than
+  60.5, which is the correction, not a regression. Scanning covers 344 files
+  rather than 8,844, taking 1.2 s rather than 24.6 s at 65 MB rather than 435 MB
+  of peak resident memory. Reproduce with `bench/runner.py finding-diff`.
+- The remote collector asked whether each line's download carried a bound
+  checksum before knowing whether the line contained a download at all, running
+  an extra regular expression over every line of every `.py`, `.sh`, and
+  `Makefile` in a repository. The probe is now consulted only for a line that
+  carries a remote reference. Measured on the largest corpus repository, the
+  collector goes from 3.155 s to 2.398 s, and both versions return exactly the
+  same 6,683 references.
+
+### Security
+
+- The git queries that honour `.gitignore` now set `core.fsmonitor=false`, as the
+  repository-metadata queries already did. Without it, git runs a
+  repository-configured filesystem-monitor hook, which would let a scanned
+  repository execute code inside an audit whose contract is that it never runs
+  repository code. Every git invocation in the scan is now built by one helper so
+  none can omit the guard. This was never present in a released version.
+
 ## [0.1.2] - 2026-08-04
 
 ### Validation status

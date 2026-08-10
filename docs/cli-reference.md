@@ -27,6 +27,8 @@ adduce check --mode reviewer         # skeptical framing: what could not be veri
 adduce check --mode ae-chair         # badge prerequisites, blocking issues, burden headline
 adduce check -f json|sarif|markdown|badge|latex -o out
 adduce check ./code --paper ../paper       # paper and code kept in separate repositories
+adduce check --no-gitignore          # scan the whole tree, ignore file included (see below)
+adduce check --timings               # per-stage durations and work counters, to stderr
 adduce drift                         # paper ↔ code/config consistency + result reconciliation
 adduce precision                     # TF32/AMP/low-precision audit
 adduce deps                          # ghost/unused/notebook dependency analysis
@@ -69,6 +71,93 @@ selected script without a sandbox; it reports ordering only for supported
 module-level Python, NumPy, and Torch RNG calls and does not observe
 generator-instance methods or library-internal/native draws. Read the
 [security model](security-model.md) before either execution mode.
+
+## Scan scope and `--no-gitignore`
+
+The scan skips paths git ignores, using git's own matcher so nested ignore
+files, negation, anchoring, and directory-only patterns behave exactly as git
+does. A gitignored `data/`, `wandb/`, `outputs/`, or vendored checkout is not
+part of the artifact a reader receives, so it is not evidence about that
+artifact.
+
+`--no-gitignore` examines the whole tree instead. Three consequences worth
+knowing:
+
+- **Honouring the ignore file can lower a score, and that is the point.** A
+  repository that vendors another project can otherwise earn passing statuses
+  from the vendored code. Measured on the adduce repository, whose working tree
+  carries fifteen gitignored clones: the scan covers 344 files rather than
+  8,844, the score reads 50.2 rather than 60.5, and 30 rule statuses move —
+  9 rules stop applying, 13 report not-applicable, 7 drop, and 1 improves. Nine
+  of the thirty were reporting PASS on another repository's files, among them
+  cuDNN determinism flags in a project containing no CUDA code.
+- **Tracking beats ignoring**, as in git: a tracked file matching an ignore
+  pattern is still scanned.
+- **It never scans less than it reports.** Scanning a directory that is itself
+  gitignored keeps every file, since filtering there would report a clean
+  repository containing nothing. When git is unavailable, the call fails, or the
+  directory is not a repository, the whole tree is scanned.
+
+Ambient git configuration cannot change the answer: system and global config
+are suppressed for the query, so a user's `core.excludesFile` cannot silently
+shrink an audit.
+
+The reproducible measurement behind the numbers above is
+`bench/runner.py finding-diff`.
+
+## Scores, tiers, and when no tier is given
+
+The score is a category-weighted average over the rules that applied. Rules that
+do not apply are excluded in both directions, so a scikit-learn project is never
+scored against CUDA determinism.
+
+That exclusion has a consequence worth stating plainly: **most rules are
+assertions about code, so a repository with very little code has very little to
+be wrong about.** Rules that look for a problem find none and pass. Rules that
+look for an artifact are satisfied by its presence. A directory of
+plausible-looking but meaningless files — a README with the right headings,
+pinned requirements nothing imports, a config no code reads — measured
+72/100 and "Silver" on ten lines of source, and an empty directory measured 47.
+
+So a tier is assigned only when at least 100 physical lines of source were
+actually parsed. Below that the tier reads:
+
+```
+Reproducibility  72/100   Unrated (insufficient evidence)
+```
+
+The score is still shown, because it is a real measurement of the checks that
+ran. What it is a score *of* is what the tier cannot vouch for.
+
+`--format json` carries the same information in an `evidence_base` block:
+
+```json
+"evidence_base": {
+  "rated": false,
+  "evaluated_rules": 34,
+  "considered_rules": 68,
+  "coverage_percent": 50.0,
+  "analysable_lines": 10
+}
+```
+
+Two limits, both deliberate:
+
+- **This is not a defence against deliberate gaming.** Padding a file with a
+  hundred lines defeats it. It exists so an audit does not present a verdict on a
+  repository that has not shown enough to support one.
+- **A repository adduce cannot read is unrated, not bad.** A project written
+  entirely in R or MATLAB parses to zero Python lines and receives no tier. That
+  is an honest statement about the analyzer's reach, not a judgement about the
+  work.
+
+## Timings
+
+`--timings` reports per-stage durations and work counters on stderr, and adds a
+`telemetry` block to `--format json`. Durations differ between identical runs,
+so they are absent unless requested and the default report stays byte-stable.
+The counters include `files.read_from_disk` against `files.inventoried`, which
+is how much file decoding a run repeats.
 
 `adduce pin-remotes` resolves current revisions and drafts
 `revision="<sha>"` edits as diffs (libcst codemods, applied only with
