@@ -13,7 +13,7 @@ import re
 from dataclasses import dataclass, field
 
 from ..model import Repo
-from ..naming import HYPERPARAM_SYNONYMS
+from ..naming import HYPERPARAM_SYNONYMS, METRIC_PATTERNS
 
 _INPUT_RE = re.compile(r"\\(?:input|include)\{([^}]+)\}")
 _COMMENT_RE = re.compile(r"(?<!\\)%.*$", re.MULTILINE)
@@ -29,26 +29,11 @@ _NUMBER_PATTERN = r"""
 """
 _NUMBER_RE = re.compile(_NUMBER_PATTERN, re.VERBOSE)
 
-_METRIC_KEYWORDS: dict[str, tuple[str, ...]] = {
-    "accuracy": ("accuracy", "acc\\.", "top-1", "top-5"),
-    "f1": ("f1", "f1-score", "f-score", "macro-f1", "micro-f1"),
-    "bleu": ("bleu",),
-    "rouge": ("rouge", "rouge-l", "rouge-1", "rouge-2"),
-    "ndcg": ("ndcg",),
-    "map": ("\\bmap\\b", "mean average precision"),
-    "mrr": ("mrr", "mean reciprocal rank"),
-    "auc": ("auc", "auroc", "roc-auc"),
-    "precision": ("precision@", "\\bprecision\\b"),
-    "recall": ("recall@", "\\brecall\\b"),
-    "perplexity": ("perplexity", "\\bppl\\b"),
-    "wer": ("\\bwer\\b", "word error rate"),
-    "mse": ("\\bmse\\b", "mean squared error"),
-    "rmse": ("\\brmse\\b",),
-    "mae": ("\\bmae\\b", "mean absolute error"),
-    "iou": ("\\biou\\b", "\\bmiou\\b"),
-    "dice": ("dice",),
-    "exact_match": ("exact match", "\\bem\\b"),
-}
+#: The prose patterns now live in ``naming`` so a table header and a result
+#: column canonicalise to the same metric name this collector uses. The
+#: content is unchanged and a test pins it, because moving a vocabulary is
+#: exactly the kind of edit that silently drops an alias.
+_METRIC_KEYWORDS: dict[str, tuple[str, ...]] = METRIC_PATTERNS
 
 _KNOWN_DATASETS = (
     "cifar-10", "cifar-100", "cifar10", "cifar100", "imagenet", "imagenet-1k", "mnist",
