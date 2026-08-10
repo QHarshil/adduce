@@ -1,0 +1,367 @@
+{
+ "schema": "adduce-dev-verifications/1",
+ "pair_id": "bert",
+ "verified_from": "pdf",
+ "verifications": [
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 86.05,
+    "where": "README.md:114",
+    "text": "BERT-Large, Uncased (Original): Multi NLI Accuracy = 86.05"
+   },
+   "verdict": "in_repo_not_paper",
+   "notes": "No MultiNLI figure of 86.05 anywhere in the paper (Table 1 BERT-LARGE MNLI-m Test is 86.7; Table 6 Dev MNLI-m values run 77.9-86.6). [reclassified: stated in the repository README, not the paper]"
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 87.07,
+    "where": "README.md:115",
+    "text": "BERT-Large, Uncased (Whole Word Masking): Multi NLI Accuracy = 87.07"
+   },
+   "verdict": "in_repo_not_paper",
+   "notes": "No MultiNLI figure of 87.07 in the paper; exceeds every reported MNLI-m accuracy (max 86.7, Table 1). [reclassified: stated in the repository README, not the paper]"
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 86.09,
+    "where": "README.md:116",
+    "text": "BERT-Large, Cased (Original): Multi NLI Accuracy = 86.09"
+   },
+   "verdict": "in_repo_not_paper",
+   "notes": "No MultiNLI figure of 86.09 in the paper. [reclassified: stated in the repository README, not the paper]"
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 86.46,
+    "where": "README.md:117",
+    "text": "BERT-Large, Cased (Whole Word Masking): Multi NLI Accuracy = 86.46"
+   },
+   "verdict": "in_repo_not_paper",
+   "notes": "No MultiNLI figure of 86.46 in the paper. [reclassified: stated in the repository README, not the paper]"
+  },
+  {
+   "extraction": {
+    "metric": "exact_match",
+    "value": 87.4,
+    "where": "README.md:199",
+    "text": "1st Place Ensemble - BERT: Test EM = 87.4"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 2, BERT-LARGE (Ens.+TriviaQA) SQuAD 1.1 Test EM."
+  },
+  {
+   "extraction": {
+    "metric": "f1",
+    "value": 93.2,
+    "where": "README.md:199",
+    "text": "F1 to 93.2"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 2 / abstract headline, BERT-LARGE (Ens.+TriviaQA) SQuAD 1.1 Test F1."
+  },
+  {
+   "extraction": {
+    "metric": "exact_match",
+    "value": 86.0,
+    "where": "README.md:200",
+    "text": "2nd Place Ensemble - nlnet: Test EM = 86"
+   },
+   "verdict": "baseline",
+   "notes": "Table 2, '#1 Ensemble - nlnet' Test EM; prior work on the SQuAD 1.1 leaderboard, not BERT's."
+  },
+  {
+   "extraction": {
+    "metric": "f1",
+    "value": 91.7,
+    "where": "README.md:200",
+    "text": "2nd Place Ensemble - nlnet: Test F1 = 91.7"
+   },
+   "verdict": "baseline",
+   "notes": "Table 2, nlnet ensemble Test F1; prior work."
+  },
+  {
+   "extraction": {
+    "metric": "exact_match",
+    "value": 85.1,
+    "where": "README.md:201",
+    "text": "1st Place Single Model - BERT: Test EM = 85.1"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 2, BERT-LARGE (Sgl.+TriviaQA) SQuAD 1.1 Test EM."
+  },
+  {
+   "extraction": {
+    "metric": "f1",
+    "value": 91.8,
+    "where": "README.md:201",
+    "text": "1st Place Single Model - BERT: Test F1 = 91.8"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 2, BERT-LARGE (Sgl.+TriviaQA) SQuAD 1.1 Test F1."
+  },
+  {
+   "extraction": {
+    "metric": "exact_match",
+    "value": 83.5,
+    "where": "README.md:202",
+    "text": "2nd Place Single Model - nlnet: Test EM = 83.5"
+   },
+   "verdict": "in_repo_not_paper",
+   "notes": "Table 2 has no nlnet single-model row (only the nlnet ensemble, EM 86.0/F1 91.7, is reported); 83.5 does not appear anywhere in the paper. [reclassified: stated in the repository README, not the paper]"
+  },
+  {
+   "extraction": {
+    "metric": "f1",
+    "value": 90.1,
+    "where": "README.md:202",
+    "text": "2nd Place Single Model - nlnet: Test F1 = 90.1"
+   },
+   "verdict": "in_repo_not_paper",
+   "notes": "Same claimed row as the 83.5 EM entry; no nlnet single-model result exists in Table 2 or elsewhere in the paper. [reclassified: stated in the repository README, not the paper]"
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 5.0,
+    "where": "ablation.tex:29",
+    "text": "accuracy from 5"
+   },
+   "verdict": "not_in_paper",
+   "notes": "Source sentence is 'we report the average Dev Set accuracy from 5 random restarts' (Sec 5.2); '5' is the restart count, not an accuracy value."
+  },
+  {
+   "extraction": {
+    "metric": "f1",
+    "value": 0.3,
+    "where": "ablation.tex:53",
+    "text": "0.3 F1"
+   },
+   "verdict": "real_own_result",
+   "notes": "Sec 5.3: best feature-based method (Concat Last Four Hidden, Table 7, 96.1) is 0.3 F1 behind fine-tuning BERT-BASE end-to-end (96.4)."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 86.7,
+    "where": "abstract.tex:4",
+    "text": "accuracy to 86.7"
+   },
+   "verdict": "real_own_result",
+   "notes": "Abstract's MultiNLI headline, matches Table 1 BERT-LARGE MNLI-m Test accuracy."
+  },
+  {
+   "extraction": {
+    "metric": "f1",
+    "value": 83.1,
+    "where": "abstract.tex:4",
+    "text": "F1 to 83.1"
+   },
+   "verdict": "real_own_result",
+   "notes": "Abstract's SQuAD v2.0 headline, matches Table 3 BERT-LARGE (Single) Test F1."
+  },
+  {
+   "extraction": {
+    "metric": "f1",
+    "value": 91.0,
+    "where": "bert.tex:102",
+    "text": "F1 score of 91.0"
+   },
+   "verdict": "real_own_result",
+   "notes": "Footnote 7 (Sec 3.2): the BERT SQuAD model reaches Dev F1 91.0% after about 30 minutes of training."
+  },
+  {
+   "extraction": {
+    "metric": "f1",
+    "value": 1.3,
+    "where": "experiment.tex:51",
+    "text": "1.3 F1"
+   },
+   "verdict": "real_own_result",
+   "notes": "Sec 4.2: BERT's single system outperforms the top leaderboard system by 1.3 F1."
+  },
+  {
+   "extraction": {
+    "metric": "f1",
+    "value": 1.5,
+    "where": "experiment.tex:51",
+    "text": "1.5 F1"
+   },
+   "verdict": "real_own_result",
+   "notes": "Sec 4.2: BERT's ensemble outperforms the top leaderboard system by 1.5 F1."
+  },
+  {
+   "extraction": {
+    "metric": "f1",
+    "value": 5.1,
+    "where": "experiment.tex:59",
+    "text": "5.1 F1"
+   },
+   "verdict": "real_own_result",
+   "notes": "Sec 4.3 / abstract: +5.1 F1 improvement over the previous best system on SQuAD v2.0."
+  },
+  {
+   "extraction": {
+    "metric": "f1",
+    "value": 92.2,
+    "where": "pretrained_embeddings_tab.tex:6",
+    "text": "ELMo~peters-etal:2018:_deep: Test F1 = 92.2"
+   },
+   "verdict": "baseline",
+   "notes": "Table 7, ELMo (Peters et al., 2018a) Test F1; prior work."
+  },
+  {
+   "extraction": {
+    "metric": "f1",
+    "value": 92.4,
+    "where": "pretrained_embeddings_tab.tex:6",
+    "text": "\\;\\;\\;: Test F1 = 92.4"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 7, Fine-tuning approach, BERT-BASE Test F1."
+  },
+  {
+   "extraction": {
+    "metric": "f1",
+    "value": 92.6,
+    "where": "pretrained_embeddings_tab.tex:6",
+    "text": "CVT~clark2018semi: Test F1 = 92.6"
+   },
+   "verdict": "baseline",
+   "notes": "Table 7, CVT (Clark et al., 2018) Test F1; prior work."
+  },
+  {
+   "extraction": {
+    "metric": "f1",
+    "value": 92.8,
+    "where": "pretrained_embeddings_tab.tex:6",
+    "text": "\\;\\;\\;: Test F1 = 92.8"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 7, Fine-tuning approach, BERT-LARGE Test F1."
+  },
+  {
+   "extraction": {
+    "metric": "f1",
+    "value": 93.1,
+    "where": "pretrained_embeddings_tab.tex:6",
+    "text": "CSE~akbik2018contextual: Test F1 = 93.1"
+   },
+   "verdict": "baseline",
+   "notes": "Table 7, CSE (Akbik et al., 2018) Test F1; prior work."
+  },
+  {
+   "extraction": {
+    "metric": "f1",
+    "value": 94.9,
+    "where": "pretrained_embeddings_tab.tex:6",
+    "text": "\\;\\;\\;Last Hidden: Dev F1 = 94.9"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 7, Feature-based approach (BERT-BASE), 'Last Hidden' Dev F1."
+  },
+  {
+   "extraction": {
+    "metric": "f1",
+    "value": 95.5,
+    "where": "pretrained_embeddings_tab.tex:6",
+    "text": "\\;\\;\\;Weighted Sum All 12 Layers: Dev F1 = 95.5"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 7, Feature-based approach, 'Weighted Sum All 12 Layers' Dev F1."
+  },
+  {
+   "extraction": {
+    "metric": "f1",
+    "value": 95.6,
+    "where": "pretrained_embeddings_tab.tex:6",
+    "text": "\\;\\;\\;Second-to-Last Hidden: Dev F1 = 95.6"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 7, Feature-based approach, 'Second-to-Last Hidden' Dev F1."
+  },
+  {
+   "extraction": {
+    "metric": "f1",
+    "value": 95.7,
+    "where": "pretrained_embeddings_tab.tex:6",
+    "text": "ELMo~peters-etal:2018:_deep: Dev F1 = 95.7"
+   },
+   "verdict": "baseline",
+   "notes": "Table 7, ELMo (Peters et al., 2018a) Dev F1; prior work."
+  },
+  {
+   "extraction": {
+    "metric": "f1",
+    "value": 95.9,
+    "where": "pretrained_embeddings_tab.tex:6",
+    "text": "\\;\\;\\;Weighted Sum Last Four Hidden: Dev F1 = 95.9"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 7, Feature-based approach, 'Weighted Sum Last Four Hidden' Dev F1."
+  },
+  {
+   "extraction": {
+    "metric": "f1",
+    "value": 96.1,
+    "where": "pretrained_embeddings_tab.tex:6",
+    "text": "\\;\\;\\;Concat Last Four Hidden: Dev F1 = 96.1"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 7, Feature-based approach, 'Concat Last Four Hidden' Dev F1 -- the best-performing feature-based method."
+  },
+  {
+   "extraction": {
+    "metric": "f1",
+    "value": 96.4,
+    "where": "pretrained_embeddings_tab.tex:6",
+    "text": "\\;\\;\\;: Dev F1 = 96.4"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 7, Fine-tuning approach, BERT-BASE Dev F1."
+  },
+  {
+   "extraction": {
+    "metric": "f1",
+    "value": 96.6,
+    "where": "pretrained_embeddings_tab.tex:6",
+    "text": "\\;\\;\\;: Dev F1 = 96.6"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 7, Fine-tuning approach, BERT-LARGE Dev F1."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 3.0,
+    "where": "size_ablation_tab.tex:5",
+    "text": "6: 3cDev Set Accuracy = 3"
+   },
+   "verdict": "not_in_paper",
+   "notes": "Table 6 mis-parse: '3' is the #A (attention-heads) hyperparameter on the L=6,H=768 row, not a Dev Set Accuracy figure (real MNLI-m/MRPC/SST-2 values run 77.9-93.7)."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 12.0,
+    "where": "size_ablation_tab.tex:5",
+    "text": "12: 3cDev Set Accuracy = 12"
+   },
+   "verdict": "not_in_paper",
+   "notes": "Table 6 mis-parse: '12' is a #L/#A hyperparameter value, not a Dev Set Accuracy figure."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 16.0,
+    "where": "size_ablation_tab.tex:5",
+    "text": "12: 3cDev Set Accuracy = 16"
+   },
+   "verdict": "not_in_paper",
+   "notes": "Table 6 mis-parse: '16' is the #A (attention-heads) hyperparameter on the L=12,H=1024 row, not a Dev Set Accuracy figure."
+  }
+ ]
+}

@@ -1,0 +1,587 @@
+{
+ "schema": "adduce-dev-verifications/1",
+ "pair_id": "barlowtwins",
+ "verified_from": "pdf",
+ "verifications": [
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 1.0,
+    "where": "1_intro.tex:36",
+    "text": "accuracy for 1"
+   },
+   "verdict": "not_in_paper",
+   "notes": "Misparsed fragment of '55% top-1 accuracy for 1% labels' (Sec.1 Introduction); the value captured is the '1' in 'top-1'/'1% labels', not a reported accuracy. No accuracy value of 1 is reported anywhere in the paper."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 73.2,
+    "where": "3_results.tex:11",
+    "text": "accuracy of $73.2"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 1 and prose ('Our method obtains a top-1 accuracy of 73.2%'): Barlow Twins' own top-1 linear-evaluation accuracy on ImageNet."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 60.6,
+    "where": "3_results.tex:19",
+    "text": "MoCo: Top-1 = 60.6"
+   },
+   "verdict": "baseline",
+   "notes": "Table 1, MoCo top-1, quoted comparison figure."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 63.6,
+    "where": "3_results.tex:19",
+    "text": "PIRL: Top-1 = 63.6"
+   },
+   "verdict": "baseline",
+   "notes": "Table 1, PIRL top-1, quoted comparison figure."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 69.3,
+    "where": "3_results.tex:19",
+    "text": "SimCLR: Top-1 = 69.3"
+   },
+   "verdict": "baseline",
+   "notes": "Table 1, SimCLR top-1, quoted comparison figure."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 71.1,
+    "where": "3_results.tex:19",
+    "text": "MoCo v2: Top-1 = 71.1"
+   },
+   "verdict": "baseline",
+   "notes": "Table 1, MoCo v2 top-1, quoted comparison figure."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 71.3,
+    "where": "3_results.tex:19",
+    "text": "SimSiam: Top-1 = 71.3"
+   },
+   "verdict": "baseline",
+   "notes": "Table 1, SimSiam top-1, quoted comparison figure."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 71.8,
+    "where": "3_results.tex:19",
+    "text": "SwAV (w/o multi-crop): Top-1 = 71.8"
+   },
+   "verdict": "baseline",
+   "notes": "Table 1, SwAV w/o multi-crop top-1, quoted comparison figure."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 74.3,
+    "where": "3_results.tex:19",
+    "text": "BYOL: Top-1 = 74.3"
+   },
+   "verdict": "baseline",
+   "notes": "Table 1, BYOL top-1, quoted comparison figure."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 75.3,
+    "where": "3_results.tex:19",
+    "text": "SwAV: Top-1 = 75.3"
+   },
+   "verdict": "baseline",
+   "notes": "Table 1, SwAV top-1, quoted comparison figure."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 76.5,
+    "where": "3_results.tex:19",
+    "text": "Supervised: Top-1 = 76.5"
+   },
+   "verdict": "baseline",
+   "notes": "Table 1, supervised top-1, quoted comparison figure."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 88.8,
+    "where": "3_results.tex:19",
+    "text": "Normalization along feature dim.: Top-5 = 88.8"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 5 (loss-function ablations), 'Normalization along feature dim.' row: an ablation of Barlow Twins' own loss/normalization scheme, top-5. (The extraction's 'where' points at the same source line as the Table 1 rows around it; that field is provenance only and does not affect this judgement -- the text and value match Table 5 exactly.)"
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 90.1,
+    "where": "3_results.tex:19",
+    "text": "MoCo v2: Top-5 = 90.1"
+   },
+   "verdict": "baseline",
+   "notes": "Table 1, MoCo v2 top-5, quoted comparison figure."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 91.0,
+    "where": "3_results.tex:19",
+    "text": "(ours): Top-5 = 91"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 1, Barlow Twins own top-5 (91.0)."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 91.6,
+    "where": "3_results.tex:19",
+    "text": "BYOL: Top-5 = 91.6"
+   },
+   "verdict": "baseline",
+   "notes": "Table 1, BYOL top-5, quoted comparison figure."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 90.2,
+    "where": "4_ablations.tex:5",
+    "text": "accuracy and a $90.2"
+   },
+   "verdict": "real_own_result",
+   "notes": "Ablations intro prose ('a linear evaluation ... yielded a 71.4% top-1 accuracy and a 90.2% top-5 accuracy') and Table 5 'Baseline' row: Barlow Twins' own 300-epoch ablation baseline model, top-5."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 0.1,
+    "where": "4_ablations.tex:25",
+    "text": "Only red. red. term (off-diag term): Top-1 = 0.1"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 5, own loss-function ablation (redundancy-reduction term only), top-1."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 0.5,
+    "where": "4_ablations.tex:25",
+    "text": "Only red. red. term (off-diag term): Top-5 = 0.5"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 5, own loss-function ablation (redundancy-reduction term only), top-5."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 53.4,
+    "where": "4_ablations.tex:25",
+    "text": "No BN in MLP + no Normalization: Top-1 = 53.4"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 5, own loss-function ablation, top-1."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 57.3,
+    "where": "4_ablations.tex:25",
+    "text": "Only invariance term (on-diag term): Top-1 = 57.3"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 5, own loss-function ablation (invariance term only), top-1."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 63.3,
+    "where": "4_ablations.tex:25",
+    "text": "Cross-entropy with temp.: Top-1 = 63.3"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 5, own loss-function ablation (cross-entropy variant), top-1."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 69.8,
+    "where": "4_ablations.tex:25",
+    "text": "Normalization along feature dim.: Top-1 = 69.8"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 5, own loss-function ablation, top-1."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 71.2,
+    "where": "4_ablations.tex:25",
+    "text": "No BN in MLP: Top-1 = 71.2"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 5, own loss-function ablation, top-1."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 71.4,
+    "where": "4_ablations.tex:25",
+    "text": "Baseline: Top-1 = 71.4"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 5 'Baseline' row and ablations intro prose ('yielded a 71.4% top-1 accuracy'): Barlow Twins' own 300-epoch ablation baseline model, top-1."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 76.7,
+    "where": "4_ablations.tex:25",
+    "text": "No BN in MLP + no Normalization: Top-5 = 76.7"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 5, own loss-function ablation, top-5."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 80.5,
+    "where": "4_ablations.tex:25",
+    "text": "Only invariance term (on-diag term): Top-5 = 80.5"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 5, own loss-function ablation, top-5."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 85.7,
+    "where": "4_ablations.tex:25",
+    "text": "Cross-entropy with temp.: Top-5 = 85.7"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 5, own loss-function ablation, top-5."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 89.7,
+    "where": "4_ablations.tex:25",
+    "text": "No BN in MLP: Top-5 = 89.7"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 5, own loss-function ablation, top-5."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 67.1,
+    "where": "4_ablations.tex:54",
+    "text": "accuracy is 67.1"
+   },
+   "verdict": "baseline",
+   "notes": "Figure 2 caption: SimCLR's best accuracy across batch sizes, explicitly 'data from (Chen et al., 2020a) fig. 9'."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 71.7,
+    "where": "4_ablations.tex:54",
+    "text": "accuracy is 71.7"
+   },
+   "verdict": "real_own_result",
+   "notes": "Figure 2 caption: Barlow Twins' own best accuracy across batch sizes tested (batch 1024)."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 72.5,
+    "where": "4_ablations.tex:54",
+    "text": "accuracy is 72.5"
+   },
+   "verdict": "baseline",
+   "notes": "Figure 2 caption: BYOL's best accuracy across batch sizes, explicitly 'data from (Grill et al., 2020) fig. 3A'."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 61.3,
+    "where": "4_ablations.tex:184",
+    "text": "(c): Top-1 = 61.3"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6 (asymmetric settings), case (c) stop-gradient+predictor: own ablation of Barlow Twins' own model, top-1."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 70.2,
+    "where": "4_ablations.tex:184",
+    "text": "(b): Top-1 = 70.2"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6, case (b) predictor only: own ablation of Barlow Twins' own model, top-1."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 70.5,
+    "where": "4_ablations.tex:184",
+    "text": "(a): Top-1 = 70.5"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6, case (a) stop-gradient only: own ablation of Barlow Twins' own model, top-1."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 83.5,
+    "where": "4_ablations.tex:184",
+    "text": "(c): Top-5 = 83.5"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6, case (c) stop-gradient+predictor: own ablation of Barlow Twins' own model, top-5."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 72.3,
+    "where": "4_ablations.tex:207",
+    "text": "8192-8192-8192: Acc1 = 72.3"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 7: 'For a fair comparison with BYOL, we also evaluated BYOL with a wider and/or deeper projector head...' -- this is the authors' own reimplementation/rerun of BYOL under modified architectures, produced by this paper's own experimental work, not a citation of a number reported in the BYOL paper."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 73.7,
+    "where": "4_ablations.tex:207",
+    "text": "4096-4096-512: Acc1 = 73.7"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 7, same own-reimplementation experiment as above (3-layer proj, 2-layer pred, 512-d repr.)."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 74.1,
+    "where": "4_ablations.tex:207",
+    "text": "4096-256: Acc1 = 74.1"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 7 baseline row, same own-reimplementation experiment. Differs from Table 1's cited BYOL figure (74.3), confirming this is a rerun by these authors, not a quotation of BYOL's own paper."
+  },
+  {
+   "extraction": {
+    "metric": "mse",
+    "value": 66.3,
+    "where": "5_discussion.tex:64",
+    "text": "MSE model achieves 66.3"
+   },
+   "verdict": "not_in_paper",
+   "notes": "The value is real (W-MSE / Ermolov et al. 2020, 'The current W-MSE model achieves 66.3% top-1 accuracy on the Imagenet linear evaluation benchmark', a citation to concurrent work) but it is reported as a top-1 accuracy, not an MSE statistic; no MSE value of 66.3 (or any 'mse' metric) appears anywhere in the paper. Wrong metric for a real value."
+  },
+  {
+   "extraction": {
+    "metric": "inat18",
+    "value": 37.2,
+    "where": "tables/linear_probe_transfer.tex:6",
+    "text": "SimCLR: iNat18 = 37.2"
+   },
+   "verdict": "baseline",
+   "notes": "Table 3, SimCLR iNat18, quoted comparison figure."
+  },
+  {
+   "extraction": {
+    "metric": "inat18",
+    "value": 38.6,
+    "where": "tables/linear_probe_transfer.tex:6",
+    "text": "MoCo-v2: iNat18 = 38.6"
+   },
+   "verdict": "baseline",
+   "notes": "Table 3, MoCo-v2 iNat18, quoted comparison figure."
+  },
+  {
+   "extraction": {
+    "metric": "inat18",
+    "value": 39.5,
+    "where": "tables/linear_probe_transfer.tex:6",
+    "text": "SwAV (w/o multi-crop): iNat18 = 39.5"
+   },
+   "verdict": "baseline",
+   "notes": "Table 3, SwAV w/o multi-crop iNat18, quoted comparison figure."
+  },
+  {
+   "extraction": {
+    "metric": "inat18",
+    "value": 46.5,
+    "where": "tables/linear_probe_transfer.tex:6",
+    "text": "(ours): iNat18 = 46.5"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 3, Barlow Twins own iNat18 result."
+  },
+  {
+   "extraction": {
+    "metric": "inat18",
+    "value": 46.7,
+    "where": "tables/linear_probe_transfer.tex:6",
+    "text": "Supervised: iNat18 = 46.7"
+   },
+   "verdict": "baseline",
+   "notes": "Table 3, supervised iNat18, quoted comparison figure."
+  },
+  {
+   "extraction": {
+    "metric": "inat18",
+    "value": 47.6,
+    "where": "tables/linear_probe_transfer.tex:6",
+    "text": "BYOL: iNat18 = 47.6"
+   },
+   "verdict": "baseline",
+   "notes": "Table 3, BYOL iNat18, quoted comparison figure."
+  },
+  {
+   "extraction": {
+    "metric": "inat18",
+    "value": 48.6,
+    "where": "tables/linear_probe_transfer.tex:6",
+    "text": "SwAV: iNat18 = 48.6"
+   },
+   "verdict": "baseline",
+   "notes": "Table 3, SwAV iNat18, quoted comparison figure."
+  },
+  {
+   "extraction": {
+    "metric": "places-205",
+    "value": 51.8,
+    "where": "tables/linear_probe_transfer.tex:6",
+    "text": "MoCo-v2: Places-205 = 51.8"
+   },
+   "verdict": "baseline",
+   "notes": "Table 3, MoCo-v2 Places-205, quoted comparison figure."
+  },
+  {
+   "extraction": {
+    "metric": "places-205",
+    "value": 52.5,
+    "where": "tables/linear_probe_transfer.tex:6",
+    "text": "SimCLR: Places-205 = 52.5"
+   },
+   "verdict": "baseline",
+   "notes": "Table 3, SimCLR Places-205, quoted comparison figure."
+  },
+  {
+   "extraction": {
+    "metric": "places-205",
+    "value": 52.8,
+    "where": "tables/linear_probe_transfer.tex:6",
+    "text": "SwAV (w/o multi-crop): Places-205 = 52.8"
+   },
+   "verdict": "baseline",
+   "notes": "Table 3, SwAV w/o multi-crop Places-205, quoted comparison figure."
+  },
+  {
+   "extraction": {
+    "metric": "places-205",
+    "value": 53.2,
+    "where": "tables/linear_probe_transfer.tex:6",
+    "text": "Supervised: Places-205 = 53.2"
+   },
+   "verdict": "baseline",
+   "notes": "Table 3, supervised Places-205, quoted comparison figure."
+  },
+  {
+   "extraction": {
+    "metric": "places-205",
+    "value": 54.1,
+    "where": "tables/linear_probe_transfer.tex:6",
+    "text": "BYOL: Places-205 = 54.1"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 3 row for Places-205 = 54.1 belongs to Barlow Twins (ours), not BYOL: BYOL's real Places-205 value is 54.0, and 54.1 is the paper's own result on the next row. The extractor mislabelled which row this cell came from, but the (metric, value) pair itself -- places-205 = 54.1 -- is real and is the paper's own result, so it is judged on that pair rather than on the mismatched row label."
+  },
+  {
+   "extraction": {
+    "metric": "places-205",
+    "value": 56.7,
+    "where": "tables/linear_probe_transfer.tex:6",
+    "text": "SwAV: Places-205 = 56.7"
+   },
+   "verdict": "baseline",
+   "notes": "Table 3, SwAV Places-205, quoted comparison figure."
+  },
+  {
+   "extraction": {
+    "metric": "voc07",
+    "value": 85.5,
+    "where": "tables/linear_probe_transfer.tex:6",
+    "text": "SimCLR: VOC07 = 85.5"
+   },
+   "verdict": "baseline",
+   "notes": "Table 3, SimCLR VOC07, quoted comparison figure."
+  },
+  {
+   "extraction": {
+    "metric": "voc07",
+    "value": 86.2,
+    "where": "tables/linear_probe_transfer.tex:6",
+    "text": "(ours): VOC07 = 86.2"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 3, Barlow Twins own VOC07 result."
+  },
+  {
+   "extraction": {
+    "metric": "voc07",
+    "value": 86.4,
+    "where": "tables/linear_probe_transfer.tex:6",
+    "text": "MoCo-v2: VOC07 = 86.4"
+   },
+   "verdict": "baseline",
+   "notes": "Table 3, MoCo-v2 VOC07 (also SwAV w/o multi-crop's identical value), quoted comparison figure."
+  },
+  {
+   "extraction": {
+    "metric": "voc07",
+    "value": 86.6,
+    "where": "tables/linear_probe_transfer.tex:6",
+    "text": "BYOL: VOC07 = 86.6"
+   },
+   "verdict": "baseline",
+   "notes": "Table 3, BYOL VOC07, quoted comparison figure."
+  },
+  {
+   "extraction": {
+    "metric": "voc07",
+    "value": 87.5,
+    "where": "tables/linear_probe_transfer.tex:6",
+    "text": "Supervised: VOC07 = 87.5"
+   },
+   "verdict": "baseline",
+   "notes": "Table 3, supervised VOC07, quoted comparison figure."
+  },
+  {
+   "extraction": {
+    "metric": "voc07",
+    "value": 88.9,
+    "where": "tables/linear_probe_transfer.tex:6",
+    "text": "SwAV: VOC07 = 88.9"
+   },
+   "verdict": "baseline",
+   "notes": "Table 3, SwAV VOC07, quoted comparison figure."
+  }
+ ]
+}
