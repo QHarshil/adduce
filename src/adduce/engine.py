@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from .config import Config, load_config
@@ -14,6 +14,7 @@ from .reviewer_time import ReviewerTime
 from .reviewer_time import estimate as estimate_reviewer_time
 from .rules import Finding, Rule, Status, discover_rules
 from .scoring import ScoreCard, score
+from .telemetry import Telemetry
 
 
 @dataclass
@@ -24,6 +25,7 @@ class CheckResult:
     config: Config
     graph: ClaimGraph
     reviewer_time: ReviewerTime
+    telemetry: Telemetry = field(default_factory=Telemetry)
 
 
 def _apply_suppressions(finding: Finding, evidence: Evidence, config: Config) -> None:
@@ -55,6 +57,7 @@ def run_check(
     paper: Path | None = None,
     online: bool = False,
     honor_repository_policy: bool = True,
+    honor_gitignore: bool = True,
 ) -> CheckResult:
     """Run the full pipeline against a repository root.
 
@@ -78,44 +81,94 @@ def run_check(
     if exclude:
         config.exclude = tuple(dict.fromkeys([*config.exclude, *exclude]))
 
-    profile: Profile = load_profile(config.profile, allow_path=profile_name is not None)
-    repo = scan_repository(path, exclude=config.exclude)
-    evidence = collect(repo)
-    if evidence.manifest.error:
-        raise ValueError(evidence.manifest.error)
-    if online:
-        from .cache import Cache
-        from .dynamic.resolve import resolve_references
+    telemetry = Telemetry()
+    with telemetry.stage("total"):
+        profile: Profile = load_profile(config.profile, allow_path=profile_name is not None)
+        with telemetry.stage("scan"):
+            repo = scan_repository(
+                path,
+                exclude=config.exclude,
+                honor_gitignore=honor_gitignore,
+            )
+        evidence = collect(repo, telemetry=telemetry)
+        if evidence.manifest.error:
+            raise ValueError(evidence.manifest.error)
+        if online:
+            from .cache import Cache
+            from .dynamic.resolve import resolve_references
 
-        evidence.remote.online_attempted = True
-        evidence.remote.resolutions = resolve_references(
-            evidence.remote.references,
-            Cache(repo.root),
-        )
-    if paper is not None:
-        from .evidence.latex import collect_latex
+            evidence.remote.online_attempted = True
+            with telemetry.stage("resolve.online"):
+                evidence.remote.resolutions = resolve_references(
+                    evidence.remote.references,
+                    Cache(repo.root),
+                )
+        if paper is not None:
+            from .evidence.latex import collect_latex
 
-        paper_root = paper if paper.is_dir() else paper.parent
-        evidence.latex = collect_latex(scan_repository(paper_root))
+            paper_root = paper if paper.is_dir() else paper.parent
+            with telemetry.stage("collect.latex.paper"):
+                evidence.latex = collect_latex(
+                    scan_repository(paper_root, honor_gitignore=honor_gitignore)
+                )
 
-    findings: list[Finding] = []
-    for rule in rules if rules is not None else discover_rules(include_plugins=include_plugins):
-        if rule.id in profile.disabled_rules:
-            continue
-        if not rule.applies_to(repo):
-            continue
-        finding = rule.evaluate(evidence)
-        _apply_suppressions(finding, evidence, config)
-        findings.append(finding)
+        with telemetry.stage("rules.discover"):
+            discovered = (
+                rules if rules is not None else discover_rules(include_plugins=include_plugins)
+            )
 
-    card = score(findings, profile)
+        findings: list[Finding] = []
+        with telemetry.stage("rules.evaluate"):
+            for rule in discovered:
+                if rule.id in profile.disabled_rules:
+                    telemetry.count("rules.skipped_disabled")
+                    continue
+                if not rule.applies_to(repo):
+                    telemetry.count("rules.skipped_inapplicable")
+                    continue
+                finding = rule.evaluate(evidence)
+                _apply_suppressions(finding, evidence, config)
+                findings.append(finding)
+                telemetry.count("rules.evaluated")
+
+        with telemetry.stage("score"):
+            card = score(
+                findings,
+                profile,
+                analysable_lines=sum(module.line_count for module in evidence.py.modules),
+            )
+        with telemetry.stage("graph"):
+            graph = build_graph(evidence)
+        with telemetry.stage("reviewer_time"):
+            reviewer_time = estimate_reviewer_time(evidence)
+
+    _record_counters(telemetry, repo, evidence)
     return CheckResult(
         repo=repo,
         evidence=evidence,
         card=card,
         config=config,
-        graph=build_graph(evidence),
-        reviewer_time=estimate_reviewer_time(evidence),
+        graph=graph,
+        reviewer_time=reviewer_time,
+        telemetry=telemetry,
+    )
+
+
+def _record_counters(telemetry: Telemetry, repo: Repo, evidence: Evidence) -> None:
+    """Record the work the run actually did, after it has finished doing it.
+
+    Everything here is derived from state the pipeline already holds, so
+    counting costs nothing on the hot path.
+    """
+    telemetry.count("files.inventoried", len(repo.files))
+    telemetry.count("files.python", len(repo.python_files()))
+    cache_hits, disk_reads = repo.read_cache_stats()
+    telemetry.count("files.read_cache_hits", cache_hits)
+    telemetry.count("files.read_from_disk", disk_reads)
+    telemetry.count("parse.python.modules", len(evidence.py.modules))
+    telemetry.count(
+        "parse.python.failed",
+        sum(1 for module in evidence.py.modules if module.parse_error),
     )
 
 

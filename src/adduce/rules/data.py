@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from ..evidence import Evidence
+from ..evidence.data import DATA_DIRECTORY_NAMES
 from ..model import Repo
 from .base import Category, Finding, Location, Rule, Status
 
@@ -276,16 +277,11 @@ class RawProcessedRule(Rule):
         return _data_repo(repo)
 
     def evaluate(self, ev: Evidence) -> Finding:
-        data_dirs = {str(f.path.parts[0]).lower() for f in ev.repo.files if len(f.path.parts) > 1}
-        if "data" not in data_dirs and "datasets" not in data_dirs:
+        if not ev.data.top_level_directories & DATA_DIRECTORY_NAMES:
             return self.finding(
                 Status.NOT_APPLICABLE, confidence=0.6, message="No committed data/ directory to organise."
             )
-        subdirs = {
-            f.path.parts[1].lower()
-            for f in ev.repo.files
-            if len(f.path.parts) > 2 and f.path.parts[0].lower() in {"data", "datasets"}
-        }
+        subdirs = ev.data.data_subdirectories
         markers = {"raw", "processed", "interim", "external", "splits", "prepared", "clean", "cleaned"}
         if subdirs & markers:
             return self.finding(

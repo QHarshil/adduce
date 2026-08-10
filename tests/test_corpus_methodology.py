@@ -2191,6 +2191,184 @@ def _load_checked_in_preregistration() -> dict[str, Any]:
     )
 
 
+#: The r6 analyzer lock is void, deliberately and exactly once.
+#:
+#: The approved plan of 2026-08-05 rebuilds the analyzer before human review
+#: begins: instrumentation, single-pass inventory, a normalized evidence graph,
+#: claim resolution, an incremental cache, framework adapters, non-expert
+#: output, and isolated dynamic execution. Every one of those changes bytes
+#: under ``src/adduce/``, which the lock hashes. Invalidating r6 now costs
+#: nothing, because no human reviewer decision exists yet; the same change after
+#: the reviews begin would cost 220 decisions. So the lock is broken once, on
+#: purpose, and re-registered at the end rather than after each phase.
+#:
+#: Only the analyzer digest is affected. Every other frozen input — the schema,
+#: all 23 analysis-plan files, the rule-ID set, the corpus inventory, and the
+#: frozen truth — is still asserted to match below, and a change to any of them
+#: is a real failure.
+#:
+#: Expiry: protocol amendment 8 registers an ``r7`` lock against the finished
+#: analyzer. At that point ``_load_checked_in_preregistration`` is repointed at
+#: the r7 file, and this record together with ``_assert_analyzer_lock_is_void``
+#: and ``_assert_analysis_plan_lock_is_void`` is deleted so the plain equality
+#: assertions return. The checks below fail if the repointing ever happens
+#: without that deletion.
+#:
+#: ``analysis_plan_files`` names each hashed analysis-plan file edited while the
+#: lock is void, against the digest the lock still carries for it. Every
+#: analysis-plan file not listed here must still match the lock exactly.
+#:
+#: ``check_builtin.py`` enforces an explicit allowlist of the git commands a
+#: corpus scan may run, and honouring ``.gitignore`` during ingestion takes two
+#: further read-only queries, so the allowlist had to name them.
+#:
+#: ``run_contract.py`` recomputed a tier from a score and rejected any artifact
+#: where the two disagreed. A tier is now withheld when the analyzer parsed too
+#: little source for one to mean anything, so that invariant no longer holds and
+#: the contract would have rejected a correct artifact. This is not hypothetical
+#: for the pilot: ``md-ml`` carries no Python at all and comes back unrated.
+_R6_VOID: dict[str, Any] = {
+    "protocol_id": "pilot-0.1.2-r6",
+    "analyzer_source_tree_sha256": (
+        "1b24ccf68aba75cfeb75825817497dbefc9132cb5173e5e2f80fa857a7867485"
+    ),
+    "analysis_plan_files": {
+        "scripts/check_builtin.py": (
+            "851240df89e4c2f90369c94efe030e960448a113cf6682cfbedeca67001e5537"
+        ),
+        "scripts/run_contract.py": (
+            "d618362baee6d13c68f6eb5725d20842b5e62cacd42d6085dfa8bb100edd732d"
+        ),
+    },
+    "reason": "analyzer rebuilt under the approved evidence-engine plan",
+    "successor": "protocol amendment 8 plus a fresh r7 candidate pair",
+}
+
+
+def _assert_analyzer_lock_is_void(checked_in_preregistration: dict[str, Any]) -> None:
+    """Assert the recorded void, and that the record has not gone stale.
+
+    Three ways this fails, each of them something a reader needs to know:
+    a successor lock is checked in and this scaffolding was left behind; the
+    record disagrees with the lock it claims to describe; or the live analyzer
+    matches r6 again, meaning the rebuild was reverted.
+    """
+    assert checked_in_preregistration["protocol_id"] == _R6_VOID["protocol_id"], (
+        "a successor lock is checked in, so the r6 void record has expired: "
+        "delete _R6_VOID and _assert_analyzer_lock_is_void, and assert the "
+        "analyzer digest matches the live tree again"
+    )
+    assert checked_in_preregistration["adduce"]["source_tree_sha256"] == (
+        _R6_VOID["analyzer_source_tree_sha256"]
+    ), "the r6 void record does not describe the lock it names"
+
+    live_analyzer_sha256 = _source_tree_sha256(Path(adduce.__file__).resolve().parent)
+    assert live_analyzer_sha256 != _R6_VOID["analyzer_source_tree_sha256"], (
+        "the live analyzer tree matches the r6 lock again, so this record is "
+        f"stale: either the rebuild was reverted, or {_R6_VOID['successor']} is due"
+    )
+
+
+def _assert_analysis_plan_lock_is_void(
+    checked_in_preregistration: dict[str, Any],
+    live_analysis_plan: dict[str, Any],
+) -> None:
+    """Assert exactly the recorded analysis-plan files moved, and nothing else.
+
+    The rollup digest cannot carry this: it changes if any of the 23 files
+    changes, so comparing it would say only that something moved. Comparing
+    file by file is what distinguishes the one deliberate edit from an
+    accidental second one, which is the failure this guard exists to catch.
+    """
+    locked: dict[str, str] = checked_in_preregistration["analysis_plan"]["files"]
+    live: dict[str, str] = live_analysis_plan["files"]
+    recorded: dict[str, str] = _R6_VOID["analysis_plan_files"]
+
+    assert set(live) == set(locked), (
+        "the analysis-plan file set itself changed, which the preregistration "
+        "contract does not permit while a lock is registered"
+    )
+    for name, locked_digest in recorded.items():
+        assert locked.get(name) == locked_digest, (
+            f"the r6 void record's locked digest for {name} is not the one the "
+            "lock carries, so the record no longer describes the lock it names"
+        )
+    moved = sorted(name for name, digest in live.items() if locked[name] != digest)
+    assert moved == sorted(recorded), (
+        "the set of changed analysis-plan files does not match the r6 void "
+        f"record: changed={moved}, recorded={sorted(recorded)}. An unrecorded "
+        "change to a hashed analysis-plan file is never acceptable; a recorded "
+        "one that has been reverted means this entry should be deleted"
+    )
+
+
+# The void record replaces a red test, so the guard that records it has to be
+# able to fail. These drive it with fabricated locks: a guard that cannot fail
+# is worse than the failure it stands in for.
+
+#: A file the record does not name, so it stands for any unrecorded change.
+_PROBE_UNRECORDED = "PILOT_PROTOCOL.md"
+
+
+def _probe_lock(**overrides: str) -> dict[str, Any]:
+    """A lock carrying every recorded file plus one the record does not name."""
+    files = dict(_R6_VOID["analysis_plan_files"])
+    files[_PROBE_UNRECORDED] = "unchanged"
+    files.update(overrides)
+    return {"analysis_plan": {"files": files}}
+
+
+def _probe_plan(*, moved: bool = True, unrecorded_moved: bool = False) -> dict[str, Any]:
+    """A live plan in which the recorded files have, or have not, moved.
+
+    Derived from the record rather than naming a file, so adding a second
+    deliberate edit does not silently stop exercising these paths.
+    """
+    files = {
+        name: ("edited" if moved else digest)
+        for name, digest in _R6_VOID["analysis_plan_files"].items()
+    }
+    files[_PROBE_UNRECORDED] = "also edited" if unrecorded_moved else "unchanged"
+    return {"files": files}
+
+
+def test_the_analysis_plan_void_guard_accepts_exactly_the_recorded_change() -> None:
+    _assert_analysis_plan_lock_is_void(_probe_lock(), _probe_plan())
+
+
+def test_the_analysis_plan_void_guard_rejects_a_reverted_recorded_change() -> None:
+    """Reverting an edit expires that entry, so the record must drop it."""
+    with pytest.raises(AssertionError, match="does not match the r6 void record"):
+        _assert_analysis_plan_lock_is_void(_probe_lock(), _probe_plan(moved=False))
+
+
+def test_the_analysis_plan_void_guard_rejects_a_second_unrecorded_change() -> None:
+    with pytest.raises(AssertionError, match="does not match the r6 void record"):
+        _assert_analysis_plan_lock_is_void(
+            _probe_lock(), _probe_plan(unrecorded_moved=True)
+        )
+
+
+def test_the_analysis_plan_void_guard_rejects_an_unrecorded_change_alone() -> None:
+    with pytest.raises(AssertionError, match="does not match the r6 void record"):
+        _assert_analysis_plan_lock_is_void(
+            _probe_lock(), _probe_plan(moved=False, unrecorded_moved=True)
+        )
+
+
+def test_the_analysis_plan_void_guard_rejects_a_record_that_drifted_from_the_lock() -> None:
+    drifted = dict.fromkeys(_R6_VOID["analysis_plan_files"], "a digest the record does not know")
+    with pytest.raises(AssertionError, match="is not the one the lock carries"):
+        _assert_analysis_plan_lock_is_void(_probe_lock(**drifted), _probe_plan())
+
+
+def test_the_analysis_plan_void_guard_rejects_a_changed_file_set() -> None:
+    shrunk = _probe_plan()
+    shrunk["files"].pop(_PROBE_UNRECORDED)
+    with pytest.raises(AssertionError, match="analysis-plan file set itself changed"):
+        _assert_analysis_plan_lock_is_void(_probe_lock(), shrunk)
+
+
 def test_review_schemas_are_valid_and_accept_generated_draft_artifacts(
     tmp_path: Path,
 ) -> None:
@@ -2266,15 +2444,17 @@ def test_preregistration_lock_matches_live_source_tree_and_analysis_plan() -> No
     assert checked_in_preregistration["schema_sha256"] == sha256_file(
         preregistration_schema_path
     )
-    assert checked_in_preregistration["analysis_plan"] == analysis_plan_identity(
+    live_analysis_plan = analysis_plan_identity(
         {
             name: (ROOT / "corpus" / name).read_bytes()
             for name in PREREGISTRATION_ANALYSIS_PLAN_PATHS
         }
     )
-    assert checked_in_preregistration["adduce"]["source_tree_sha256"] == (
-        _source_tree_sha256(Path(adduce.__file__).resolve().parent)
-    )
+    # Two frozen inputs no longer match, both on purpose and both recorded: the
+    # analyzer digest, and one analysis-plan file. See _R6_VOID for the reason
+    # and the expiry condition. Every other frozen input is asserted equal.
+    _assert_analyzer_lock_is_void(checked_in_preregistration)
+    _assert_analysis_plan_lock_is_void(checked_in_preregistration, live_analysis_plan)
     assert checked_in_preregistration["adduce"]["builtin_rule_ids_sha256"] == (
         builtin_rule_ids_sha256(
             [rule.id for rule in discover_rules(include_plugins=False)]

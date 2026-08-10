@@ -26,6 +26,8 @@ _DATASET_URL_RE = re.compile(
     re.IGNORECASE,
 )
 _CHECKSUM_FILE_RE = re.compile(r"(sha256|sha512|md5|checksum)", re.IGNORECASE)
+#: Top-level directory names that hold committed datasets.
+DATA_DIRECTORY_NAMES = frozenset({"data", "datasets"})
 _LFS_POINTER_PREFIX = "version https://git-lfs.github.com/spec/v1"
 
 
@@ -45,6 +47,12 @@ class DataEvidence:
     dataset_urls: bool = False
     checksum_files: list[str] = field(default_factory=list)
     uses_hash_verification: bool = False
+    #: Lower-cased first path segment of every file that sits in a directory.
+    top_level_directories: set[str] = field(default_factory=set)
+    #: Lower-cased second segment under a top-level ``data``/``datasets``
+    #: directory. Carried here so a rule reads layout rather than re-deriving
+    #: it from the inventory inside ``evaluate``.
+    data_subdirectories: set[str] = field(default_factory=set)
 
     @property
     def untracked_binaries(self) -> list[LargeBinary]:
@@ -88,6 +96,13 @@ def collect_data(repo: Repo, python_imports: set[str] | None = None) -> DataEvid
     for entry in repo.files:
         rel = str(entry.path)
         name = entry.name
+
+        parts = entry.path.parts
+        if len(parts) > 1:
+            first = parts[0].lower()
+            evidence.top_level_directories.add(first)
+            if len(parts) > 2 and first in DATA_DIRECTORY_NAMES:
+                evidence.data_subdirectories.add(parts[1].lower())
 
         if name.endswith(".dvc") or name in {"dvc.yaml", "dvc.lock"} or rel.startswith(".dvc/"):
             evidence.uses_dvc = True

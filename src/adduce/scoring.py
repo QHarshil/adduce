@@ -37,12 +37,37 @@ class ScoreCard:
     findings: list[Finding]
     profile_name: str
     tier: str
+    #: Rules that reached a scoring verdict, against the rules considered.
+    #: Not-applicable and unknown findings count only in the denominator.
+    evaluated_rules: int = 0
+    considered_rules: int = 0
+    #: Physical lines across the source files the analyzer actually parsed.
+    #: The substance the score rests on, and the input to ``rated``.
+    analysable_lines: int = 0
+    #: Whether there was enough parsed source for a tier to mean anything.
+    rated: bool = True
+
+    @property
+    def coverage(self) -> float:
+        """Percentage of considered rules that reached a scoring verdict."""
+        if not self.considered_rules:
+            return 0.0
+        return 100.0 * self.evaluated_rules / self.considered_rules
 
     def to_dict(self) -> dict:
         return {
             "total": round(self.total, 1),
             "tier": self.tier,
             "profile": self.profile_name,
+            # Additive. Existing consumers keep working; a reader that wants to
+            # know how much the score rests on can now find out.
+            "evidence_base": {
+                "rated": self.rated,
+                "evaluated_rules": self.evaluated_rules,
+                "considered_rules": self.considered_rules,
+                "coverage_percent": round(self.coverage, 1),
+                "analysable_lines": self.analysable_lines,
+            },
             "categories": [
                 {
                     "category": c.category.value,
@@ -63,6 +88,26 @@ _TIERS: tuple[tuple[float, str], ...] = (
     (0.0, "Needs work"),
 )
 
+#: The tier reported when the repository carries too little parsed source for a
+#: tier to be a statement about anything.
+UNRATED_TIER = "Unrated (insufficient evidence)"
+
+#: Physical lines of parsed source below which no tier is assigned.
+#:
+#: Most rules are assertions about code. Given no code, the ones that look for a
+#: problem find none and pass, the ones that look for an artifact are satisfied
+#: by its bare presence, and the weighted average of those passes reads as a
+#: verdict. Measured on the corpus: a repository of plausible-looking but empty
+#: files reached 72/100 and the "Silver" tier on 10 lines, while the smallest
+#: real repository carries 1,220. Every value between 15 and 1,220 separates
+#: every case measured, so the exact number here is not load-bearing; it is an
+#: order of magnitude above the largest synthetic fixture and an order of
+#: magnitude below the smallest real repository.
+#:
+#: This is a floor on whether anything can be said, not a defence against
+#: deliberate gaming: padding a file defeats it, and is meant to.
+MINIMUM_ANALYSABLE_LINES = 100
+
 
 def tier_for(total: float) -> str:
     for threshold, name in _TIERS:
@@ -71,12 +116,24 @@ def tier_for(total: float) -> str:
     return "Needs work"
 
 
-def score(findings: list[Finding], profile: Profile) -> ScoreCard:
+def score(
+    findings: list[Finding],
+    profile: Profile,
+    *,
+    analysable_lines: int | None = None,
+) -> ScoreCard:
     """Aggregate findings into an explainable scorecard.
 
     Suppressed findings still appear in the report (marked as suppressed)
     and retain their observed score. Suppression records an accepted exception;
     it does not turn absent evidence into evidence.
+
+    ``analysable_lines`` is how much source the analyzer actually parsed. Below
+    ``MINIMUM_ANALYSABLE_LINES`` the score is still computed and reported, but no
+    tier is assigned: the number is real, and calling it Silver would be a claim
+    about a repository that has not shown enough to support one. Passing ``None``
+    leaves the card rated, so a caller that scores findings on their own — a
+    plugin, or a test — is unaffected.
     """
     by_category: dict[Category, list[Finding]] = {}
     for finding in findings:
@@ -110,12 +167,17 @@ def score(findings: list[Finding], profile: Profile) -> ScoreCard:
         weighted_possible += cat_weight
 
     total = 100.0 * weighted_earned / weighted_possible if weighted_possible else 0.0
+    rated = analysable_lines is None or analysable_lines >= MINIMUM_ANALYSABLE_LINES
     return ScoreCard(
         total=total,
         categories=categories,
         findings=findings,
         profile_name=profile.name,
-        tier=tier_for(total),
+        tier=tier_for(total) if rated else UNRATED_TIER,
+        evaluated_rules=sum(1 for f in findings if f.status.score_value is not None),
+        considered_rules=len(findings),
+        analysable_lines=analysable_lines or 0,
+        rated=rated,
     )
 
 
