@@ -55,6 +55,10 @@ corpus/reports/
 corpus/snapshots/
 corpus/derived/
 
+# Dev-set paper+code pairs (the pins in pairs.csv are tracked; the fetched
+# third-party clones, e-print sources, and PDFs are not)
+bench/dev/pairs/
+
 # Reviewer packets and in-progress review workspaces are local working artifacts that may
 # carry reviewer identifiers and expertise statements
 .review-packets/

@@ -117,6 +117,10 @@ ignore = ["E501"]
 
 [tool.mypy]
 python_version = "3.10"
+# The dev-set pairs tree holds fetched third-party clones. It is gitignored, so
+# it is absent in CI, but mypy does not consult .gitignore and would otherwise
+# type-check somebody else's repository on any machine that has fetched one.
+exclude = "^bench/dev/pairs/"
 warn_unused_ignores = true
 check_untyped_defs = true
 no_implicit_optional = true
