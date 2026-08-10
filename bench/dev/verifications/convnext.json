@@ -311,7 +311,7 @@
     "text": "Swin-T: AP^box = 46"
    },
    "verdict": "baseline",
-   "notes": "Table 3, Swin-T row, box_ap. Caption states IN-1K pretrained Swin results are from its GitHub repository and ResNet-50/X101 AP numbers are from its GitHub repository; quoted comparison figure."
+   "notes": "Table 3, Swin-T row, box_ap. Caption: \"ImageNet-1K pre-trained Swin results are from their Github repository\"; quoted comparison figure, no producer in this repository."
   },
   {
    "extraction": {
@@ -331,7 +331,7 @@
     "text": "ResNet-50: AP^box = 46.3"
    },
    "verdict": "baseline",
-   "notes": "Table 3, ResNet-50 row, box_ap. Caption states IN-1K pretrained Swin results are from its GitHub repository and ResNet-50/X101 AP numbers are from [45] (Swin paper); quoted comparison figure."
+   "notes": "Table 3, ResNet-50 row, box_ap. Caption: \"AP numbers of the ResNet-50 and X101 models are from [45]\"; quoted comparison figure, no producer in this repository."
   },
   {
    "extraction": {
@@ -341,7 +341,7 @@
     "text": "X101-32: AP^box = 48.1"
    },
    "verdict": "baseline",
-   "notes": "Table 3, X101-32 row, box_ap. Caption states IN-1K pretrained Swin results are from its GitHub repository and ResNet-50/X101 AP numbers are from [45] (Swin paper); quoted comparison figure."
+   "notes": "Table 3, X101-32 row, box_ap. Caption: \"AP numbers of the ResNet-50 and X101 models are from [45]\"; quoted comparison figure, no producer in this repository."
   },
   {
    "extraction": {
@@ -351,7 +351,7 @@
     "text": "X101-64: AP^box = 48.3"
    },
    "verdict": "baseline",
-   "notes": "Table 3, X101-64 row, box_ap. Caption states IN-1K pretrained Swin results are from its GitHub repository and ResNet-50/X101 AP numbers are from [45] (Swin paper); quoted comparison figure."
+   "notes": "Table 3, X101-64 row, box_ap. Caption: \"AP numbers of the ResNet-50 and X101 models are from [45]\"; quoted comparison figure, no producer in this repository."
   },
   {
    "extraction": {
@@ -441,7 +441,7 @@
     "text": "ResNet-50: AP^box_50 = 64.3"
    },
    "verdict": "baseline",
-   "notes": "Table 3, ResNet-50 row, box_ap50. Caption states IN-1K pretrained Swin results are from its GitHub repository and ResNet-50/X101 AP numbers are from [45] (Swin paper); quoted comparison figure."
+   "notes": "Table 3, ResNet-50 row, box_ap50. Caption: \"AP numbers of the ResNet-50 and X101 models are from [45]\"; quoted comparison figure, no producer in this repository."
   },
   {
    "extraction": {
@@ -451,7 +451,7 @@
     "text": "X101-64: AP^box_50 = 66.4"
    },
    "verdict": "baseline",
-   "notes": "Table 3, X101-64 row, box_ap50. Caption states IN-1K pretrained Swin results are from its GitHub repository and ResNet-50/X101 AP numbers are from [45] (Swin paper); quoted comparison figure."
+   "notes": "Table 3, X101-64 row, box_ap50. Caption: \"AP numbers of the ResNet-50 and X101 models are from [45]\"; quoted comparison figure, no producer in this repository."
   },
   {
    "extraction": {
@@ -461,7 +461,7 @@
     "text": "X101-32: AP^box_50 = 66.5"
    },
    "verdict": "baseline",
-   "notes": "Table 3, X101-32 row, box_ap50. Caption states IN-1K pretrained Swin results are from its GitHub repository and ResNet-50/X101 AP numbers are from [45] (Swin paper); quoted comparison figure."
+   "notes": "Table 3, X101-32 row, box_ap50. Caption: \"AP numbers of the ResNet-50 and X101 models are from [45]\"; quoted comparison figure, no producer in this repository."
   },
   {
    "extraction": {
@@ -481,7 +481,7 @@
     "text": "Swin-T: AP^box_50 = 68.1"
    },
    "verdict": "baseline",
-   "notes": "Table 3, Swin-T row, box_ap50. Caption states IN-1K pretrained Swin results are from its GitHub repository and ResNet-50/X101 AP numbers are from its GitHub repository; quoted comparison figure."
+   "notes": "Table 3, Swin-T row, box_ap50. Caption: \"ImageNet-1K pre-trained Swin results are from their Github repository\"; quoted comparison figure, no producer in this repository."
   },
   {
    "extraction": {
@@ -501,7 +501,7 @@
     "text": "0.3\n Swin-T: AP^box_50 = 69.2"
    },
    "verdict": "baseline",
-   "notes": "Table 3, Swin-T row, box_ap50. Caption states IN-1K pretrained Swin results are from its GitHub repository and ResNet-50/X101 AP numbers are from its GitHub repository; quoted comparison figure."
+   "notes": "Table 3, Swin-T row, box_ap50. Caption: \"ImageNet-1K pre-trained Swin results are from their Github repository\"; quoted comparison figure, no producer in this repository."
   },
   {
    "extraction": {
@@ -511,7 +511,7 @@
     "text": "Swin-B: AP^box_50 = 70.5"
    },
    "verdict": "baseline",
-   "notes": "Table 3, Swin-B row, box_ap50. Caption states IN-1K pretrained Swin results are from its GitHub repository and ResNet-50/X101 AP numbers are from its GitHub repository; quoted comparison figure."
+   "notes": "Table 3, Swin-B row, box_ap50. Caption: \"ImageNet-1K pre-trained Swin results are from their Github repository\"; quoted comparison figure, no producer in this repository."
   },
   {
    "extraction": {
@@ -521,7 +521,7 @@
     "text": "Swin-S: AP^box_50 = 70.7"
    },
    "verdict": "baseline",
-   "notes": "Table 3, Swin-S row, box_ap50. Caption states IN-1K pretrained Swin results are from its GitHub repository and ResNet-50/X101 AP numbers are from its GitHub repository; quoted comparison figure."
+   "notes": "Table 3, Swin-S row, box_ap50. Caption: \"ImageNet-1K pre-trained Swin results are from their Github repository\"; quoted comparison figure, no producer in this repository."
   },
   {
    "extraction": {
@@ -601,7 +601,7 @@
     "text": "Swin-T: AP^box_75 = 50.3"
    },
    "verdict": "baseline",
-   "notes": "Table 3, Swin-T row, box_ap75. Caption states IN-1K pretrained Swin results are from its GitHub repository and ResNet-50/X101 AP numbers are from its GitHub repository; quoted comparison figure."
+   "notes": "Table 3, Swin-T row, box_ap75. Caption: \"ImageNet-1K pre-trained Swin results are from their Github repository\"; quoted comparison figure, no producer in this repository."
   },
   {
    "extraction": {
@@ -611,7 +611,7 @@
     "text": "ResNet-50: AP^box_75 = 50.5"
    },
    "verdict": "baseline",
-   "notes": "Table 3, ResNet-50 row, box_ap75. Caption states IN-1K pretrained Swin results are from its GitHub repository and ResNet-50/X101 AP numbers are from [45] (Swin paper); quoted comparison figure."
+   "notes": "Table 3, ResNet-50 row, box_ap75. Caption: \"AP numbers of the ResNet-50 and X101 models are from [45]\"; quoted comparison figure, no producer in this repository."
   },
   {
    "extraction": {
@@ -631,7 +631,7 @@
     "text": "X101-64: AP^box_75 = 52.3"
    },
    "verdict": "baseline",
-   "notes": "Table 3, X101-64 row, box_ap75. Caption states IN-1K pretrained Swin results are from its GitHub repository and ResNet-50/X101 AP numbers are from [45] (Swin paper); quoted comparison figure."
+   "notes": "Table 3, X101-64 row, box_ap75. Caption: \"AP numbers of the ResNet-50 and X101 models are from [45]\"; quoted comparison figure, no producer in this repository."
   },
   {
    "extraction": {
@@ -641,7 +641,7 @@
     "text": "X101-32: AP^box_75 = 52.4"
    },
    "verdict": "baseline",
-   "notes": "Table 3, X101-32 row, box_ap75. Caption states IN-1K pretrained Swin results are from its GitHub repository and ResNet-50/X101 AP numbers are from [45] (Swin paper); quoted comparison figure."
+   "notes": "Table 3, X101-32 row, box_ap75. Caption: \"AP numbers of the ResNet-50 and X101 models are from [45]\"; quoted comparison figure, no producer in this repository."
   },
   {
    "extraction": {
@@ -651,7 +651,7 @@
     "text": "0.3\n Swin-T: AP^box_75 = 54.7"
    },
    "verdict": "baseline",
-   "notes": "Table 3, Swin-T row, box_ap75. Caption states IN-1K pretrained Swin results are from its GitHub repository and ResNet-50/X101 AP numbers are from its GitHub repository; quoted comparison figure."
+   "notes": "Table 3, Swin-T row, box_ap75. Caption: \"ImageNet-1K pre-trained Swin results are from their Github repository\"; quoted comparison figure, no producer in this repository."
   },
   {
    "extraction": {
@@ -671,7 +671,7 @@
     "text": "Swin-S: AP^box_75 = 56.3"
    },
    "verdict": "baseline",
-   "notes": "Table 3, Swin-S row, box_ap75. Caption states IN-1K pretrained Swin results are from its GitHub repository and ResNet-50/X101 AP numbers are from its GitHub repository; quoted comparison figure."
+   "notes": "Table 3, Swin-S row, box_ap75. Caption: \"ImageNet-1K pre-trained Swin results are from their Github repository\"; quoted comparison figure, no producer in this repository."
   },
   {
    "extraction": {
@@ -681,7 +681,7 @@
     "text": "Swin-B: AP^box_75 = 56.4"
    },
    "verdict": "baseline",
-   "notes": "Table 3, Swin-B row, box_ap75. Caption states IN-1K pretrained Swin results are from its GitHub repository and ResNet-50/X101 AP numbers are from its GitHub repository; quoted comparison figure."
+   "notes": "Table 3, Swin-B row, box_ap75. Caption: \"ImageNet-1K pre-trained Swin results are from their Github repository\"; quoted comparison figure, no producer in this repository."
   },
   {
    "extraction": {
@@ -891,7 +891,7 @@
     "text": "ResNet-50: AP^mask = 40.1"
    },
    "verdict": "baseline",
-   "notes": "Table 3, ResNet-50 row, mask_ap. Caption states IN-1K pretrained Swin results are from its GitHub repository and ResNet-50/X101 AP numbers are from [45] (Swin paper); quoted comparison figure."
+   "notes": "Table 3, ResNet-50 row, mask_ap. Caption: \"AP numbers of the ResNet-50 and X101 models are from [45]\"; quoted comparison figure, no producer in this repository."
   },
   {
    "extraction": {
@@ -901,7 +901,7 @@
     "text": "Swin-T: AP^mask = 41.6"
    },
    "verdict": "baseline",
-   "notes": "Table 3, Swin-T row, mask_ap. Caption states IN-1K pretrained Swin results are from its GitHub repository and ResNet-50/X101 AP numbers are from its GitHub repository; quoted comparison figure."
+   "notes": "Table 3, Swin-T row, mask_ap. Caption: \"ImageNet-1K pre-trained Swin results are from their Github repository\"; quoted comparison figure, no producer in this repository."
   },
   {
    "extraction": {
@@ -1001,7 +1001,7 @@
     "text": "ResNet-50: AP^mask_50 = 61.7"
    },
    "verdict": "baseline",
-   "notes": "Table 3, ResNet-50 row, mask_ap50. Caption states IN-1K pretrained Swin results are from its GitHub repository and ResNet-50/X101 AP numbers are from [45] (Swin paper); quoted comparison figure."
+   "notes": "Table 3, ResNet-50 row, mask_ap50. Caption: \"AP numbers of the ResNet-50 and X101 models are from [45]\"; quoted comparison figure, no producer in this repository."
   },
   {
    "extraction": {
@@ -1011,7 +1011,7 @@
     "text": "X101-32: AP^mask_50 = 63.9"
    },
    "verdict": "baseline",
-   "notes": "Table 3, X101-32 row, mask_ap50. Caption states IN-1K pretrained Swin results are from its GitHub repository and ResNet-50/X101 AP numbers are from [45] (Swin paper); quoted comparison figure."
+   "notes": "Table 3, X101-32 row, mask_ap50. Caption: \"AP numbers of the ResNet-50 and X101 models are from [45]\"; quoted comparison figure, no producer in this repository."
   },
   {
    "extraction": {
@@ -1021,7 +1021,7 @@
     "text": "X101-64: AP^mask_50 = 64"
    },
    "verdict": "baseline",
-   "notes": "Table 3, X101-64 row, mask_ap50. Caption states IN-1K pretrained Swin results are from its GitHub repository and ResNet-50/X101 AP numbers are from [45] (Swin paper); quoted comparison figure."
+   "notes": "Table 3, X101-64 row, mask_ap50. Caption: \"AP numbers of the ResNet-50 and X101 models are from [45]\"; quoted comparison figure, no producer in this repository."
   },
   {
    "extraction": {
@@ -1041,7 +1041,7 @@
     "text": "Swin-T: AP^mask_50 = 65.1"
    },
    "verdict": "baseline",
-   "notes": "Table 3, Swin-T row, mask_ap50. Caption states IN-1K pretrained Swin results are from its GitHub repository and ResNet-50/X101 AP numbers are from its GitHub repository; quoted comparison figure."
+   "notes": "Table 3, Swin-T row, mask_ap50. Caption: \"ImageNet-1K pre-trained Swin results are from their Github repository\"; quoted comparison figure, no producer in this repository."
   },
   {
    "extraction": {
@@ -1061,7 +1061,7 @@
     "text": "0.3\n Swin-T: AP^mask_50 = 66.6"
    },
    "verdict": "baseline",
-   "notes": "Table 3, Swin-T row, mask_ap50. Caption states IN-1K pretrained Swin results are from its GitHub repository and ResNet-50/X101 AP numbers are from its GitHub repository; quoted comparison figure."
+   "notes": "Table 3, Swin-T row, mask_ap50. Caption: \"ImageNet-1K pre-trained Swin results are from their Github repository\"; quoted comparison figure, no producer in this repository."
   },
   {
    "extraction": {
@@ -1071,7 +1071,7 @@
     "text": "Swin-B: AP^mask_50 = 68.1"
    },
    "verdict": "baseline",
-   "notes": "Table 3, Swin-B row, mask_ap50. Caption states IN-1K pretrained Swin results are from its GitHub repository and ResNet-50/X101 AP numbers are from its GitHub repository; quoted comparison figure."
+   "notes": "Table 3, Swin-B row, mask_ap50. Caption: \"ImageNet-1K pre-trained Swin results are from their Github repository\"; quoted comparison figure, no producer in this repository."
   },
   {
    "extraction": {
@@ -1081,7 +1081,7 @@
     "text": "Swin-S: AP^mask_50 = 68.2"
    },
    "verdict": "baseline",
-   "notes": "Table 3, Swin-S row, mask_ap50. Caption states IN-1K pretrained Swin results are from its GitHub repository and ResNet-50/X101 AP numbers are from its GitHub repository; quoted comparison figure."
+   "notes": "Table 3, Swin-S row, mask_ap50. Caption: \"ImageNet-1K pre-trained Swin results are from their Github repository\"; quoted comparison figure, no producer in this repository."
   },
   {
    "extraction": {
@@ -1161,7 +1161,7 @@
     "text": "ResNet-50: AP^mask_75 = 43.4"
    },
    "verdict": "baseline",
-   "notes": "Table 3, ResNet-50 row, mask_ap75. Caption states IN-1K pretrained Swin results are from its GitHub repository and ResNet-50/X101 AP numbers are from [45] (Swin paper); quoted comparison figure."
+   "notes": "Table 3, ResNet-50 row, mask_ap75. Caption: \"AP numbers of the ResNet-50 and X101 models are from [45]\"; quoted comparison figure, no producer in this repository."
   },
   {
    "extraction": {
@@ -1181,7 +1181,7 @@
     "text": "X101-64: AP^mask_75 = 45.1"
    },
    "verdict": "baseline",
-   "notes": "Table 3, X101-64 row, mask_ap75. Caption states IN-1K pretrained Swin results are from its GitHub repository and ResNet-50/X101 AP numbers are from [45] (Swin paper); quoted comparison figure."
+   "notes": "Table 3, X101-64 row, mask_ap75. Caption: \"AP numbers of the ResNet-50 and X101 models are from [45]\"; quoted comparison figure, no producer in this repository."
   },
   {
    "extraction": {
@@ -1191,7 +1191,7 @@
     "text": "X101-32: AP^mask_75 = 45.2"
    },
    "verdict": "baseline",
-   "notes": "Table 3, X101-32 row, mask_ap75. Caption states IN-1K pretrained Swin results are from its GitHub repository and ResNet-50/X101 AP numbers are from [45] (Swin paper); quoted comparison figure."
+   "notes": "Table 3, X101-32 row, mask_ap75. Caption: \"AP numbers of the ResNet-50 and X101 models are from [45]\"; quoted comparison figure, no producer in this repository."
   },
   {
    "extraction": {
@@ -1211,7 +1211,7 @@
     "text": "Swin-S: AP^mask_75 = 48.8"
    },
    "verdict": "baseline",
-   "notes": "Table 3, Swin-S row, mask_ap75. Caption states IN-1K pretrained Swin results are from its GitHub repository and ResNet-50/X101 AP numbers are from its GitHub repository; quoted comparison figure."
+   "notes": "Table 3, Swin-S row, mask_ap75. Caption: \"ImageNet-1K pre-trained Swin results are from their Github repository\"; quoted comparison figure, no producer in this repository."
   },
   {
    "extraction": {
@@ -1221,7 +1221,7 @@
     "text": "Swin-B: AP^mask_75 = 48.9"
    },
    "verdict": "baseline",
-   "notes": "Table 3, Swin-B row, mask_ap75. Caption states IN-1K pretrained Swin results are from its GitHub repository and ResNet-50/X101 AP numbers are from its GitHub repository; quoted comparison figure."
+   "notes": "Table 3, Swin-B row, mask_ap75. Caption: \"ImageNet-1K pre-trained Swin results are from their Github repository\"; quoted comparison figure, no producer in this repository."
   },
   {
    "extraction": {
@@ -1356,6 +1356,16 @@
   {
    "extraction": {
     "metric": "-t/s/b/l",
+    "value": 0.1,
+    "where": "src/main.tex:564",
+    "text": "label smoothing Szegedy2016a: -T/S/B/L = 0.1"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Table 5 (ImageNet-1K/22K (pre-)training settings), \"label smoothing Szegedy2016a\" row. Training configuration value, not a reported result."
+  },
+  {
+   "extraction": {
+    "metric": "-t/s/b/l",
     "value": 0.25,
     "where": "src/main.tex:564",
     "text": "random erasing Zhong2020: -T/S/B/L = 0.25"
@@ -1382,6 +1392,16 @@
    },
    "verdict": "hyperparameter",
    "notes": "Table 5 (ImageNet-1K/22K (pre-)training settings), \"exp. mov. avg. (EMA) Polyak1992\" row. Training configuration value, not a reported result."
+  },
+  {
+   "extraction": {
+    "metric": "-t/s/b/l",
+    "value": 1.0,
+    "where": "src/main.tex:564",
+    "text": "cutmix Yun2019: -T/S/B/L = 1"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Table 5 (ImageNet-1K/22K (pre-)training settings), \"cutmix Yun2019\" row. Training configuration value, not a reported result."
   },
   {
    "extraction": {
@@ -1422,6 +1442,16 @@
    },
    "verdict": "hyperparameter",
    "notes": "Table 5 (ImageNet-1K/22K (pre-)training settings), \"weight decay\" row. Training configuration value, not a reported result."
+  },
+  {
+   "extraction": {
+    "metric": "-t/s/b/l/xl",
+    "value": 0.1,
+    "where": "src/main.tex:564",
+    "text": "label smoothing Szegedy2016a: -T/S/B/L/XL = 0.1"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Table 5 (ImageNet-1K/22K (pre-)training settings), \"label smoothing Szegedy2016a\" row. Training configuration value, not a reported result."
   },
   {
    "extraction": {
@@ -2206,6 +2236,16 @@
   {
    "extraction": {
     "metric": "gflops",
+    "value": 4.1,
+    "where": "src/main.tex:805",
+    "text": "kernel size  5: GFLOPs = 4.1"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 10 (detailed ResNet-50 modernization results), \"kernel size →5\" row, GFLOPs. Own roadmap experiment's model spec."
+  },
+  {
+   "extraction": {
+    "metric": "gflops",
     "value": 4.15,
     "where": "src/main.tex:805",
     "text": "ReLU  GELU: GFLOPs = 4.15"
@@ -2262,6 +2302,16 @@
    },
    "verdict": "real_own_result",
    "notes": "Table 10 (detailed ResNet-50 modernization results), \"separate d.s. conv (ConvNeXt-T)\" row, GFLOPs. Own roadmap experiment's model spec."
+  },
+  {
+   "extraction": {
+    "metric": "gflops",
+    "value": 4.5,
+    "where": "src/main.tex:805",
+    "text": "Swin-T Liu2021swin: GFLOPs = 4.5"
+   },
+   "verdict": "baseline",
+   "notes": "Table 10 (detailed ResNet-50 modernization results), \"Swin-T\" row, GFLOPs. Quoted/reference architecture spec, not an own experimental result."
   },
   {
    "extraction": {
@@ -2372,6 +2422,16 @@
    },
    "verdict": "real_own_result",
    "notes": "Table 11 (detailed ResNet-200 modernization results), \"kernel size →9\" row, IN-1K acc. Own roadmap experiment."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 82.3,
+    "where": "src/main.tex:841",
+    "text": "kernel size  7: IN-1K acc. = 82.3"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 11 (detailed ResNet-200 modernization results), \"kernel size →7\" row, IN-1K acc. Own roadmap experiment."
   },
   {
    "extraction": {
