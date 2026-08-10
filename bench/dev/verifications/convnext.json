@@ -1,0 +1,2577 @@
+{
+ "schema": "adduce-dev-verifications/1",
+ "pair_id": "convnext",
+ "verified_from": "pdf",
+ "verifications": [
+  {
+   "extraction": {
+    "metric": "map",
+    "value": 41.7,
+    "where": "object_detection/README.md:12",
+    "text": "ConvNeXt-T: mask mAP = 41.7"
+   },
+   "verdict": "real_own_result",
+   "notes": "Repository README states this (README table caption: box/mask mAP), and the paper also states the identical number for the same model/setting: Table 3, ConvNeXt-T row (Mask-RCNN 3x, IN-1K), AP^mask. Own result either way, so real_own_result rather than in_repo_not_paper."
+  },
+  {
+   "extraction": {
+    "metric": "map",
+    "value": 46.2,
+    "where": "object_detection/README.md:12",
+    "text": "ConvNeXt-T: box mAP = 46.2"
+   },
+   "verdict": "real_own_result",
+   "notes": "Repository README states this (README table caption: box/mask mAP), and the paper also states the identical number for the same model/setting: Table 3, ConvNeXt-T row (Mask-RCNN 3x, IN-1K), AP^box. Own result either way, so real_own_result rather than in_repo_not_paper."
+  },
+  {
+   "extraction": {
+    "metric": "map",
+    "value": 43.7,
+    "where": "object_detection/README.md:13",
+    "text": "ConvNeXt-T: mask mAP = 43.7"
+   },
+   "verdict": "real_own_result",
+   "notes": "Repository README states this (README table caption: box/mask mAP), and the paper also states the identical number for the same model/setting: Table 3, ConvNeXt-T row (Cascade Mask-RCNN 3x, IN-1K), AP^mask. Own result either way, so real_own_result rather than in_repo_not_paper."
+  },
+  {
+   "extraction": {
+    "metric": "map",
+    "value": 50.4,
+    "where": "object_detection/README.md:13",
+    "text": "ConvNeXt-T: box mAP = 50.4"
+   },
+   "verdict": "real_own_result",
+   "notes": "Repository README states this (README table caption: box/mask mAP), and the paper also states the identical number for the same model/setting: Table 3, ConvNeXt-T row (Cascade Mask-RCNN 3x, IN-1K), AP^box. Own result either way, so real_own_result rather than in_repo_not_paper."
+  },
+  {
+   "extraction": {
+    "metric": "map",
+    "value": 45.0,
+    "where": "object_detection/README.md:14",
+    "text": "ConvNeXt-S: mask mAP = 45"
+   },
+   "verdict": "real_own_result",
+   "notes": "Repository README states this (README table caption: box/mask mAP), and the paper also states the identical number for the same model/setting: Table 3, ConvNeXt-S row (Cascade Mask-RCNN 3x, IN-1K), AP^mask. Own result either way, so real_own_result rather than in_repo_not_paper."
+  },
+  {
+   "extraction": {
+    "metric": "map",
+    "value": 51.9,
+    "where": "object_detection/README.md:14",
+    "text": "ConvNeXt-S: box mAP = 51.9"
+   },
+   "verdict": "real_own_result",
+   "notes": "Repository README states this (README table caption: box/mask mAP), and the paper also states the identical number for the same model/setting: Table 3, ConvNeXt-S row (Cascade Mask-RCNN 3x, IN-1K), AP^box. Own result either way, so real_own_result rather than in_repo_not_paper."
+  },
+  {
+   "extraction": {
+    "metric": "map",
+    "value": 45.6,
+    "where": "object_detection/README.md:15",
+    "text": "ConvNeXt-B: mask mAP = 45.6"
+   },
+   "verdict": "real_own_result",
+   "notes": "Repository README states this (README table caption: box/mask mAP), and the paper also states the identical number for the same model/setting: Table 3, ConvNeXt-B row (Cascade Mask-RCNN 3x, IN-1K), AP^mask. Own result either way, so real_own_result rather than in_repo_not_paper."
+  },
+  {
+   "extraction": {
+    "metric": "map",
+    "value": 52.7,
+    "where": "object_detection/README.md:15",
+    "text": "ConvNeXt-B: box mAP = 52.7"
+   },
+   "verdict": "real_own_result",
+   "notes": "Repository README states this (README table caption: box/mask mAP), and the paper also states the identical number for the same model/setting: Table 3, ConvNeXt-B row (Cascade Mask-RCNN 3x, IN-1K), AP^box. Own result either way, so real_own_result rather than in_repo_not_paper."
+  },
+  {
+   "extraction": {
+    "metric": "map",
+    "value": 46.9,
+    "where": "object_detection/README.md:16",
+    "text": "ConvNeXt-B: mask mAP = 46.9"
+   },
+   "verdict": "real_own_result",
+   "notes": "Repository README states this (README table caption: box/mask mAP), and the paper also states the identical number for the same model/setting: Table 3, ConvNeXt-B‡ row (Cascade Mask-RCNN 3x, IN-22K), AP^mask. Own result either way, so real_own_result rather than in_repo_not_paper."
+  },
+  {
+   "extraction": {
+    "metric": "map",
+    "value": 54.0,
+    "where": "object_detection/README.md:16",
+    "text": "ConvNeXt-B: box mAP = 54"
+   },
+   "verdict": "real_own_result",
+   "notes": "Repository README states this (README table caption: box/mask mAP), and the paper also states the identical number for the same model/setting: Table 3, ConvNeXt-B‡ row (Cascade Mask-RCNN 3x, IN-22K), AP^box. Own result either way, so real_own_result rather than in_repo_not_paper."
+  },
+  {
+   "extraction": {
+    "metric": "map",
+    "value": 47.6,
+    "where": "object_detection/README.md:17",
+    "text": "ConvNeXt-L: mask mAP = 47.6"
+   },
+   "verdict": "real_own_result",
+   "notes": "Repository README states this (README table caption: box/mask mAP), and the paper also states the identical number for the same model/setting: Table 3, ConvNeXt-L‡ row (Cascade Mask-RCNN 3x, IN-22K), AP^mask. Own result either way, so real_own_result rather than in_repo_not_paper."
+  },
+  {
+   "extraction": {
+    "metric": "map",
+    "value": 54.8,
+    "where": "object_detection/README.md:17",
+    "text": "ConvNeXt-L: box mAP = 54.8"
+   },
+   "verdict": "real_own_result",
+   "notes": "Repository README states this (README table caption: box/mask mAP), and the paper also states the identical number for the same model/setting: Table 3, ConvNeXt-L‡ row (Cascade Mask-RCNN 3x, IN-22K), AP^box. Own result either way, so real_own_result rather than in_repo_not_paper."
+  },
+  {
+   "extraction": {
+    "metric": "map",
+    "value": 47.7,
+    "where": "object_detection/README.md:18",
+    "text": "ConvNeXt-XL: mask mAP = 47.7"
+   },
+   "verdict": "real_own_result",
+   "notes": "Repository README states this (README table caption: box/mask mAP), and the paper also states the identical number for the same model/setting: Table 3, ConvNeXt-XL‡ row (Cascade Mask-RCNN 3x, IN-22K), AP^mask. Own result either way, so real_own_result rather than in_repo_not_paper."
+  },
+  {
+   "extraction": {
+    "metric": "map",
+    "value": 55.2,
+    "where": "object_detection/README.md:18",
+    "text": "ConvNeXt-XL: box mAP = 55.2"
+   },
+   "verdict": "real_own_result",
+   "notes": "Repository README states this (README table caption: box/mask mAP), and the paper also states the identical number for the same model/setting: Table 3, ConvNeXt-XL‡ row (Cascade Mask-RCNN 3x, IN-22K), AP^box. Own result either way, so real_own_result rather than in_repo_not_paper."
+  },
+  {
+   "extraction": {
+    "metric": "iou",
+    "value": 46.0,
+    "where": "semantic_segmentation/README.md:18",
+    "text": "-T: mIoU = 46"
+   },
+   "verdict": "real_own_result",
+   "notes": "Repository README states this mIoU, and the paper also states the identical number for the same model/setting: Table 7 (single-scale ADE20K), ConvNeXt-T row, mIoU. Own result either way, so real_own_result rather than in_repo_not_paper."
+  },
+  {
+   "extraction": {
+    "metric": "iou",
+    "value": 46.7,
+    "where": "semantic_segmentation/README.md:18",
+    "text": "-T: mIoU = 46.7"
+   },
+   "verdict": "real_own_result",
+   "notes": "Repository README states this mIoU, and the paper also states the identical number for the same model/setting: Table 4 (multi-scale ADE20K), ConvNeXt-T row, mIoU. Own result either way, so real_own_result rather than in_repo_not_paper."
+  },
+  {
+   "extraction": {
+    "metric": "iou",
+    "value": 48.7,
+    "where": "semantic_segmentation/README.md:19",
+    "text": "-S: mIoU = 48.7"
+   },
+   "verdict": "real_own_result",
+   "notes": "Repository README states this mIoU, and the paper also states the identical number for the same model/setting: Table 7 (single-scale ADE20K), ConvNeXt-S row, mIoU. Own result either way, so real_own_result rather than in_repo_not_paper."
+  },
+  {
+   "extraction": {
+    "metric": "iou",
+    "value": 49.6,
+    "where": "semantic_segmentation/README.md:19",
+    "text": "-S: mIoU = 49.6"
+   },
+   "verdict": "real_own_result",
+   "notes": "Repository README states this mIoU, and the paper also states the identical number for the same model/setting: Table 4 (multi-scale ADE20K), ConvNeXt-S row, mIoU. Own result either way, so real_own_result rather than in_repo_not_paper."
+  },
+  {
+   "extraction": {
+    "metric": "iou",
+    "value": 49.1,
+    "where": "semantic_segmentation/README.md:20",
+    "text": "-B: mIoU = 49.1"
+   },
+   "verdict": "real_own_result",
+   "notes": "Repository README states this mIoU, and the paper also states the identical number for the same model/setting: Table 7 (single-scale ADE20K), ConvNeXt-B row, mIoU. Own result either way, so real_own_result rather than in_repo_not_paper."
+  },
+  {
+   "extraction": {
+    "metric": "iou",
+    "value": 49.9,
+    "where": "semantic_segmentation/README.md:20",
+    "text": "-B: mIoU = 49.9"
+   },
+   "verdict": "real_own_result",
+   "notes": "Repository README states this mIoU, and the paper also states the identical number for the same model/setting: Table 4 (multi-scale ADE20K), ConvNeXt-B row, mIoU. Own result either way, so real_own_result rather than in_repo_not_paper."
+  },
+  {
+   "extraction": {
+    "metric": "iou",
+    "value": 52.6,
+    "where": "semantic_segmentation/README.md:21",
+    "text": "-B^: mIoU = 52.6"
+   },
+   "verdict": "real_own_result",
+   "notes": "Repository README states this mIoU, and the paper also states the identical number for the same model/setting: Table 7 (single-scale ADE20K), ConvNeXt-B‡ row, mIoU. Own result either way, so real_own_result rather than in_repo_not_paper."
+  },
+  {
+   "extraction": {
+    "metric": "iou",
+    "value": 53.1,
+    "where": "semantic_segmentation/README.md:21",
+    "text": "-B^: mIoU = 53.1"
+   },
+   "verdict": "real_own_result",
+   "notes": "Repository README states this mIoU, and the paper also states the identical number for the same model/setting: Table 4 (multi-scale ADE20K), ConvNeXt-B‡ row, mIoU. Own result either way, so real_own_result rather than in_repo_not_paper."
+  },
+  {
+   "extraction": {
+    "metric": "iou",
+    "value": 53.2,
+    "where": "semantic_segmentation/README.md:22",
+    "text": "-L^: mIoU = 53.2"
+   },
+   "verdict": "real_own_result",
+   "notes": "Repository README states this mIoU, and the paper also states the identical number for the same model/setting: Table 7 (single-scale ADE20K), ConvNeXt-L‡ row, mIoU. Own result either way, so real_own_result rather than in_repo_not_paper."
+  },
+  {
+   "extraction": {
+    "metric": "iou",
+    "value": 53.7,
+    "where": "semantic_segmentation/README.md:22",
+    "text": "-L^: mIoU = 53.7"
+   },
+   "verdict": "real_own_result",
+   "notes": "Repository README states this mIoU, and the paper also states the identical number for the same model/setting: Table 4 (multi-scale ADE20K), ConvNeXt-L‡ row, mIoU. Own result either way, so real_own_result rather than in_repo_not_paper."
+  },
+  {
+   "extraction": {
+    "metric": "iou",
+    "value": 53.6,
+    "where": "semantic_segmentation/README.md:23",
+    "text": "-XL^: mIoU = 53.6"
+   },
+   "verdict": "real_own_result",
+   "notes": "Repository README states this mIoU, and the paper also states the identical number for the same model/setting: Table 7 (single-scale ADE20K), ConvNeXt-XL‡ row, mIoU. Own result either way, so real_own_result rather than in_repo_not_paper."
+  },
+  {
+   "extraction": {
+    "metric": "iou",
+    "value": 54.0,
+    "where": "semantic_segmentation/README.md:23",
+    "text": "-XL^: mIoU = 54"
+   },
+   "verdict": "real_own_result",
+   "notes": "Repository README states this mIoU, and the paper also states the identical number for the same model/setting: Table 4 (multi-scale ADE20K), ConvNeXt-XL‡ row, mIoU. Own result either way, so real_own_result rather than in_repo_not_paper."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 78.8,
+    "where": "src/main.tex:170",
+    "text": "accuracy from 78.8"
+   },
+   "verdict": "real_own_result",
+   "notes": "Sec 2.2 Macro Design / Table 10: \"This improves the model accuracy from 78.8% to 79.4%.\" 78.8% is the enhanced-recipe ResNet-50 baseline (Table 10, 78.82 ± 0.07) that the modernization roadmap starts from -- the authors' own trained baseline."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 81.5,
+    "where": "src/main.tex:249",
+    "text": "accuracy of 81.5"
+   },
+   "verdict": "real_own_result",
+   "notes": "Sec 2.6 Micro Design, \"Substituting BN with LN\": \"obtaining an accuracy of 81.5%.\" Matches Table 10's BN→LN roadmap step (81.47 ± 0.09). Own roadmap experiment."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 82.04,
+    "where": "src/main.tex:257",
+    "text": "accuracy to 82.0"
+   },
+   "verdict": "real_own_result",
+   "notes": "Text at this location reads \"We can improve the accuracy to 82.0%\" (Sec 2.6, separate-downsampling step, itself an own result matching Table 10's ConvNeXt-T row 81.97). The captured value 82.04 does not equal the printed 82.0 here -- it is Table 11's (main.tex:853) 'move up depthwise conv' ResNet-200-regime accuracy, misbound to this location's text. 82.04 is nonetheless a real number the paper reports (Table 11) and is itself the authors' own roadmap result, so it is judged on that (metric, value) pair rather than on the mismatched location, per the same principle used for barlowtwins' places-205=54.1 case."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 87.8,
+    "where": "src/main.tex:402",
+    "text": "accuracy of 87.8"
+   },
+   "verdict": "real_own_result",
+   "notes": "Sec 3.2 ImageNet-22K: \"our ConvNeXt-XL model achieves an accuracy of 87.8%\" -- matches Table 1 and the abstract. The paper's own result."
+  },
+  {
+   "extraction": {
+    "metric": "box_ap",
+    "value": 46.0,
+    "where": "src/main.tex:449",
+    "text": "Swin-T: AP^box = 46"
+   },
+   "verdict": "baseline",
+   "notes": "Table 3, Swin-T row, box_ap. Caption states IN-1K pretrained Swin results are from its GitHub repository and ResNet-50/X101 AP numbers are from its GitHub repository; quoted comparison figure."
+  },
+  {
+   "extraction": {
+    "metric": "box_ap",
+    "value": 46.2,
+    "where": "src/main.tex:449",
+    "text": "-T: AP^box = 46.2"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 3, ConvNeXt-T row, box_ap. The paper's own COCO detection/segmentation result."
+  },
+  {
+   "extraction": {
+    "metric": "box_ap",
+    "value": 46.3,
+    "where": "src/main.tex:449",
+    "text": "ResNet-50: AP^box = 46.3"
+   },
+   "verdict": "baseline",
+   "notes": "Table 3, ResNet-50 row, box_ap. Caption states IN-1K pretrained Swin results are from its GitHub repository and ResNet-50/X101 AP numbers are from [45] (Swin paper); quoted comparison figure."
+  },
+  {
+   "extraction": {
+    "metric": "box_ap",
+    "value": 48.1,
+    "where": "src/main.tex:449",
+    "text": "X101-32: AP^box = 48.1"
+   },
+   "verdict": "baseline",
+   "notes": "Table 3, X101-32 row, box_ap. Caption states IN-1K pretrained Swin results are from its GitHub repository and ResNet-50/X101 AP numbers are from [45] (Swin paper); quoted comparison figure."
+  },
+  {
+   "extraction": {
+    "metric": "box_ap",
+    "value": 48.3,
+    "where": "src/main.tex:449",
+    "text": "X101-64: AP^box = 48.3"
+   },
+   "verdict": "baseline",
+   "notes": "Table 3, X101-64 row, box_ap. Caption states IN-1K pretrained Swin results are from its GitHub repository and ResNet-50/X101 AP numbers are from [45] (Swin paper); quoted comparison figure."
+  },
+  {
+   "extraction": {
+    "metric": "box_ap",
+    "value": 50.4,
+    "where": "src/main.tex:449",
+    "text": "-T: AP^box = 50.4"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 3, ConvNeXt-T row, box_ap. The paper's own COCO detection/segmentation result."
+  },
+  {
+   "extraction": {
+    "metric": "box_ap",
+    "value": 51.9,
+    "where": "src/main.tex:449",
+    "text": "-S: AP^box = 51.9"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 3, ConvNeXt-S row, box_ap. The paper's own COCO detection/segmentation result."
+  },
+  {
+   "extraction": {
+    "metric": "box_ap",
+    "value": 52.7,
+    "where": "src/main.tex:449",
+    "text": "-B: AP^box = 52.7"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 3, ConvNeXt-B row, box_ap. The paper's own COCO detection/segmentation result."
+  },
+  {
+   "extraction": {
+    "metric": "box_ap",
+    "value": 53.0,
+    "where": "src/main.tex:449",
+    "text": "0.3\n Swin-B^: AP^box = 53"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 3, Swin-B‡ row, box_ap. Appendix A.3: \"We fine-tune the ImageNet-22K pre-trained Swin-B/L on COCO using the same sweep... official code and pre-trained model weights\" -- this is the authors' own rerun/fine-tuning of Swin on COCO, not a number quoted from the Swin paper or repository, so it counts as an own result."
+  },
+  {
+   "extraction": {
+    "metric": "box_ap",
+    "value": 53.9,
+    "where": "src/main.tex:449",
+    "text": "Swin-L^: AP^box = 53.9"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 3, Swin-L‡ row, box_ap. Appendix A.3: \"We fine-tune the ImageNet-22K pre-trained Swin-B/L on COCO using the same sweep... official code and pre-trained model weights\" -- this is the authors' own rerun/fine-tuning of Swin on COCO, not a number quoted from the Swin paper or repository, so it counts as an own result."
+  },
+  {
+   "extraction": {
+    "metric": "box_ap",
+    "value": 54.0,
+    "where": "src/main.tex:449",
+    "text": "-B^: AP^box = 54"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 3, ConvNeXt-B‡ row, box_ap. The paper's own COCO detection/segmentation result."
+  },
+  {
+   "extraction": {
+    "metric": "box_ap",
+    "value": 54.8,
+    "where": "src/main.tex:449",
+    "text": "-L^: AP^box = 54.8"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 3, ConvNeXt-L‡ row, box_ap. The paper's own COCO detection/segmentation result."
+  },
+  {
+   "extraction": {
+    "metric": "box_ap",
+    "value": 55.2,
+    "where": "src/main.tex:449",
+    "text": "-XL^: AP^box = 55.2"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 3, ConvNeXt-XL‡ row, box_ap. The paper's own COCO detection/segmentation result."
+  },
+  {
+   "extraction": {
+    "metric": "box_ap50",
+    "value": 64.3,
+    "where": "src/main.tex:449",
+    "text": "ResNet-50: AP^box_50 = 64.3"
+   },
+   "verdict": "baseline",
+   "notes": "Table 3, ResNet-50 row, box_ap50. Caption states IN-1K pretrained Swin results are from its GitHub repository and ResNet-50/X101 AP numbers are from [45] (Swin paper); quoted comparison figure."
+  },
+  {
+   "extraction": {
+    "metric": "box_ap50",
+    "value": 66.4,
+    "where": "src/main.tex:449",
+    "text": "X101-64: AP^box_50 = 66.4"
+   },
+   "verdict": "baseline",
+   "notes": "Table 3, X101-64 row, box_ap50. Caption states IN-1K pretrained Swin results are from its GitHub repository and ResNet-50/X101 AP numbers are from [45] (Swin paper); quoted comparison figure."
+  },
+  {
+   "extraction": {
+    "metric": "box_ap50",
+    "value": 66.5,
+    "where": "src/main.tex:449",
+    "text": "X101-32: AP^box_50 = 66.5"
+   },
+   "verdict": "baseline",
+   "notes": "Table 3, X101-32 row, box_ap50. Caption states IN-1K pretrained Swin results are from its GitHub repository and ResNet-50/X101 AP numbers are from [45] (Swin paper); quoted comparison figure."
+  },
+  {
+   "extraction": {
+    "metric": "box_ap50",
+    "value": 67.9,
+    "where": "src/main.tex:449",
+    "text": "-T: AP^box_50 = 67.9"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 3, ConvNeXt-T row, box_ap50. The paper's own COCO detection/segmentation result."
+  },
+  {
+   "extraction": {
+    "metric": "box_ap50",
+    "value": 68.1,
+    "where": "src/main.tex:449",
+    "text": "Swin-T: AP^box_50 = 68.1"
+   },
+   "verdict": "baseline",
+   "notes": "Table 3, Swin-T row, box_ap50. Caption states IN-1K pretrained Swin results are from its GitHub repository and ResNet-50/X101 AP numbers are from its GitHub repository; quoted comparison figure."
+  },
+  {
+   "extraction": {
+    "metric": "box_ap50",
+    "value": 69.1,
+    "where": "src/main.tex:449",
+    "text": "-T: AP^box_50 = 69.1"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 3, ConvNeXt-T row, box_ap50. The paper's own COCO detection/segmentation result."
+  },
+  {
+   "extraction": {
+    "metric": "box_ap50",
+    "value": 69.2,
+    "where": "src/main.tex:449",
+    "text": "0.3\n Swin-T: AP^box_50 = 69.2"
+   },
+   "verdict": "baseline",
+   "notes": "Table 3, Swin-T row, box_ap50. Caption states IN-1K pretrained Swin results are from its GitHub repository and ResNet-50/X101 AP numbers are from its GitHub repository; quoted comparison figure."
+  },
+  {
+   "extraction": {
+    "metric": "box_ap50",
+    "value": 70.5,
+    "where": "src/main.tex:449",
+    "text": "Swin-B: AP^box_50 = 70.5"
+   },
+   "verdict": "baseline",
+   "notes": "Table 3, Swin-B row, box_ap50. Caption states IN-1K pretrained Swin results are from its GitHub repository and ResNet-50/X101 AP numbers are from its GitHub repository; quoted comparison figure."
+  },
+  {
+   "extraction": {
+    "metric": "box_ap50",
+    "value": 70.7,
+    "where": "src/main.tex:449",
+    "text": "Swin-S: AP^box_50 = 70.7"
+   },
+   "verdict": "baseline",
+   "notes": "Table 3, Swin-S row, box_ap50. Caption states IN-1K pretrained Swin results are from its GitHub repository and ResNet-50/X101 AP numbers are from its GitHub repository; quoted comparison figure."
+  },
+  {
+   "extraction": {
+    "metric": "box_ap50",
+    "value": 70.8,
+    "where": "src/main.tex:449",
+    "text": "-S: AP^box_50 = 70.8"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 3, ConvNeXt-S row, box_ap50. The paper's own COCO detection/segmentation result."
+  },
+  {
+   "extraction": {
+    "metric": "box_ap50",
+    "value": 71.3,
+    "where": "src/main.tex:449",
+    "text": "-B: AP^box_50 = 71.3"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 3, ConvNeXt-B row, box_ap50. The paper's own COCO detection/segmentation result."
+  },
+  {
+   "extraction": {
+    "metric": "box_ap50",
+    "value": 71.8,
+    "where": "src/main.tex:449",
+    "text": "0.3\n Swin-B^: AP^box_50 = 71.8"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 3, Swin-B‡ row, box_ap50. Appendix A.3: \"We fine-tune the ImageNet-22K pre-trained Swin-B/L on COCO using the same sweep... official code and pre-trained model weights\" -- this is the authors' own rerun/fine-tuning of Swin on COCO, not a number quoted from the Swin paper or repository, so it counts as an own result."
+  },
+  {
+   "extraction": {
+    "metric": "box_ap50",
+    "value": 72.4,
+    "where": "src/main.tex:449",
+    "text": "Swin-L^: AP^box_50 = 72.4"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 3, Swin-L‡ row, box_ap50. Appendix A.3: \"We fine-tune the ImageNet-22K pre-trained Swin-B/L on COCO using the same sweep... official code and pre-trained model weights\" -- this is the authors' own rerun/fine-tuning of Swin on COCO, not a number quoted from the Swin paper or repository, so it counts as an own result."
+  },
+  {
+   "extraction": {
+    "metric": "box_ap50",
+    "value": 73.1,
+    "where": "src/main.tex:449",
+    "text": "-B^: AP^box_50 = 73.1"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 3, ConvNeXt-B‡ row, box_ap50. The paper's own COCO detection/segmentation result."
+  },
+  {
+   "extraction": {
+    "metric": "box_ap50",
+    "value": 73.8,
+    "where": "src/main.tex:449",
+    "text": "-L^: AP^box_50 = 73.8"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 3, ConvNeXt-L‡ row, box_ap50. The paper's own COCO detection/segmentation result."
+  },
+  {
+   "extraction": {
+    "metric": "box_ap50",
+    "value": 74.2,
+    "where": "src/main.tex:449",
+    "text": "-XL^: AP^box_50 = 74.2"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 3, ConvNeXt-XL‡ row, box_ap50. The paper's own COCO detection/segmentation result."
+  },
+  {
+   "extraction": {
+    "metric": "box_ap75",
+    "value": 50.3,
+    "where": "src/main.tex:449",
+    "text": "Swin-T: AP^box_75 = 50.3"
+   },
+   "verdict": "baseline",
+   "notes": "Table 3, Swin-T row, box_ap75. Caption states IN-1K pretrained Swin results are from its GitHub repository and ResNet-50/X101 AP numbers are from its GitHub repository; quoted comparison figure."
+  },
+  {
+   "extraction": {
+    "metric": "box_ap75",
+    "value": 50.5,
+    "where": "src/main.tex:449",
+    "text": "ResNet-50: AP^box_75 = 50.5"
+   },
+   "verdict": "baseline",
+   "notes": "Table 3, ResNet-50 row, box_ap75. Caption states IN-1K pretrained Swin results are from its GitHub repository and ResNet-50/X101 AP numbers are from [45] (Swin paper); quoted comparison figure."
+  },
+  {
+   "extraction": {
+    "metric": "box_ap75",
+    "value": 50.8,
+    "where": "src/main.tex:449",
+    "text": "-T: AP^box_75 = 50.8"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 3, ConvNeXt-T row, box_ap75. The paper's own COCO detection/segmentation result."
+  },
+  {
+   "extraction": {
+    "metric": "box_ap75",
+    "value": 52.3,
+    "where": "src/main.tex:449",
+    "text": "X101-64: AP^box_75 = 52.3"
+   },
+   "verdict": "baseline",
+   "notes": "Table 3, X101-64 row, box_ap75. Caption states IN-1K pretrained Swin results are from its GitHub repository and ResNet-50/X101 AP numbers are from [45] (Swin paper); quoted comparison figure."
+  },
+  {
+   "extraction": {
+    "metric": "box_ap75",
+    "value": 52.4,
+    "where": "src/main.tex:449",
+    "text": "X101-32: AP^box_75 = 52.4"
+   },
+   "verdict": "baseline",
+   "notes": "Table 3, X101-32 row, box_ap75. Caption states IN-1K pretrained Swin results are from its GitHub repository and ResNet-50/X101 AP numbers are from [45] (Swin paper); quoted comparison figure."
+  },
+  {
+   "extraction": {
+    "metric": "box_ap75",
+    "value": 54.7,
+    "where": "src/main.tex:449",
+    "text": "0.3\n Swin-T: AP^box_75 = 54.7"
+   },
+   "verdict": "baseline",
+   "notes": "Table 3, Swin-T row, box_ap75. Caption states IN-1K pretrained Swin results are from its GitHub repository and ResNet-50/X101 AP numbers are from its GitHub repository; quoted comparison figure."
+  },
+  {
+   "extraction": {
+    "metric": "box_ap75",
+    "value": 54.8,
+    "where": "src/main.tex:449",
+    "text": "-T: AP^box_75 = 54.8"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 3, ConvNeXt-T row, box_ap75. The paper's own COCO detection/segmentation result."
+  },
+  {
+   "extraction": {
+    "metric": "box_ap75",
+    "value": 56.3,
+    "where": "src/main.tex:449",
+    "text": "Swin-S: AP^box_75 = 56.3"
+   },
+   "verdict": "baseline",
+   "notes": "Table 3, Swin-S row, box_ap75. Caption states IN-1K pretrained Swin results are from its GitHub repository and ResNet-50/X101 AP numbers are from its GitHub repository; quoted comparison figure."
+  },
+  {
+   "extraction": {
+    "metric": "box_ap75",
+    "value": 56.4,
+    "where": "src/main.tex:449",
+    "text": "Swin-B: AP^box_75 = 56.4"
+   },
+   "verdict": "baseline",
+   "notes": "Table 3, Swin-B row, box_ap75. Caption states IN-1K pretrained Swin results are from its GitHub repository and ResNet-50/X101 AP numbers are from its GitHub repository; quoted comparison figure."
+  },
+  {
+   "extraction": {
+    "metric": "box_ap75",
+    "value": 56.5,
+    "where": "src/main.tex:449",
+    "text": "-S: AP^box_75 = 56.5"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 3, ConvNeXt-S row, box_ap75. The paper's own COCO detection/segmentation result."
+  },
+  {
+   "extraction": {
+    "metric": "box_ap75",
+    "value": 57.2,
+    "where": "src/main.tex:449",
+    "text": "-B: AP^box_75 = 57.2"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 3, ConvNeXt-B row, box_ap75. The paper's own COCO detection/segmentation result."
+  },
+  {
+   "extraction": {
+    "metric": "box_ap75",
+    "value": 57.5,
+    "where": "src/main.tex:449",
+    "text": "0.3\n Swin-B^: AP^box_75 = 57.5"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 3, Swin-B‡ row, box_ap75. Appendix A.3: \"We fine-tune the ImageNet-22K pre-trained Swin-B/L on COCO using the same sweep... official code and pre-trained model weights\" -- this is the authors' own rerun/fine-tuning of Swin on COCO, not a number quoted from the Swin paper or repository, so it counts as an own result."
+  },
+  {
+   "extraction": {
+    "metric": "box_ap75",
+    "value": 58.8,
+    "where": "src/main.tex:449",
+    "text": "-B^: AP^box_75 = 58.8"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 3, ConvNeXt-B‡ row, box_ap75. The paper's own COCO detection/segmentation result."
+  },
+  {
+   "extraction": {
+    "metric": "box_ap75",
+    "value": 59.8,
+    "where": "src/main.tex:449",
+    "text": "-L^: AP^box_75 = 59.8"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 3, ConvNeXt-L‡ row, box_ap75. The paper's own COCO detection/segmentation result."
+  },
+  {
+   "extraction": {
+    "metric": "box_ap75",
+    "value": 59.9,
+    "where": "src/main.tex:449",
+    "text": "-XL^: AP^box_75 = 59.9"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 3, ConvNeXt-XL‡ row, box_ap75. The paper's own COCO detection/segmentation result."
+  },
+  {
+   "extraction": {
+    "metric": "fps",
+    "value": 8.6,
+    "where": "src/main.tex:449",
+    "text": "-XL^: FPS = 8.6"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 3, ConvNeXt-XL‡ row, FPS column. Caption: \"We measure FPS on an A100 GPU\" applies to every row in this table, competitors included; ownership of FPS is per-cell, not per-row, so this is an own measurement even though ConvNeXt-XL‡'s AP beside it may be a citation."
+  },
+  {
+   "extraction": {
+    "metric": "fps",
+    "value": 9.2,
+    "where": "src/main.tex:449",
+    "text": "Swin-L^: FPS = 9.2"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 3, Swin-L‡ row, FPS column. Caption: \"We measure FPS on an A100 GPU\" applies to every row in this table, competitors included; ownership of FPS is per-cell, not per-row, so this is an own measurement even though Swin-L‡'s AP beside it may be a citation."
+  },
+  {
+   "extraction": {
+    "metric": "fps",
+    "value": 10.0,
+    "where": "src/main.tex:449",
+    "text": "-L^: FPS = 10"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 3, ConvNeXt-L‡ row, FPS column. Caption: \"We measure FPS on an A100 GPU\" applies to every row in this table, competitors included; ownership of FPS is per-cell, not per-row, so this is an own measurement even though ConvNeXt-L‡'s AP beside it may be a citation."
+  },
+  {
+   "extraction": {
+    "metric": "fps",
+    "value": 10.7,
+    "where": "src/main.tex:449",
+    "text": "0.3\n Swin-B^: FPS = 10.7"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 3, Swin-B‡ row, FPS column. Caption: \"We measure FPS on an A100 GPU\" applies to every row in this table, competitors included; ownership of FPS is per-cell, not per-row, so this is an own measurement even though Swin-B‡'s AP beside it may be a citation."
+  },
+  {
+   "extraction": {
+    "metric": "fps",
+    "value": 11.4,
+    "where": "src/main.tex:449",
+    "text": "-B: FPS = 11.4"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 3, ConvNeXt-B row, FPS column. Caption: \"We measure FPS on an A100 GPU\" applies to every row in this table, competitors included; ownership of FPS is per-cell, not per-row, so this is an own measurement even though ConvNeXt-B's AP beside it may be a citation."
+  },
+  {
+   "extraction": {
+    "metric": "fps",
+    "value": 11.5,
+    "where": "src/main.tex:449",
+    "text": "-B^: FPS = 11.5"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 3, ConvNeXt-B‡ row, FPS column. Caption: \"We measure FPS on an A100 GPU\" applies to every row in this table, competitors included; ownership of FPS is per-cell, not per-row, so this is an own measurement even though ConvNeXt-B‡'s AP beside it may be a citation."
+  },
+  {
+   "extraction": {
+    "metric": "fps",
+    "value": 12.0,
+    "where": "src/main.tex:449",
+    "text": "-S: FPS = 12"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 3, ConvNeXt-S row, FPS column. Caption: \"We measure FPS on an A100 GPU\" applies to every row in this table, competitors included; ownership of FPS is per-cell, not per-row, so this is an own measurement even though ConvNeXt-S's AP beside it may be a citation."
+  },
+  {
+   "extraction": {
+    "metric": "fps",
+    "value": 12.2,
+    "where": "src/main.tex:449",
+    "text": "0.3\n Swin-T: FPS = 12.2"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 3, Swin-T row, FPS column. Caption: \"We measure FPS on an A100 GPU\" applies to every row in this table, competitors included; ownership of FPS is per-cell, not per-row, so this is an own measurement even though Swin-T's AP beside it may be a citation."
+  },
+  {
+   "extraction": {
+    "metric": "fps",
+    "value": 12.6,
+    "where": "src/main.tex:449",
+    "text": "X101-64: FPS = 12.6"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 3, X101-64 row, FPS column. Caption: \"We measure FPS on an A100 GPU\" applies to every row in this table, competitors included; ownership of FPS is per-cell, not per-row, so this is an own measurement even though X101-64's AP beside it may be a citation."
+  },
+  {
+   "extraction": {
+    "metric": "fps",
+    "value": 13.5,
+    "where": "src/main.tex:449",
+    "text": "-T: FPS = 13.5"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 3, ConvNeXt-T row, FPS column. Caption: \"We measure FPS on an A100 GPU\" applies to every row in this table, competitors included; ownership of FPS is per-cell, not per-row, so this is an own measurement even though ConvNeXt-T's AP beside it may be a citation."
+  },
+  {
+   "extraction": {
+    "metric": "fps",
+    "value": 13.8,
+    "where": "src/main.tex:449",
+    "text": "X101-32: FPS = 13.8"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 3, X101-32 row, FPS column. Caption: \"We measure FPS on an A100 GPU\" applies to every row in this table, competitors included; ownership of FPS is per-cell, not per-row, so this is an own measurement even though X101-32's AP beside it may be a citation."
+  },
+  {
+   "extraction": {
+    "metric": "fps",
+    "value": 16.2,
+    "where": "src/main.tex:449",
+    "text": "ResNet-50: FPS = 16.2"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 3, ResNet-50 row, FPS column. Caption: \"We measure FPS on an A100 GPU\" applies to every row in this table, competitors included; ownership of FPS is per-cell, not per-row, so this is an own measurement even though ResNet-50's AP beside it may be a citation."
+  },
+  {
+   "extraction": {
+    "metric": "fps",
+    "value": 23.1,
+    "where": "src/main.tex:449",
+    "text": "Swin-T: FPS = 23.1"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 3, Swin-T row, FPS column. Caption: \"We measure FPS on an A100 GPU\" applies to every row in this table, competitors included; ownership of FPS is per-cell, not per-row, so this is an own measurement even though Swin-T's AP beside it may be a citation."
+  },
+  {
+   "extraction": {
+    "metric": "fps",
+    "value": 25.6,
+    "where": "src/main.tex:449",
+    "text": "-T: FPS = 25.6"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 3, ConvNeXt-T row, FPS column. Caption: \"We measure FPS on an A100 GPU\" applies to every row in this table, competitors included; ownership of FPS is per-cell, not per-row, so this is an own measurement even though ConvNeXt-T's AP beside it may be a citation."
+  },
+  {
+   "extraction": {
+    "metric": "mask_ap",
+    "value": 40.1,
+    "where": "src/main.tex:449",
+    "text": "ResNet-50: AP^mask = 40.1"
+   },
+   "verdict": "baseline",
+   "notes": "Table 3, ResNet-50 row, mask_ap. Caption states IN-1K pretrained Swin results are from its GitHub repository and ResNet-50/X101 AP numbers are from [45] (Swin paper); quoted comparison figure."
+  },
+  {
+   "extraction": {
+    "metric": "mask_ap",
+    "value": 41.6,
+    "where": "src/main.tex:449",
+    "text": "Swin-T: AP^mask = 41.6"
+   },
+   "verdict": "baseline",
+   "notes": "Table 3, Swin-T row, mask_ap. Caption states IN-1K pretrained Swin results are from its GitHub repository and ResNet-50/X101 AP numbers are from its GitHub repository; quoted comparison figure."
+  },
+  {
+   "extraction": {
+    "metric": "mask_ap",
+    "value": 41.7,
+    "where": "src/main.tex:449",
+    "text": "-T: AP^mask = 41.7"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 3, ConvNeXt-T row, mask_ap. The paper's own COCO detection/segmentation result."
+  },
+  {
+   "extraction": {
+    "metric": "mask_ap",
+    "value": 43.7,
+    "where": "src/main.tex:449",
+    "text": "-T: AP^mask = 43.7"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 3, ConvNeXt-T row, mask_ap. The paper's own COCO detection/segmentation result."
+  },
+  {
+   "extraction": {
+    "metric": "mask_ap",
+    "value": 45.0,
+    "where": "src/main.tex:449",
+    "text": "-S: AP^mask = 45"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 3, ConvNeXt-S row, mask_ap. The paper's own COCO detection/segmentation result."
+  },
+  {
+   "extraction": {
+    "metric": "mask_ap",
+    "value": 45.6,
+    "where": "src/main.tex:449",
+    "text": "-B: AP^mask = 45.6"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 3, ConvNeXt-B row, mask_ap. The paper's own COCO detection/segmentation result."
+  },
+  {
+   "extraction": {
+    "metric": "mask_ap",
+    "value": 45.8,
+    "where": "src/main.tex:449",
+    "text": "0.3\n Swin-B^: AP^mask = 45.8"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 3, Swin-B‡ row, mask_ap. Appendix A.3: \"We fine-tune the ImageNet-22K pre-trained Swin-B/L on COCO using the same sweep... official code and pre-trained model weights\" -- this is the authors' own rerun/fine-tuning of Swin on COCO, not a number quoted from the Swin paper or repository, so it counts as an own result."
+  },
+  {
+   "extraction": {
+    "metric": "mask_ap",
+    "value": 46.7,
+    "where": "src/main.tex:449",
+    "text": "Swin-L^: AP^mask = 46.7"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 3, Swin-L‡ row, mask_ap. Appendix A.3: \"We fine-tune the ImageNet-22K pre-trained Swin-B/L on COCO using the same sweep... official code and pre-trained model weights\" -- this is the authors' own rerun/fine-tuning of Swin on COCO, not a number quoted from the Swin paper or repository, so it counts as an own result."
+  },
+  {
+   "extraction": {
+    "metric": "mask_ap",
+    "value": 46.9,
+    "where": "src/main.tex:449",
+    "text": "-B^: AP^mask = 46.9"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 3, ConvNeXt-B‡ row, mask_ap. The paper's own COCO detection/segmentation result."
+  },
+  {
+   "extraction": {
+    "metric": "mask_ap",
+    "value": 47.6,
+    "where": "src/main.tex:449",
+    "text": "-L^: AP^mask = 47.6"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 3, ConvNeXt-L‡ row, mask_ap. The paper's own COCO detection/segmentation result."
+  },
+  {
+   "extraction": {
+    "metric": "mask_ap",
+    "value": 47.7,
+    "where": "src/main.tex:449",
+    "text": "-XL^: AP^mask = 47.7"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 3, ConvNeXt-XL‡ row, mask_ap. The paper's own COCO detection/segmentation result."
+  },
+  {
+   "extraction": {
+    "metric": "mask_ap50",
+    "value": 61.7,
+    "where": "src/main.tex:449",
+    "text": "ResNet-50: AP^mask_50 = 61.7"
+   },
+   "verdict": "baseline",
+   "notes": "Table 3, ResNet-50 row, mask_ap50. Caption states IN-1K pretrained Swin results are from its GitHub repository and ResNet-50/X101 AP numbers are from [45] (Swin paper); quoted comparison figure."
+  },
+  {
+   "extraction": {
+    "metric": "mask_ap50",
+    "value": 63.9,
+    "where": "src/main.tex:449",
+    "text": "X101-32: AP^mask_50 = 63.9"
+   },
+   "verdict": "baseline",
+   "notes": "Table 3, X101-32 row, mask_ap50. Caption states IN-1K pretrained Swin results are from its GitHub repository and ResNet-50/X101 AP numbers are from [45] (Swin paper); quoted comparison figure."
+  },
+  {
+   "extraction": {
+    "metric": "mask_ap50",
+    "value": 64.0,
+    "where": "src/main.tex:449",
+    "text": "X101-64: AP^mask_50 = 64"
+   },
+   "verdict": "baseline",
+   "notes": "Table 3, X101-64 row, mask_ap50. Caption states IN-1K pretrained Swin results are from its GitHub repository and ResNet-50/X101 AP numbers are from [45] (Swin paper); quoted comparison figure."
+  },
+  {
+   "extraction": {
+    "metric": "mask_ap50",
+    "value": 65.0,
+    "where": "src/main.tex:449",
+    "text": "-T: AP^mask_50 = 65"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 3, ConvNeXt-T row, mask_ap50. The paper's own COCO detection/segmentation result."
+  },
+  {
+   "extraction": {
+    "metric": "mask_ap50",
+    "value": 65.1,
+    "where": "src/main.tex:449",
+    "text": "Swin-T: AP^mask_50 = 65.1"
+   },
+   "verdict": "baseline",
+   "notes": "Table 3, Swin-T row, mask_ap50. Caption states IN-1K pretrained Swin results are from its GitHub repository and ResNet-50/X101 AP numbers are from its GitHub repository; quoted comparison figure."
+  },
+  {
+   "extraction": {
+    "metric": "mask_ap50",
+    "value": 66.5,
+    "where": "src/main.tex:449",
+    "text": "-T: AP^mask_50 = 66.5"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 3, ConvNeXt-T row, mask_ap50. The paper's own COCO detection/segmentation result."
+  },
+  {
+   "extraction": {
+    "metric": "mask_ap50",
+    "value": 66.6,
+    "where": "src/main.tex:449",
+    "text": "0.3\n Swin-T: AP^mask_50 = 66.6"
+   },
+   "verdict": "baseline",
+   "notes": "Table 3, Swin-T row, mask_ap50. Caption states IN-1K pretrained Swin results are from its GitHub repository and ResNet-50/X101 AP numbers are from its GitHub repository; quoted comparison figure."
+  },
+  {
+   "extraction": {
+    "metric": "mask_ap50",
+    "value": 68.1,
+    "where": "src/main.tex:449",
+    "text": "Swin-B: AP^mask_50 = 68.1"
+   },
+   "verdict": "baseline",
+   "notes": "Table 3, Swin-B row, mask_ap50. Caption states IN-1K pretrained Swin results are from its GitHub repository and ResNet-50/X101 AP numbers are from its GitHub repository; quoted comparison figure."
+  },
+  {
+   "extraction": {
+    "metric": "mask_ap50",
+    "value": 68.2,
+    "where": "src/main.tex:449",
+    "text": "Swin-S: AP^mask_50 = 68.2"
+   },
+   "verdict": "baseline",
+   "notes": "Table 3, Swin-S row, mask_ap50. Caption states IN-1K pretrained Swin results are from its GitHub repository and ResNet-50/X101 AP numbers are from its GitHub repository; quoted comparison figure."
+  },
+  {
+   "extraction": {
+    "metric": "mask_ap50",
+    "value": 68.4,
+    "where": "src/main.tex:449",
+    "text": "-S: AP^mask_50 = 68.4"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 3, ConvNeXt-S row, mask_ap50. The paper's own COCO detection/segmentation result."
+  },
+  {
+   "extraction": {
+    "metric": "mask_ap50",
+    "value": 68.9,
+    "where": "src/main.tex:449",
+    "text": "-B: AP^mask_50 = 68.9"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 3, ConvNeXt-B row, mask_ap50. The paper's own COCO detection/segmentation result."
+  },
+  {
+   "extraction": {
+    "metric": "mask_ap50",
+    "value": 69.4,
+    "where": "src/main.tex:449",
+    "text": "0.3\n Swin-B^: AP^mask_50 = 69.4"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 3, Swin-B‡ row, mask_ap50. Appendix A.3: \"We fine-tune the ImageNet-22K pre-trained Swin-B/L on COCO using the same sweep... official code and pre-trained model weights\" -- this is the authors' own rerun/fine-tuning of Swin on COCO, not a number quoted from the Swin paper or repository, so it counts as an own result."
+  },
+  {
+   "extraction": {
+    "metric": "mask_ap50",
+    "value": 70.1,
+    "where": "src/main.tex:449",
+    "text": "Swin-L^: AP^mask_50 = 70.1"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 3, Swin-L‡ row, mask_ap50. Appendix A.3: \"We fine-tune the ImageNet-22K pre-trained Swin-B/L on COCO using the same sweep... official code and pre-trained model weights\" -- this is the authors' own rerun/fine-tuning of Swin on COCO, not a number quoted from the Swin paper or repository, so it counts as an own result."
+  },
+  {
+   "extraction": {
+    "metric": "mask_ap50",
+    "value": 70.6,
+    "where": "src/main.tex:449",
+    "text": "-B^: AP^mask_50 = 70.6"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 3, ConvNeXt-B‡ row, mask_ap50. The paper's own COCO detection/segmentation result."
+  },
+  {
+   "extraction": {
+    "metric": "mask_ap50",
+    "value": 71.3,
+    "where": "src/main.tex:449",
+    "text": "-L^: AP^mask_50 = 71.3"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 3, ConvNeXt-L‡ row, mask_ap50. The paper's own COCO detection/segmentation result."
+  },
+  {
+   "extraction": {
+    "metric": "mask_ap50",
+    "value": 71.6,
+    "where": "src/main.tex:449",
+    "text": "-XL^: AP^mask_50 = 71.6"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 3, ConvNeXt-XL‡ row, mask_ap50. The paper's own COCO detection/segmentation result."
+  },
+  {
+   "extraction": {
+    "metric": "mask_ap75",
+    "value": 43.4,
+    "where": "src/main.tex:449",
+    "text": "ResNet-50: AP^mask_75 = 43.4"
+   },
+   "verdict": "baseline",
+   "notes": "Table 3, ResNet-50 row, mask_ap75. Caption states IN-1K pretrained Swin results are from its GitHub repository and ResNet-50/X101 AP numbers are from [45] (Swin paper); quoted comparison figure."
+  },
+  {
+   "extraction": {
+    "metric": "mask_ap75",
+    "value": 44.9,
+    "where": "src/main.tex:449",
+    "text": "-T: AP^mask_75 = 44.9"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 3, ConvNeXt-T row, mask_ap75. The paper's own COCO detection/segmentation result."
+  },
+  {
+   "extraction": {
+    "metric": "mask_ap75",
+    "value": 45.1,
+    "where": "src/main.tex:449",
+    "text": "X101-64: AP^mask_75 = 45.1"
+   },
+   "verdict": "baseline",
+   "notes": "Table 3, X101-64 row, mask_ap75. Caption states IN-1K pretrained Swin results are from its GitHub repository and ResNet-50/X101 AP numbers are from [45] (Swin paper); quoted comparison figure."
+  },
+  {
+   "extraction": {
+    "metric": "mask_ap75",
+    "value": 45.2,
+    "where": "src/main.tex:449",
+    "text": "X101-32: AP^mask_75 = 45.2"
+   },
+   "verdict": "baseline",
+   "notes": "Table 3, X101-32 row, mask_ap75. Caption states IN-1K pretrained Swin results are from its GitHub repository and ResNet-50/X101 AP numbers are from [45] (Swin paper); quoted comparison figure."
+  },
+  {
+   "extraction": {
+    "metric": "mask_ap75",
+    "value": 47.3,
+    "where": "src/main.tex:449",
+    "text": "-T: AP^mask_75 = 47.3"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 3, ConvNeXt-T row, mask_ap75. The paper's own COCO detection/segmentation result."
+  },
+  {
+   "extraction": {
+    "metric": "mask_ap75",
+    "value": 48.8,
+    "where": "src/main.tex:449",
+    "text": "Swin-S: AP^mask_75 = 48.8"
+   },
+   "verdict": "baseline",
+   "notes": "Table 3, Swin-S row, mask_ap75. Caption states IN-1K pretrained Swin results are from its GitHub repository and ResNet-50/X101 AP numbers are from its GitHub repository; quoted comparison figure."
+  },
+  {
+   "extraction": {
+    "metric": "mask_ap75",
+    "value": 48.9,
+    "where": "src/main.tex:449",
+    "text": "Swin-B: AP^mask_75 = 48.9"
+   },
+   "verdict": "baseline",
+   "notes": "Table 3, Swin-B row, mask_ap75. Caption states IN-1K pretrained Swin results are from its GitHub repository and ResNet-50/X101 AP numbers are from its GitHub repository; quoted comparison figure."
+  },
+  {
+   "extraction": {
+    "metric": "mask_ap75",
+    "value": 49.1,
+    "where": "src/main.tex:449",
+    "text": "-S: AP^mask_75 = 49.1"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 3, ConvNeXt-S row, mask_ap75. The paper's own COCO detection/segmentation result."
+  },
+  {
+   "extraction": {
+    "metric": "mask_ap75",
+    "value": 49.5,
+    "where": "src/main.tex:449",
+    "text": "-B: AP^mask_75 = 49.5"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 3, ConvNeXt-B row, mask_ap75. The paper's own COCO detection/segmentation result."
+  },
+  {
+   "extraction": {
+    "metric": "mask_ap75",
+    "value": 49.7,
+    "where": "src/main.tex:449",
+    "text": "0.3\n Swin-B^: AP^mask_75 = 49.7"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 3, Swin-B‡ row, mask_ap75. Appendix A.3: \"We fine-tune the ImageNet-22K pre-trained Swin-B/L on COCO using the same sweep... official code and pre-trained model weights\" -- this is the authors' own rerun/fine-tuning of Swin on COCO, not a number quoted from the Swin paper or repository, so it counts as an own result."
+  },
+  {
+   "extraction": {
+    "metric": "mask_ap75",
+    "value": 50.8,
+    "where": "src/main.tex:449",
+    "text": "Swin-L^: AP^mask_75 = 50.8"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 3, Swin-L‡ row, mask_ap75. Appendix A.3: \"We fine-tune the ImageNet-22K pre-trained Swin-B/L on COCO using the same sweep... official code and pre-trained model weights\" -- this is the authors' own rerun/fine-tuning of Swin on COCO, not a number quoted from the Swin paper or repository, so it counts as an own result."
+  },
+  {
+   "extraction": {
+    "metric": "mask_ap75",
+    "value": 51.3,
+    "where": "src/main.tex:449",
+    "text": "-B^: AP^mask_75 = 51.3"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 3, ConvNeXt-B‡ row, mask_ap75. The paper's own COCO detection/segmentation result."
+  },
+  {
+   "extraction": {
+    "metric": "mask_ap75",
+    "value": 51.7,
+    "where": "src/main.tex:449",
+    "text": "-L^: AP^mask_75 = 51.7"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 3, ConvNeXt-L‡ row, mask_ap75. The paper's own COCO detection/segmentation result."
+  },
+  {
+   "extraction": {
+    "metric": "mask_ap75",
+    "value": 52.2,
+    "where": "src/main.tex:449",
+    "text": "-XL^: AP^mask_75 = 52.2"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 3, ConvNeXt-XL‡ row, mask_ap75. The paper's own COCO detection/segmentation result."
+  },
+  {
+   "extraction": {
+    "metric": "iou",
+    "value": 45.8,
+    "where": "src/main.tex:496",
+    "text": "Swin-T: mIoU = 45.8"
+   },
+   "verdict": "baseline",
+   "notes": "Table 4 (ADE20K), Swin-T row, mIoU. Caption: \"Swins' results are from its GitHub repository\" (unqualified by pretraining size, unlike Table 3's COCO caption), so all Swin rows in this table, including IN-22K ones, are quoted, not rerun."
+  },
+  {
+   "extraction": {
+    "metric": "iou",
+    "value": 49.5,
+    "where": "src/main.tex:496",
+    "text": "Swin-S: mIoU = 49.5"
+   },
+   "verdict": "baseline",
+   "notes": "Table 4 (ADE20K), Swin-S row, mIoU. Caption: \"Swins' results are from its GitHub repository\" (unqualified by pretraining size, unlike Table 3's COCO caption), so all Swin rows in this table, including IN-22K ones, are quoted, not rerun."
+  },
+  {
+   "extraction": {
+    "metric": "iou",
+    "value": 49.7,
+    "where": "src/main.tex:496",
+    "text": "Swin-B: mIoU = 49.7"
+   },
+   "verdict": "baseline",
+   "notes": "Table 4 (ADE20K), Swin-B row, mIoU. Caption: \"Swins' results are from its GitHub repository\" (unqualified by pretraining size, unlike Table 3's COCO caption), so all Swin rows in this table, including IN-22K ones, are quoted, not rerun."
+  },
+  {
+   "extraction": {
+    "metric": "iou",
+    "value": 51.7,
+    "where": "src/main.tex:496",
+    "text": "Swin-B^: mIoU = 51.7"
+   },
+   "verdict": "baseline",
+   "notes": "Table 4 (ADE20K), Swin-B^ row, mIoU. Caption: \"Swins' results are from its GitHub repository\" (unqualified by pretraining size, unlike Table 3's COCO caption), so all Swin rows in this table, including IN-22K ones, are quoted, not rerun."
+  },
+  {
+   "extraction": {
+    "metric": "iou",
+    "value": 53.5,
+    "where": "src/main.tex:496",
+    "text": "Swin-L^: mIoU = 53.5"
+   },
+   "verdict": "baseline",
+   "notes": "Table 4 (ADE20K), Swin-L^ row, mIoU. Caption: \"Swins' results are from its GitHub repository\" (unqualified by pretraining size, unlike Table 3's COCO caption), so all Swin rows in this table, including IN-22K ones, are quoted, not rerun."
+  },
+  {
+   "extraction": {
+    "metric": "-t/s/b/l",
+    "value": 0.05,
+    "where": "src/main.tex:564",
+    "text": "weight decay: -T/S/B/L = 0.05"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Table 5 (ImageNet-1K/22K (pre-)training settings), \"weight decay\" row. Training configuration value, not a reported result."
+  },
+  {
+   "extraction": {
+    "metric": "-t/s/b/l",
+    "value": 0.25,
+    "where": "src/main.tex:564",
+    "text": "random erasing Zhong2020: -T/S/B/L = 0.25"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Table 5 (ImageNet-1K/22K (pre-)training settings), \"random erasing Zhong2020\" row. Training configuration value, not a reported result."
+  },
+  {
+   "extraction": {
+    "metric": "-t/s/b/l",
+    "value": 0.8,
+    "where": "src/main.tex:564",
+    "text": "mixup Zhang2018a: -T/S/B/L = 0.8"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Table 5 (ImageNet-1K/22K (pre-)training settings), \"mixup Zhang2018a\" row. Training configuration value, not a reported result."
+  },
+  {
+   "extraction": {
+    "metric": "-t/s/b/l",
+    "value": 0.9999,
+    "where": "src/main.tex:564",
+    "text": "exp. mov. avg. (EMA) Polyak1992: -T/S/B/L = 0.9999"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Table 5 (ImageNet-1K/22K (pre-)training settings), \"exp. mov. avg. (EMA) Polyak1992\" row. Training configuration value, not a reported result."
+  },
+  {
+   "extraction": {
+    "metric": "-t/s/b/l",
+    "value": 20.0,
+    "where": "src/main.tex:564",
+    "text": "warmup epochs: -T/S/B/L = 20"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Table 5 (ImageNet-1K/22K (pre-)training settings), \"warmup epochs\" row. Training configuration value, not a reported result."
+  },
+  {
+   "extraction": {
+    "metric": "-t/s/b/l",
+    "value": 300.0,
+    "where": "src/main.tex:564",
+    "text": "training epochs: -T/S/B/L = 300"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Table 5 (ImageNet-1K/22K (pre-)training settings), \"training epochs\" row. Training configuration value, not a reported result."
+  },
+  {
+   "extraction": {
+    "metric": "-t/s/b/l",
+    "value": 4096.0,
+    "where": "src/main.tex:564",
+    "text": "batch size: -T/S/B/L = 4096"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Table 5 (ImageNet-1K/22K (pre-)training settings), \"batch size\" row. Training configuration value, not a reported result."
+  },
+  {
+   "extraction": {
+    "metric": "-t/s/b/l/xl",
+    "value": 0.05,
+    "where": "src/main.tex:564",
+    "text": "weight decay: -T/S/B/L/XL = 0.05"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Table 5 (ImageNet-1K/22K (pre-)training settings), \"weight decay\" row. Training configuration value, not a reported result."
+  },
+  {
+   "extraction": {
+    "metric": "-t/s/b/l/xl",
+    "value": 0.25,
+    "where": "src/main.tex:564",
+    "text": "random erasing Zhong2020: -T/S/B/L/XL = 0.25"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Table 5 (ImageNet-1K/22K (pre-)training settings), \"random erasing Zhong2020\" row. Training configuration value, not a reported result."
+  },
+  {
+   "extraction": {
+    "metric": "-t/s/b/l/xl",
+    "value": 0.8,
+    "where": "src/main.tex:564",
+    "text": "mixup Zhang2018a: -T/S/B/L/XL = 0.8"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Table 5 (ImageNet-1K/22K (pre-)training settings), \"mixup Zhang2018a\" row. Training configuration value, not a reported result."
+  },
+  {
+   "extraction": {
+    "metric": "-t/s/b/l/xl",
+    "value": 1.0,
+    "where": "src/main.tex:564",
+    "text": "cutmix Yun2019: -T/S/B/L/XL = 1"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Table 5 (ImageNet-1K/22K (pre-)training settings), \"cutmix Yun2019\" row. Training configuration value, not a reported result."
+  },
+  {
+   "extraction": {
+    "metric": "-t/s/b/l/xl",
+    "value": 5.0,
+    "where": "src/main.tex:564",
+    "text": "warmup epochs: -T/S/B/L/XL = 5"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Table 5 (ImageNet-1K/22K (pre-)training settings), \"warmup epochs\" row. Training configuration value, not a reported result."
+  },
+  {
+   "extraction": {
+    "metric": "-t/s/b/l/xl",
+    "value": 90.0,
+    "where": "src/main.tex:564",
+    "text": "training epochs: -T/S/B/L/XL = 90"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Table 5 (ImageNet-1K/22K (pre-)training settings), \"training epochs\" row. Training configuration value, not a reported result."
+  },
+  {
+   "extraction": {
+    "metric": "-t/s/b/l/xl",
+    "value": 4096.0,
+    "where": "src/main.tex:564",
+    "text": "batch size: -T/S/B/L/XL = 4096"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Table 5 (ImageNet-1K/22K (pre-)training settings), \"batch size\" row. Training configuration value, not a reported result."
+  },
+  {
+   "extraction": {
+    "metric": "-b/l",
+    "value": 0.001,
+    "where": "src/main.tex:599",
+    "text": "head init scale: -B/L = 0.001"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Table 6 (ImageNet-1K fine-tuning settings), \"head init scale\" row. Training configuration value, not a reported result."
+  },
+  {
+   "extraction": {
+    "metric": "-b/l",
+    "value": 0.1,
+    "where": "src/main.tex:599",
+    "text": "label smoothing: -B/L = 0.1"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Table 6 (ImageNet-1K fine-tuning settings), \"label smoothing\" row. Training configuration value, not a reported result."
+  },
+  {
+   "extraction": {
+    "metric": "-b/l",
+    "value": 0.25,
+    "where": "src/main.tex:599",
+    "text": "random erasing: -B/L = 0.25"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Table 6 (ImageNet-1K fine-tuning settings), \"random erasing\" row. Training configuration value, not a reported result."
+  },
+  {
+   "extraction": {
+    "metric": "-b/l",
+    "value": 0.7,
+    "where": "src/main.tex:599",
+    "text": "layer-wise lr decay: -B/L = 0.7"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Table 6 (ImageNet-1K fine-tuning settings), \"layer-wise lr decay\" row. Training configuration value, not a reported result."
+  },
+  {
+   "extraction": {
+    "metric": "-b/l",
+    "value": 30.0,
+    "where": "src/main.tex:599",
+    "text": "training epochs: -B/L = 30"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Table 6 (ImageNet-1K fine-tuning settings), \"training epochs\" row. Training configuration value, not a reported result."
+  },
+  {
+   "extraction": {
+    "metric": "-b/l",
+    "value": 512.0,
+    "where": "src/main.tex:599",
+    "text": "batch size: -B/L = 512"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Table 6 (ImageNet-1K fine-tuning settings), \"batch size\" row. Training configuration value, not a reported result."
+  },
+  {
+   "extraction": {
+    "metric": "-t/s/b/l/xl",
+    "value": 0.001,
+    "where": "src/main.tex:599",
+    "text": "head init scale: -T/S/B/L/XL = 0.001"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Table 6 (ImageNet-1K fine-tuning settings), \"head init scale\" row. Training configuration value, not a reported result."
+  },
+  {
+   "extraction": {
+    "metric": "-t/s/b/l/xl",
+    "value": 30.0,
+    "where": "src/main.tex:599",
+    "text": "training epochs: -T/S/B/L/XL = 30"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Table 6 (ImageNet-1K fine-tuning settings), \"training epochs\" row. Training configuration value, not a reported result."
+  },
+  {
+   "extraction": {
+    "metric": "-t/s/b/l/xl",
+    "value": 512.0,
+    "where": "src/main.tex:599",
+    "text": "batch size: -T/S/B/L/XL = 512"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Table 6 (ImageNet-1K fine-tuning settings), \"batch size\" row. Training configuration value, not a reported result."
+  },
+  {
+   "extraction": {
+    "metric": "iou",
+    "value": 1.0,
+    "where": "src/main.tex:655",
+    "text": "mIoU \\\\\n\\Xhline{1.0"
+   },
+   "verdict": "not_in_paper",
+   "notes": "Table 7 header row (\"backbone & input crop. & mIoU\") immediately followed by '\\Xhline{1.0pt}'. The extractor read the '1.0' out of the \\Xhline markup rule thickness as a value attached to the 'mIoU' header text. No mIoU (or any metric) of 1.0 is reported anywhere in the paper; this is a markup fragment, not a claim."
+  },
+  {
+   "extraction": {
+    "metric": "a",
+    "value": 0.0,
+    "where": "src/main.tex:683",
+    "text": "ResNet-50: A = 0"
+   },
+   "verdict": "baseline",
+   "notes": "Table 8 (robustness evaluation), ResNet-50 row, A column. Comparison figure for prior work (Swin/RVT rows carry explicit citations); no statement that the authors produced this row's robustness numbers themselves."
+  },
+  {
+   "extraction": {
+    "metric": "a",
+    "value": 21.6,
+    "where": "src/main.tex:683",
+    "text": "Swin-T~Liu2021swin: A = 21.6"
+   },
+   "verdict": "baseline",
+   "notes": "Table 8 (robustness evaluation), Swin-T row, A column. Comparison figure for prior work (Swin/RVT rows carry explicit citations); no statement that the authors produced this row's robustness numbers themselves."
+  },
+  {
+   "extraction": {
+    "metric": "a",
+    "value": 24.2,
+    "where": "src/main.tex:683",
+    "text": "ConvNeXt-T: A = 24.2"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 8 (robustness evaluation), ConvNeXt-T row, A column. Prose: \"We directly test our ImageNet-1K trained/fine-tuned classification models on several robustness benchmark datasets\" -- own evaluation of the paper's own trained model."
+  },
+  {
+   "extraction": {
+    "metric": "a",
+    "value": 25.7,
+    "where": "src/main.tex:683",
+    "text": "RVT-S*~mao2021towards: A = 25.7"
+   },
+   "verdict": "baseline",
+   "notes": "Table 8 (robustness evaluation), RVT-S* row, A column. Comparison figure for prior work (Swin/RVT rows carry explicit citations); no statement that the authors produced this row's robustness numbers themselves."
+  },
+  {
+   "extraction": {
+    "metric": "a",
+    "value": 28.5,
+    "where": "src/main.tex:683",
+    "text": "RVT-B*~mao2021towards: A = 28.5"
+   },
+   "verdict": "baseline",
+   "notes": "Table 8 (robustness evaluation), RVT-B* row, A column. Comparison figure for prior work (Swin/RVT rows carry explicit citations); no statement that the authors produced this row's robustness numbers themselves."
+  },
+  {
+   "extraction": {
+    "metric": "a",
+    "value": 35.8,
+    "where": "src/main.tex:683",
+    "text": "Swin-B~Liu2021swin: A = 35.8"
+   },
+   "verdict": "baseline",
+   "notes": "Table 8 (robustness evaluation), Swin-B row, A column. Comparison figure for prior work (Swin/RVT rows carry explicit citations); no statement that the authors produced this row's robustness numbers themselves."
+  },
+  {
+   "extraction": {
+    "metric": "a",
+    "value": 36.7,
+    "where": "src/main.tex:683",
+    "text": "ConvNeXt-B: A = 36.7"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 8 (robustness evaluation), ConvNeXt-B row, A column. Prose: \"We directly test our ImageNet-1K trained/fine-tuned classification models on several robustness benchmark datasets\" -- own evaluation of the paper's own trained model."
+  },
+  {
+   "extraction": {
+    "metric": "a",
+    "value": 62.3,
+    "where": "src/main.tex:683",
+    "text": "ConvNeXt-B: A = 62.3"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 8 (robustness evaluation), ConvNeXt-B row, A column. Prose: \"We directly test our ImageNet-1K trained/fine-tuned classification models on several robustness benchmark datasets\" -- own evaluation of the paper's own trained model."
+  },
+  {
+   "extraction": {
+    "metric": "a",
+    "value": 65.5,
+    "where": "src/main.tex:683",
+    "text": "ConvNeXt-L: A = 65.5"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 8 (robustness evaluation), ConvNeXt-L row, A column. Prose: \"We directly test our ImageNet-1K trained/fine-tuned classification models on several robustness benchmark datasets\" -- own evaluation of the paper's own trained model."
+  },
+  {
+   "extraction": {
+    "metric": "a",
+    "value": 69.3,
+    "where": "src/main.tex:683",
+    "text": "ConvNeXt-XL: A = 69.3"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 8 (robustness evaluation), ConvNeXt-XL row, A column. Prose: \"We directly test our ImageNet-1K trained/fine-tuned classification models on several robustness benchmark datasets\" -- own evaluation of the paper's own trained model."
+  },
+  {
+   "extraction": {
+    "metric": "c ()",
+    "value": 27.1,
+    "where": "src/main.tex:683",
+    "text": "ConvNeXt-XL: C () = 27.1"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 8 (robustness evaluation), ConvNeXt-XL row, C/C̄ column. Prose: \"We directly test our ImageNet-1K trained/fine-tuned classification models on several robustness benchmark datasets\" -- own evaluation of the paper's own trained model."
+  },
+  {
+   "extraction": {
+    "metric": "c ()",
+    "value": 29.9,
+    "where": "src/main.tex:683",
+    "text": "ConvNeXt-L: C () = 29.9"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 8 (robustness evaluation), ConvNeXt-L row, C/C̄ column. Prose: \"We directly test our ImageNet-1K trained/fine-tuned classification models on several robustness benchmark datasets\" -- own evaluation of the paper's own trained model."
+  },
+  {
+   "extraction": {
+    "metric": "c ()",
+    "value": 30.7,
+    "where": "src/main.tex:683",
+    "text": "ConvNeXt-B: C () = 30.7"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 8 (robustness evaluation), ConvNeXt-B row, C/C̄ column. Prose: \"We directly test our ImageNet-1K trained/fine-tuned classification models on several robustness benchmark datasets\" -- own evaluation of the paper's own trained model."
+  },
+  {
+   "extraction": {
+    "metric": "c ()",
+    "value": 30.8,
+    "where": "src/main.tex:683",
+    "text": "RVT-B*~mao2021towards: C () = 30.8"
+   },
+   "verdict": "baseline",
+   "notes": "Table 8 (robustness evaluation), RVT-B* row, C/C̄ column. Comparison figure for prior work (Swin/RVT rows carry explicit citations); no statement that the authors produced this row's robustness numbers themselves."
+  },
+  {
+   "extraction": {
+    "metric": "c ()",
+    "value": 34.4,
+    "where": "src/main.tex:683",
+    "text": "ConvNeXt-B: C () = 34.4"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 8 (robustness evaluation), ConvNeXt-B row, C/C̄ column. Prose: \"We directly test our ImageNet-1K trained/fine-tuned classification models on several robustness benchmark datasets\" -- own evaluation of the paper's own trained model."
+  },
+  {
+   "extraction": {
+    "metric": "c ()",
+    "value": 37.5,
+    "where": "src/main.tex:683",
+    "text": "RVT-S*~mao2021towards: C () = 37.5"
+   },
+   "verdict": "baseline",
+   "notes": "Table 8 (robustness evaluation), RVT-S* row, C/C̄ column. Comparison figure for prior work (Swin/RVT rows carry explicit citations); no statement that the authors produced this row's robustness numbers themselves."
+  },
+  {
+   "extraction": {
+    "metric": "c ()",
+    "value": 38.8,
+    "where": "src/main.tex:683",
+    "text": "ConvNeXt-XL: C () = 38.8"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 8 (robustness evaluation), ConvNeXt-XL row, C/C̄ column. Prose: \"We directly test our ImageNet-1K trained/fine-tuned classification models on several robustness benchmark datasets\" -- own evaluation of the paper's own trained model."
+  },
+  {
+   "extraction": {
+    "metric": "c ()",
+    "value": 40.0,
+    "where": "src/main.tex:683",
+    "text": "ConvNeXt-T: C () = 40"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 8 (robustness evaluation), ConvNeXt-T row, C/C̄ column. Prose: \"We directly test our ImageNet-1K trained/fine-tuned classification models on several robustness benchmark datasets\" -- own evaluation of the paper's own trained model."
+  },
+  {
+   "extraction": {
+    "metric": "c ()",
+    "value": 40.2,
+    "where": "src/main.tex:683",
+    "text": "ConvNeXt-L: C () = 40.2"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 8 (robustness evaluation), ConvNeXt-L row, C/C̄ column. Prose: \"We directly test our ImageNet-1K trained/fine-tuned classification models on several robustness benchmark datasets\" -- own evaluation of the paper's own trained model."
+  },
+  {
+   "extraction": {
+    "metric": "c ()",
+    "value": 43.1,
+    "where": "src/main.tex:683",
+    "text": "ConvNeXt-B: C () = 43.1"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 8 (robustness evaluation), ConvNeXt-B row, C/C̄ column. Prose: \"We directly test our ImageNet-1K trained/fine-tuned classification models on several robustness benchmark datasets\" -- own evaluation of the paper's own trained model."
+  },
+  {
+   "extraction": {
+    "metric": "c ()",
+    "value": 46.8,
+    "where": "src/main.tex:683",
+    "text": "ConvNeXt-B: C () = 46.8"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 8 (robustness evaluation), ConvNeXt-B row, C/C̄ column. Prose: \"We directly test our ImageNet-1K trained/fine-tuned classification models on several robustness benchmark datasets\" -- own evaluation of the paper's own trained model."
+  },
+  {
+   "extraction": {
+    "metric": "c ()",
+    "value": 49.4,
+    "where": "src/main.tex:683",
+    "text": "RVT-S*~mao2021towards: C () = 49.4"
+   },
+   "verdict": "baseline",
+   "notes": "Table 8 (robustness evaluation), RVT-S* row, C/C̄ column. Comparison figure for prior work (Swin/RVT rows carry explicit citations); no statement that the authors produced this row's robustness numbers themselves."
+  },
+  {
+   "extraction": {
+    "metric": "c ()",
+    "value": 53.2,
+    "where": "src/main.tex:683",
+    "text": "ConvNeXt-T: C () = 53.2"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 8 (robustness evaluation), ConvNeXt-T row, C/C̄ column. Prose: \"We directly test our ImageNet-1K trained/fine-tuned classification models on several robustness benchmark datasets\" -- own evaluation of the paper's own trained model."
+  },
+  {
+   "extraction": {
+    "metric": "c ()",
+    "value": 54.4,
+    "where": "src/main.tex:683",
+    "text": "Swin-B~Liu2021swin: C () = 54.4"
+   },
+   "verdict": "baseline",
+   "notes": "Table 8 (robustness evaluation), Swin-B row, C/C̄ column. Comparison figure for prior work (Swin/RVT rows carry explicit citations); no statement that the authors produced this row's robustness numbers themselves."
+  },
+  {
+   "extraction": {
+    "metric": "c ()",
+    "value": 57.7,
+    "where": "src/main.tex:683",
+    "text": "ResNet-50: C () = 57.7"
+   },
+   "verdict": "baseline",
+   "notes": "Table 8 (robustness evaluation), ResNet-50 row, C/C̄ column. Comparison figure for prior work (Swin/RVT rows carry explicit citations); no statement that the authors produced this row's robustness numbers themselves."
+  },
+  {
+   "extraction": {
+    "metric": "c ()",
+    "value": 62.0,
+    "where": "src/main.tex:683",
+    "text": "Swin-T~Liu2021swin: C () = 62"
+   },
+   "verdict": "baseline",
+   "notes": "Table 8 (robustness evaluation), Swin-T row, C/C̄ column. Comparison figure for prior work (Swin/RVT rows carry explicit citations); no statement that the authors produced this row's robustness numbers themselves."
+  },
+  {
+   "extraction": {
+    "metric": "c ()",
+    "value": 76.7,
+    "where": "src/main.tex:683",
+    "text": "ResNet-50: C () = 76.7"
+   },
+   "verdict": "baseline",
+   "notes": "Table 8 (robustness evaluation), ResNet-50 row, C/C̄ column. Comparison figure for prior work (Swin/RVT rows carry explicit citations); no statement that the authors produced this row's robustness numbers themselves."
+  },
+  {
+   "extraction": {
+    "metric": "clean",
+    "value": 76.1,
+    "where": "src/main.tex:683",
+    "text": "ResNet-50: Clean = 76.1"
+   },
+   "verdict": "baseline",
+   "notes": "Table 8 (robustness evaluation), ResNet-50 row, Clean column. Comparison figure for prior work (Swin/RVT rows carry explicit citations); no statement that the authors produced this row's robustness numbers themselves."
+  },
+  {
+   "extraction": {
+    "metric": "clean",
+    "value": 81.2,
+    "where": "src/main.tex:683",
+    "text": "Swin-T~Liu2021swin: Clean = 81.2"
+   },
+   "verdict": "baseline",
+   "notes": "Table 8 (robustness evaluation), Swin-T row, Clean column. Comparison figure for prior work (Swin/RVT rows carry explicit citations); no statement that the authors produced this row's robustness numbers themselves."
+  },
+  {
+   "extraction": {
+    "metric": "clean",
+    "value": 81.9,
+    "where": "src/main.tex:683",
+    "text": "RVT-S*~mao2021towards: Clean = 81.9"
+   },
+   "verdict": "baseline",
+   "notes": "Table 8 (robustness evaluation), RVT-S* row, Clean column. Comparison figure for prior work (Swin/RVT rows carry explicit citations); no statement that the authors produced this row's robustness numbers themselves."
+  },
+  {
+   "extraction": {
+    "metric": "clean",
+    "value": 82.1,
+    "where": "src/main.tex:683",
+    "text": "ConvNeXt-T: Clean = 82.1"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 8 (robustness evaluation), ConvNeXt-T row, Clean column. Prose: \"We directly test our ImageNet-1K trained/fine-tuned classification models on several robustness benchmark datasets\" -- own evaluation of the paper's own trained model."
+  },
+  {
+   "extraction": {
+    "metric": "clean",
+    "value": 82.6,
+    "where": "src/main.tex:683",
+    "text": "RVT-B*~mao2021towards: Clean = 82.6"
+   },
+   "verdict": "baseline",
+   "notes": "Table 8 (robustness evaluation), RVT-B* row, Clean column. Comparison figure for prior work (Swin/RVT rows carry explicit citations); no statement that the authors produced this row's robustness numbers themselves."
+  },
+  {
+   "extraction": {
+    "metric": "clean",
+    "value": 83.4,
+    "where": "src/main.tex:683",
+    "text": "Swin-B~Liu2021swin: Clean = 83.4"
+   },
+   "verdict": "baseline",
+   "notes": "Table 8 (robustness evaluation), Swin-B row, Clean column. Comparison figure for prior work (Swin/RVT rows carry explicit citations); no statement that the authors produced this row's robustness numbers themselves."
+  },
+  {
+   "extraction": {
+    "metric": "clean",
+    "value": 83.8,
+    "where": "src/main.tex:683",
+    "text": "ConvNeXt-B: Clean = 83.8"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 8 (robustness evaluation), ConvNeXt-B row, Clean column. Prose: \"We directly test our ImageNet-1K trained/fine-tuned classification models on several robustness benchmark datasets\" -- own evaluation of the paper's own trained model."
+  },
+  {
+   "extraction": {
+    "metric": "clean",
+    "value": 86.8,
+    "where": "src/main.tex:683",
+    "text": "ConvNeXt-B: Clean = 86.8"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 8 (robustness evaluation), ConvNeXt-B row, Clean column. Prose: \"We directly test our ImageNet-1K trained/fine-tuned classification models on several robustness benchmark datasets\" -- own evaluation of the paper's own trained model."
+  },
+  {
+   "extraction": {
+    "metric": "clean",
+    "value": 87.5,
+    "where": "src/main.tex:683",
+    "text": "ConvNeXt-L: Clean = 87.5"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 8 (robustness evaluation), ConvNeXt-L row, Clean column. Prose: \"We directly test our ImageNet-1K trained/fine-tuned classification models on several robustness benchmark datasets\" -- own evaluation of the paper's own trained model."
+  },
+  {
+   "extraction": {
+    "metric": "clean",
+    "value": 87.8,
+    "where": "src/main.tex:683",
+    "text": "ConvNeXt-XL: Clean = 87.8"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 8 (robustness evaluation), ConvNeXt-XL row, Clean column. Prose: \"We directly test our ImageNet-1K trained/fine-tuned classification models on several robustness benchmark datasets\" -- own evaluation of the paper's own trained model."
+  },
+  {
+   "extraction": {
+    "metric": "r",
+    "value": 36.1,
+    "where": "src/main.tex:683",
+    "text": "ResNet-50: R = 36.1"
+   },
+   "verdict": "baseline",
+   "notes": "Table 8 (robustness evaluation), ResNet-50 row, R column. Comparison figure for prior work (Swin/RVT rows carry explicit citations); no statement that the authors produced this row's robustness numbers themselves."
+  },
+  {
+   "extraction": {
+    "metric": "r",
+    "value": 41.3,
+    "where": "src/main.tex:683",
+    "text": "Swin-T~Liu2021swin: R = 41.3"
+   },
+   "verdict": "baseline",
+   "notes": "Table 8 (robustness evaluation), Swin-T row, R column. Comparison figure for prior work (Swin/RVT rows carry explicit citations); no statement that the authors produced this row's robustness numbers themselves."
+  },
+  {
+   "extraction": {
+    "metric": "r",
+    "value": 46.6,
+    "where": "src/main.tex:683",
+    "text": "Swin-B~Liu2021swin: R = 46.6"
+   },
+   "verdict": "baseline",
+   "notes": "Table 8 (robustness evaluation), Swin-B row, R column. Comparison figure for prior work (Swin/RVT rows carry explicit citations); no statement that the authors produced this row's robustness numbers themselves."
+  },
+  {
+   "extraction": {
+    "metric": "r",
+    "value": 47.2,
+    "where": "src/main.tex:683",
+    "text": "ConvNeXt-T: R = 47.2"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 8 (robustness evaluation), ConvNeXt-T row, R column. Prose: \"We directly test our ImageNet-1K trained/fine-tuned classification models on several robustness benchmark datasets\" -- own evaluation of the paper's own trained model."
+  },
+  {
+   "extraction": {
+    "metric": "r",
+    "value": 47.7,
+    "where": "src/main.tex:683",
+    "text": "RVT-S*~mao2021towards: R = 47.7"
+   },
+   "verdict": "baseline",
+   "notes": "Table 8 (robustness evaluation), RVT-S* row, R column. Comparison figure for prior work (Swin/RVT rows carry explicit citations); no statement that the authors produced this row's robustness numbers themselves."
+  },
+  {
+   "extraction": {
+    "metric": "r",
+    "value": 48.7,
+    "where": "src/main.tex:683",
+    "text": "RVT-B*~mao2021towards: R = 48.7"
+   },
+   "verdict": "baseline",
+   "notes": "Table 8 (robustness evaluation), RVT-B* row, R column. Comparison figure for prior work (Swin/RVT rows carry explicit citations); no statement that the authors produced this row's robustness numbers themselves."
+  },
+  {
+   "extraction": {
+    "metric": "r",
+    "value": 51.3,
+    "where": "src/main.tex:683",
+    "text": "ConvNeXt-B: R = 51.3"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 8 (robustness evaluation), ConvNeXt-B row, R column. Prose: \"We directly test our ImageNet-1K trained/fine-tuned classification models on several robustness benchmark datasets\" -- own evaluation of the paper's own trained model."
+  },
+  {
+   "extraction": {
+    "metric": "r",
+    "value": 64.9,
+    "where": "src/main.tex:683",
+    "text": "ConvNeXt-B: R = 64.9"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 8 (robustness evaluation), ConvNeXt-B row, R column. Prose: \"We directly test our ImageNet-1K trained/fine-tuned classification models on several robustness benchmark datasets\" -- own evaluation of the paper's own trained model."
+  },
+  {
+   "extraction": {
+    "metric": "r",
+    "value": 66.7,
+    "where": "src/main.tex:683",
+    "text": "ConvNeXt-L: R = 66.7"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 8 (robustness evaluation), ConvNeXt-L row, R column. Prose: \"We directly test our ImageNet-1K trained/fine-tuned classification models on several robustness benchmark datasets\" -- own evaluation of the paper's own trained model."
+  },
+  {
+   "extraction": {
+    "metric": "r",
+    "value": 68.2,
+    "where": "src/main.tex:683",
+    "text": "ConvNeXt-XL: R = 68.2"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 8 (robustness evaluation), ConvNeXt-XL row, R column. Prose: \"We directly test our ImageNet-1K trained/fine-tuned classification models on several robustness benchmark datasets\" -- own evaluation of the paper's own trained model."
+  },
+  {
+   "extraction": {
+    "metric": "sk",
+    "value": 24.1,
+    "where": "src/main.tex:683",
+    "text": "ResNet-50: SK = 24.1"
+   },
+   "verdict": "baseline",
+   "notes": "Table 8 (robustness evaluation), ResNet-50 row, SK column. Comparison figure for prior work (Swin/RVT rows carry explicit citations); no statement that the authors produced this row's robustness numbers themselves."
+  },
+  {
+   "extraction": {
+    "metric": "sk",
+    "value": 29.1,
+    "where": "src/main.tex:683",
+    "text": "Swin-T~Liu2021swin: SK = 29.1"
+   },
+   "verdict": "baseline",
+   "notes": "Table 8 (robustness evaluation), Swin-T row, SK column. Comparison figure for prior work (Swin/RVT rows carry explicit citations); no statement that the authors produced this row's robustness numbers themselves."
+  },
+  {
+   "extraction": {
+    "metric": "sk",
+    "value": 32.4,
+    "where": "src/main.tex:683",
+    "text": "Swin-B~Liu2021swin: SK = 32.4"
+   },
+   "verdict": "baseline",
+   "notes": "Table 8 (robustness evaluation), Swin-B row, SK column. Comparison figure for prior work (Swin/RVT rows carry explicit citations); no statement that the authors produced this row's robustness numbers themselves."
+  },
+  {
+   "extraction": {
+    "metric": "sk",
+    "value": 33.8,
+    "where": "src/main.tex:683",
+    "text": "ConvNeXt-T: SK = 33.8"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 8 (robustness evaluation), ConvNeXt-T row, SK column. Prose: \"We directly test our ImageNet-1K trained/fine-tuned classification models on several robustness benchmark datasets\" -- own evaluation of the paper's own trained model."
+  },
+  {
+   "extraction": {
+    "metric": "sk",
+    "value": 34.7,
+    "where": "src/main.tex:683",
+    "text": "RVT-S*~mao2021towards: SK = 34.7"
+   },
+   "verdict": "baseline",
+   "notes": "Table 8 (robustness evaluation), RVT-S* row, SK column. Comparison figure for prior work (Swin/RVT rows carry explicit citations); no statement that the authors produced this row's robustness numbers themselves."
+  },
+  {
+   "extraction": {
+    "metric": "sk",
+    "value": 36.0,
+    "where": "src/main.tex:683",
+    "text": "RVT-B*~mao2021towards: SK = 36"
+   },
+   "verdict": "baseline",
+   "notes": "Table 8 (robustness evaluation), RVT-B* row, SK column. Comparison figure for prior work (Swin/RVT rows carry explicit citations); no statement that the authors produced this row's robustness numbers themselves."
+  },
+  {
+   "extraction": {
+    "metric": "sk",
+    "value": 38.2,
+    "where": "src/main.tex:683",
+    "text": "ConvNeXt-B: SK = 38.2"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 8 (robustness evaluation), ConvNeXt-B row, SK column. Prose: \"We directly test our ImageNet-1K trained/fine-tuned classification models on several robustness benchmark datasets\" -- own evaluation of the paper's own trained model."
+  },
+  {
+   "extraction": {
+    "metric": "sk",
+    "value": 51.6,
+    "where": "src/main.tex:683",
+    "text": "ConvNeXt-B: SK = 51.6"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 8 (robustness evaluation), ConvNeXt-B row, SK column. Prose: \"We directly test our ImageNet-1K trained/fine-tuned classification models on several robustness benchmark datasets\" -- own evaluation of the paper's own trained model."
+  },
+  {
+   "extraction": {
+    "metric": "sk",
+    "value": 52.8,
+    "where": "src/main.tex:683",
+    "text": "ConvNeXt-L: SK = 52.8"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 8 (robustness evaluation), ConvNeXt-L row, SK column. Prose: \"We directly test our ImageNet-1K trained/fine-tuned classification models on several robustness benchmark datasets\" -- own evaluation of the paper's own trained model."
+  },
+  {
+   "extraction": {
+    "metric": "sk",
+    "value": 55.0,
+    "where": "src/main.tex:683",
+    "text": "ConvNeXt-XL: SK = 55"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 8 (robustness evaluation), ConvNeXt-XL row, SK column. Prose: \"We directly test our ImageNet-1K trained/fine-tuned classification models on several robustness benchmark datasets\" -- own evaluation of the paper's own trained model."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 76.13,
+    "where": "src/main.tex:805",
+    "text": "ResNet-50 (PyTorchtorchvision): IN-1K acc. = 76.13"
+   },
+   "verdict": "baseline",
+   "notes": "Table 10 (detailed ResNet-50 modernization results), \"ResNet-50 (PyTorch)\" row, IN-1K acc. Quoted comparison figure (cited torchvision ResNet-50 accuracy [1])."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 81.33,
+    "where": "src/main.tex:805",
+    "text": "Swin-T Liu2021swin: IN-1K acc. = 81.33"
+   },
+   "verdict": "real_own_result",
+   "notes": "Text is labelled 'Swin-T' but 81.33 is not Swin-T's Table 10 value (81.30, which is not separately extracted anywhere). 81.33 is Table 11's (main.tex:848) 'stage ratio and increase width' ResNet-200-regime roadmap result -- a real number the paper reports and itself an own result, misbound to the Table 10 Swin-T row/location. Judged on the (metric, value) pair rather than the mismatched row label, per the same principle used for barlowtwins' places-205=54.1 case."
+  },
+  {
+   "extraction": {
+    "metric": "gflops",
+    "value": 2.35,
+    "where": "src/main.tex:805",
+    "text": "depthwise conv: GFLOPs = 2.35"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 10 (detailed ResNet-50 modernization results), \"depthwise conv\" row, GFLOPs. Own roadmap experiment's model spec."
+  },
+  {
+   "extraction": {
+    "metric": "gflops",
+    "value": 4.07,
+    "where": "src/main.tex:805",
+    "text": "move up depthwise conv: GFLOPs = 4.07"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 10 (detailed ResNet-50 modernization results), \"move up depthwise conv\" row, GFLOPs. Own roadmap experiment's model spec."
+  },
+  {
+   "extraction": {
+    "metric": "gflops",
+    "value": 4.09,
+    "where": "src/main.tex:805",
+    "text": "ResNet-50 (PyTorchtorchvision): GFLOPs = 4.09"
+   },
+   "verdict": "baseline",
+   "notes": "Table 10 (detailed ResNet-50 modernization results), \"ResNet-50 (PyTorch) / ResNet-50 (enhanced recipe) [tied]\" row, GFLOPs. Quoted/reference architecture spec, not an own experimental result."
+  },
+  {
+   "extraction": {
+    "metric": "gflops",
+    "value": 4.15,
+    "where": "src/main.tex:805",
+    "text": "ReLU  GELU: GFLOPs = 4.15"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 10 (detailed ResNet-50 modernization results), \"kernel size →7 / ReLU→GELU / fewer activations / fewer norms [4-way tied]\" row, GFLOPs. Own roadmap experiment's model spec."
+  },
+  {
+   "extraction": {
+    "metric": "gflops",
+    "value": 4.21,
+    "where": "src/main.tex:805",
+    "text": "kernel size  9: GFLOPs = 4.21"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 10 (detailed ResNet-50 modernization results), \"kernel size →9\" row, GFLOPs. Own roadmap experiment's model spec."
+  },
+  {
+   "extraction": {
+    "metric": "gflops",
+    "value": 4.29,
+    "where": "src/main.tex:805",
+    "text": "kernel size  11: GFLOPs = 4.29"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 10 (detailed ResNet-50 modernization results), \"kernel size →11\" row, GFLOPs. Own roadmap experiment's model spec."
+  },
+  {
+   "extraction": {
+    "metric": "gflops",
+    "value": 4.42,
+    "where": "src/main.tex:805",
+    "text": "``patchify'' stem: GFLOPs = 4.42"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 10 (detailed ResNet-50 modernization results), \"“patchify” stem\" row, GFLOPs. Own roadmap experiment's model spec."
+  },
+  {
+   "extraction": {
+    "metric": "gflops",
+    "value": 4.46,
+    "where": "src/main.tex:805",
+    "text": "BN  LN: GFLOPs = 4.46"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 10 (detailed ResNet-50 modernization results), \"BN→LN\" row, GFLOPs. Own roadmap experiment's model spec."
+  },
+  {
+   "extraction": {
+    "metric": "gflops",
+    "value": 4.49,
+    "where": "src/main.tex:805",
+    "text": "separate d.s. conv (-T): GFLOPs = 4.49"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 10 (detailed ResNet-50 modernization results), \"separate d.s. conv (ConvNeXt-T)\" row, GFLOPs. Own roadmap experiment's model spec."
+  },
+  {
+   "extraction": {
+    "metric": "gflops",
+    "value": 4.53,
+    "where": "src/main.tex:805",
+    "text": "stage ratio: GFLOPs = 4.53"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 10 (detailed ResNet-50 modernization results), \"stage ratio\" row, GFLOPs. Own roadmap experiment's model spec."
+  },
+  {
+   "extraction": {
+    "metric": "gflops",
+    "value": 4.64,
+    "where": "src/main.tex:805",
+    "text": "inverting dimensions: GFLOPs = 4.64"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 10 (detailed ResNet-50 modernization results), \"inverting dimensions\" row, GFLOPs. Own roadmap experiment's model spec."
+  },
+  {
+   "extraction": {
+    "metric": "gflops",
+    "value": 5.27,
+    "where": "src/main.tex:805",
+    "text": "increase width: GFLOPs = 5.27"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 10 (detailed ResNet-50 modernization results), \"increase width\" row, GFLOPs. Own roadmap experiment's model spec."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 78.2,
+    "where": "src/main.tex:841",
+    "text": "ResNet-200 He2016a: IN-1K acc. = 78.2"
+   },
+   "verdict": "baseline",
+   "notes": "Table 11 (detailed ResNet-200 modernization results), \"ResNet-200\" row, IN-1K acc. Quoted comparison figure (cited [29])."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 80.54,
+    "where": "src/main.tex:841",
+    "text": "depthwise conv: IN-1K acc. = 80.54"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 11 (detailed ResNet-200 modernization results), \"depthwise conv\" row, IN-1K acc. Own roadmap experiment."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 81.14,
+    "where": "src/main.tex:841",
+    "text": "ResNet-200 (enhanced recipe): IN-1K acc. = 81.14"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 11 (detailed ResNet-200 modernization results), \"ResNet-200 (enhanced recipe)\" row, IN-1K acc. Own roadmap experiment."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 81.59,
+    "where": "src/main.tex:841",
+    "text": "``patchify'' stem: IN-1K acc. = 81.59"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 11 (detailed ResNet-200 modernization results), \"“patchify” stem\" row, IN-1K acc. Own roadmap experiment."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 81.85,
+    "where": "src/main.tex:841",
+    "text": "increase width: IN-1K acc. = 81.85"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 11 (detailed ResNet-200 modernization results), \"increase width\" row, IN-1K acc. Own roadmap experiment."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 82.18,
+    "where": "src/main.tex:841",
+    "text": "kernel size  11: IN-1K acc. = 82.18"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 11 (detailed ResNet-200 modernization results), \"kernel size →11\" row, IN-1K acc. Own roadmap experiment."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 82.19,
+    "where": "src/main.tex:841",
+    "text": "ReLU  GELU: IN-1K acc. = 82.19"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 11 (detailed ResNet-200 modernization results), \"ReLU→GELU\" row, IN-1K acc. Own roadmap experiment."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 82.27,
+    "where": "src/main.tex:841",
+    "text": "kernel size  9: IN-1K acc. = 82.27"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 11 (detailed ResNet-200 modernization results), \"kernel size →9\" row, IN-1K acc. Own roadmap experiment."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 82.32,
+    "where": "src/main.tex:841",
+    "text": "kernel size  5: IN-1K acc. = 82.32"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 11 (detailed ResNet-200 modernization results), \"kernel size →5\" row, IN-1K acc. Own roadmap experiment."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 82.64,
+    "where": "src/main.tex:841",
+    "text": "inverting dimensions: IN-1K acc. = 82.64"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 11 (detailed ResNet-200 modernization results), \"inverting dimensions\" row, IN-1K acc. Own roadmap experiment."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 82.71,
+    "where": "src/main.tex:841",
+    "text": "fewer activations: IN-1K acc. = 82.71"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 11 (detailed ResNet-200 modernization results), \"fewer activations\" row, IN-1K acc. Own roadmap experiment."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 83.17,
+    "where": "src/main.tex:841",
+    "text": "fewer norms: IN-1K acc. = 83.17"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 11 (detailed ResNet-200 modernization results), \"fewer norms\" row, IN-1K acc. Own roadmap experiment."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 83.35,
+    "where": "src/main.tex:841",
+    "text": "BN  LN: IN-1K acc. = 83.35"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 11 (detailed ResNet-200 modernization results), \"BN→LN\" row, IN-1K acc. Own roadmap experiment."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 83.5,
+    "where": "src/main.tex:841",
+    "text": "Swin-BLiu2021swin: IN-1K acc. = 83.5"
+   },
+   "verdict": "baseline",
+   "notes": "Table 11 (detailed ResNet-200 modernization results), \"Swin-B\" row, IN-1K acc. Quoted comparison figure (cited [45])."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 83.6,
+    "where": "src/main.tex:841",
+    "text": "separate d.s. conv (-B): IN-1K acc. = 83.6"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 11 (detailed ResNet-200 modernization results), \"separate d.s. conv (ConvNeXt-B)\" row, IN-1K acc. Own roadmap experiment."
+  },
+  {
+   "extraction": {
+    "metric": "gflops",
+    "value": 7.23,
+    "where": "src/main.tex:841",
+    "text": "depthwise conv: GFLOPs = 7.23"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 11 (detailed ResNet-200 modernization results), \"depthwise conv\" row, GFLOPs. Own roadmap experiment's model spec."
+  },
+  {
+   "extraction": {
+    "metric": "gflops",
+    "value": 14.38,
+    "where": "src/main.tex:841",
+    "text": "``patchify'' stem: GFLOPs = 14.38"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 11 (detailed ResNet-200 modernization results), \"“patchify” stem\" row, GFLOPs. Own roadmap experiment's model spec."
+  },
+  {
+   "extraction": {
+    "metric": "gflops",
+    "value": 14.52,
+    "where": "src/main.tex:841",
+    "text": "stage ratio and increase width: GFLOPs = 14.52"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 11 (detailed ResNet-200 modernization results), \"stage ratio and increase width\" row, GFLOPs. Own roadmap experiment's model spec."
+  },
+  {
+   "extraction": {
+    "metric": "gflops",
+    "value": 14.63,
+    "where": "src/main.tex:841",
+    "text": "move up depthwise conv: GFLOPs = 14.63"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 11 (detailed ResNet-200 modernization results), \"move up depthwise conv\" row, GFLOPs. Own roadmap experiment's model spec."
+  },
+  {
+   "extraction": {
+    "metric": "gflops",
+    "value": 14.7,
+    "where": "src/main.tex:841",
+    "text": "kernel size  5: GFLOPs = 14.7"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 11 (detailed ResNet-200 modernization results), \"kernel size →5\" row, GFLOPs. Own roadmap experiment's model spec."
+  },
+  {
+   "extraction": {
+    "metric": "gflops",
+    "value": 14.81,
+    "where": "src/main.tex:841",
+    "text": "BN  LN: GFLOPs = 14.81"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 11 (detailed ResNet-200 modernization results), \"BN→LN / kernel size →7 / ReLU→GELU / fewer activations / fewer norms [tied]\" row, GFLOPs. Own roadmap experiment's model spec."
+  },
+  {
+   "extraction": {
+    "metric": "gflops",
+    "value": 14.95,
+    "where": "src/main.tex:841",
+    "text": "kernel size  9: GFLOPs = 14.95"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 11 (detailed ResNet-200 modernization results), \"kernel size →9\" row, GFLOPs. Own roadmap experiment's model spec."
+  },
+  {
+   "extraction": {
+    "metric": "gflops",
+    "value": 15.01,
+    "where": "src/main.tex:841",
+    "text": "ResNet-200 (enhanced recipe): GFLOPs = 15.01"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 11 (detailed ResNet-200 modernization results): GFLOPs=15.01 is tied between the cited 'ResNet-200' row and the authors' own 'ResNet-200 (enhanced recipe)' row (same architecture, hence identical FLOPs); the extractor's own text names 'ResNet-200 (enhanced recipe)', the own-result row, so judged as real_own_result."
+  },
+  {
+   "extraction": {
+    "metric": "gflops",
+    "value": 15.13,
+    "where": "src/main.tex:841",
+    "text": "kernel size  11: GFLOPs = 15.13"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 11 (detailed ResNet-200 modernization results), \"kernel size →11\" row, GFLOPs. Own roadmap experiment's model spec."
+  },
+  {
+   "extraction": {
+    "metric": "gflops",
+    "value": 15.35,
+    "where": "src/main.tex:841",
+    "text": "separate d.s. conv (-B): GFLOPs = 15.35"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 11 (detailed ResNet-200 modernization results), \"separate d.s. conv (ConvNeXt-B)\" row, GFLOPs. Own roadmap experiment's model spec."
+  },
+  {
+   "extraction": {
+    "metric": "gflops",
+    "value": 15.43,
+    "where": "src/main.tex:841",
+    "text": "Swin-BLiu2021swin: GFLOPs = 15.43"
+   },
+   "verdict": "baseline",
+   "notes": "Table 11 (detailed ResNet-200 modernization results), \"Swin-B\" row, GFLOPs. Quoted/reference architecture spec, not an own experimental result."
+  },
+  {
+   "extraction": {
+    "metric": "gflops",
+    "value": 15.68,
+    "where": "src/main.tex:841",
+    "text": "inverting dimensions: GFLOPs = 15.68"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 11 (detailed ResNet-200 modernization results), \"inverting dimensions\" row, GFLOPs. Own roadmap experiment's model spec."
+  },
+  {
+   "extraction": {
+    "metric": "gflops",
+    "value": 16.76,
+    "where": "src/main.tex:841",
+    "text": "increase width: GFLOPs = 16.76"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 11 (detailed ResNet-200 modernization results), \"increase width\" row, GFLOPs. Own roadmap experiment's model spec."
+  }
+ ]
+}
