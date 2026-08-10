@@ -23,6 +23,7 @@ from .candidates import (
     from_markdown_table,
 )
 from .cluster import ClaimCluster, certain, cluster_candidates
+from .reconcile import matching_results
 
 __all__ = [
     "CandidateSource",
@@ -36,6 +37,7 @@ __all__ = [
     "from_latex_prose",
     "from_latex_tables",
     "from_markdown_table",
+    "matching_results",
 ]
 
 #: Documents whose tables state results, matched on basename at any depth, so
@@ -54,7 +56,7 @@ def _claim_documents(repo: Repo) -> list[str]:
     return sorted(str(entry.path) for entry in repo.find_names(*_CLAIM_DOCUMENTS))
 
 
-def extract_candidates(evidence: Evidence, repo: Repo) -> list[ClaimCandidate]:
+def extract_candidates(evidence: Evidence) -> list[ClaimCandidate]:
     """Every number this artifact states as a result, from every known source.
 
     Exhaustive by design. The caller decides what to present; this layer never
@@ -64,6 +66,7 @@ def extract_candidates(evidence: Evidence, repo: Repo) -> list[ClaimCandidate]:
     candidates: list[ClaimCandidate] = []
     candidates.extend(from_latex_tables(evidence.latex.table_cells))
     candidates.extend(from_latex_prose(evidence.latex.metrics))
+    repo: Repo = evidence.repo
     for path in _claim_documents(repo):
         text = repo.read_text(path)
         if text:
@@ -71,6 +74,20 @@ def extract_candidates(evidence: Evidence, repo: Repo) -> list[ClaimCandidate]:
     return candidates
 
 
-def extract_claims(evidence: Evidence, repo: Repo) -> list[ClaimCluster]:
-    """Extraction and clustering together — the normal entry point."""
-    return cluster_candidates(extract_candidates(evidence, repo))
+def extract_claims(evidence: Evidence) -> list[ClaimCluster]:
+    """Extraction and clustering together — the normal entry point.
+
+    Ordered by where the artifact first states each claim, so the numbering an
+    author is asked to confirm follows the document rather than the alphabet.
+    """
+    clusters = cluster_candidates(extract_candidates(evidence))
+    clusters.sort(key=lambda c: (_primary(c).path, _primary(c).line, c.metric, c.value))
+    return clusters
+
+
+def _primary(cluster: ClaimCluster) -> ClaimLocation:
+    """The earliest place the artifact states this claim."""
+    return min(
+        (member.location for member in cluster.members),
+        key=lambda location: (location.path, location.line),
+    )

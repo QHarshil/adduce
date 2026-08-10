@@ -8,6 +8,7 @@ has not written yet.
 
 from __future__ import annotations
 
+from .claims import CandidateSource, ClaimCluster, extract_claims, matching_results
 from .evidence import Evidence
 from .manifest import (
     Claim,
@@ -20,7 +21,21 @@ from .manifest import (
     SmokeTarget,
 )
 
-_MAX_DRAFT_CLAIMS = 10
+
+def _claim_text(cluster: ClaimCluster) -> str:
+    """A one-line statement of the claim, in the artifact's own words.
+
+    A prose member already reads as a sentence, so it is preferred when one
+    exists. A table cell has to be assembled from its labels, which is why the
+    row label is kept alongside the column.
+    """
+    for member in cluster.members:
+        if member.source is CandidateSource.LATEX_PROSE:
+            return member.text
+    member = cluster.members[0]
+    if member.row_label and member.column_label:
+        return f"{member.row_label}: {member.column_label} = {cluster.value:g}"
+    return member.text
 
 
 def _draft_environment(ev: Evidence) -> EnvironmentInfo:
@@ -80,32 +95,57 @@ def _guess_command(ev: Evidence) -> str | None:
 
 
 def _draft_claims(ev: Evidence) -> list[Claim]:
+    """Draft one claim per distinct number the artifact reports.
+
+    Claims come from every source :mod:`adduce.claims` knows — paper prose,
+    ``tabular`` cells, and markdown results tables — rather than from paper
+    prose alone, and a number stated in two places is one claim with two
+    locations rather than two claims.
+
+    ``log`` is resolved per claim: it names a result file that actually states
+    this metric at this value, or nothing. It used to name the first result
+    file in the repository for every claim alike, which is a constant wearing
+    the costume of a resolution. ``command`` and ``config`` remain
+    repository-level scaffold defaults and are still guesses; resolving those
+    needs the producer graph, not a numeric comparison.
+    """
     claims: list[Claim] = []
     command = _guess_command(ev)
     config = ev.config.files[0].path if ev.config.files else None
-    log = ev.results.files[0].path if ev.results.files else None
 
-    for index, metric in enumerate(ev.latex.metrics[:_MAX_DRAFT_CLAIMS], start=1):
+    for index, cluster in enumerate(extract_claims(ev), start=1):
+        primary = min(
+            (member.location for member in cluster.members),
+            key=lambda location: (location.path, location.line),
+        )
+        logs = matching_results(cluster, ev.results.files)
         claims.append(
             Claim(
                 id=f"C{index}",
-                text=metric.raw,
+                text=_claim_text(cluster),
                 kind="metric",
-                where=f"{metric.file}:{metric.line}",
-                metric=metric.name,
-                value=metric.value,
-                produced_by=ProducedBy(command=command, config=config, log=log),
+                where=str(primary),
+                metric=cluster.metric,
+                value=cluster.value,
+                produced_by=ProducedBy(
+                    command=command, config=config, log=logs[0] if logs else None
+                ),
                 status="draft",
             )
         )
     if not claims and ev.docs.has_results_table:
+        # A results table was detected and no claim could be read out of it,
+        # which now means its columns name no metric this build knows. That is
+        # a different state from "no results are reported" and is worth saying
+        # so: the author can name the metric, and a missing alias is a recall
+        # bug in ``naming`` rather than a property of the repository.
         claims.append(
             Claim(
                 id="C1",
                 text="Main result from the README results table (fill in the metric and value)",
                 kind="metric",
                 where="README results table",
-                produced_by=ProducedBy(command=command, config=config, log=log),
+                produced_by=ProducedBy(command=command, config=config, log=None),
                 status="draft",
             )
         )
