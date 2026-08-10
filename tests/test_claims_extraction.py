@@ -20,6 +20,7 @@ from adduce.claims import (
     from_markdown_table,
 )
 from adduce.evidence.latex import PaperValue, TableCell
+from adduce.manifest_builder import _draft_claims
 from adduce.naming import METRIC_PATTERNS, canonical_metric
 
 # --- the vocabulary move -------------------------------------------------
@@ -322,3 +323,94 @@ def test_extraction_never_truncates():
     candidates = [_candidate("accuracy", float(i), line=i) for i in range(1, 26)]
     clusters = cluster_candidates(candidates)
     assert len(clusters) == 25
+
+
+# --- drafting integration ------------------------------------------------
+#
+# These drive the real pipeline rather than a constructed Evidence, because the
+# defect being closed is in how drafting consumes evidence, and a hand-built
+# Evidence would let the test agree with a wiring that does not exist.
+
+
+def _repo(tmp_path, readme: str, results: dict[str, str] | None = None):
+    (tmp_path / "README.md").write_text(readme, encoding="utf-8")
+    (tmp_path / "train.py").write_text("import torch\n", encoding="utf-8")
+    for name, body in (results or {}).items():
+        target = tmp_path / name
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(body, encoding="utf-8")
+    from adduce.engine import run_check
+
+    return run_check(tmp_path).evidence
+
+
+def test_drafting_no_longer_truncates_at_ten(tmp_path):
+    """The path this replaces dropped claim eleven onward without saying so."""
+    rows = "\n".join(f"| m{i} | {90 + i}.5 |" for i in range(25))
+    evidence = _repo(tmp_path, f"| model | accuracy |\n| --- | --- |\n{rows}\n")
+    claims = _draft_claims(evidence)
+    assert len(claims) == 25
+    assert claims[-1].id == "C25"
+
+
+def test_draft_log_names_a_result_file_that_states_the_claim(tmp_path):
+    evidence = _repo(
+        tmp_path,
+        "| model | accuracy |\n| --- | --- |\n| ours | 92.4 |\n",
+        {"results/eval.csv": "accuracy\n92.4\n"},
+    )
+    (claim,) = _draft_claims(evidence)
+    assert claim.produced_by.log == "results/eval.csv"
+
+
+def test_draft_log_is_absent_when_no_result_file_states_the_claim(tmp_path):
+    """The constant this replaces named the first result file regardless."""
+    evidence = _repo(
+        tmp_path,
+        "| model | accuracy |\n| --- | --- |\n| ours | 92.4 |\n",
+        {"results/eval.csv": "accuracy\n11.1\n"},
+    )
+    (claim,) = _draft_claims(evidence)
+    assert evidence.results.files, "the result file must exist for this to mean anything"
+    assert claim.produced_by.log is None
+
+
+def test_two_claims_are_linked_to_the_files_that_actually_state_them(tmp_path):
+    """The anti-constant property, stated directly: different claims, different logs."""
+    evidence = _repo(
+        tmp_path,
+        "| model | accuracy |\n| --- | --- |\n| a | 92.4 |\n| b | 77.7 |\n",
+        {
+            "results/alpha.csv": "accuracy\n92.4\n",
+            "results/beta.csv": "accuracy\n77.7\n",
+        },
+    )
+    logs = {c.value: c.produced_by.log for c in _draft_claims(evidence)}
+    assert logs == {92.4: "results/alpha.csv", 77.7: "results/beta.csv"}
+
+
+def test_a_results_table_naming_no_metric_still_reports_something(tmp_path):
+    """Unreadable is not the same state as absent, and must not look like it."""
+    evidence = _repo(tmp_path, "| model | throughput |\n| --- | --- |\n| ours | 1200 |\n")
+    claims = _draft_claims(evidence)
+    if evidence.docs.has_results_table:
+        assert len(claims) == 1
+        assert claims[0].metric is None
+
+
+def test_a_result_file_stating_the_same_number_under_another_metric_is_not_a_match(tmp_path):
+    """Both halves of reconciliation are load-bearing, and only this shape shows it.
+
+    Where every result file names the claim's metric, matching on value alone
+    reaches the same answer, so a test built that way cannot tell whether the
+    metric is being checked at all. Here the number is right and the metric is
+    wrong, which is exactly the false link the check exists to refuse.
+    """
+    evidence = _repo(
+        tmp_path,
+        "| model | accuracy |\n| --- | --- |\n| ours | 92.4 |\n",
+        {"results/loss.csv": "loss\n92.4\n"},
+    )
+    (claim,) = _draft_claims(evidence)
+    assert evidence.results.files, "the result file must exist for this to mean anything"
+    assert claim.produced_by.log is None
