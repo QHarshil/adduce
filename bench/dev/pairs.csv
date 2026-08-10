@@ -1,0 +1,35 @@
+id,repo_url,commit_sha,arxiv_id,arxiv_version,paper_title,framework,license,notes
+albert,https://github.com/google-research/albert,b772393d3dae115b493258ce8e37c17b2cc62100,1909.11942,6,ALBERT: A Lite BERT for Self-supervised Learning of Language Representations,tensorflow,Apache-2.0,repository archived upstream
+barlowtwins,https://github.com/facebookresearch/barlowtwins,8e8d284ca0bc02f88b92328e53f9b901e86b4a3c,2103.03230,3,Barlow Twins: Self-Supervised Learning via Redundancy Reduction,pytorch,MIT,repository archived upstream
+bert,https://github.com/google-research/bert,eedf5716ce1268e56f0a50264a88cafad334ac61,1810.04805,2,BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding,tensorflow,Apache-2.0,repository archived upstream
+bit,https://github.com/google-research/big_transfer,140de6e704fd8d61f3e5ea20ffde130b7d5fd065,1912.11370,3,Big Transfer (BiT): General Visual Representation Learning,mixed,Apache-2.0,repository archived upstream
+blip,https://github.com/salesforce/BLIP,056a169437371659074aa2732649d5de3bffb4a8,2201.12086,2,BLIP: Bootstrapping Language-Image Pre-training for Unified Vision-Language Understanding and Generation,pytorch,BSD-3-Clause,repository archived upstream
+clip,https://github.com/openai/CLIP,d05afc436d78f1c48dc0dbf8e5980a9d471f35f6,2103.00020,1,Learning Transferable Visual Models From Natural Language Supervision,pytorch,MIT,
+convnext,https://github.com/facebookresearch/ConvNeXt,048efcea897d999aed302f2639b6270aedf8d4c8,2201.03545,2,A ConvNet for the 2020s,pytorch,MIT,repository archived upstream
+deepspeed,https://github.com/deepspeedai/DeepSpeed,cf44300453eb0af79ed84ed8f1cb49d57478bd76,1910.02054,3,ZeRO: Memory Optimizations Toward Training Trillion Parameter Models,pytorch,Apache-2.0,
+deit,https://github.com/facebookresearch/deit,7e160fe43f0252d17191b71cbb5826254114ea5b,2012.12877,2,Training data-efficient image transformers & distillation through attention,pytorch,Apache-2.0,repository archived upstream
+detr,https://github.com/facebookresearch/detr,29901c51d7fe8712168b8d0d64351170bc0f83e0,2005.12872,3,End-to-End Object Detection with Transformers,pytorch,Apache-2.0,repository archived upstream
+dino,https://github.com/facebookresearch/dino,7c446df5b9f45747937fb0d72314eb9f7b66930a,2104.14294,2,Emerging Properties in Self-Supervised Vision Transformers,pytorch,Apache-2.0,repository archived upstream
+electra,https://github.com/google-research/electra,8a46635f32083ada044d7e9ad09604742600ee7b,2003.10555,1,ELECTRA: Pre-training Text Encoders as Discriminators Rather Than Generators,tensorflow,Apache-2.0,repository archived upstream
+fairseq,https://github.com/facebookresearch/fairseq,3d262bb25690e4eb2e7d3c1309b1e9c406ca4b99,1904.01038,1,"fairseq: A Fast, Extensible Toolkit for Sequence Modeling",pytorch,MIT,repository archived upstream
+flash-attention,https://github.com/Dao-AILab/flash-attention,a369df707e1980fb328abcc1733e3457ec10155f,2205.14135,2,FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness,pytorch,BSD-3-Clause,
+gpt-neox,https://github.com/EleutherAI/gpt-neox,ea7aefd8f8e183256992d9fede4d7c71a46d67a5,2204.06745,1,GPT-NeoX-20B: An Open-Source Autoregressive Language Model,pytorch,Apache-2.0,
+grounding-dino,https://github.com/IDEA-Research/GroundingDINO,856dde20aee659246248e20734ef9ba5214f5e44,2303.05499,5,Grounding DINO: Marrying DINO with Grounded Pre-Training for Open-Set Object Detection,pytorch,Apache-2.0,
+hf-transformers,https://github.com/huggingface/transformers,fd12552d770f745fdbe41031ff4daa688f5ed57e,1910.03771,5,HuggingFace's Transformers: State-of-the-art Natural Language Processing,mixed,Apache-2.0,
+latent-diffusion,https://github.com/CompVis/latent-diffusion,a506df5756472e2ebaf9078affdde2c4f1502cd4,2112.10752,2,High-Resolution Image Synthesis with Latent Diffusion Models,pytorch,MIT,
+llama,https://github.com/meta-llama/llama,689c7f261b9c5514636ecc3c5fefefcbb3e6eed7,2302.13971,1,LLaMA: Open and Efficient Foundation Language Models,pytorch,NOASSERTION,
+lora,https://github.com/microsoft/LoRA,c4593f060e6a368d7bb5af5273b8e42810cdef90,2106.09685,2,LoRA: Low-Rank Adaptation of Large Language Models,pytorch,MIT,
+mae,https://github.com/facebookresearch/mae,efb2a8062c206524e35e47d04501ed4f544c0ae8,2111.06377,3,Masked Autoencoders Are Scalable Vision Learners,pytorch,NOASSERTION,repository archived upstream
+mamba,https://github.com/state-spaces/mamba,e9594ce1c732d97440f0332fdc43170a2294dbfa,2312.00752,2,Mamba: Linear-Time Sequence Modeling with Selective State Spaces,pytorch,Apache-2.0,
+megatron-lm,https://github.com/NVIDIA/Megatron-LM,6518b75ecb93ad27f8c3e4d8512860faae7e7bb2,1909.08053,4,Megatron-LM: Training Multi-Billion Parameter Language Models Using Model Parallelism,pytorch,NOASSERTION,
+mmdetection,https://github.com/open-mmlab/mmdetection,cfd5d3a985b0249de009b67d04f37263e11cdf3d,1906.07155,1,MMDetection: Open MMLab Detection Toolbox and Benchmark,pytorch,Apache-2.0,
+moco,https://github.com/facebookresearch/moco,132aea9da9bb995a411c915c0420be3db62052f3,1911.05722,3,Momentum Contrast for Unsupervised Visual Representation Learning,pytorch,unstated,
+mt-bench,https://github.com/lm-sys/FastChat,587d5cfa1609a43d192cedb8441cac3c17db105d,2306.05685,4,Judging LLM-as-a-Judge with MT-Bench and Chatbot Arena,pytorch,Apache-2.0,
+pytorch3d,https://github.com/facebookresearch/pytorch3d,9381c4016376345bb795b97c45a6c2de66db354a,2007.08501,1,Accelerating 3D Deep Learning with PyTorch3D,pytorch,NOASSERTION,
+qlora,https://github.com/artidoro/qlora,7f4e95a68dc076bea9b3a413d2b512eca6d004e5,2305.14314,1,QLoRA: Efficient Finetuning of Quantized LLMs,pytorch,MIT,
+segment-anything,https://github.com/facebookresearch/segment-anything,dca509fe793f601edb92606367a655c15ac00fdf,2304.02643,1,Segment Anything,pytorch,Apache-2.0,
+simsiam,https://github.com/facebookresearch/simsiam,a7bc1772896d0dad0806c51f0bb6f3b16d290468,2011.10566,1,Exploring Simple Siamese Representation Learning,pytorch,NOASSERTION,repository archived upstream
+stylegan2-ada,https://github.com/NVlabs/stylegan2-ada-pytorch,d72cc7d041b42ec8e806021a205ed9349f87c6a4,2006.06676,2,Training Generative Adversarial Networks with Limited Data,pytorch,NOASSERTION,
+swin,https://github.com/microsoft/Swin-Transformer,f82860bfb5225915aca09c3227159ee9e1df874d,2103.14030,2,Swin Transformer: Hierarchical Vision Transformer using Shifted Windows,pytorch,MIT,
+t5,https://github.com/google-research/text-to-text-transfer-transformer,6819e989bb733171706b9228d05468a4230e14c0,1910.10683,4,Exploring the Limits of Transfer Learning with a Unified Text-to-Text Transformer,tensorflow,Apache-2.0,
+whisper,https://github.com/openai/whisper,5f86d1d86363843179951550570367b37c5d6f78,2212.04356,1,Robust Speech Recognition via Large-Scale Weak Supervision,pytorch,MIT,
