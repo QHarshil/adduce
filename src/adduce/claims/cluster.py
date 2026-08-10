@@ -106,6 +106,28 @@ def _sort_key(candidate: ClaimCandidate) -> tuple:
     )
 
 
+def _same_place_other_number(cluster: ClaimCluster, candidate: ClaimCandidate, /) -> bool:
+    """Would joining put two *different* numbers from one location in one claim?
+
+    Restatement is the premise clustering rests on: the abstract, a results
+    table and the README stating one number are one claim. Two cells of a single
+    table are not that. They are two measurements the paper reports side by
+    side, and however closely they round together they were never one statement.
+    Merging them destroys the coarser number and leaves the survivor carrying
+    the other cell's row -- ConvNeXt reports 81.3 for Swin-T and 81.33 for its
+    own ablation in one table, which agree at one decimal place.
+
+    Identical values at one location are still one claim: a table repeating a
+    number across two columns states it twice, and that is a restatement.
+    """
+    return any(
+        member.location.path == candidate.location.path
+        and member.location.line == candidate.location.line
+        and member.value != candidate.value
+        for member in cluster.members
+    )
+
+
 def cluster_candidates(candidates: list[ClaimCandidate], /) -> list[ClaimCluster]:
     """Group candidates that state the same claim.
 
@@ -118,7 +140,9 @@ def cluster_candidates(candidates: list[ClaimCandidate], /) -> list[ClaimCluster
     for candidate in sorted(candidates, key=_sort_key):
         bucket = by_metric.setdefault(candidate.metric, [])
         for existing in bucket:
-            if _agree(existing.value, candidate.value):
+            if _agree(existing.value, candidate.value) and not _same_place_other_number(
+                existing, candidate
+            ):
                 existing.members.append(candidate)
                 # The more precise statement is the better representative.
                 if _decimals(candidate.value) > _decimals(existing.value):
