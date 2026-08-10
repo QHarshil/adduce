@@ -9,9 +9,15 @@ Two mismatch problems live here:
 - The same hyperparameter appears under different names in papers, configs,
   and CLIs (``lr`` / ``learning_rate`` / "learning rate"). Drift detection
   normalises through the synonym map before comparing.
+
+The same problem applies to metrics — ``Top-1``, ``Acc.`` and "accuracy" are
+one metric stated three ways — so the metric vocabulary lives here too, shared
+by the LaTeX collector and by claim extraction from tables and result files.
 """
 
 from __future__ import annotations
+
+import re
 
 #: import name -> distribution name, where they differ (lowercased).
 IMPORT_TO_DIST: dict[str, str] = {
@@ -132,6 +138,91 @@ def canonical_hyperparameter(name: str) -> str | None:
     # Dotted config keys resolve on their terminal segment (optim.lr -> lr).
     terminal = key.rsplit(".", 1)[-1].rsplit("/", 1)[-1]
     return HYPERPARAM_SYNONYMS.get(terminal)
+
+
+#: Canonical metric -> the regex alternatives that name it in paper prose.
+#: These are *patterns*, not literals: several carry word boundaries to stop
+#: "map" matching inside "mapping" or "em" inside "them". Moved here from
+#: ``evidence.latex`` so a markdown table, a result column and a LaTeX sentence
+#: canonicalise the same metric to the same name; the collector still owns how
+#: it applies them.
+METRIC_PATTERNS: dict[str, tuple[str, ...]] = {
+    "accuracy": ("accuracy", "acc\\.", "top-1", "top-5"),
+    "f1": ("f1", "f1-score", "f-score", "macro-f1", "micro-f1"),
+    "bleu": ("bleu",),
+    "rouge": ("rouge", "rouge-l", "rouge-1", "rouge-2"),
+    "ndcg": ("ndcg",),
+    "map": ("\\bmap\\b", "mean average precision"),
+    "mrr": ("mrr", "mean reciprocal rank"),
+    "auc": ("auc", "auroc", "roc-auc"),
+    "precision": ("precision@", "\\bprecision\\b"),
+    "recall": ("recall@", "\\brecall\\b"),
+    "perplexity": ("perplexity", "\\bppl\\b"),
+    "wer": ("\\bwer\\b", "word error rate"),
+    "mse": ("\\bmse\\b", "mean squared error"),
+    "rmse": ("\\brmse\\b",),
+    "mae": ("\\bmae\\b", "mean absolute error"),
+    "iou": ("\\biou\\b", "\\bmiou\\b"),
+    "dice": ("dice",),
+    "exact_match": ("exact match", "\\bem\\b"),
+}
+
+#: Metric synonym groups for *literal* lookup — a table header or a result
+#: column, where there is no surrounding prose to disambiguate and so no need
+#: for boundary syntax. The first entry is the canonical name.
+_METRIC_GROUPS: tuple[tuple[str, ...], ...] = (
+    ("accuracy", "acc", "acc.", "top-1", "top1", "top-1 acc", "top-5", "top5", "top-5 acc", "err", "error rate"),
+    ("f1", "f-1", "f1-score", "f score", "f-score", "macro-f1", "micro-f1", "macro f1", "micro f1"),
+    ("bleu", "bleu-4", "bleu4", "sacrebleu"),
+    ("rouge", "rouge-l", "rouge-1", "rouge-2", "rougel"),
+    ("ndcg", "ndcg@10", "ndcg@5"),
+    ("map", "mean average precision", "ap", "ap50", "ap75", "ap@50"),
+    ("mrr", "mean reciprocal rank"),
+    ("auc", "auroc", "roc-auc", "auc-roc", "aupr", "auprc"),
+    ("precision", "prec", "prec.", "precision@k"),
+    ("recall", "rec", "rec.", "recall@k"),
+    ("perplexity", "ppl", "perp"),
+    ("wer", "word error rate", "cer"),
+    ("mse", "mean squared error", "l2 loss"),
+    ("rmse", "root mean squared error"),
+    ("mae", "mean absolute error", "l1 loss"),
+    ("iou", "miou", "mean iou", "jaccard"),
+    ("dice", "dice score", "dsc"),
+    ("exact_match", "exact match", "em"),
+    ("spearman", "spearman correlation", "spearman's rho", "rho"),
+    ("pearson", "pearson correlation", "pearson's r"),
+    # Loss is the reported result in a language-modelling repository as often
+    # as accuracy is in a classification one. The splits stay distinct: a
+    # training loss and a validation loss are two claims, not one restated.
+    ("loss", "final loss", "objective"),
+    ("train_loss", "train loss", "training loss", "trn loss", "loss (train)"),
+    ("val_loss", "val loss", "validation loss", "valid loss", "dev loss", "loss (val)"),
+    ("test_loss", "test loss", "eval loss", "evaluation loss", "loss (test)"),
+)
+
+#: any-alias -> canonical metric name (keys lowercased).
+METRIC_SYNONYMS: dict[str, str] = {}
+for _mgroup in _METRIC_GROUPS:
+    _mcanonical = _mgroup[0]
+    for _malias in _mgroup:
+        METRIC_SYNONYMS[_malias.lower()] = _mcanonical
+        METRIC_SYNONYMS[_malias.lower().replace(" ", "_")] = _mcanonical
+
+
+def canonical_metric(name: str) -> str | None:
+    """Map a table header or result column to its canonical metric, if known.
+
+    Literal lookup only. Callers matching inside prose want
+    :data:`METRIC_PATTERNS`, whose entries carry the boundary syntax that stops
+    ``map`` matching inside ``mapping``.
+    """
+    key = name.strip().lower().strip("*_`")
+    # Headers routinely carry a unit or a qualifier: "Accuracy (%)", "F1 ↑".
+    key = re.sub(r"\s*[(\[][^)\]]*[)\]]\s*$", "", key).strip()
+    key = key.rstrip("↑↓*").strip()
+    if key in METRIC_SYNONYMS:
+        return METRIC_SYNONYMS[key]
+    return METRIC_SYNONYMS.get(key.rsplit("/", 1)[-1].strip())
 
 
 def dist_for_import(module_root: str) -> str:
