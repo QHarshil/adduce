@@ -31,7 +31,7 @@ from dataclasses import dataclass
 from enum import Enum
 
 from ..aeg.schema import CERTAIN_METHODS, ResolutionMethod
-from ..naming import canonical_metric
+from ..naming import SPLIT_WORDS, canonical_metric
 
 #: A table cell holding a number, optionally a percentage, optionally with a
 #: spread ("92.4", "92.4%", "92.4 ± 0.3", "1.2e-4"). Anything else is prose.
@@ -49,6 +49,48 @@ _CELL_VALUE_RE = re.compile(
 _DELIMITER_RE = re.compile(r"^\s*\|?(?:\s*:?-{2,}:?\s*\|)+\s*:?-{2,}:?\s*\|?\s*$")
 
 _MAX_TABLE_COLUMNS = 64
+
+#: A column header the table parser filled in positionally because the source
+#: named no header for it.
+_POSITIONAL_HEADER_RE = re.compile(r"^col\d+$")
+
+#: Residue of LaTeX the table parser did not dissolve: a brace or backslash, a
+#: key=value directive from ``\rotatebox[origin=rc]{270}``, or the leading
+#: ``2c``/``1c`` span-and-alignment of a ``\multicolumn``. Measured on real
+#: papers, these arrive concatenated with the visible text, so a header such as
+#: ``1c[origin=rc]270coraal`` names a metric no more than ``col4`` does.
+_LATEX_RESIDUE_RE = re.compile(r"[{}\\]|=|^\d+[clr]")
+
+#: The longest a column header can be and still plausibly name a metric. A
+#: whole sentence in a header is a caption the parser mis-split, not a metric.
+_MAX_METRIC_NAME_CHARS = 40
+
+
+def is_plausible_metric_name(header: str, /) -> bool:
+    """Whether *header* reads like the name of a metric at all.
+
+    This is deliberately weaker than :func:`~adduce.naming.canonical_metric`,
+    which asks whether a header names a metric adduce *knows*. A header can
+    fail that and still be a metric -- ``Throughput`` is real and merely absent
+    from the vocabulary, and dropping it would lose a reported number instead of
+    abstaining on it. What this rejects is a header that is not a metric name
+    under any vocabulary, so there is nothing to abstain about.
+    """
+    text = header.strip().strip("*_`$ ")
+    if not text or len(text) > _MAX_METRIC_NAME_CHARS:
+        return False
+    if _POSITIONAL_HEADER_RE.match(text.lower()):
+        return False
+    if _LATEX_RESIDUE_RE.search(text):
+        return False
+    if text.lower().strip(".:") in SPLIT_WORDS:
+        # "test" and "dev" name the split the number was measured on, not what
+        # was measured. Kept as a metric they become claims about a metric
+        # called "test", which nothing can ever resolve.
+        return False
+    # A metric is named in words. A header carrying no letter at all is a
+    # value, a unit or a stray symbol that survived the split.
+    return any(character.isalpha() for character in text)
 
 
 class CandidateSource(str, Enum):
@@ -147,10 +189,27 @@ def from_latex_tables(table_cells: list, /) -> list[ClaimCandidate]:
     These are parsed today at ``evidence/latex.py`` and read by nothing, which
     discards the richest claim source in an ML paper: a results table states
     the numbers the abstract only summarises.
+
+    A header that is not a metric *name* at all is skipped. A header that reads
+    like one but is unknown to the vocabulary is kept, at reduced confidence and
+    as :data:`~adduce.aeg.schema.ResolutionMethod.LEXICAL_MATCH`, because
+    ``Throughput`` is a real metric the vocabulary simply lacks and dropping it
+    would lose a reported number rather than abstain on it.
+
+    The distinction is what the measurement demanded. Emitting every header
+    verbatim admitted whatever the parse happened to leave behind: over ten real
+    papers, 4,383 candidates of which only 4.6% named a known metric, the rest
+    positional placeholders (``col3``-``col7``), empty strings, and undissolved
+    LaTeX markup -- ``\\multicolumn{1}{c}`` carrying a
+    ``\\rotatebox[origin=rc]{270}`` directive arrived as the metric name
+    ``1c[origin=rc]270coraal``. None of those is a metric under any vocabulary,
+    so none of them is a claim to abstain on.
     """
     candidates: list[ClaimCandidate] = []
     for cell in table_cells:
         metric = canonical_metric(cell.column_label)
+        if metric is None and not is_plausible_metric_name(cell.column_label):
+            continue
         named = metric is not None
         candidates.append(
             ClaimCandidate(
