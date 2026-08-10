@@ -78,6 +78,93 @@ def test_latex_metric_vocabulary_is_unchanged_by_the_move_to_naming():
     ],
 )
 def test_canonical_metric_reads_real_table_headers(header, expected):
+    _canonical_metric_case(header, expected)
+
+
+@pytest.mark.parametrize(
+    ("left", "right"),
+    [
+        # Error rate is the complement of accuracy, not a synonym: a reported
+        # error rate of 15.5 and an accuracy of 15.5 are different claims.
+        ("Error rate", "Accuracy"),
+        ("Err.", "Acc."),
+        # Word and character error rate are measured over different units and
+        # are reported side by side.
+        ("WER", "CER"),
+        # AP50 and AP75 are the same average at one fixed IoU threshold each,
+        # printed in the same row as different numbers.
+        ("AP50", "AP75"),
+        ("AP50", "AP"),
+    ],
+)
+def test_distinct_metrics_do_not_share_a_canonical_name(left, right):
+    """Two metrics collapsed onto one name turn one row into a contradiction."""
+    left_canonical = canonical_metric(left)
+    right_canonical = canonical_metric(right)
+    assert left_canonical is not None and right_canonical is not None
+    assert left_canonical != right_canonical
+
+
+@pytest.mark.parametrize(
+    ("header", "expected"),
+    [
+        ("Error rate", "error_rate"),
+        ("Error (%)", "error_rate"),
+        ("CER", "cer"),
+        ("AP50", "ap50"),
+        ("AP@0.5", "ap50"),
+        ("AP75", "ap75"),
+        ("AP", "map"),
+        ("mean average precision", "map"),
+    ],
+)
+def test_canonical_metric_reads_the_separated_metrics(header, expected):
+    _canonical_metric_case(header, expected)
+
+
+@pytest.mark.parametrize(
+    ("header", "expected"),
+    [
+        # A split named before the metric.
+        ("dev F1", "f1"),
+        ("test EM", "exact_match"),
+        ("dev accuracy", "accuracy"),
+        # A dataset named before the metric.
+        ("RACE accuracy", "accuracy"),
+        ("SQuAD1.1 F1", "f1"),
+        ("SQuAD2.0 EM", "exact_match"),
+        ("MNLI acc", "accuracy"),
+    ],
+)
+def test_a_qualifier_before_the_metric_does_not_hide_it(header, expected):
+    """Headers qualify the metric with a split or a dataset; the metric survives."""
+    _canonical_metric_case(header, expected)
+
+
+@pytest.mark.parametrize(
+    ("header", "expected"),
+    [
+        # These read as "<qualifier> <metric>" but are deliberately their own
+        # metrics, and the full-string lookup must win before any fallback.
+        ("train loss", "train_loss"),
+        ("val loss", "val_loss"),
+        ("test loss", "test_loss"),
+        ("word error rate", "wer"),
+        ("character error rate", "cer"),
+        ("mean average precision", "map"),
+    ],
+)
+def test_a_compound_metric_is_never_flattened_onto_its_last_word(header, expected):
+    _canonical_metric_case(header, expected)
+
+
+@pytest.mark.parametrize("header", ["absolute accuracy improvement", "GLUE score", "Avg"])
+def test_a_qualifier_fallback_does_not_invent_a_metric(header):
+    """A delta and a composite score are not the metric their words contain."""
+    assert canonical_metric(header) is None
+
+
+def _canonical_metric_case(header, expected):
     assert canonical_metric(header) == expected
 
 
@@ -130,6 +217,46 @@ def test_latex_cell_under_an_unknown_column_is_kept_but_not_certain():
     assert candidate.metric == "throughput"
     assert candidate.method is ResolutionMethod.LEXICAL_MATCH
     assert candidate.confidence < 1.0
+
+
+@pytest.mark.parametrize(
+    "header",
+    [
+        "col4",  # positional placeholder the parser filled in
+        "",  # no header at all
+        "   ",
+        "1c[origin=rc]270coraal",  # \\multicolumn + \\rotatebox residue
+        "2ctop-1",  # \\multicolumn span fused to the visible text
+        "270",  # a rotation angle that survived the split
+        r"\multicolumn{2}{c}",
+    ],
+)
+def test_latex_cell_under_a_header_that_is_not_a_metric_name_is_dropped(header):
+    """Measured on ten real papers, these are what an unfiltered header admits.
+
+    They are not metrics under any vocabulary, so there is nothing to abstain
+    on -- unlike ``Throughput`` above, which is kept at reduced confidence.
+    """
+    cells = [TableCell(0, "Ours", header, 92.4, "main.tex", 9)]
+    assert from_latex_tables(cells) == []
+
+
+def test_a_header_the_length_of_a_sentence_is_not_a_metric_name():
+    """A caption the parser mis-split into the header row is not a metric.
+
+    Separate from the empty-header case: this one has letters, no LaTeX
+    residue and no positional placeholder, so only the length bound rejects it.
+    """
+    caption = "Results on ImageNet after pre-training for 1000 epochs with a batch size of 4096"
+    cells = [TableCell(0, "Ours", caption, 92.4, "main.tex", 9)]
+    assert from_latex_tables(cells) == []
+
+
+def test_a_real_metric_missing_from_the_vocabulary_still_survives():
+    """The filter must not become a second, stricter vocabulary check."""
+    for header in ("FID", "GFLOPs", "AP^box_50", "Throughput"):
+        cells = [TableCell(0, "Ours", header, 3.6, "main.tex", 9)]
+        assert from_latex_tables(cells), f"{header!r} should be kept"
 
 
 # --- markdown tables -----------------------------------------------------

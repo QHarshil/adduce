@@ -171,24 +171,79 @@ METRIC_PATTERNS: dict[str, tuple[str, ...]] = {
 #: column, where there is no surrounding prose to disambiguate and so no need
 #: for boundary syntax. The first entry is the canonical name.
 _METRIC_GROUPS: tuple[tuple[str, ...], ...] = (
-    ("accuracy", "acc", "acc.", "top-1", "top1", "top-1 acc", "top-5", "top5", "top-5 acc", "err", "error rate"),
+    # "top-1 acc" was listed but "top-1 accuracy" was not, so the most ordinary
+    # spelling of the most common metric in the set resolved to nothing.
+    (
+        "accuracy",
+        "acc",
+        "acc.",
+        "acc1",
+        "acc5",
+        "top-1",
+        "top1",
+        "top-1 acc",
+        "top-1 acc.",
+        "top-1 accuracy",
+        "top1 accuracy",
+        "top-5",
+        "top5",
+        "top-5 acc",
+        "top-5 acc.",
+        "top-5 accuracy",
+        "top5 accuracy",
+    ),
+    # Error rate is the complement of accuracy, not a synonym for it. Aliasing
+    # the two made a reported "error rate 15.5" and an accuracy of 15.5 the same
+    # claim, and a reported error rate and a matching accuracy look like a
+    # disagreement.
+    ("error_rate", "err", "err.", "error", "error rate", "top-1 err", "top-1 error"),
     ("f1", "f-1", "f1-score", "f score", "f-score", "macro-f1", "micro-f1", "macro f1", "micro f1"),
     ("bleu", "bleu-4", "bleu4", "sacrebleu"),
     ("rouge", "rouge-l", "rouge-1", "rouge-2", "rougel"),
     ("ndcg", "ndcg@10", "ndcg@5"),
-    ("map", "mean average precision", "ap", "ap50", "ap75", "ap@50"),
+    # COCO's bare "AP" is already averaged over IoU thresholds, so it belongs
+    # with mAP. AP50 and AP75 are that same average taken at one fixed
+    # threshold: different numbers, reported side by side in the same row, so
+    # collapsing them onto "map" turned one row into several claims about one
+    # metric with different values -- which reads as a contradiction.
+    ("map", "mean average precision", "ap", "average precision"),
+    ("ap50", "ap@50", "ap_50", "ap 50", "ap@0.5"),
+    ("ap75", "ap@75", "ap_75", "ap 75", "ap@0.75"),
+    # Detection and segmentation papers report box and mask AP side by side, so
+    # they are separate metrics for the same reason AP50 and AP75 are.
+    ("box_ap", "apbb", "ap^box", "ap box", "apbox"),
+    ("box_ap50", "apbb50", "ap^box_50", "apbox50"),
+    ("box_ap75", "apbb75", "ap^box_75", "apbox75"),
+    ("mask_ap", "apmk", "ap^mask", "ap mask", "apmask"),
+    ("mask_ap50", "apmk50", "ap^mask_50", "apmask50"),
+    ("mask_ap75", "apmk75", "ap^mask_75", "apmask75"),
     ("mrr", "mean reciprocal rank"),
     ("auc", "auroc", "roc-auc", "auc-roc", "aupr", "auprc"),
     ("precision", "prec", "prec.", "precision@k"),
     ("recall", "rec", "rec.", "recall@k"),
     ("perplexity", "ppl", "perp"),
-    ("wer", "word error rate", "cer"),
+    # Word and character error rate are measured over different units and are
+    # reported side by side; they are not one metric.
+    ("wer", "word error rate"),
+    ("cer", "character error rate"),
     ("mse", "mean squared error", "l2 loss"),
     ("rmse", "root mean squared error"),
     ("mae", "mean absolute error", "l1 loss"),
     ("iou", "miou", "mean iou", "jaccard"),
     ("dice", "dice score", "dsc"),
     ("exact_match", "exact match", "em"),
+    # Generative and speech metrics. Measured on ten real papers, these were
+    # among the most common headers the vocabulary could not name at all --
+    # FID alone appeared 43 times -- and an unnamed metric is a silent recall
+    # zero, the same shape as the miss that hid nanogpt's claims until "loss"
+    # was added.
+    ("fid", "fid score", "frechet inception distance", "fréchet inception distance"),
+    ("inception_score", "inception score", "is"),
+    ("lpips", "perceptual distance"),
+    ("psnr",),
+    ("ssim",),
+    ("nll", "negative log-likelihood", "negative log likelihood"),
+    ("gflops", "flops", "gflop"),
     ("spearman", "spearman correlation", "spearman's rho", "rho"),
     ("pearson", "pearson correlation", "pearson's r"),
     # Loss is the reported result in a language-modelling repository as often
@@ -198,6 +253,14 @@ _METRIC_GROUPS: tuple[tuple[str, ...], ...] = (
     ("train_loss", "train loss", "training loss", "trn loss", "loss (train)"),
     ("val_loss", "val loss", "validation loss", "valid loss", "dev loss", "loss (val)"),
     ("test_loss", "test loss", "eval loss", "evaluation loss", "loss (test)"),
+)
+
+#: The names a dataset split goes by when a table header puts it in front of the
+#: metric: "dev F1", "test EM". A split is not itself a metric, so a header that
+#: is only a split names none.
+SPLIT_WORDS: frozenset[str] = frozenset(
+    {"train", "training", "dev", "development", "val", "valid", "validation", "test", "eval",
+     "evaluation"}
 )
 
 #: any-alias -> canonical metric name (keys lowercased).
@@ -220,9 +283,24 @@ def canonical_metric(name: str) -> str | None:
     # Headers routinely carry a unit or a qualifier: "Accuracy (%)", "F1 ↑".
     key = re.sub(r"\s*[(\[][^)\]]*[)\]]\s*$", "", key).strip()
     key = key.rstrip("↑↓*").strip()
-    if key in METRIC_SYNONYMS:
-        return METRIC_SYNONYMS[key]
-    return METRIC_SYNONYMS.get(key.rsplit("/", 1)[-1].strip())
+    # Whole name first, then after a slash qualifier ("GLUE/MNLI acc").
+    for candidate in (key, key.rsplit("/", 1)[-1].strip()):
+        whole = METRIC_SYNONYMS.get(candidate)
+        if whole is not None:
+            return whole
+    # A header commonly qualifies the metric with the split or the dataset it
+    # was measured on -- "dev F1", "RACE accuracy", "SQuAD1.1 EM". The qualifier
+    # is not the metric, so fall back to the trailing words, accepting them only
+    # when they name a metric outright. Matching the whole name first is what
+    # keeps a deliberately compound metric -- "train loss", "word error rate",
+    # "mean average precision" -- from being flattened onto its last word.
+    tokens = key.split()
+    for size in (2, 1):
+        if len(tokens) > size:
+            tail = METRIC_SYNONYMS.get(" ".join(tokens[-size:]))
+            if tail is not None:
+                return tail
+    return None
 
 
 def dist_for_import(module_root: str) -> str:
