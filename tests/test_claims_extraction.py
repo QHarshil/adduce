@@ -409,6 +409,35 @@ def test_different_values_of_one_metric_stay_separate_claims():
     assert [c.value for c in clusters] == [88.1, 92.4]
 
 
+@pytest.mark.parametrize("neighbour", [54.1, 53.6, 54.4])
+def test_a_value_printed_with_a_trailing_zero_does_not_swallow_its_neighbours(neighbour):
+    """54.0 is stated to one decimal place. It is not the integer 54.
+
+    ``repr(54.0)`` is ``'54.0'`` and stripping that trailing zero read it as
+    zero decimal places, so every ``X.0`` agreed with everything within half a
+    unit. Measured over five labelled dev papers this merged 48 pairs of
+    distinct reported numbers, and every merge bound one table row's label to
+    another row's value -- Barlow Twins' transfer table yielded
+    ``BYOL: Places-205 = 54.1`` when BYOL's row states 54.0 and 54.1 is the
+    authors' own row. Both a reported number and its locator were wrong.
+    """
+    clusters = cluster_candidates(
+        [_candidate("accuracy", 54.0), _candidate("accuracy", neighbour, line=2)]
+    )
+    assert len(clusters) == 2
+    assert sorted(c.value for c in clusters) == sorted([54.0, neighbour])
+
+
+def test_a_coarser_statement_still_agrees_with_a_more_precise_one():
+    """The rounding tolerance the module exists for must survive the fix above:
+    54.0 and 54.04 are one claim stated at two precisions, not two claims."""
+    clusters = cluster_candidates(
+        [_candidate("accuracy", 54.0), _candidate("accuracy", 54.04, line=2)]
+    )
+    assert len(clusters) == 1
+    assert clusters[0].value == 54.04
+
+
 def test_percent_and_fraction_are_not_silently_reconciled():
     """0.924 against 92.4 is numeric reconciliation, a later stage with its
     own resolution method. Doing it here would let an inference pass as a parse."""

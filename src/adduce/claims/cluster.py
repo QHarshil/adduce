@@ -40,11 +40,20 @@ _METHOD_RANK: dict[ResolutionMethod, int] = {
 
 
 def _decimals(value: float) -> int:
+    """How many decimal places this value is stated to.
+
+    ``repr`` already gives the shortest representation that round-trips, so a
+    fraction it prints never carries a redundant trailing zero: ``repr(92.40)``
+    is ``'92.4'``. The one string it does produce ending in a zero is ``'X.0'``,
+    and that zero is the whole of the precision, not padding -- stripping it
+    read ``54.0`` as the integer 54 and let it agree with everything within half
+    a unit.
+    """
     text = repr(float(value))
     if "e" in text or "E" in text:
         return 12
     _, _, fraction = text.partition(".")
-    return len(fraction.rstrip("0"))
+    return len(fraction)
 
 
 def _agree(left: float, right: float) -> bool:
