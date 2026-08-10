@@ -438,6 +438,45 @@ def test_a_coarser_statement_still_agrees_with_a_more_precise_one():
     assert clusters[0].value == 54.04
 
 
+def test_two_cells_of_one_table_are_never_one_claim():
+    """Clustering's premise is restatement, and one table stating two numbers is
+    not restating one. ConvNeXt reports 81.3 for Swin-T and 81.33 for its own
+    ablation in a single table; they agree at one decimal place, and merging
+    them destroyed 81.3 and left 81.33 carrying Swin-T's row."""
+    clusters = cluster_candidates(
+        [
+            _candidate("accuracy", 81.3, "main.tex", 805),
+            _candidate("accuracy", 81.33, "main.tex", 805),
+        ]
+    )
+    assert len(clusters) == 2
+    assert sorted(c.value for c in clusters) == [81.3, 81.33]
+
+
+def test_one_table_stating_a_number_twice_is_still_one_claim():
+    """The rule above keys on a *different* number at the same location. A table
+    repeating a value across two columns is a restatement, not two claims."""
+    (cluster,) = cluster_candidates(
+        [
+            _candidate("accuracy", 81.3, "main.tex", 805),
+            _candidate("accuracy", 81.3, "main.tex", 805),
+        ]
+    )
+    assert len(cluster.members) == 2
+
+
+def test_the_same_number_in_two_places_is_still_one_claim_after_the_table_rule():
+    """The abstract and a results table stating 92.4 remain one claim."""
+    (cluster,) = cluster_candidates(
+        [
+            _candidate("accuracy", 92.4, "abstract.tex", 4, CandidateSource.LATEX_PROSE),
+            _candidate("accuracy", 92.41, "results.tex", 40),
+        ]
+    )
+    assert len(cluster.members) == 2
+    assert cluster.restated
+
+
 def test_percent_and_fraction_are_not_silently_reconciled():
     """0.924 against 92.4 is numeric reconciliation, a later stage with its
     own resolution method. Doing it here would let an inference pass as a parse."""
