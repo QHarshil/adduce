@@ -31,7 +31,7 @@ from dataclasses import dataclass
 from enum import Enum
 
 from ..aeg.schema import CERTAIN_METHODS, ResolutionMethod
-from ..naming import SPLIT_WORDS, canonical_metric
+from ..naming import METRIC_PATTERNS, SPLIT_WORDS, canonical_metric
 
 #: A table cell holding a number, optionally a percentage, optionally with a
 #: spread ("92.4", "92.4%", "92.4 ± 0.3", "1.2e-4"). Anything else is prose.
@@ -64,6 +64,32 @@ _LATEX_RESIDUE_RE = re.compile(r"[{}\\]|=|^\d+[clr]")
 #: The longest a column header can be and still plausibly name a metric. A
 #: whole sentence in a header is a caption the parser mis-split, not a metric.
 _MAX_METRIC_NAME_CHARS = 40
+
+#: The prose metric vocabulary, compiled once. A caption is a sentence, so the
+#: literal lookup :func:`~adduce.naming.canonical_metric` performs cannot read
+#: one; these are the boundary-carrying patterns ``naming`` keeps for prose.
+_CAPTION_METRIC_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = tuple(
+    (canonical, re.compile("|".join(patterns), re.IGNORECASE))
+    for canonical, patterns in METRIC_PATTERNS.items()
+)
+
+
+def caption_metric(caption: str, /) -> str | None:
+    """The one metric a caption names, or ``None`` when it names none or several.
+
+    A results column often heads a *dataset* -- ``CORAAL``, ``SQuAD 1.1 dev``,
+    ``LAMBADA`` -- while the metric is stated once, in the caption. Measured on
+    whisper, every one of its 121 distinct extracted metric names was a dataset
+    name while the caption read "word error rate (WER)".
+
+    Exactly one is required. A caption naming two metrics does not say which
+    column reports which, and guessing would state a confident wrong name where
+    abstaining states none.
+    """
+    named = {
+        canonical for canonical, pattern in _CAPTION_METRIC_PATTERNS if pattern.search(caption)
+    }
+    return named.pop() if len(named) == 1 else None
 
 
 def is_plausible_metric_name(header: str, /) -> bool:
@@ -204,13 +230,41 @@ def from_latex_tables(table_cells: list, /) -> list[ClaimCandidate]:
     ``\\rotatebox[origin=rc]{270}`` directive arrived as the metric name
     ``1c[origin=rc]270coraal``. None of those is a metric under any vocabulary,
     so none of them is a claim to abstain on.
+
+    Where the header names no metric and the caption names one, the metric is
+    the caption's and the header stays as the column label, because it is the
+    dataset. A header that *does* canonicalise is never overridden: the column
+    is the more specific statement, and a caption naming one metric over a
+    table reporting several would otherwise rename the ones it does not mean.
+    The caption is consulted only for a cell that would be kept anyway -- it
+    renames a candidate, it never revives one the header filter dropped.
+
+    **A caption-derived metric is never certain.** Only a header that
+    canonicalises is :data:`~adduce.aeg.schema.ResolutionMethod.DIRECT_PARSE` at
+    ``1.0``; a metric taken from the caption is a
+    :data:`~adduce.aeg.schema.ResolutionMethod.LEXICAL_MATCH`, because the column
+    did not say it and the inference comes from another part of the document.
+    Measured, the distinction is not academic: over the dev set the caption rule
+    renames ~2,259 cells correctly and ~194 wrongly (~8%). The wrong ones are
+    cost and size columns, not datasets -- MAE's ``hours`` and ``speedup`` under
+    a caption saying "our MAE training", DeiT's ``throughput (image/s)`` under a
+    caption naming both throughput and accuracy, LoRA's ``nist``/``meteor``/
+    ``cider`` collapsed to ``bleu``. Nothing in a header alone separates a
+    dataset column from a cost column, so the rule cannot be made exact here;
+    what it must not do is assert those 194 with confidence ``1.0``. Reporting a
+    wrong metric confidently is the failure mode that costs the most trust, and
+    ``zero high-confidence false positives`` is a Phase 3 acceptance criterion.
     """
     candidates: list[ClaimCandidate] = []
     for cell in table_cells:
         metric = canonical_metric(cell.column_label)
         if metric is None and not is_plausible_metric_name(cell.column_label):
             continue
-        named = metric is not None
+        # Only the header can make a claim certain. Recorded before the caption
+        # is consulted, because the caption cannot promote what it renames.
+        named_by_header = metric is not None
+        if metric is None and cell.caption:
+            metric = caption_metric(cell.caption)
         candidates.append(
             ClaimCandidate(
                 metric=metric or cell.column_label.strip().lower(),
@@ -218,9 +272,11 @@ def from_latex_tables(table_cells: list, /) -> list[ClaimCandidate]:
                 source=CandidateSource.LATEX_TABLE,
                 location=ClaimLocation(cell.file, cell.line),
                 method=(
-                    ResolutionMethod.DIRECT_PARSE if named else ResolutionMethod.LEXICAL_MATCH
+                    ResolutionMethod.DIRECT_PARSE
+                    if named_by_header
+                    else ResolutionMethod.LEXICAL_MATCH
                 ),
-                confidence=1.0 if named else 0.5,
+                confidence=1.0 if named_by_header else 0.5,
                 text=f"{cell.row_label} {cell.column_label} {cell.value}".strip(),
                 row_label=cell.row_label or None,
                 column_label=cell.column_label or None,
