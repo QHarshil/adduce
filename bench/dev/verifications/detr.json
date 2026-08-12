@@ -5,96 +5,6 @@
  "verifications": [
   {
    "extraction": {
-    "metric": "map",
-    "value": 31.0,
-    "where": "src/ablations.tex:33",
-    "text": "none: AP = 31"
-   },
-   "verdict": "not_in_paper",
-   "notes": "ablations.tex is never \\input or \\include by main.tex or supplementary_main.tex (confirmed by grepping every \\input/\\include in src/: only related, method, experiments, table1_alt, supplementary, preliminaries and math_commands are pulled in). It is dead draft source -- an earlier version of this ablation, later revised with different numbers directly in experiments.tex (table:pos_enc, 'no spatial encoding' row is 32.8, not 31.0) -- and its numbers do not appear in the rendered PDF (checked against the extracted page text and confirmed by re-running extraction with ablations.tex deleted from a scratch copy of the paper tree: this value disappears)."
-  },
-  {
-   "extraction": {
-    "metric": "map",
-    "value": 36.1,
-    "where": "src/ablations.tex:33",
-    "text": "learned at attention: AP = 36.1"
-   },
-   "verdict": "not_in_paper",
-   "notes": "ablations.tex is never \\input or \\include by main.tex or supplementary_main.tex (confirmed by grepping every \\input/\\include in src/: only related, method, experiments, table1_alt, supplementary, preliminaries and math_commands are pulled in). It is dead draft source -- an earlier version of this ablation, later revised with different numbers directly in experiments.tex (table:pos_enc, 'learned at attn.' row is 39.6, not 36.1) -- and its numbers do not appear in the rendered PDF (checked against the extracted page text and confirmed by re-running extraction with ablations.tex deleted from a scratch copy of the paper tree: this value disappears)."
-  },
-  {
-   "extraction": {
-    "metric": "map",
-    "value": 36.2,
-    "where": "src/ablations.tex:33",
-    "text": "sine at input: AP = 36.2"
-   },
-   "verdict": "not_in_paper",
-   "notes": "ablations.tex is never \\input or \\include by main.tex or supplementary_main.tex (confirmed by grepping every \\input/\\include in src/: only related, method, experiments, table1_alt, supplementary, preliminaries and math_commands are pulled in). It is dead draft source -- an earlier version of this ablation, later revised with different numbers directly in experiments.tex (table:pos_enc, 'sine at input' row is 39.2, not 36.2) -- and its numbers do not appear in the rendered PDF (checked against the extracted page text and confirmed by re-running extraction with ablations.tex deleted from a scratch copy of the paper tree: this value disappears)."
-  },
-  {
-   "extraction": {
-    "metric": "map",
-    "value": 36.8,
-    "where": "src/ablations.tex:33",
-    "text": "sine at attention: AP = 36.8"
-   },
-   "verdict": "not_in_paper",
-   "notes": "ablations.tex is never \\input or \\include by main.tex or supplementary_main.tex (confirmed by grepping every \\input/\\include in src/: only related, method, experiments, table1_alt, supplementary, preliminaries and math_commands are pulled in). It is dead draft source -- an earlier version of this ablation, later revised with different numbers directly in experiments.tex (table:pos_enc, 'sine at attn.' (decoder only) row is 39.3, not 36.8) -- and its numbers do not appear in the rendered PDF (checked against the extracted page text and confirmed by re-running extraction with ablations.tex deleted from a scratch copy of the paper tree: this value disappears)."
-  },
-  {
-   "extraction": {
-    "metric": "map",
-    "value": 37.3,
-    "where": "src/ablations.tex:33",
-    "text": "sine at attention: AP = 37.3"
-   },
-   "verdict": "not_in_paper",
-   "notes": "ablations.tex is never \\input or \\include by main.tex or supplementary_main.tex (confirmed by grepping every \\input/\\include in src/: only related, method, experiments, table1_alt, supplementary, preliminaries and math_commands are pulled in). It is dead draft source -- an earlier version of this ablation, later revised with different numbers directly in experiments.tex (table:pos_enc, full/baseline row is 40.6, not 37.3; also matches the unrendered half of \\oldnew{37.3 and 40.3 AP}{40.6 and 42.0 AP} at experiments.tex:93 -- 37.3 is exactly the draft figure the camera-ready text replaced with 40.6) -- and its numbers do not appear in the rendered PDF (checked against the extracted page text and confirmed by re-running extraction with ablations.tex deleted from a scratch copy of the paper tree: this value disappears)."
-  },
-  {
-   "extraction": {
-    "metric": "l",
-    "value": 51.0,
-    "where": "src/ablations.tex:73",
-    "text": "L 51.0"
-   },
-   "verdict": "not_in_paper",
-   "notes": "ablations.tex is never \\input or \\include by main.tex or supplementary_main.tex (confirmed by grepping every \\input/\\include in src/: only related, method, experiments, table1_alt, supplementary, preliminaries and math_commands are pulled in). It is dead draft source -- an earlier version of this ablation, later revised with different numbers directly in experiments.tex (the rendered loss table's 'class+GIoU only' row has AP_L=57.9, not 51.0) -- and its numbers do not appear in the rendered PDF (checked against the extracted page text and confirmed by re-running extraction with ablations.tex deleted from a scratch copy of the paper tree: this value disappears)."
-  },
-  {
-   "extraction": {
-    "metric": "l",
-    "value": 54.3,
-    "where": "src/ablations.tex:73",
-    "text": "L 54.3"
-   },
-   "verdict": "not_in_paper",
-   "notes": "ablations.tex is never \\input or \\include by main.tex or supplementary_main.tex (confirmed by grepping every \\input/\\include in src/: only related, method, experiments, table1_alt, supplementary, preliminaries and math_commands are pulled in). It is dead draft source -- an earlier version of this ablation, later revised with different numbers directly in experiments.tex (the rendered loss table's full-model row has AP_L=60.2, not 54.3) -- and its numbers do not appear in the rendered PDF (checked against the extracted page text and confirmed by re-running extraction with ablations.tex deleted from a scratch copy of the paper tree: this value disappears)."
-  },
-  {
-   "extraction": {
-    "metric": "l",
-    "value": 56.4,
-    "where": "src/ablations.tex:73",
-    "text": "L 56.4"
-   },
-   "verdict": "not_in_paper",
-   "notes": "ablations.tex is never \\input or \\include by main.tex or supplementary_main.tex (confirmed by grepping every \\input/\\include in src/: only related, method, experiments, table1_alt, supplementary, preliminaries and math_commands are pulled in). It is dead draft source -- an earlier version of this ablation, later revised with different numbers directly in experiments.tex (the rendered loss table's 'class+l1 only' row has AP_L=57.9, not 56.4) -- and its numbers do not appear in the rendered PDF (checked against the extracted page text and confirmed by re-running extraction with ablations.tex deleted from a scratch copy of the paper tree: this value disappears)."
-  },
-  {
-   "extraction": {
-    "metric": "m",
-    "value": 38.9,
-    "where": "src/ablations.tex:73",
-    "text": "M 38.9"
-   },
-   "verdict": "not_in_paper",
-   "notes": "ablations.tex is never \\input or \\include by main.tex or supplementary_main.tex (confirmed by grepping every \\input/\\include in src/: only related, method, experiments, table1_alt, supplementary, preliminaries and math_commands are pulled in). It is dead draft source -- an earlier version of this ablation, later revised with different numbers directly in experiments.tex (the rendered loss table's 'class+l1 only' row has AP_M=39.8, not 38.9) -- and its numbers do not appear in the rendered PDF (checked against the extracted page text and confirmed by re-running extraction with ablations.tex deleted from a scratch copy of the paper tree: this value disappears)."
-  },
-  {
-   "extraction": {
     "metric": "m",
     "value": 39.6,
     "where": "src/ablations.tex:73",
@@ -105,36 +15,6 @@
   },
   {
    "extraction": {
-    "metric": "m",
-    "value": 40.5,
-    "where": "src/ablations.tex:73",
-    "text": "M 40.5"
-   },
-   "verdict": "not_in_paper",
-   "notes": "ablations.tex is never \\input or \\include by main.tex or supplementary_main.tex (confirmed by grepping every \\input/\\include in src/: only related, method, experiments, table1_alt, supplementary, preliminaries and math_commands are pulled in). It is dead draft source -- an earlier version of this ablation, later revised with different numbers directly in experiments.tex (the rendered loss table's full-model row has AP_M=44.3, not 40.5) -- and its numbers do not appear in the rendered PDF (checked against the extracted page text and confirmed by re-running extraction with ablations.tex deleted from a scratch copy of the paper tree: this value disappears)."
-  },
-  {
-   "extraction": {
-    "metric": "map",
-    "value": 35.4,
-    "where": "src/ablations.tex:73",
-    "text": "AP 35.4"
-   },
-   "verdict": "not_in_paper",
-   "notes": "ablations.tex is never \\input or \\include by main.tex or supplementary_main.tex (confirmed by grepping every \\input/\\include in src/: only related, method, experiments, table1_alt, supplementary, preliminaries and math_commands are pulled in). It is dead draft source -- an earlier version of this ablation, later revised with different numbers directly in experiments.tex (the rendered loss table's 'class+l1 only' row has AP=35.8, not 35.4) -- and its numbers do not appear in the rendered PDF (checked against the extracted page text and confirmed by re-running extraction with ablations.tex deleted from a scratch copy of the paper tree: this value disappears)."
-  },
-  {
-   "extraction": {
-    "metric": "map",
-    "value": 35.5,
-    "where": "src/ablations.tex:73",
-    "text": "AP 35.5"
-   },
-   "verdict": "not_in_paper",
-   "notes": "ablations.tex is never \\input or \\include by main.tex or supplementary_main.tex (confirmed by grepping every \\input/\\include in src/: only related, method, experiments, table1_alt, supplementary, preliminaries and math_commands are pulled in). It is dead draft source -- an earlier version of this ablation, later revised with different numbers directly in experiments.tex (the rendered loss table's 'class+GIoU only' row has AP=39.9, not 35.5) -- and its numbers do not appear in the rendered PDF (checked against the extracted page text and confirmed by re-running extraction with ablations.tex deleted from a scratch copy of the paper tree: this value disappears)."
-  },
-  {
-   "extraction": {
     "metric": "s",
     "value": 13.7,
     "where": "src/ablations.tex:73",
@@ -142,26 +22,6 @@
    },
    "verdict": "real_own_result",
    "notes": "The extraction's 'where' points at the dead ablations.tex file, but this value, AP_S=13.7, is not unique to it: the rendered loss-ablation table's own 'class+l1 only' row (experiments.tex:289) also reports AP_S=13.7 for DETR's own ablation model. Confirmed by re-running extraction with ablations.tex deleted: this (metric, value) pair survives, sourced from experiments.tex:284 instead. Judged on the pair, not the location."
-  },
-  {
-   "extraction": {
-    "metric": "s",
-    "value": 16.6,
-    "where": "src/ablations.tex:73",
-    "text": "S 16.6"
-   },
-   "verdict": "not_in_paper",
-   "notes": "ablations.tex is never \\input or \\include by main.tex or supplementary_main.tex (confirmed by grepping every \\input/\\include in src/: only related, method, experiments, table1_alt, supplementary, preliminaries and math_commands are pulled in). It is dead draft source -- an earlier version of this ablation, later revised with different numbers directly in experiments.tex (the rendered loss table's 'class+GIoU only' row has AP_S=19.9, not 16.6) -- and its numbers do not appear in the rendered PDF (checked against the extracted page text and confirmed by re-running extraction with ablations.tex deleted from a scratch copy of the paper tree: this value disappears)."
-  },
-  {
-   "extraction": {
-    "metric": "s",
-    "value": 17.8,
-    "where": "src/ablations.tex:73",
-    "text": "S 17.8"
-   },
-   "verdict": "not_in_paper",
-   "notes": "ablations.tex is never \\input or \\include by main.tex or supplementary_main.tex (confirmed by grepping every \\input/\\include in src/: only related, method, experiments, table1_alt, supplementary, preliminaries and math_commands are pulled in). It is dead draft source -- an earlier version of this ablation, later revised with different numbers directly in experiments.tex (the rendered loss table's full-model row has AP_S=19.9, not 17.8 (the PDF's only '17.8' is '17.8M' transformer parameters, unrelated)) -- and its numbers do not appear in the rendered PDF (checked against the extracted page text and confirmed by re-running extraction with ablations.tex deleted from a scratch copy of the paper tree: this value disappears)."
   },
   {
    "extraction": {
