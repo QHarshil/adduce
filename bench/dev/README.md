@@ -161,12 +161,32 @@ values silently.
   `confident: false`. Unconfident labels are retained but excluded from the denominator, so an
   ambiguous cell never silently becomes a miss.
 
-### Stated limitation
+### Stated limitations
 
 Labels are produced in a single pass by one labeller, so no inter-rater agreement estimate
 exists for this set and none is reported. That is acceptable for a development set and would
 not be for the evaluation set, where `claim_review_metrics.py` already computes Cohen's kappa
 over independent reviewers.
+
+**The draws are not independent across pairs.** One seed is shared by the whole set, and
+`random.sample` on a small `k` draws `_randbelow(N)`, which consumes
+`getrandbits(N.bit_length())` and rejects values at or above `N`. Two frames of the same bit
+length whose draws all fall below the smaller `N` therefore consume the same bits and accept
+the same values. Measured over the twenty labelled pairs, there are **eleven distinct draws**:
+`bert`, `bit` and `electra` share one, as do `blip`, `dino` and `moco`, and so do `clip` and
+`t5` despite frames of 2,441 and 2,924.
+
+Each pair's sample is still uniform over its own frame, so every per-pair recall figure is an
+unbiased estimate and none of them is affected. What the correlation costs is the pooled
+figure's precision: the same reading-order positions are sampled in every paper of similar
+size, so if position correlates with content — early indices are abstracts and headline
+tables, late ones appendices — the pooled estimate carries that structure and its effective
+sample size is below the nominal one. A pooled confidence interval computed as though the
+draws were independent would be too narrow, and none is reported.
+
+Seeding per pair rather than per set removes this, and is what a rebuilt set should do. It is
+not applied retroactively because re-drawing discards the labelling of every pair already
+done, which is a real cost against an effect that biases no reported number.
 
 ## Measuring
 
