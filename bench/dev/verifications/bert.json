@@ -48,7 +48,7 @@
     "metric": "exact_match",
     "value": 87.4,
     "where": "README.md:199",
-    "text": "1st Place Ensemble - BERT: Test EM = 87.4"
+    "text": "(Ens.+TriviaQA): Test EM = 87.4"
    },
    "verdict": "real_own_result",
    "notes": "Table 2, BERT-LARGE (Ens.+TriviaQA) SQuAD 1.1 Test EM."
@@ -68,7 +68,7 @@
     "metric": "exact_match",
     "value": 86.0,
     "where": "README.md:200",
-    "text": "2nd Place Ensemble - nlnet: Test EM = 86"
+    "text": "\\#1 Ensemble - nlnet: Test EM = 86"
    },
    "verdict": "baseline",
    "notes": "Table 2, '#1 Ensemble - nlnet' Test EM; prior work on the SQuAD 1.1 leaderboard, not BERT's."
@@ -78,7 +78,7 @@
     "metric": "f1",
     "value": 91.7,
     "where": "README.md:200",
-    "text": "2nd Place Ensemble - nlnet: Test F1 = 91.7"
+    "text": "\\#1 Ensemble - nlnet: Test F1 = 91.7"
    },
    "verdict": "baseline",
    "notes": "Table 2, nlnet ensemble Test F1; prior work."
@@ -88,7 +88,7 @@
     "metric": "exact_match",
     "value": 85.1,
     "where": "README.md:201",
-    "text": "1st Place Single Model - BERT: Test EM = 85.1"
+    "text": "(Sgl.+TriviaQA): Test EM = 85.1"
    },
    "verdict": "real_own_result",
    "notes": "Table 2, BERT-LARGE (Sgl.+TriviaQA) SQuAD 1.1 Test EM."
@@ -98,10 +98,10 @@
     "metric": "f1",
     "value": 91.8,
     "where": "README.md:201",
-    "text": "1st Place Single Model - BERT: Test F1 = 91.8"
+    "text": "(Ensemble): Dev F1 = 91.8"
    },
    "verdict": "real_own_result",
-   "notes": "Table 2, BERT-LARGE (Sgl.+TriviaQA) SQuAD 1.1 Test F1."
+   "notes": "Table 2, BERT-LARGE (Sgl.+TriviaQA) SQuAD 1.1 Test F1. [note refreshed: the extraction now carries the paper's own text for this value, '(Ensemble): Dev F1 = 91.8'; Table 2 prints 91.8 twice, as BERT-LARGE (Ensemble) Dev F1 and as BERT-LARGE (Sgl.+TriviaQA) Test F1. Both are the authors' own measurements, so the verdict is unchanged.]"
   },
   {
    "extraction": {
@@ -127,7 +127,7 @@
    "extraction": {
     "metric": "accuracy",
     "value": 5.0,
-    "where": "ablation.tex:29",
+    "where": "src/ablation.tex:29",
     "text": "accuracy from 5"
    },
    "verdict": "not_in_paper",
@@ -137,7 +137,7 @@
    "extraction": {
     "metric": "f1",
     "value": 0.3,
-    "where": "ablation.tex:53",
+    "where": "src/ablation.tex:53",
     "text": "0.3 F1"
    },
    "verdict": "real_own_result",
@@ -147,7 +147,7 @@
    "extraction": {
     "metric": "accuracy",
     "value": 86.7,
-    "where": "abstract.tex:4",
+    "where": "src/abstract.tex:4",
     "text": "accuracy to 86.7"
    },
    "verdict": "real_own_result",
@@ -157,7 +157,7 @@
    "extraction": {
     "metric": "f1",
     "value": 83.1,
-    "where": "abstract.tex:4",
+    "where": "src/abstract.tex:4",
     "text": "F1 to 83.1"
    },
    "verdict": "real_own_result",
@@ -167,7 +167,7 @@
    "extraction": {
     "metric": "f1",
     "value": 91.0,
-    "where": "bert.tex:102",
+    "where": "src/bert.tex:102",
     "text": "F1 score of 91.0"
    },
    "verdict": "real_own_result",
@@ -175,9 +175,179 @@
   },
   {
    "extraction": {
+    "metric": "dev set",
+    "value": 75.7,
+    "where": "src/direction_ablation_tab.tex:4",
+    "text": "+ BiLSTM: Dev Set = 75.7"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 5 (ablation over the pre-training tasks, BERT-BASE architecture), '+ BiLSTM' MRPC (Acc). Every row of Table 5 is a model the authors pre-trained and fine-tuned themselves, so every cell is an own result."
+  },
+  {
+   "extraction": {
+    "metric": "dev set",
+    "value": 77.5,
+    "where": "src/direction_ablation_tab.tex:4",
+    "text": "LTR \\: Dev Set = 77.5"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 5 (ablation over the pre-training tasks, BERT-BASE architecture), 'LTR & No NSP' MRPC (Acc). Every row of Table 5 is a model the authors pre-trained and fine-tuned themselves, so every cell is an own result."
+  },
+  {
+   "extraction": {
+    "metric": "dev set",
+    "value": 82.1,
+    "where": "src/direction_ablation_tab.tex:4",
+    "text": "+ BiLSTM: Dev Set = 82.1"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 5 (ablation over the pre-training tasks, BERT-BASE architecture), 'LTR & No NSP' / '+ BiLSTM' MNLI-m (Acc) -- both rows print 82.1. Every row of Table 5 is a model the authors pre-trained and fine-tuned themselves, so every cell is an own result."
+  },
+  {
+   "extraction": {
+    "metric": "dev set",
+    "value": 83.9,
+    "where": "src/direction_ablation_tab.tex:4",
+    "text": "No NSP: Dev Set = 83.9"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 5 (ablation over the pre-training tasks, BERT-BASE architecture), 'No NSP' MNLI-m (Acc). Every row of Table 5 is a model the authors pre-trained and fine-tuned themselves, so every cell is an own result."
+  },
+  {
+   "extraction": {
+    "metric": "dev set",
+    "value": 84.1,
+    "where": "src/direction_ablation_tab.tex:4",
+    "text": "+ BiLSTM: Dev Set = 84.1"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 5 (ablation over the pre-training tasks, BERT-BASE architecture), '+ BiLSTM' QNLI (Acc). Every row of Table 5 is a model the authors pre-trained and fine-tuned themselves, so every cell is an own result."
+  },
+  {
+   "extraction": {
+    "metric": "dev set",
+    "value": 84.3,
+    "where": "src/direction_ablation_tab.tex:4",
+    "text": "LTR \\: Dev Set = 84.3"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 5 (ablation over the pre-training tasks, BERT-BASE architecture), 'LTR & No NSP' QNLI (Acc). Every row of Table 5 is a model the authors pre-trained and fine-tuned themselves, so every cell is an own result."
+  },
+  {
+   "extraction": {
+    "metric": "dev set",
+    "value": 84.4,
+    "where": "src/direction_ablation_tab.tex:4",
+    "text": "Dev Set 84.4"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 5 (ablation over the pre-training tasks, BERT-BASE architecture), BERT-BASE MNLI-m (Acc). Every row of Table 5 is a model the authors pre-trained and fine-tuned themselves, so every cell is an own result."
+  },
+  {
+   "extraction": {
+    "metric": "dev set",
+    "value": 84.9,
+    "where": "src/direction_ablation_tab.tex:4",
+    "text": "+ BiLSTM: Dev Set = 84.9"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 5 (ablation over the pre-training tasks, BERT-BASE architecture), '+ BiLSTM' SQuAD (F1); 'No NSP' QNLI (Acc) also prints 84.9. Every row of Table 5 is a model the authors pre-trained and fine-tuned themselves, so every cell is an own result."
+  },
+  {
+   "extraction": {
+    "metric": "dev set",
+    "value": 86.5,
+    "where": "src/direction_ablation_tab.tex:4",
+    "text": "No NSP: Dev Set = 86.5"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 5 (ablation over the pre-training tasks, BERT-BASE architecture), 'No NSP' MRPC (Acc). Every row of Table 5 is a model the authors pre-trained and fine-tuned themselves, so every cell is an own result."
+  },
+  {
+   "extraction": {
+    "metric": "dev set",
+    "value": 86.7,
+    "where": "src/direction_ablation_tab.tex:4",
+    "text": "Dev Set 86.7"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 5 (ablation over the pre-training tasks, BERT-BASE architecture), BERT-BASE MRPC (Acc). Every row of Table 5 is a model the authors pre-trained and fine-tuned themselves, so every cell is an own result."
+  },
+  {
+   "extraction": {
+    "metric": "dev set",
+    "value": 87.9,
+    "where": "src/direction_ablation_tab.tex:4",
+    "text": "No NSP: Dev Set = 87.9"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 5 (ablation over the pre-training tasks, BERT-BASE architecture), 'No NSP' SQuAD (F1). Every row of Table 5 is a model the authors pre-trained and fine-tuned themselves, so every cell is an own result."
+  },
+  {
+   "extraction": {
+    "metric": "dev set",
+    "value": 88.4,
+    "where": "src/direction_ablation_tab.tex:4",
+    "text": "Dev Set 88.4"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 5 (ablation over the pre-training tasks, BERT-BASE architecture), BERT-BASE QNLI (Acc). Every row of Table 5 is a model the authors pre-trained and fine-tuned themselves, so every cell is an own result."
+  },
+  {
+   "extraction": {
+    "metric": "dev set",
+    "value": 88.5,
+    "where": "src/direction_ablation_tab.tex:4",
+    "text": "Dev Set 88.5"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 5 (ablation over the pre-training tasks, BERT-BASE architecture), BERT-BASE SQuAD (F1). Every row of Table 5 is a model the authors pre-trained and fine-tuned themselves, so every cell is an own result."
+  },
+  {
+   "extraction": {
+    "metric": "dev set",
+    "value": 91.6,
+    "where": "src/direction_ablation_tab.tex:4",
+    "text": "+ BiLSTM: Dev Set = 91.6"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 5 (ablation over the pre-training tasks, BERT-BASE architecture), '+ BiLSTM' SST-2 (Acc). Every row of Table 5 is a model the authors pre-trained and fine-tuned themselves, so every cell is an own result."
+  },
+  {
+   "extraction": {
+    "metric": "dev set",
+    "value": 92.1,
+    "where": "src/direction_ablation_tab.tex:4",
+    "text": "LTR \\: Dev Set = 92.1"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 5 (ablation over the pre-training tasks, BERT-BASE architecture), 'LTR & No NSP' SST-2 (Acc). Every row of Table 5 is a model the authors pre-trained and fine-tuned themselves, so every cell is an own result."
+  },
+  {
+   "extraction": {
+    "metric": "dev set",
+    "value": 92.6,
+    "where": "src/direction_ablation_tab.tex:4",
+    "text": "No NSP: Dev Set = 92.6"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 5 (ablation over the pre-training tasks, BERT-BASE architecture), 'No NSP' SST-2 (Acc). Every row of Table 5 is a model the authors pre-trained and fine-tuned themselves, so every cell is an own result."
+  },
+  {
+   "extraction": {
+    "metric": "dev set",
+    "value": 92.7,
+    "where": "src/direction_ablation_tab.tex:4",
+    "text": "Dev Set 92.7"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 5 (ablation over the pre-training tasks, BERT-BASE architecture), BERT-BASE SST-2 (Acc). Every row of Table 5 is a model the authors pre-trained and fine-tuned themselves, so every cell is an own result."
+  },
+  {
+   "extraction": {
     "metric": "f1",
     "value": 1.3,
-    "where": "experiment.tex:51",
+    "where": "src/experiment.tex:51",
     "text": "1.3 F1"
    },
    "verdict": "real_own_result",
@@ -187,7 +357,7 @@
    "extraction": {
     "metric": "f1",
     "value": 1.5,
-    "where": "experiment.tex:51",
+    "where": "src/experiment.tex:51",
     "text": "1.5 F1"
    },
    "verdict": "real_own_result",
@@ -197,7 +367,7 @@
    "extraction": {
     "metric": "f1",
     "value": 5.1,
-    "where": "experiment.tex:59",
+    "where": "src/experiment.tex:59",
     "text": "5.1 F1"
    },
    "verdict": "real_own_result",
@@ -205,9 +375,589 @@
   },
   {
    "extraction": {
+    "metric": "average",
+    "value": 71.0,
+    "where": "src/glue_official_tab.tex:6",
+    "text": "BiLSTM+ELMo+Attn: Average = 71"
+   },
+   "verdict": "baseline",
+   "notes": "Table 1 (GLUE Test results), BiLSTM+ELMo+Attn Average; prior work quoted from the GLUE leaderboard, not measured by this paper."
+  },
+  {
+   "extraction": {
+    "metric": "average",
+    "value": 74.0,
+    "where": "src/glue_official_tab.tex:6",
+    "text": "Pre-OpenAI SOTA: Average = 74"
+   },
+   "verdict": "baseline",
+   "notes": "Table 1 (GLUE Test results), Pre-OpenAI SOTA Average; prior work quoted from the GLUE leaderboard, not measured by this paper."
+  },
+  {
+   "extraction": {
+    "metric": "average",
+    "value": 75.1,
+    "where": "src/glue_official_tab.tex:6",
+    "text": "OpenAI GPT: Average = 75.1"
+   },
+   "verdict": "baseline",
+   "notes": "Table 1 (GLUE Test results), OpenAI GPT Average; prior work quoted from the GLUE leaderboard, not measured by this paper."
+  },
+  {
+   "extraction": {
+    "metric": "average",
+    "value": 79.6,
+    "where": "src/glue_official_tab.tex:6",
+    "text": "Average 79.6"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 1 (GLUE Test results, scored by the evaluation server), BERT-BASE Average. The row label is set by a macro, so the extracted text carries no system name; the Average column reads Pre-OpenAI SOTA 74.0, BiLSTM+ELMo+Attn 71.0, OpenAI GPT 75.1, BERT-BASE 79.6, BERT-LARGE 82.1, which fixes 79.6 as the BERT-BASE cell."
+  },
+  {
+   "extraction": {
+    "metric": "average",
+    "value": 82.1,
+    "where": "src/glue_official_tab.tex:6",
+    "text": "Average 82.1"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 1 (GLUE Test results, scored by the evaluation server), BERT-LARGE Average. The row label is set by a macro, so the extracted text carries no system name; the Average column reads Pre-OpenAI SOTA 74.0, BiLSTM+ELMo+Attn 71.0, OpenAI GPT 75.1, BERT-BASE 79.6, BERT-LARGE 82.1, which fixes 82.1 as the BERT-LARGE cell."
+  },
+  {
+   "extraction": {
+    "metric": "cola",
+    "value": 35.0,
+    "where": "src/glue_official_tab.tex:6",
+    "text": "Pre-OpenAI SOTA: CoLA = 35"
+   },
+   "verdict": "baseline",
+   "notes": "Table 1 (GLUE Test results), Pre-OpenAI SOTA CoLA; prior work quoted from the GLUE leaderboard, not measured by this paper."
+  },
+  {
+   "extraction": {
+    "metric": "cola",
+    "value": 36.0,
+    "where": "src/glue_official_tab.tex:6",
+    "text": "BiLSTM+ELMo+Attn: CoLA = 36"
+   },
+   "verdict": "baseline",
+   "notes": "Table 1 (GLUE Test results), BiLSTM+ELMo+Attn CoLA; prior work quoted from the GLUE leaderboard, not measured by this paper."
+  },
+  {
+   "extraction": {
+    "metric": "cola",
+    "value": 45.4,
+    "where": "src/glue_official_tab.tex:6",
+    "text": "OpenAI GPT: CoLA = 45.4"
+   },
+   "verdict": "baseline",
+   "notes": "Table 1 (GLUE Test results), OpenAI GPT CoLA; prior work quoted from the GLUE leaderboard, not measured by this paper."
+  },
+  {
+   "extraction": {
+    "metric": "cola",
+    "value": 52.1,
+    "where": "src/glue_official_tab.tex:6",
+    "text": "CoLA 52.1"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 1 (GLUE Test results, scored by the evaluation server), BERT-BASE CoLA. The row label is set by a macro, so the extracted text carries no system name; the CoLA column reads Pre-OpenAI SOTA 35.0, BiLSTM+ELMo+Attn 36.0, OpenAI GPT 45.4, BERT-BASE 52.1, BERT-LARGE 60.5, which fixes 52.1 as the BERT-BASE cell."
+  },
+  {
+   "extraction": {
+    "metric": "cola",
+    "value": 60.5,
+    "where": "src/glue_official_tab.tex:6",
+    "text": "CoLA 60.5"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 1 (GLUE Test results, scored by the evaluation server), BERT-LARGE CoLA. The row label is set by a macro, so the extracted text carries no system name; the CoLA column reads Pre-OpenAI SOTA 35.0, BiLSTM+ELMo+Attn 36.0, OpenAI GPT 45.4, BERT-BASE 52.1, BERT-LARGE 60.5, which fixes 60.5 as the BERT-LARGE cell."
+  },
+  {
+   "extraction": {
+    "metric": "mrpc",
+    "value": 82.3,
+    "where": "src/glue_official_tab.tex:6",
+    "text": "OpenAI GPT: MRPC = 82.3"
+   },
+   "verdict": "baseline",
+   "notes": "Table 1 (GLUE Test results), OpenAI GPT MRPC (F1); prior work quoted from the GLUE leaderboard, not measured by this paper."
+  },
+  {
+   "extraction": {
+    "metric": "mrpc",
+    "value": 84.9,
+    "where": "src/glue_official_tab.tex:6",
+    "text": "BiLSTM+ELMo+Attn: MRPC = 84.9"
+   },
+   "verdict": "baseline",
+   "notes": "Table 1 (GLUE Test results), BiLSTM+ELMo+Attn MRPC (F1); prior work quoted from the GLUE leaderboard, not measured by this paper."
+  },
+  {
+   "extraction": {
+    "metric": "mrpc",
+    "value": 86.0,
+    "where": "src/glue_official_tab.tex:6",
+    "text": "Pre-OpenAI SOTA: MRPC = 86"
+   },
+   "verdict": "baseline",
+   "notes": "Table 1 (GLUE Test results), Pre-OpenAI SOTA MRPC (F1); prior work quoted from the GLUE leaderboard, not measured by this paper."
+  },
+  {
+   "extraction": {
+    "metric": "mrpc",
+    "value": 88.9,
+    "where": "src/glue_official_tab.tex:6",
+    "text": "MRPC 88.9"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 1 (GLUE Test results, scored by the evaluation server), BERT-BASE MRPC (F1). The row label is set by a macro, so the extracted text carries no system name; the MRPC (F1) column reads Pre-OpenAI SOTA 86.0, BiLSTM+ELMo+Attn 84.9, OpenAI GPT 82.3, BERT-BASE 88.9, BERT-LARGE 89.3, which fixes 88.9 as the BERT-BASE cell."
+  },
+  {
+   "extraction": {
+    "metric": "mrpc",
+    "value": 89.3,
+    "where": "src/glue_official_tab.tex:6",
+    "text": "MRPC 89.3"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 1 (GLUE Test results, scored by the evaluation server), BERT-LARGE MRPC (F1). The row label is set by a macro, so the extracted text carries no system name; the MRPC (F1) column reads Pre-OpenAI SOTA 86.0, BiLSTM+ELMo+Attn 84.9, OpenAI GPT 82.3, BERT-BASE 88.9, BERT-LARGE 89.3, which fixes 89.3 as the BERT-LARGE cell."
+  },
+  {
+   "extraction": {
+    "metric": "qnli",
+    "value": 79.8,
+    "where": "src/glue_official_tab.tex:6",
+    "text": "BiLSTM+ELMo+Attn: QNLI = 79.8"
+   },
+   "verdict": "baseline",
+   "notes": "Table 1 (GLUE Test results), BiLSTM+ELMo+Attn QNLI; prior work quoted from the GLUE leaderboard, not measured by this paper."
+  },
+  {
+   "extraction": {
+    "metric": "qnli",
+    "value": 82.3,
+    "where": "src/glue_official_tab.tex:6",
+    "text": "Pre-OpenAI SOTA: QNLI = 82.3"
+   },
+   "verdict": "baseline",
+   "notes": "Table 1 (GLUE Test results), Pre-OpenAI SOTA QNLI; prior work quoted from the GLUE leaderboard, not measured by this paper."
+  },
+  {
+   "extraction": {
+    "metric": "qnli",
+    "value": 87.4,
+    "where": "src/glue_official_tab.tex:6",
+    "text": "OpenAI GPT: QNLI = 87.4"
+   },
+   "verdict": "baseline",
+   "notes": "Table 1 (GLUE Test results), OpenAI GPT QNLI; prior work quoted from the GLUE leaderboard, not measured by this paper."
+  },
+  {
+   "extraction": {
+    "metric": "qnli",
+    "value": 90.5,
+    "where": "src/glue_official_tab.tex:6",
+    "text": "QNLI 90.5"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 1 (GLUE Test results, scored by the evaluation server), BERT-BASE QNLI. The row label is set by a macro, so the extracted text carries no system name; the QNLI column reads Pre-OpenAI SOTA 82.3, BiLSTM+ELMo+Attn 79.8, OpenAI GPT 87.4, BERT-BASE 90.5, BERT-LARGE 92.7, which fixes 90.5 as the BERT-BASE cell."
+  },
+  {
+   "extraction": {
+    "metric": "qnli",
+    "value": 92.7,
+    "where": "src/glue_official_tab.tex:6",
+    "text": "QNLI 92.7"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 1 (GLUE Test results, scored by the evaluation server), BERT-LARGE QNLI. The row label is set by a macro, so the extracted text carries no system name; the QNLI column reads Pre-OpenAI SOTA 82.3, BiLSTM+ELMo+Attn 79.8, OpenAI GPT 87.4, BERT-BASE 90.5, BERT-LARGE 92.7, which fixes 92.7 as the BERT-LARGE cell."
+  },
+  {
+   "extraction": {
+    "metric": "qqp",
+    "value": 64.8,
+    "where": "src/glue_official_tab.tex:6",
+    "text": "BiLSTM+ELMo+Attn: QQP = 64.8"
+   },
+   "verdict": "baseline",
+   "notes": "Table 1 (GLUE Test results), BiLSTM+ELMo+Attn QQP (F1); prior work quoted from the GLUE leaderboard, not measured by this paper."
+  },
+  {
+   "extraction": {
+    "metric": "qqp",
+    "value": 66.1,
+    "where": "src/glue_official_tab.tex:6",
+    "text": "Pre-OpenAI SOTA: QQP = 66.1"
+   },
+   "verdict": "baseline",
+   "notes": "Table 1 (GLUE Test results), Pre-OpenAI SOTA QQP (F1); prior work quoted from the GLUE leaderboard, not measured by this paper."
+  },
+  {
+   "extraction": {
+    "metric": "qqp",
+    "value": 70.3,
+    "where": "src/glue_official_tab.tex:6",
+    "text": "OpenAI GPT: QQP = 70.3"
+   },
+   "verdict": "baseline",
+   "notes": "Table 1 (GLUE Test results), OpenAI GPT QQP (F1); prior work quoted from the GLUE leaderboard, not measured by this paper."
+  },
+  {
+   "extraction": {
+    "metric": "qqp",
+    "value": 71.2,
+    "where": "src/glue_official_tab.tex:6",
+    "text": "QQP 71.2"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 1 (GLUE Test results, scored by the evaluation server), BERT-BASE QQP (F1). The row label is set by a macro, so the extracted text carries no system name; the QQP (F1) column reads Pre-OpenAI SOTA 66.1, BiLSTM+ELMo+Attn 64.8, OpenAI GPT 70.3, BERT-BASE 71.2, BERT-LARGE 72.1, which fixes 71.2 as the BERT-BASE cell."
+  },
+  {
+   "extraction": {
+    "metric": "qqp",
+    "value": 72.1,
+    "where": "src/glue_official_tab.tex:6",
+    "text": "QQP 72.1"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 1 (GLUE Test results, scored by the evaluation server), BERT-LARGE QQP (F1). The row label is set by a macro, so the extracted text carries no system name; the QQP (F1) column reads Pre-OpenAI SOTA 66.1, BiLSTM+ELMo+Attn 64.8, OpenAI GPT 70.3, BERT-BASE 71.2, BERT-LARGE 72.1, which fixes 72.1 as the BERT-LARGE cell."
+  },
+  {
+   "extraction": {
+    "metric": "rte",
+    "value": 56.0,
+    "where": "src/glue_official_tab.tex:6",
+    "text": "OpenAI GPT: RTE = 56"
+   },
+   "verdict": "baseline",
+   "notes": "Table 1 (GLUE Test results), OpenAI GPT RTE; prior work quoted from the GLUE leaderboard, not measured by this paper."
+  },
+  {
+   "extraction": {
+    "metric": "rte",
+    "value": 56.8,
+    "where": "src/glue_official_tab.tex:6",
+    "text": "BiLSTM+ELMo+Attn: RTE = 56.8"
+   },
+   "verdict": "baseline",
+   "notes": "Table 1 (GLUE Test results), BiLSTM+ELMo+Attn RTE; prior work quoted from the GLUE leaderboard, not measured by this paper."
+  },
+  {
+   "extraction": {
+    "metric": "rte",
+    "value": 61.7,
+    "where": "src/glue_official_tab.tex:6",
+    "text": "Pre-OpenAI SOTA: RTE = 61.7"
+   },
+   "verdict": "baseline",
+   "notes": "Table 1 (GLUE Test results), Pre-OpenAI SOTA RTE; prior work quoted from the GLUE leaderboard, not measured by this paper."
+  },
+  {
+   "extraction": {
+    "metric": "rte",
+    "value": 66.4,
+    "where": "src/glue_official_tab.tex:6",
+    "text": "RTE 66.4"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 1 (GLUE Test results, scored by the evaluation server), BERT-BASE RTE. The row label is set by a macro, so the extracted text carries no system name; the RTE column reads Pre-OpenAI SOTA 61.7, BiLSTM+ELMo+Attn 56.8, OpenAI GPT 56.0, BERT-BASE 66.4, BERT-LARGE 70.1, which fixes 66.4 as the BERT-BASE cell."
+  },
+  {
+   "extraction": {
+    "metric": "rte",
+    "value": 70.1,
+    "where": "src/glue_official_tab.tex:6",
+    "text": "RTE 70.1"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 1 (GLUE Test results, scored by the evaluation server), BERT-LARGE RTE. The row label is set by a macro, so the extracted text carries no system name; the RTE column reads Pre-OpenAI SOTA 61.7, BiLSTM+ELMo+Attn 56.8, OpenAI GPT 56.0, BERT-BASE 66.4, BERT-LARGE 70.1, which fixes 70.1 as the BERT-LARGE cell."
+  },
+  {
+   "extraction": {
+    "metric": "sst-2",
+    "value": 90.4,
+    "where": "src/glue_official_tab.tex:6",
+    "text": "BiLSTM+ELMo+Attn: SST-2 = 90.4"
+   },
+   "verdict": "baseline",
+   "notes": "Table 1 (GLUE Test results), BiLSTM+ELMo+Attn SST-2; prior work quoted from the GLUE leaderboard, not measured by this paper."
+  },
+  {
+   "extraction": {
+    "metric": "sst-2",
+    "value": 91.3,
+    "where": "src/glue_official_tab.tex:6",
+    "text": "OpenAI GPT: SST-2 = 91.3"
+   },
+   "verdict": "baseline",
+   "notes": "Table 1 (GLUE Test results), OpenAI GPT SST-2; prior work quoted from the GLUE leaderboard, not measured by this paper."
+  },
+  {
+   "extraction": {
+    "metric": "sst-2",
+    "value": 93.2,
+    "where": "src/glue_official_tab.tex:6",
+    "text": "Pre-OpenAI SOTA: SST-2 = 93.2"
+   },
+   "verdict": "baseline",
+   "notes": "Table 1 (GLUE Test results), Pre-OpenAI SOTA SST-2; prior work quoted from the GLUE leaderboard, not measured by this paper."
+  },
+  {
+   "extraction": {
+    "metric": "sst-2",
+    "value": 93.5,
+    "where": "src/glue_official_tab.tex:6",
+    "text": "SST-2 93.5"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 1 (GLUE Test results, scored by the evaluation server), BERT-BASE SST-2. The row label is set by a macro, so the extracted text carries no system name; the SST-2 column reads Pre-OpenAI SOTA 93.2, BiLSTM+ELMo+Attn 90.4, OpenAI GPT 91.3, BERT-BASE 93.5, BERT-LARGE 94.9, which fixes 93.5 as the BERT-BASE cell."
+  },
+  {
+   "extraction": {
+    "metric": "sst-2",
+    "value": 94.9,
+    "where": "src/glue_official_tab.tex:6",
+    "text": "SST-2 94.9"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 1 (GLUE Test results, scored by the evaluation server), BERT-LARGE SST-2. The row label is set by a macro, so the extracted text carries no system name; the SST-2 column reads Pre-OpenAI SOTA 93.2, BiLSTM+ELMo+Attn 90.4, OpenAI GPT 91.3, BERT-BASE 93.5, BERT-LARGE 94.9, which fixes 94.9 as the BERT-LARGE cell."
+  },
+  {
+   "extraction": {
+    "metric": "sts-b",
+    "value": 73.3,
+    "where": "src/glue_official_tab.tex:6",
+    "text": "BiLSTM+ELMo+Attn: STS-B = 73.3"
+   },
+   "verdict": "baseline",
+   "notes": "Table 1 (GLUE Test results), BiLSTM+ELMo+Attn STS-B (Spearman); prior work quoted from the GLUE leaderboard, not measured by this paper."
+  },
+  {
+   "extraction": {
+    "metric": "sts-b",
+    "value": 80.0,
+    "where": "src/glue_official_tab.tex:6",
+    "text": "OpenAI GPT: STS-B = 80"
+   },
+   "verdict": "baseline",
+   "notes": "Table 1 (GLUE Test results), OpenAI GPT STS-B (Spearman); prior work quoted from the GLUE leaderboard, not measured by this paper."
+  },
+  {
+   "extraction": {
+    "metric": "sts-b",
+    "value": 81.0,
+    "where": "src/glue_official_tab.tex:6",
+    "text": "Pre-OpenAI SOTA: STS-B = 81"
+   },
+   "verdict": "baseline",
+   "notes": "Table 1 (GLUE Test results), Pre-OpenAI SOTA STS-B (Spearman); prior work quoted from the GLUE leaderboard, not measured by this paper."
+  },
+  {
+   "extraction": {
+    "metric": "sts-b",
+    "value": 85.8,
+    "where": "src/glue_official_tab.tex:6",
+    "text": "STS-B 85.8"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 1 (GLUE Test results, scored by the evaluation server), BERT-BASE STS-B (Spearman). The row label is set by a macro, so the extracted text carries no system name; the STS-B (Spearman) column reads Pre-OpenAI SOTA 81.0, BiLSTM+ELMo+Attn 73.3, OpenAI GPT 80.0, BERT-BASE 85.8, BERT-LARGE 86.5, which fixes 85.8 as the BERT-BASE cell."
+  },
+  {
+   "extraction": {
+    "metric": "sts-b",
+    "value": 86.5,
+    "where": "src/glue_official_tab.tex:6",
+    "text": "STS-B 86.5"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 1 (GLUE Test results, scored by the evaluation server), BERT-LARGE STS-B (Spearman). The row label is set by a macro, so the extracted text carries no system name; the STS-B (Spearman) column reads Pre-OpenAI SOTA 81.0, BiLSTM+ELMo+Attn 73.3, OpenAI GPT 80.0, BERT-BASE 85.8, BERT-LARGE 86.5, which fixes 86.5 as the BERT-LARGE cell."
+  },
+  {
+   "extraction": {
+    "metric": "dev set results",
+    "value": 83.6,
+    "where": "src/mask_procedure_ablation_tab.tex:5",
+    "text": "0\\%: Dev Set Results = 83.6"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 8 (ablation over masking strategies, Appendix C.2), Dev Set Results, the 0%/0%/100% row, MNLI Fine-tune. Every row is a BERT variant the authors pre-trained and evaluated themselves."
+  },
+  {
+   "extraction": {
+    "metric": "dev set results",
+    "value": 83.7,
+    "where": "src/mask_procedure_ablation_tab.tex:5",
+    "text": "0\\%: Dev Set Results = 83.7"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 8 (ablation over masking strategies, Appendix C.2), Dev Set Results, the 0%/20%/80% row, MNLI Fine-tune. Every row is a BERT variant the authors pre-trained and evaluated themselves."
+  },
+  {
+   "extraction": {
+    "metric": "dev set results",
+    "value": 84.1,
+    "where": "src/mask_procedure_ablation_tab.tex:5",
+    "text": "80\\%: Dev Set Results = 84.1"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 8 (ablation over masking strategies, Appendix C.2), Dev Set Results, the 80%/0%/20% row, MNLI Fine-tune. Every row is a BERT variant the authors pre-trained and evaluated themselves."
+  },
+  {
+   "extraction": {
+    "metric": "dev set results",
+    "value": 84.2,
+    "where": "src/mask_procedure_ablation_tab.tex:5",
+    "text": "(r0.2cm)1-3\n  (l0.1cmr0.1cm)4-4\n  (l0.2cm)5-6\n  \n  80\\%: Dev Set Results = 84.2"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 8 (ablation over masking strategies, Appendix C.2), Dev Set Results, the 80%/10%/10% row, MNLI Fine-tune. Every row is a BERT variant the authors pre-trained and evaluated themselves."
+  },
+  {
+   "extraction": {
+    "metric": "dev set results",
+    "value": 84.3,
+    "where": "src/mask_procedure_ablation_tab.tex:5",
+    "text": "100\\%: Dev Set Results = 84.3"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 8 (ablation over masking strategies, Appendix C.2), Dev Set Results, the 100%/0%/0% row, MNLI Fine-tune. Every row is a BERT variant the authors pre-trained and evaluated themselves."
+  },
+  {
+   "extraction": {
+    "metric": "dev set results",
+    "value": 84.4,
+    "where": "src/mask_procedure_ablation_tab.tex:5",
+    "text": "80\\%: Dev Set Results = 84.4"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 8 (ablation over masking strategies, Appendix C.2), Dev Set Results, the 80%/20%/0% row, MNLI Fine-tune. Every row is a BERT variant the authors pre-trained and evaluated themselves."
+  },
+  {
+   "extraction": {
+    "metric": "dev set results",
+    "value": 94.0,
+    "where": "src/mask_procedure_ablation_tab.tex:5",
+    "text": "100\\%: Dev Set Results = 94"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 8 (ablation over masking strategies, Appendix C.2), Dev Set Results, the 100%/0%/0% row, NER Feature-based. Every row is a BERT variant the authors pre-trained and evaluated themselves."
+  },
+  {
+   "extraction": {
+    "metric": "dev set results",
+    "value": 94.6,
+    "where": "src/mask_procedure_ablation_tab.tex:5",
+    "text": "0\\%: Dev Set Results = 94.6"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 8 (ablation over masking strategies, Appendix C.2), Dev Set Results, the 80%/0%/20% row, NER Feature-based (the 0%/20%/80% and 0%/0%/100% rows also print 94.6). Every row is a BERT variant the authors pre-trained and evaluated themselves."
+  },
+  {
+   "extraction": {
+    "metric": "dev set results",
+    "value": 94.7,
+    "where": "src/mask_procedure_ablation_tab.tex:5",
+    "text": "80\\%: Dev Set Results = 94.7"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 8 (ablation over masking strategies, Appendix C.2), Dev Set Results, the 80%/20%/0% row, NER Feature-based. Every row is a BERT variant the authors pre-trained and evaluated themselves."
+  },
+  {
+   "extraction": {
+    "metric": "dev set results",
+    "value": 94.8,
+    "where": "src/mask_procedure_ablation_tab.tex:5",
+    "text": "0\\%: Dev Set Results = 94.8"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 8 (ablation over masking strategies, Appendix C.2), Dev Set Results, the 0%/20%/80% row, NER Fine-tune. Every row is a BERT variant the authors pre-trained and evaluated themselves."
+  },
+  {
+   "extraction": {
+    "metric": "dev set results",
+    "value": 94.9,
+    "where": "src/mask_procedure_ablation_tab.tex:5",
+    "text": "(r0.2cm)1-3\n  (l0.1cmr0.1cm)4-4\n  (l0.2cm)5-6\n  \n  80\\%: Dev Set Results = 94.9"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 8 (ablation over masking strategies, Appendix C.2), Dev Set Results, the 80%/10%/10% row, NER Feature-based (the 100%/0%/0% and 0%/0%/100% rows print 94.9 under NER Fine-tune). Every row is a BERT variant the authors pre-trained and evaluated themselves."
+  },
+  {
+   "extraction": {
+    "metric": "dev set results",
+    "value": 95.2,
+    "where": "src/mask_procedure_ablation_tab.tex:5",
+    "text": "80\\%: Dev Set Results = 95.2"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 8 (ablation over masking strategies, Appendix C.2), Dev Set Results, the 80%/0%/20% row, NER Fine-tune (the 80%/20%/0% row also prints 95.2). Every row is a BERT variant the authors pre-trained and evaluated themselves."
+  },
+  {
+   "extraction": {
+    "metric": "dev set results",
+    "value": 95.4,
+    "where": "src/mask_procedure_ablation_tab.tex:5",
+    "text": "(r0.2cm)1-3\n  (l0.1cmr0.1cm)4-4\n  (l0.2cm)5-6\n  \n  80\\%: Dev Set Results = 95.4"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 8 (ablation over masking strategies, Appendix C.2), Dev Set Results, the 80%/10%/10% row, NER Fine-tune. Every row is a BERT variant the authors pre-trained and evaluated themselves."
+  },
+  {
+   "extraction": {
+    "metric": "masking rates",
+    "value": 0.0,
+    "where": "src/mask_procedure_ablation_tab.tex:5",
+    "text": "0\\%: Masking Rates = 0"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Table 8 (ablation over masking strategies, Appendix C.2): a MASK/SAME/RND probability (the 0% entries in the left-hand 'Masking Rates' block). The paper states outright that 'the numbers in the left part of the table represent the probabilities of the specific strategies used during MLM pre-training' -- a configuration value, not an outcome."
+  },
+  {
+   "extraction": {
+    "metric": "masking rates",
+    "value": 10.0,
+    "where": "src/mask_procedure_ablation_tab.tex:5",
+    "text": "(r0.2cm)1-3\n  (l0.1cmr0.1cm)4-4\n  (l0.2cm)5-6\n  \n  80\\%: Masking Rates = 10"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Table 8 (ablation over masking strategies, Appendix C.2): a MASK/SAME/RND probability (BERT's own 80%/10%/10% strategy). The paper states outright that 'the numbers in the left part of the table represent the probabilities of the specific strategies used during MLM pre-training' -- a configuration value, not an outcome."
+  },
+  {
+   "extraction": {
+    "metric": "masking rates",
+    "value": 20.0,
+    "where": "src/mask_procedure_ablation_tab.tex:5",
+    "text": "0\\%: Masking Rates = 20"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Table 8 (ablation over masking strategies, Appendix C.2): a MASK/SAME/RND probability (the 20% entries in the left-hand 'Masking Rates' block). The paper states outright that 'the numbers in the left part of the table represent the probabilities of the specific strategies used during MLM pre-training' -- a configuration value, not an outcome."
+  },
+  {
+   "extraction": {
+    "metric": "masking rates",
+    "value": 80.0,
+    "where": "src/mask_procedure_ablation_tab.tex:5",
+    "text": "0\\%: Masking Rates = 80"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Table 8 (ablation over masking strategies, Appendix C.2): a MASK/SAME/RND probability (the 80% MASK entries in the left-hand 'Masking Rates' block). The paper states outright that 'the numbers in the left part of the table represent the probabilities of the specific strategies used during MLM pre-training' -- a configuration value, not an outcome."
+  },
+  {
+   "extraction": {
+    "metric": "masking rates",
+    "value": 100.0,
+    "where": "src/mask_procedure_ablation_tab.tex:5",
+    "text": "0\\%: Masking Rates = 100"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Table 8 (ablation over masking strategies, Appendix C.2): a MASK/SAME/RND probability (the 100% entries in the left-hand 'Masking Rates' block). The paper states outright that 'the numbers in the left part of the table represent the probabilities of the specific strategies used during MLM pre-training' -- a configuration value, not an outcome."
+  },
+  {
+   "extraction": {
     "metric": "f1",
     "value": 92.2,
-    "where": "pretrained_embeddings_tab.tex:6",
+    "where": "src/pretrained_embeddings_tab.tex:6",
     "text": "ELMo~peters-etal:2018:_deep: Test F1 = 92.2"
    },
    "verdict": "baseline",
@@ -217,7 +967,7 @@
    "extraction": {
     "metric": "f1",
     "value": 92.4,
-    "where": "pretrained_embeddings_tab.tex:6",
+    "where": "src/pretrained_embeddings_tab.tex:6",
     "text": "\\;\\;\\;: Test F1 = 92.4"
    },
    "verdict": "real_own_result",
@@ -227,7 +977,7 @@
    "extraction": {
     "metric": "f1",
     "value": 92.6,
-    "where": "pretrained_embeddings_tab.tex:6",
+    "where": "src/pretrained_embeddings_tab.tex:6",
     "text": "CVT~clark2018semi: Test F1 = 92.6"
    },
    "verdict": "baseline",
@@ -237,7 +987,7 @@
    "extraction": {
     "metric": "f1",
     "value": 92.8,
-    "where": "pretrained_embeddings_tab.tex:6",
+    "where": "src/pretrained_embeddings_tab.tex:6",
     "text": "\\;\\;\\;: Test F1 = 92.8"
    },
    "verdict": "real_own_result",
@@ -247,7 +997,7 @@
    "extraction": {
     "metric": "f1",
     "value": 93.1,
-    "where": "pretrained_embeddings_tab.tex:6",
+    "where": "src/pretrained_embeddings_tab.tex:6",
     "text": "CSE~akbik2018contextual: Test F1 = 93.1"
    },
    "verdict": "baseline",
@@ -257,7 +1007,7 @@
    "extraction": {
     "metric": "f1",
     "value": 94.9,
-    "where": "pretrained_embeddings_tab.tex:6",
+    "where": "src/pretrained_embeddings_tab.tex:6",
     "text": "\\;\\;\\;Last Hidden: Dev F1 = 94.9"
    },
    "verdict": "real_own_result",
@@ -267,7 +1017,7 @@
    "extraction": {
     "metric": "f1",
     "value": 95.5,
-    "where": "pretrained_embeddings_tab.tex:6",
+    "where": "src/pretrained_embeddings_tab.tex:6",
     "text": "\\;\\;\\;Weighted Sum All 12 Layers: Dev F1 = 95.5"
    },
    "verdict": "real_own_result",
@@ -277,7 +1027,7 @@
    "extraction": {
     "metric": "f1",
     "value": 95.6,
-    "where": "pretrained_embeddings_tab.tex:6",
+    "where": "src/pretrained_embeddings_tab.tex:6",
     "text": "\\;\\;\\;Second-to-Last Hidden: Dev F1 = 95.6"
    },
    "verdict": "real_own_result",
@@ -287,7 +1037,7 @@
    "extraction": {
     "metric": "f1",
     "value": 95.7,
-    "where": "pretrained_embeddings_tab.tex:6",
+    "where": "src/pretrained_embeddings_tab.tex:6",
     "text": "ELMo~peters-etal:2018:_deep: Dev F1 = 95.7"
    },
    "verdict": "baseline",
@@ -297,7 +1047,7 @@
    "extraction": {
     "metric": "f1",
     "value": 95.9,
-    "where": "pretrained_embeddings_tab.tex:6",
+    "where": "src/pretrained_embeddings_tab.tex:6",
     "text": "\\;\\;\\;Weighted Sum Last Four Hidden: Dev F1 = 95.9"
    },
    "verdict": "real_own_result",
@@ -307,7 +1057,7 @@
    "extraction": {
     "metric": "f1",
     "value": 96.1,
-    "where": "pretrained_embeddings_tab.tex:6",
+    "where": "src/pretrained_embeddings_tab.tex:6",
     "text": "\\;\\;\\;Concat Last Four Hidden: Dev F1 = 96.1"
    },
    "verdict": "real_own_result",
@@ -317,7 +1067,7 @@
    "extraction": {
     "metric": "f1",
     "value": 96.4,
-    "where": "pretrained_embeddings_tab.tex:6",
+    "where": "src/pretrained_embeddings_tab.tex:6",
     "text": "\\;\\;\\;: Dev F1 = 96.4"
    },
    "verdict": "real_own_result",
@@ -327,7 +1077,7 @@
    "extraction": {
     "metric": "f1",
     "value": 96.6,
-    "where": "pretrained_embeddings_tab.tex:6",
+    "where": "src/pretrained_embeddings_tab.tex:6",
     "text": "\\;\\;\\;: Dev F1 = 96.6"
    },
    "verdict": "real_own_result",
@@ -336,32 +1086,522 @@
   {
    "extraction": {
     "metric": "accuracy",
+    "value": 77.9,
+    "where": "src/size_ablation_tab.tex:5",
+    "text": "\\\n   3: Dev Set Accuracy = 77.9"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6 (ablation over BERT model size), Dev Set Accuracy, the L=3, H=768, A=12 row, MNLI-m. Sec 5.2: 'we report the average Dev Set accuracy from 5 random restarts of fine-tuning' -- all six rows are models the authors trained."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 79.8,
+    "where": "src/size_ablation_tab.tex:5",
+    "text": "\\\n   3: Dev Set Accuracy = 79.8"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6 (ablation over BERT model size), Dev Set Accuracy, the L=3, H=768, A=12 row, MRPC. Sec 5.2: 'we report the average Dev Set accuracy from 5 random restarts of fine-tuning' -- all six rows are models the authors trained."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 80.6,
+    "where": "src/size_ablation_tab.tex:5",
+    "text": "6: Dev Set Accuracy = 80.6"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6 (ablation over BERT model size), Dev Set Accuracy, the L=6, H=768, A=3 row, MNLI-m. Sec 5.2: 'we report the average Dev Set accuracy from 5 random restarts of fine-tuning' -- all six rows are models the authors trained."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 81.9,
+    "where": "src/size_ablation_tab.tex:5",
+    "text": "6: Dev Set Accuracy = 81.9"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6 (ablation over BERT model size), Dev Set Accuracy, the L=6, H=768, A=12 row, MNLI-m. Sec 5.2: 'we report the average Dev Set accuracy from 5 random restarts of fine-tuning' -- all six rows are models the authors trained."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 82.2,
+    "where": "src/size_ablation_tab.tex:5",
+    "text": "6: Dev Set Accuracy = 82.2"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6 (ablation over BERT model size), Dev Set Accuracy, the L=6, H=768, A=3 row, MRPC. Sec 5.2: 'we report the average Dev Set accuracy from 5 random restarts of fine-tuning' -- all six rows are models the authors trained."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 84.4,
+    "where": "src/size_ablation_tab.tex:5",
+    "text": "12: Dev Set Accuracy = 84.4"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6 (ablation over BERT model size), Dev Set Accuracy, the L=12, H=768, A=12 row, MNLI-m. Sec 5.2: 'we report the average Dev Set accuracy from 5 random restarts of fine-tuning' -- all six rows are models the authors trained."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 84.8,
+    "where": "src/size_ablation_tab.tex:5",
+    "text": "6: Dev Set Accuracy = 84.8"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6 (ablation over BERT model size), Dev Set Accuracy, the L=6, H=768, A=12 row, MRPC. Sec 5.2: 'we report the average Dev Set accuracy from 5 random restarts of fine-tuning' -- all six rows are models the authors trained."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 85.7,
+    "where": "src/size_ablation_tab.tex:5",
+    "text": "12: Dev Set Accuracy = 85.7"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6 (ablation over BERT model size), Dev Set Accuracy, the L=12, H=1024, A=16 row, MNLI-m. Sec 5.2: 'we report the average Dev Set accuracy from 5 random restarts of fine-tuning' -- all six rows are models the authors trained."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 86.6,
+    "where": "src/size_ablation_tab.tex:5",
+    "text": "24: Dev Set Accuracy = 86.6"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6 (ablation over BERT model size), Dev Set Accuracy, the L=24, H=1024, A=16 row, MNLI-m. Sec 5.2: 'we report the average Dev Set accuracy from 5 random restarts of fine-tuning' -- all six rows are models the authors trained."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 86.9,
+    "where": "src/size_ablation_tab.tex:5",
+    "text": "12: Dev Set Accuracy = 86.9"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6 (ablation over BERT model size), Dev Set Accuracy, the L=12, H=1024, A=16 row, MRPC. Sec 5.2: 'we report the average Dev Set accuracy from 5 random restarts of fine-tuning' -- all six rows are models the authors trained."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 87.8,
+    "where": "src/size_ablation_tab.tex:5",
+    "text": "24: Dev Set Accuracy = 87.8"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6 (ablation over BERT model size), Dev Set Accuracy, the L=24, H=1024, A=16 row, MRPC. Sec 5.2: 'we report the average Dev Set accuracy from 5 random restarts of fine-tuning' -- all six rows are models the authors trained."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 88.4,
+    "where": "src/size_ablation_tab.tex:5",
+    "text": "\\\n   3: Dev Set Accuracy = 88.4"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6 (ablation over BERT model size), Dev Set Accuracy, the L=3, H=768, A=12 row, SST-2. Sec 5.2: 'we report the average Dev Set accuracy from 5 random restarts of fine-tuning' -- all six rows are models the authors trained."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 90.7,
+    "where": "src/size_ablation_tab.tex:5",
+    "text": "6: Dev Set Accuracy = 90.7"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6 (ablation over BERT model size), Dev Set Accuracy, the L=6, H=768, A=3 row, SST-2. Sec 5.2: 'we report the average Dev Set accuracy from 5 random restarts of fine-tuning' -- all six rows are models the authors trained."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 91.3,
+    "where": "src/size_ablation_tab.tex:5",
+    "text": "6: Dev Set Accuracy = 91.3"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6 (ablation over BERT model size), Dev Set Accuracy, the L=6, H=768, A=12 row, SST-2. Sec 5.2: 'we report the average Dev Set accuracy from 5 random restarts of fine-tuning' -- all six rows are models the authors trained."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 92.9,
+    "where": "src/size_ablation_tab.tex:5",
+    "text": "12: Dev Set Accuracy = 92.9"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6 (ablation over BERT model size), Dev Set Accuracy, the L=12, H=768, A=12 row, SST-2. Sec 5.2: 'we report the average Dev Set accuracy from 5 random restarts of fine-tuning' -- all six rows are models the authors trained."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 93.3,
+    "where": "src/size_ablation_tab.tex:5",
+    "text": "12: Dev Set Accuracy = 93.3"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6 (ablation over BERT model size), Dev Set Accuracy, the L=12, H=1024, A=16 row, SST-2. Sec 5.2: 'we report the average Dev Set accuracy from 5 random restarts of fine-tuning' -- all six rows are models the authors trained."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 93.7,
+    "where": "src/size_ablation_tab.tex:5",
+    "text": "24: Dev Set Accuracy = 93.7"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6 (ablation over BERT model size), Dev Set Accuracy, the L=24, H=1024, A=16 row, SST-2. Sec 5.2: 'we report the average Dev Set accuracy from 5 random restarts of fine-tuning' -- all six rows are models the authors trained."
+  },
+  {
+   "extraction": {
+    "metric": "perplexity",
     "value": 3.0,
-    "where": "size_ablation_tab.tex:5",
-    "text": "6: 3cDev Set Accuracy = 3"
+    "where": "src/size_ablation_tab.tex:5",
+    "text": "6: Hyperparams = 3"
    },
-   "verdict": "not_in_paper",
-   "notes": "Table 6 mis-parse: '3' is the #A (attention-heads) hyperparameter on the L=6,H=768 row, not a Dev Set Accuracy figure (real MNLI-m/MRPC/SST-2 values run 77.9-93.7)."
+   "verdict": "hyperparameter",
+   "notes": "Table 6 (ablation over BERT model size): #A = 3 on the L=6, H=768 row, read out of the left-hand 'Hyperparams' block (#L = layers, #H = hidden size, #A = attention heads). A configuration value, not an outcome. The metric name 'perplexity' is mis-assigned: the LM (ppl) column holds 5.84, 5.24, 4.68, 3.99, 3.54 and 3.23, none of which the extractor produced. [re-decided: the same value carried a 'not_in_paper' verdict under the metric 'accuracy' until the extractor renamed this column's metric to 'perplexity', which made that verdict stale. The value is printed in the paper, in a column the paper heads 'Hyperparams', so 'hyperparameter' is the class -- matching detr's lambda_iou=2 and convnext's Table 5/6 training-settings entries.]"
   },
   {
    "extraction": {
-    "metric": "accuracy",
+    "metric": "perplexity",
     "value": 12.0,
-    "where": "size_ablation_tab.tex:5",
-    "text": "12: 3cDev Set Accuracy = 12"
+    "where": "src/size_ablation_tab.tex:5",
+    "text": "12: Hyperparams = 12"
    },
-   "verdict": "not_in_paper",
-   "notes": "Table 6 mis-parse: '12' is a #L/#A hyperparameter value, not a Dev Set Accuracy figure."
+   "verdict": "hyperparameter",
+   "notes": "Table 6 (ablation over BERT model size): #L = 12 (three rows) / #A = 12 (three rows), read out of the left-hand 'Hyperparams' block (#L = layers, #H = hidden size, #A = attention heads). A configuration value, not an outcome. The metric name 'perplexity' is mis-assigned: the LM (ppl) column holds 5.84, 5.24, 4.68, 3.99, 3.54 and 3.23, none of which the extractor produced. [re-decided: the same value carried a 'not_in_paper' verdict under the metric 'accuracy' until the extractor renamed this column's metric to 'perplexity', which made that verdict stale. The value is printed in the paper, in a column the paper heads 'Hyperparams', so 'hyperparameter' is the class -- matching detr's lambda_iou=2 and convnext's Table 5/6 training-settings entries.]"
   },
   {
    "extraction": {
-    "metric": "accuracy",
+    "metric": "perplexity",
     "value": 16.0,
-    "where": "size_ablation_tab.tex:5",
-    "text": "12: 3cDev Set Accuracy = 16"
+    "where": "src/size_ablation_tab.tex:5",
+    "text": "12: Hyperparams = 16"
    },
-   "verdict": "not_in_paper",
-   "notes": "Table 6 mis-parse: '16' is the #A (attention-heads) hyperparameter on the L=12,H=1024 row, not a Dev Set Accuracy figure."
+   "verdict": "hyperparameter",
+   "notes": "Table 6 (ablation over BERT model size): #A = 16 on the L=12, H=1024 and L=24, H=1024 rows, read out of the left-hand 'Hyperparams' block (#L = layers, #H = hidden size, #A = attention heads). A configuration value, not an outcome. The metric name 'perplexity' is mis-assigned: the LM (ppl) column holds 5.84, 5.24, 4.68, 3.99, 3.54 and 3.23, none of which the extractor produced. [re-decided: the same value carried a 'not_in_paper' verdict under the metric 'accuracy' until the extractor renamed this column's metric to 'perplexity', which made that verdict stale. The value is printed in the paper, in a column the paper heads 'Hyperparams', so 'hyperparameter' is the class -- matching detr's lambda_iou=2 and convnext's Table 5/6 training-settings entries.]"
+  },
+  {
+   "extraction": {
+    "metric": "perplexity",
+    "value": 768.0,
+    "where": "src/size_ablation_tab.tex:5",
+    "text": "12: Hyperparams = 768"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Table 6 (ablation over BERT model size): #H = 768 on the first four rows, read out of the left-hand 'Hyperparams' block (#L = layers, #H = hidden size, #A = attention heads). A configuration value, not an outcome. The metric name 'perplexity' is mis-assigned: the LM (ppl) column holds 5.84, 5.24, 4.68, 3.99, 3.54 and 3.23, none of which the extractor produced."
+  },
+  {
+   "extraction": {
+    "metric": "perplexity",
+    "value": 1024.0,
+    "where": "src/size_ablation_tab.tex:5",
+    "text": "12: Hyperparams = 1024"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Table 6 (ablation over BERT model size): #H = 1024 on the last two rows, read out of the left-hand 'Hyperparams' block (#L = layers, #H = hidden size, #A = attention heads). A configuration value, not an outcome. The metric name 'perplexity' is mis-assigned: the LM (ppl) column holds 5.84, 5.24, 4.68, 3.99, 3.54 and 3.23, none of which the extractor produced."
+  },
+  {
+   "extraction": {
+    "metric": "exact_match",
+    "value": 80.8,
+    "where": "src/squad_tab.tex:6",
+    "text": "(Single): Dev EM = 80.8"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 2 (SQuAD 1.1 results), 'Ours': BERT-BASE (Single) Dev EM."
+  },
+  {
+   "extraction": {
+    "metric": "exact_match",
+    "value": 81.2,
+    "where": "src/squad_tab.tex:6",
+    "text": "R.M. Reader (Ensemble): Dev EM = 81.2"
+   },
+   "verdict": "baseline",
+   "notes": "Table 2 (SQuAD 1.1 results), 'Published': R.M. Reader (Ensemble) Dev EM; prior work (Hu et al., 2018)."
+  },
+  {
+   "extraction": {
+    "metric": "exact_match",
+    "value": 82.3,
+    "where": "src/squad_tab.tex:6",
+    "text": "Human: Test EM = 82.3"
+   },
+   "verdict": "baseline",
+   "notes": "Table 2 (SQuAD 1.1 results), 'Top Leaderboard Systems': Human Test EM (R.M. Reader's Test EM is also 82.3); not measured by this work."
+  },
+  {
+   "extraction": {
+    "metric": "exact_match",
+    "value": 84.1,
+    "where": "src/squad_tab.tex:6",
+    "text": "(Single): Dev EM = 84.1"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 2 (SQuAD 1.1 results), 'Ours': BERT-LARGE (Single) Dev EM."
+  },
+  {
+   "extraction": {
+    "metric": "exact_match",
+    "value": 84.2,
+    "where": "src/squad_tab.tex:6",
+    "text": "(Sgl.+TriviaQA): Dev EM = 84.2"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 2 (SQuAD 1.1 results), 'Ours': BERT-LARGE (Sgl.+TriviaQA) Dev EM."
+  },
+  {
+   "extraction": {
+    "metric": "exact_match",
+    "value": 84.5,
+    "where": "src/squad_tab.tex:6",
+    "text": "\\#2 Ensemble - QANet: Test EM = 84.5"
+   },
+   "verdict": "baseline",
+   "notes": "Table 2 (SQuAD 1.1 results), 'Top Leaderboard Systems': #2 Ensemble - QANet Test EM; prior work."
+  },
+  {
+   "extraction": {
+    "metric": "exact_match",
+    "value": 85.8,
+    "where": "src/squad_tab.tex:6",
+    "text": "(Ensemble): Dev EM = 85.8"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 2 (SQuAD 1.1 results), 'Ours': BERT-LARGE (Ensemble) Dev EM."
+  },
+  {
+   "extraction": {
+    "metric": "exact_match",
+    "value": 86.2,
+    "where": "src/squad_tab.tex:6",
+    "text": "(Ens.+TriviaQA): Dev EM = 86.2"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 2 (SQuAD 1.1 results), 'Ours': BERT-LARGE (Ens.+TriviaQA) Dev EM."
+  },
+  {
+   "extraction": {
+    "metric": "f1",
+    "value": 85.6,
+    "where": "src/squad_tab.tex:6",
+    "text": "BiDAF+ELMo (Single): Dev F1 = 85.6"
+   },
+   "verdict": "baseline",
+   "notes": "Table 2 (SQuAD 1.1 results), 'Published': BiDAF+ELMo (Single) Dev F1; prior work (Peters et al., 2018a)."
+  },
+  {
+   "extraction": {
+    "metric": "f1",
+    "value": 85.8,
+    "where": "src/squad_tab.tex:6",
+    "text": "BiDAF+ELMo (Single): Test F1 = 85.8"
+   },
+   "verdict": "baseline",
+   "notes": "Table 2 (SQuAD 1.1 results), 'Published': BiDAF+ELMo (Single) Test F1; prior work (Peters et al., 2018a)."
+  },
+  {
+   "extraction": {
+    "metric": "f1",
+    "value": 87.9,
+    "where": "src/squad_tab.tex:6",
+    "text": "R.M. Reader (Ensemble): Dev F1 = 87.9"
+   },
+   "verdict": "baseline",
+   "notes": "Table 2 (SQuAD 1.1 results), 'Published': R.M. Reader (Ensemble) Dev F1; prior work (Hu et al., 2018)."
+  },
+  {
+   "extraction": {
+    "metric": "f1",
+    "value": 88.5,
+    "where": "src/squad_tab.tex:6",
+    "text": "(Single): Dev F1 = 88.5"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 2 (SQuAD 1.1 results), 'Ours': BERT-BASE (Single) Dev F1 (R.M. Reader's Test F1 is also 88.5, but the extracted text reads '(Single): Dev F1')."
+  },
+  {
+   "extraction": {
+    "metric": "f1",
+    "value": 90.5,
+    "where": "src/squad_tab.tex:6",
+    "text": "\\#2 Ensemble - QANet: Test F1 = 90.5"
+   },
+   "verdict": "baseline",
+   "notes": "Table 2 (SQuAD 1.1 results), 'Top Leaderboard Systems': #2 Ensemble - QANet Test F1; prior work."
+  },
+  {
+   "extraction": {
+    "metric": "f1",
+    "value": 90.9,
+    "where": "src/squad_tab.tex:6",
+    "text": "(Single): Dev F1 = 90.9"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 2 (SQuAD 1.1 results), 'Ours': BERT-LARGE (Single) Dev F1."
+  },
+  {
+   "extraction": {
+    "metric": "f1",
+    "value": 91.1,
+    "where": "src/squad_tab.tex:6",
+    "text": "(Sgl.+TriviaQA): Dev F1 = 91.1"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 2 (SQuAD 1.1 results), 'Ours': BERT-LARGE (Sgl.+TriviaQA) Dev F1."
+  },
+  {
+   "extraction": {
+    "metric": "f1",
+    "value": 91.2,
+    "where": "src/squad_tab.tex:6",
+    "text": "Human: Test F1 = 91.2"
+   },
+   "verdict": "baseline",
+   "notes": "Table 2 (SQuAD 1.1 results), 'Top Leaderboard Systems': Human Test F1; not measured by this work."
+  },
+  {
+   "extraction": {
+    "metric": "exact_match",
+    "value": 71.4,
+    "where": "src/squad_tab.tex:40",
+    "text": "SLQA+ (Single): Test EM = 71.4"
+   },
+   "verdict": "baseline",
+   "notes": "Table 3 (SQuAD 2.0 results), 'Published': SLQA+ (Single) Test EM; prior work (Wang et al., 2018b). unet (Ensemble) also prints 71.4."
+  },
+  {
+   "extraction": {
+    "metric": "exact_match",
+    "value": 74.2,
+    "where": "src/squad_tab.tex:40",
+    "text": "\\#2 Single - nlnet: Test EM = 74.2"
+   },
+   "verdict": "baseline",
+   "notes": "Table 3 (SQuAD 2.0 results), 'Top Leaderboard Systems': #2 Single - nlnet Test EM; prior work."
+  },
+  {
+   "extraction": {
+    "metric": "exact_match",
+    "value": 74.8,
+    "where": "src/squad_tab.tex:40",
+    "text": "\\#1 Single - MIR-MRC (F-Net): Test EM = 74.8"
+   },
+   "verdict": "baseline",
+   "notes": "Table 3 (SQuAD 2.0 results), 'Top Leaderboard Systems': #1 Single - MIR-MRC (F-Net) Test EM; prior work."
+  },
+  {
+   "extraction": {
+    "metric": "exact_match",
+    "value": 78.7,
+    "where": "src/squad_tab.tex:40",
+    "text": "(Single): Dev EM = 78.7"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 3 (SQuAD 2.0 results), 'Ours': BERT-LARGE (Single) Dev EM."
+  },
+  {
+   "extraction": {
+    "metric": "exact_match",
+    "value": 80.0,
+    "where": "src/squad_tab.tex:40",
+    "text": "(Single): Test EM = 80"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 3 (SQuAD 2.0 results), 'Ours': BERT-LARGE (Single) Test EM."
+  },
+  {
+   "extraction": {
+    "metric": "exact_match",
+    "value": 86.3,
+    "where": "src/squad_tab.tex:40",
+    "text": "Human: Dev EM = 86.3"
+   },
+   "verdict": "baseline",
+   "notes": "Table 3 (SQuAD 2.0 results), 'Top Leaderboard Systems': Human Dev EM; not measured by this work."
+  },
+  {
+   "extraction": {
+    "metric": "exact_match",
+    "value": 86.9,
+    "where": "src/squad_tab.tex:40",
+    "text": "Human: Test EM = 86.9"
+   },
+   "verdict": "baseline",
+   "notes": "Table 3 (SQuAD 2.0 results), 'Top Leaderboard Systems': Human Test EM; not measured by this work."
+  },
+  {
+   "extraction": {
+    "metric": "f1",
+    "value": 74.4,
+    "where": "src/squad_tab.tex:40",
+    "text": "SLQA+ (Single): Test F1 = 74.4"
+   },
+   "verdict": "baseline",
+   "notes": "Table 3 (SQuAD 2.0 results), 'Published': SLQA+ (Single) Test F1; prior work (Wang et al., 2018b)."
+  },
+  {
+   "extraction": {
+    "metric": "f1",
+    "value": 74.9,
+    "where": "src/squad_tab.tex:40",
+    "text": "unet (Ensemble): Test F1 = 74.9"
+   },
+   "verdict": "baseline",
+   "notes": "Table 3 (SQuAD 2.0 results), 'Published': unet (Ensemble) Test F1; prior work (Sun et al., 2018)."
+  },
+  {
+   "extraction": {
+    "metric": "f1",
+    "value": 77.1,
+    "where": "src/squad_tab.tex:40",
+    "text": "\\#2 Single - nlnet: Test F1 = 77.1"
+   },
+   "verdict": "baseline",
+   "notes": "Table 3 (SQuAD 2.0 results), 'Top Leaderboard Systems': #2 Single - nlnet Test F1; prior work."
+  },
+  {
+   "extraction": {
+    "metric": "f1",
+    "value": 78.0,
+    "where": "src/squad_tab.tex:40",
+    "text": "\\#1 Single - MIR-MRC (F-Net): Test F1 = 78"
+   },
+   "verdict": "baseline",
+   "notes": "Table 3 (SQuAD 2.0 results), 'Top Leaderboard Systems': #1 Single - MIR-MRC (F-Net) Test F1; prior work."
+  },
+  {
+   "extraction": {
+    "metric": "f1",
+    "value": 81.9,
+    "where": "src/squad_tab.tex:40",
+    "text": "(Single): Dev F1 = 81.9"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 3 (SQuAD 2.0 results), 'Ours': BERT-LARGE (Single) Dev F1."
+  },
+  {
+   "extraction": {
+    "metric": "f1",
+    "value": 89.0,
+    "where": "src/squad_tab.tex:40",
+    "text": "Human: Dev F1 = 89"
+   },
+   "verdict": "baseline",
+   "notes": "Table 3 (SQuAD 2.0 results), 'Top Leaderboard Systems': Human Dev F1; not measured by this work."
+  },
+  {
+   "extraction": {
+    "metric": "f1",
+    "value": 89.5,
+    "where": "src/squad_tab.tex:40",
+    "text": "Human: Test F1 = 89.5"
+   },
+   "verdict": "baseline",
+   "notes": "Table 3 (SQuAD 2.0 results), 'Top Leaderboard Systems': Human Test F1; not measured by this work."
   }
  ]
 }

@@ -7,7 +7,7 @@
    "extraction": {
     "metric": "accuracy",
     "value": 1.0,
-    "where": "1_intro.tex:36",
+    "where": "src/1_intro.tex:36",
     "text": "accuracy for 1"
    },
    "verdict": "not_in_paper",
@@ -17,7 +17,7 @@
    "extraction": {
     "metric": "accuracy",
     "value": 73.2,
-    "where": "3_results.tex:11",
+    "where": "src/3_results.tex:11",
     "text": "accuracy of $73.2"
    },
    "verdict": "real_own_result",
@@ -27,7 +27,7 @@
    "extraction": {
     "metric": "accuracy",
     "value": 60.6,
-    "where": "3_results.tex:19",
+    "where": "src/3_results.tex:19",
     "text": "MoCo: Top-1 = 60.6"
    },
    "verdict": "baseline",
@@ -37,7 +37,7 @@
    "extraction": {
     "metric": "accuracy",
     "value": 63.6,
-    "where": "3_results.tex:19",
+    "where": "src/3_results.tex:19",
     "text": "PIRL: Top-1 = 63.6"
    },
    "verdict": "baseline",
@@ -47,7 +47,7 @@
    "extraction": {
     "metric": "accuracy",
     "value": 69.3,
-    "where": "3_results.tex:19",
+    "where": "src/3_results.tex:19",
     "text": "SimCLR: Top-1 = 69.3"
    },
    "verdict": "baseline",
@@ -57,7 +57,7 @@
    "extraction": {
     "metric": "accuracy",
     "value": 71.1,
-    "where": "3_results.tex:19",
+    "where": "src/3_results.tex:19",
     "text": "MoCo v2: Top-1 = 71.1"
    },
    "verdict": "baseline",
@@ -67,7 +67,7 @@
    "extraction": {
     "metric": "accuracy",
     "value": 71.3,
-    "where": "3_results.tex:19",
+    "where": "src/3_results.tex:19",
     "text": "SimSiam: Top-1 = 71.3"
    },
    "verdict": "baseline",
@@ -77,7 +77,7 @@
    "extraction": {
     "metric": "accuracy",
     "value": 71.8,
-    "where": "3_results.tex:19",
+    "where": "src/3_results.tex:19",
     "text": "SwAV (w/o multi-crop): Top-1 = 71.8"
    },
    "verdict": "baseline",
@@ -87,7 +87,7 @@
    "extraction": {
     "metric": "accuracy",
     "value": 74.3,
-    "where": "3_results.tex:19",
+    "where": "src/3_results.tex:19",
     "text": "BYOL: Top-1 = 74.3"
    },
    "verdict": "baseline",
@@ -97,7 +97,7 @@
    "extraction": {
     "metric": "accuracy",
     "value": 75.3,
-    "where": "3_results.tex:19",
+    "where": "src/3_results.tex:19",
     "text": "SwAV: Top-1 = 75.3"
    },
    "verdict": "baseline",
@@ -107,7 +107,7 @@
    "extraction": {
     "metric": "accuracy",
     "value": 76.5,
-    "where": "3_results.tex:19",
+    "where": "src/3_results.tex:19",
     "text": "Supervised: Top-1 = 76.5"
    },
    "verdict": "baseline",
@@ -116,18 +116,18 @@
   {
    "extraction": {
     "metric": "accuracy",
-    "value": 88.8,
-    "where": "3_results.tex:19",
-    "text": "Normalization along feature dim.: Top-5 = 88.8"
+    "value": 89.0,
+    "where": "src/3_results.tex:19",
+    "text": "SimCLR: Top-5 = 89"
    },
-   "verdict": "real_own_result",
-   "notes": "Table 5 (loss-function ablations), 'Normalization along feature dim.' row: an ablation of Barlow Twins' own loss/normalization scheme, top-5. (The extraction's 'where' points at the same source line as the Table 1 rows around it; that field is provenance only and does not affect this judgement -- the text and value match Table 5 exactly.)"
+   "verdict": "baseline",
+   "notes": "Table 1, SimCLR top-5 (89.0), quoted comparison figure. 89.0 is also printed as BYOL's top-5 at 10% labels in Table 2 and as cases (a) and (b) top-5 in Table 6 (own ablations); the extractor emits one claim per distinct (metric, value) and the representative it surfaces is Table 1's SimCLR row, so this claim is adjudicated as the baseline it presents."
   },
   {
    "extraction": {
     "metric": "accuracy",
     "value": 90.1,
-    "where": "3_results.tex:19",
+    "where": "src/3_results.tex:19",
     "text": "MoCo v2: Top-5 = 90.1"
    },
    "verdict": "baseline",
@@ -137,7 +137,7 @@
    "extraction": {
     "metric": "accuracy",
     "value": 91.0,
-    "where": "3_results.tex:19",
+    "where": "src/3_results.tex:19",
     "text": "(ours): Top-5 = 91"
    },
    "verdict": "real_own_result",
@@ -147,7 +147,7 @@
    "extraction": {
     "metric": "accuracy",
     "value": 91.6,
-    "where": "3_results.tex:19",
+    "where": "src/3_results.tex:19",
     "text": "BYOL: Top-5 = 91.6"
    },
    "verdict": "baseline",
@@ -156,8 +156,228 @@
   {
    "extraction": {
     "metric": "accuracy",
+    "value": 10.0,
+    "where": "src/3_results.tex:49",
+    "text": "(lr)2-3(lr)4-5: Top-1 = 10"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Misparse of Table 2's sub-header row: the captured 10 is the '10%' column header -- the fraction of ImageNet training examples used -- which is a configuration of the semi-supervised experiment, not an outcome. The row label is a mangled rule specification, not a method name. No top-1 accuracy of 10 is reported anywhere in the paper."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 25.4,
+    "where": "src/3_results.tex:49",
+    "text": "Supervised: Top-1 = 25.4"
+   },
+   "verdict": "baseline",
+   "notes": "Table 2, supervised top-1 at 1% of labels. Table 2's caption states 'Results for the supervised method are from (Zhai et al., 2019)'."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 48.3,
+    "where": "src/3_results.tex:49",
+    "text": "SimCLR: Top-1 = 48.3"
+   },
+   "verdict": "baseline",
+   "notes": "Table 2, SimCLR top-1 at 1% of labels. Table 2, quoted comparison figure."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 48.4,
+    "where": "src/3_results.tex:49",
+    "text": "Supervised: Top-5 = 48.4"
+   },
+   "verdict": "baseline",
+   "notes": "Table 2, supervised top-5 at 1% of labels. Table 2's caption states 'Results for the supervised method are from (Zhai et al., 2019)'."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 53.2,
+    "where": "src/3_results.tex:49",
+    "text": "BYOL: Top-1 = 53.2"
+   },
+   "verdict": "baseline",
+   "notes": "Table 2, BYOL top-1 at 1% of labels. Table 2, quoted comparison figure."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 53.9,
+    "where": "src/3_results.tex:49",
+    "text": "SwAV: Top-1 = 53.9"
+   },
+   "verdict": "baseline",
+   "notes": "Table 2, SwAV top-1 at 1% of labels. Table 2, quoted comparison figure."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 55.0,
+    "where": "src/3_results.tex:49",
+    "text": "(ours): Top-1 = 55"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 2, Barlow Twins own top-1 at 1% of labels (55.0), also stated in the Introduction ('55% top-1 accuracy for 1% labels')."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 56.4,
+    "where": "src/3_results.tex:49",
+    "text": "Supervised: Top-1 = 56.4"
+   },
+   "verdict": "baseline",
+   "notes": "Table 2, supervised top-1 at 10% of labels. Table 2's caption states 'Results for the supervised method are from (Zhai et al., 2019)'."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 57.2,
+    "where": "src/3_results.tex:49",
+    "text": "PIRL: Top-5 = 57.2"
+   },
+   "verdict": "baseline",
+   "notes": "Table 2, PIRL top-5 at 1% of labels. Table 2, quoted comparison figure."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 65.6,
+    "where": "src/3_results.tex:49",
+    "text": "SimCLR: Top-1 = 65.6"
+   },
+   "verdict": "baseline",
+   "notes": "Table 2, SimCLR top-1 at 10% of labels. Table 2, quoted comparison figure."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 68.8,
+    "where": "src/3_results.tex:49",
+    "text": "BYOL: Top-1 = 68.8"
+   },
+   "verdict": "baseline",
+   "notes": "Table 2, BYOL top-1 at 10% of labels. Table 2, quoted comparison figure."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 69.7,
+    "where": "src/3_results.tex:49",
+    "text": "(ours): Top-1 = 69.7"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 2, Barlow Twins own top-1 at 10% of labels."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 70.2,
+    "where": "src/3_results.tex:49",
+    "text": "SwAV: Top-1 = 70.2"
+   },
+   "verdict": "baseline",
+   "notes": "Table 2, SwAV top-1 at 10% of labels, quoted comparison figure. This supersedes a previous verdict of real_own_result on (accuracy, 70.2), which was written against an extraction reading '(b): Top-1 = 70.2' -- Table 6 case (b), the paper's own asymmetry ablation, which also prints 70.2. The extractor emits one claim per distinct (metric, value) and no longer surfaces the Table 6 cell, so the extraction carrying this value today is the Table 2 baseline and is adjudicated as such."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 75.5,
+    "where": "src/3_results.tex:49",
+    "text": "SimCLR: Top-5 = 75.5"
+   },
+   "verdict": "baseline",
+   "notes": "Table 2, SimCLR top-5 at 1% of labels. Table 2, quoted comparison figure."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 78.4,
+    "where": "src/3_results.tex:49",
+    "text": "BYOL: Top-5 = 78.4"
+   },
+   "verdict": "baseline",
+   "notes": "Table 2, BYOL top-5 at 1% of labels. Table 2, quoted comparison figure."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 78.5,
+    "where": "src/3_results.tex:49",
+    "text": "SwAV: Top-5 = 78.5"
+   },
+   "verdict": "baseline",
+   "notes": "Table 2, SwAV top-5 at 1% of labels. Table 2, quoted comparison figure."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 79.2,
+    "where": "src/3_results.tex:49",
+    "text": "(ours): Top-5 = 79.2"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 2, Barlow Twins own top-5 at 1% of labels."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 80.4,
+    "where": "src/3_results.tex:49",
+    "text": "Supervised: Top-5 = 80.4"
+   },
+   "verdict": "baseline",
+   "notes": "Table 2, supervised top-5 at 10% of labels. Table 2's caption states 'Results for the supervised method are from (Zhai et al., 2019)'."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 83.8,
+    "where": "src/3_results.tex:49",
+    "text": "PIRL: Top-5 = 83.8"
+   },
+   "verdict": "baseline",
+   "notes": "Table 2, PIRL top-5 at 10% of labels. Table 2, quoted comparison figure."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 87.8,
+    "where": "src/3_results.tex:49",
+    "text": "SimCLR: Top-5 = 87.8"
+   },
+   "verdict": "baseline",
+   "notes": "Table 2, SimCLR top-5 at 10% of labels. Table 2, quoted comparison figure."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 89.3,
+    "where": "src/3_results.tex:49",
+    "text": "(ours): Top-5 = 89.3"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 2, Barlow Twins own top-5 at 10% of labels."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 89.9,
+    "where": "src/3_results.tex:49",
+    "text": "SwAV: Top-5 = 89.9"
+   },
+   "verdict": "baseline",
+   "notes": "Table 2, SwAV top-5 at 10% of labels. Table 2, quoted comparison figure."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
     "value": 90.2,
-    "where": "4_ablations.tex:5",
+    "where": "src/4_ablations.tex:5",
     "text": "accuracy and a $90.2"
    },
    "verdict": "real_own_result",
@@ -167,7 +387,7 @@
    "extraction": {
     "metric": "accuracy",
     "value": 0.1,
-    "where": "4_ablations.tex:25",
+    "where": "src/4_ablations.tex:25",
     "text": "Only red. red. term (off-diag term): Top-1 = 0.1"
    },
    "verdict": "real_own_result",
@@ -177,7 +397,7 @@
    "extraction": {
     "metric": "accuracy",
     "value": 0.5,
-    "where": "4_ablations.tex:25",
+    "where": "src/4_ablations.tex:25",
     "text": "Only red. red. term (off-diag term): Top-5 = 0.5"
    },
    "verdict": "real_own_result",
@@ -187,7 +407,7 @@
    "extraction": {
     "metric": "accuracy",
     "value": 53.4,
-    "where": "4_ablations.tex:25",
+    "where": "src/4_ablations.tex:25",
     "text": "No BN in MLP + no Normalization: Top-1 = 53.4"
    },
    "verdict": "real_own_result",
@@ -197,7 +417,7 @@
    "extraction": {
     "metric": "accuracy",
     "value": 57.3,
-    "where": "4_ablations.tex:25",
+    "where": "src/4_ablations.tex:25",
     "text": "Only invariance term (on-diag term): Top-1 = 57.3"
    },
    "verdict": "real_own_result",
@@ -207,7 +427,7 @@
    "extraction": {
     "metric": "accuracy",
     "value": 63.3,
-    "where": "4_ablations.tex:25",
+    "where": "src/4_ablations.tex:25",
     "text": "Cross-entropy with temp.: Top-1 = 63.3"
    },
    "verdict": "real_own_result",
@@ -217,7 +437,7 @@
    "extraction": {
     "metric": "accuracy",
     "value": 69.8,
-    "where": "4_ablations.tex:25",
+    "where": "src/4_ablations.tex:25",
     "text": "Normalization along feature dim.: Top-1 = 69.8"
    },
    "verdict": "real_own_result",
@@ -227,7 +447,7 @@
    "extraction": {
     "metric": "accuracy",
     "value": 71.2,
-    "where": "4_ablations.tex:25",
+    "where": "src/4_ablations.tex:25",
     "text": "No BN in MLP: Top-1 = 71.2"
    },
    "verdict": "real_own_result",
@@ -237,7 +457,7 @@
    "extraction": {
     "metric": "accuracy",
     "value": 71.4,
-    "where": "4_ablations.tex:25",
+    "where": "src/4_ablations.tex:25",
     "text": "Baseline: Top-1 = 71.4"
    },
    "verdict": "real_own_result",
@@ -247,7 +467,7 @@
    "extraction": {
     "metric": "accuracy",
     "value": 76.7,
-    "where": "4_ablations.tex:25",
+    "where": "src/4_ablations.tex:25",
     "text": "No BN in MLP + no Normalization: Top-5 = 76.7"
    },
    "verdict": "real_own_result",
@@ -257,7 +477,7 @@
    "extraction": {
     "metric": "accuracy",
     "value": 80.5,
-    "where": "4_ablations.tex:25",
+    "where": "src/4_ablations.tex:25",
     "text": "Only invariance term (on-diag term): Top-5 = 80.5"
    },
    "verdict": "real_own_result",
@@ -267,7 +487,7 @@
    "extraction": {
     "metric": "accuracy",
     "value": 85.7,
-    "where": "4_ablations.tex:25",
+    "where": "src/4_ablations.tex:25",
     "text": "Cross-entropy with temp.: Top-5 = 85.7"
    },
    "verdict": "real_own_result",
@@ -276,8 +496,18 @@
   {
    "extraction": {
     "metric": "accuracy",
+    "value": 88.8,
+    "where": "src/4_ablations.tex:25",
+    "text": "Normalization along feature dim.: Top-5 = 88.8"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 5 (loss-function ablations), 'Normalization along feature dim.' row: an ablation of Barlow Twins' own loss/normalization scheme, top-5."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
     "value": 89.7,
-    "where": "4_ablations.tex:25",
+    "where": "src/4_ablations.tex:25",
     "text": "No BN in MLP: Top-5 = 89.7"
    },
    "verdict": "real_own_result",
@@ -287,7 +517,7 @@
    "extraction": {
     "metric": "accuracy",
     "value": 67.1,
-    "where": "4_ablations.tex:54",
+    "where": "src/4_ablations.tex:54",
     "text": "accuracy is 67.1"
    },
    "verdict": "baseline",
@@ -297,7 +527,7 @@
    "extraction": {
     "metric": "accuracy",
     "value": 71.7,
-    "where": "4_ablations.tex:54",
+    "where": "src/4_ablations.tex:54",
     "text": "accuracy is 71.7"
    },
    "verdict": "real_own_result",
@@ -307,7 +537,7 @@
    "extraction": {
     "metric": "accuracy",
     "value": 72.5,
-    "where": "4_ablations.tex:54",
+    "where": "src/4_ablations.tex:54",
     "text": "accuracy is 72.5"
    },
    "verdict": "baseline",
@@ -317,7 +547,7 @@
    "extraction": {
     "metric": "accuracy",
     "value": 61.3,
-    "where": "4_ablations.tex:184",
+    "where": "src/4_ablations.tex:184",
     "text": "(c): Top-1 = 61.3"
    },
    "verdict": "real_own_result",
@@ -326,18 +556,8 @@
   {
    "extraction": {
     "metric": "accuracy",
-    "value": 70.2,
-    "where": "4_ablations.tex:184",
-    "text": "(b): Top-1 = 70.2"
-   },
-   "verdict": "real_own_result",
-   "notes": "Table 6, case (b) predictor only: own ablation of Barlow Twins' own model, top-1."
-  },
-  {
-   "extraction": {
-    "metric": "accuracy",
     "value": 70.5,
-    "where": "4_ablations.tex:184",
+    "where": "src/4_ablations.tex:184",
     "text": "(a): Top-1 = 70.5"
    },
    "verdict": "real_own_result",
@@ -347,7 +567,7 @@
    "extraction": {
     "metric": "accuracy",
     "value": 83.5,
-    "where": "4_ablations.tex:184",
+    "where": "src/4_ablations.tex:184",
     "text": "(c): Top-5 = 83.5"
    },
    "verdict": "real_own_result",
@@ -357,7 +577,7 @@
    "extraction": {
     "metric": "accuracy",
     "value": 72.3,
-    "where": "4_ablations.tex:207",
+    "where": "src/4_ablations.tex:207",
     "text": "8192-8192-8192: Acc1 = 72.3"
    },
    "verdict": "real_own_result",
@@ -367,7 +587,7 @@
    "extraction": {
     "metric": "accuracy",
     "value": 73.7,
-    "where": "4_ablations.tex:207",
+    "where": "src/4_ablations.tex:207",
     "text": "4096-4096-512: Acc1 = 73.7"
    },
    "verdict": "real_own_result",
@@ -376,8 +596,18 @@
   {
    "extraction": {
     "metric": "accuracy",
+    "value": 74.0,
+    "where": "src/4_ablations.tex:207",
+    "text": "4096-4096-256: Acc1 = 74"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 7, row '4096-4096-256 / 4096-256' ('3 layer proj, 2 layer pred, 256-d repr.'): the authors' own evaluation of BYOL under a modified projector/predictor head ('For a fair comparison with BYOL, we also evaluated BYOL with a wider and/or deeper projector head'), so the number was produced by this work rather than quoted from the BYOL paper."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
     "value": 74.1,
-    "where": "4_ablations.tex:207",
+    "where": "src/4_ablations.tex:207",
     "text": "4096-256: Acc1 = 74.1"
    },
    "verdict": "real_own_result",
@@ -387,7 +617,7 @@
    "extraction": {
     "metric": "mse",
     "value": 66.3,
-    "where": "5_discussion.tex:64",
+    "where": "src/5_discussion.tex:64",
     "text": "MSE model achieves 66.3"
    },
    "verdict": "not_in_paper",
@@ -395,9 +625,399 @@
   },
   {
    "extraction": {
+    "metric": "ap50",
+    "value": 81.3,
+    "where": "src/tables/detection.tex:6",
+    "text": "Sup.: VOC07+12 det AP_50 = 81.3"
+   },
+   "verdict": "baseline",
+   "notes": "Table 4, supervised VOC07+12 det AP_50. The Sup./MoCo-v2/SwAV/SimSiam rows are quoted: the paper claims only its own row ('We evaluate our representations for the localization based tasks'; 'Our results in Table 4'), the competitor rows follow the (He et al., 2019) protocol so published figures are comparable, and all nine of their columns reproduce the transfer table of SimSiam (Chen & He, 2020)."
+  },
+  {
+   "extraction": {
+    "metric": "ap50",
+    "value": 82.4,
+    "where": "src/tables/detection.tex:6",
+    "text": "SimSiam: VOC07+12 det AP_50 = 82.4"
+   },
+   "verdict": "baseline",
+   "notes": "Table 4, SimSiam VOC07+12 det AP_50. The Sup./MoCo-v2/SwAV/SimSiam rows are quoted: the paper claims only its own row ('We evaluate our representations for the localization based tasks'; 'Our results in Table 4'), the competitor rows follow the (He et al., 2019) protocol so published figures are comparable, and all nine of their columns reproduce the transfer table of SimSiam (Chen & He, 2020)."
+  },
+  {
+   "extraction": {
+    "metric": "ap50",
+    "value": 82.5,
+    "where": "src/tables/detection.tex:6",
+    "text": "MoCo-v2: VOC07+12 det AP_50 = 82.5"
+   },
+   "verdict": "baseline",
+   "notes": "Table 4, MoCo-v2 VOC07+12 det AP_50. The Sup./MoCo-v2/SwAV/SimSiam rows are quoted: the paper claims only its own row ('We evaluate our representations for the localization based tasks'; 'Our results in Table 4'), the competitor rows follow the (He et al., 2019) protocol so published figures are comparable, and all nine of their columns reproduce the transfer table of SimSiam (Chen & He, 2020)."
+  },
+  {
+   "extraction": {
+    "metric": "ap50",
+    "value": 82.6,
+    "where": "src/tables/detection.tex:6",
+    "text": "BT (ours): VOC07+12 det AP_50 = 82.6"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 4, Barlow Twins own VOC07+12 det AP_50 (82.6). SwAV's cell in the same column is also 82.6; the representative the extractor surfaces is the BT (ours) row."
+  },
+  {
+   "extraction": {
+    "metric": "ap75",
+    "value": 58.8,
+    "where": "src/tables/detection.tex:6",
+    "text": "Sup.: VOC07+12 det AP_75 = 58.8"
+   },
+   "verdict": "baseline",
+   "notes": "Table 4, supervised VOC07+12 det AP_75. The Sup./MoCo-v2/SwAV/SimSiam rows are quoted: the paper claims only its own row ('We evaluate our representations for the localization based tasks'; 'Our results in Table 4'), the competitor rows follow the (He et al., 2019) protocol so published figures are comparable, and all nine of their columns reproduce the transfer table of SimSiam (Chen & He, 2020)."
+  },
+  {
+   "extraction": {
+    "metric": "ap75",
+    "value": 62.7,
+    "where": "src/tables/detection.tex:6",
+    "text": "SwAV: VOC07+12 det AP_75 = 62.7"
+   },
+   "verdict": "baseline",
+   "notes": "Table 4, SwAV VOC07+12 det AP_75. The Sup./MoCo-v2/SwAV/SimSiam rows are quoted: the paper claims only its own row ('We evaluate our representations for the localization based tasks'; 'Our results in Table 4'), the competitor rows follow the (He et al., 2019) protocol so published figures are comparable, and all nine of their columns reproduce the transfer table of SimSiam (Chen & He, 2020)."
+  },
+  {
+   "extraction": {
+    "metric": "ap75",
+    "value": 63.4,
+    "where": "src/tables/detection.tex:6",
+    "text": "BT (ours): VOC07+12 det AP_75 = 63.4"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 4, Barlow Twins own VOC07+12 det AP_75."
+  },
+  {
+   "extraction": {
+    "metric": "ap75",
+    "value": 63.7,
+    "where": "src/tables/detection.tex:6",
+    "text": "SimSiam: VOC07+12 det AP_75 = 63.7"
+   },
+   "verdict": "baseline",
+   "notes": "Table 4, SimSiam VOC07+12 det AP_75. The Sup./MoCo-v2/SwAV/SimSiam rows are quoted: the paper claims only its own row ('We evaluate our representations for the localization based tasks'; 'Our results in Table 4'), the competitor rows follow the (He et al., 2019) protocol so published figures are comparable, and all nine of their columns reproduce the transfer table of SimSiam (Chen & He, 2020)."
+  },
+  {
+   "extraction": {
+    "metric": "ap75",
+    "value": 64.0,
+    "where": "src/tables/detection.tex:6",
+    "text": "MoCo-v2: VOC07+12 det AP_75 = 64"
+   },
+   "verdict": "baseline",
+   "notes": "Table 4, MoCo-v2 VOC07+12 det AP_75. The Sup./MoCo-v2/SwAV/SimSiam rows are quoted: the paper claims only its own row ('We evaluate our representations for the localization based tasks'; 'Our results in Table 4'), the competitor rows follow the (He et al., 2019) protocol so published figures are comparable, and all nine of their columns reproduce the transfer table of SimSiam (Chen & He, 2020)."
+  },
+  {
+   "extraction": {
+    "metric": "coco det ap^bb",
+    "value": 38.2,
+    "where": "src/tables/detection.tex:6",
+    "text": "Sup.: COCO det AP^bb = 38.2"
+   },
+   "verdict": "baseline",
+   "notes": "Table 4, supervised COCO det AP^bb. The Sup./MoCo-v2/SwAV/SimSiam rows are quoted: the paper claims only its own row ('We evaluate our representations for the localization based tasks'; 'Our results in Table 4'), the competitor rows follow the (He et al., 2019) protocol so published figures are comparable, and all nine of their columns reproduce the transfer table of SimSiam (Chen & He, 2020)."
+  },
+  {
+   "extraction": {
+    "metric": "coco det ap^bb",
+    "value": 38.4,
+    "where": "src/tables/detection.tex:6",
+    "text": "SwAV: COCO det AP^bb = 38.4"
+   },
+   "verdict": "baseline",
+   "notes": "Table 4, SwAV COCO det AP^bb. The Sup./MoCo-v2/SwAV/SimSiam rows are quoted: the paper claims only its own row ('We evaluate our representations for the localization based tasks'; 'Our results in Table 4'), the competitor rows follow the (He et al., 2019) protocol so published figures are comparable, and all nine of their columns reproduce the transfer table of SimSiam (Chen & He, 2020)."
+  },
+  {
+   "extraction": {
+    "metric": "coco det ap^bb",
+    "value": 39.2,
+    "where": "src/tables/detection.tex:6",
+    "text": "BT (ours): COCO det AP^bb = 39.2"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 4, Barlow Twins own COCO det AP^bb (39.2). SimSiam's cell in the same column is also 39.2; the representative the extractor surfaces is the BT (ours) row."
+  },
+  {
+   "extraction": {
+    "metric": "coco det ap^bb",
+    "value": 39.3,
+    "where": "src/tables/detection.tex:6",
+    "text": "MoCo-v2: COCO det AP^bb = 39.3"
+   },
+   "verdict": "baseline",
+   "notes": "Table 4, MoCo-v2 COCO det AP^bb. The Sup./MoCo-v2/SwAV/SimSiam rows are quoted: the paper claims only its own row ('We evaluate our representations for the localization based tasks'; 'Our results in Table 4'), the competitor rows follow the (He et al., 2019) protocol so published figures are comparable, and all nine of their columns reproduce the transfer table of SimSiam (Chen & He, 2020)."
+  },
+  {
+   "extraction": {
+    "metric": "coco det ap^bb_50",
+    "value": 58.2,
+    "where": "src/tables/detection.tex:6",
+    "text": "Sup.: COCO det AP^bb_50 = 58.2"
+   },
+   "verdict": "baseline",
+   "notes": "Table 4, supervised COCO det AP^bb_50. The Sup./MoCo-v2/SwAV/SimSiam rows are quoted: the paper claims only its own row ('We evaluate our representations for the localization based tasks'; 'Our results in Table 4'), the competitor rows follow the (He et al., 2019) protocol so published figures are comparable, and all nine of their columns reproduce the transfer table of SimSiam (Chen & He, 2020)."
+  },
+  {
+   "extraction": {
+    "metric": "coco det ap^bb_50",
+    "value": 58.6,
+    "where": "src/tables/detection.tex:6",
+    "text": "SwAV: COCO det AP^bb_50 = 58.6"
+   },
+   "verdict": "baseline",
+   "notes": "Table 4, SwAV COCO det AP^bb_50. The Sup./MoCo-v2/SwAV/SimSiam rows are quoted: the paper claims only its own row ('We evaluate our representations for the localization based tasks'; 'Our results in Table 4'), the competitor rows follow the (He et al., 2019) protocol so published figures are comparable, and all nine of their columns reproduce the transfer table of SimSiam (Chen & He, 2020)."
+  },
+  {
+   "extraction": {
+    "metric": "coco det ap^bb_50",
+    "value": 58.9,
+    "where": "src/tables/detection.tex:6",
+    "text": "MoCo-v2: COCO det AP^bb_50 = 58.9"
+   },
+   "verdict": "baseline",
+   "notes": "Table 4, MoCo-v2 COCO det AP^bb_50. The Sup./MoCo-v2/SwAV/SimSiam rows are quoted: the paper claims only its own row ('We evaluate our representations for the localization based tasks'; 'Our results in Table 4'), the competitor rows follow the (He et al., 2019) protocol so published figures are comparable, and all nine of their columns reproduce the transfer table of SimSiam (Chen & He, 2020)."
+  },
+  {
+   "extraction": {
+    "metric": "coco det ap^bb_50",
+    "value": 59.0,
+    "where": "src/tables/detection.tex:6",
+    "text": "BT (ours): COCO det AP^bb_50 = 59"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 4, Barlow Twins own COCO det AP^bb_50."
+  },
+  {
+   "extraction": {
+    "metric": "coco det ap^bb_50",
+    "value": 59.3,
+    "where": "src/tables/detection.tex:6",
+    "text": "SimSiam: COCO det AP^bb_50 = 59.3"
+   },
+   "verdict": "baseline",
+   "notes": "Table 4, SimSiam COCO det AP^bb_50. The Sup./MoCo-v2/SwAV/SimSiam rows are quoted: the paper claims only its own row ('We evaluate our representations for the localization based tasks'; 'Our results in Table 4'), the competitor rows follow the (He et al., 2019) protocol so published figures are comparable, and all nine of their columns reproduce the transfer table of SimSiam (Chen & He, 2020)."
+  },
+  {
+   "extraction": {
+    "metric": "coco det ap^bb_75",
+    "value": 41.2,
+    "where": "src/tables/detection.tex:6",
+    "text": "Sup.: COCO det AP^bb_75 = 41.2"
+   },
+   "verdict": "baseline",
+   "notes": "Table 4, supervised COCO det AP^bb_75. The Sup./MoCo-v2/SwAV/SimSiam rows are quoted: the paper claims only its own row ('We evaluate our representations for the localization based tasks'; 'Our results in Table 4'), the competitor rows follow the (He et al., 2019) protocol so published figures are comparable, and all nine of their columns reproduce the transfer table of SimSiam (Chen & He, 2020)."
+  },
+  {
+   "extraction": {
+    "metric": "coco det ap^bb_75",
+    "value": 41.3,
+    "where": "src/tables/detection.tex:6",
+    "text": "SwAV: COCO det AP^bb_75 = 41.3"
+   },
+   "verdict": "baseline",
+   "notes": "Table 4, SwAV COCO det AP^bb_75. The Sup./MoCo-v2/SwAV/SimSiam rows are quoted: the paper claims only its own row ('We evaluate our representations for the localization based tasks'; 'Our results in Table 4'), the competitor rows follow the (He et al., 2019) protocol so published figures are comparable, and all nine of their columns reproduce the transfer table of SimSiam (Chen & He, 2020)."
+  },
+  {
+   "extraction": {
+    "metric": "coco det ap^bb_75",
+    "value": 42.1,
+    "where": "src/tables/detection.tex:6",
+    "text": "SimSiam: COCO det AP^bb_75 = 42.1"
+   },
+   "verdict": "baseline",
+   "notes": "Table 4, SimSiam COCO det AP^bb_75. The Sup./MoCo-v2/SwAV/SimSiam rows are quoted: the paper claims only its own row ('We evaluate our representations for the localization based tasks'; 'Our results in Table 4'), the competitor rows follow the (He et al., 2019) protocol so published figures are comparable, and all nine of their columns reproduce the transfer table of SimSiam (Chen & He, 2020)."
+  },
+  {
+   "extraction": {
+    "metric": "coco det ap^bb_75",
+    "value": 42.5,
+    "where": "src/tables/detection.tex:6",
+    "text": "BT (ours): COCO det AP^bb_75 = 42.5"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 4, Barlow Twins own COCO det AP^bb_75 (42.5). MoCo-v2's cell in the same column is also 42.5; the representative the extractor surfaces is the BT (ours) row."
+  },
+  {
+   "extraction": {
+    "metric": "coco instance seg ap^mk",
+    "value": 33.3,
+    "where": "src/tables/detection.tex:6",
+    "text": "Sup.: COCO instance seg AP^mk = 33.3"
+   },
+   "verdict": "baseline",
+   "notes": "Table 4, supervised COCO instance seg AP^mk. The Sup./MoCo-v2/SwAV/SimSiam rows are quoted: the paper claims only its own row ('We evaluate our representations for the localization based tasks'; 'Our results in Table 4'), the competitor rows follow the (He et al., 2019) protocol so published figures are comparable, and all nine of their columns reproduce the transfer table of SimSiam (Chen & He, 2020)."
+  },
+  {
+   "extraction": {
+    "metric": "coco instance seg ap^mk",
+    "value": 33.8,
+    "where": "src/tables/detection.tex:6",
+    "text": "SwAV: COCO instance seg AP^mk = 33.8"
+   },
+   "verdict": "baseline",
+   "notes": "Table 4, SwAV COCO instance seg AP^mk. The Sup./MoCo-v2/SwAV/SimSiam rows are quoted: the paper claims only its own row ('We evaluate our representations for the localization based tasks'; 'Our results in Table 4'), the competitor rows follow the (He et al., 2019) protocol so published figures are comparable, and all nine of their columns reproduce the transfer table of SimSiam (Chen & He, 2020)."
+  },
+  {
+   "extraction": {
+    "metric": "coco instance seg ap^mk",
+    "value": 34.3,
+    "where": "src/tables/detection.tex:6",
+    "text": "BT (ours): COCO instance seg AP^mk = 34.3"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 4, Barlow Twins own COCO instance seg AP^mk."
+  },
+  {
+   "extraction": {
+    "metric": "coco instance seg ap^mk",
+    "value": 34.4,
+    "where": "src/tables/detection.tex:6",
+    "text": "MoCo-v2: COCO instance seg AP^mk = 34.4"
+   },
+   "verdict": "baseline",
+   "notes": "Table 4, MoCo-v2 COCO instance seg AP^mk (SimSiam's cell is also 34.4). The Sup./MoCo-v2/SwAV/SimSiam rows are quoted: the paper claims only its own row ('We evaluate our representations for the localization based tasks'; 'Our results in Table 4'), the competitor rows follow the (He et al., 2019) protocol so published figures are comparable, and all nine of their columns reproduce the transfer table of SimSiam (Chen & He, 2020)."
+  },
+  {
+   "extraction": {
+    "metric": "coco instance seg ap^mk_50",
+    "value": 54.7,
+    "where": "src/tables/detection.tex:6",
+    "text": "Sup.: COCO instance seg AP^mk_50 = 54.7"
+   },
+   "verdict": "baseline",
+   "notes": "Table 4, supervised COCO instance seg AP^mk_50. The Sup./MoCo-v2/SwAV/SimSiam rows are quoted: the paper claims only its own row ('We evaluate our representations for the localization based tasks'; 'Our results in Table 4'), the competitor rows follow the (He et al., 2019) protocol so published figures are comparable, and all nine of their columns reproduce the transfer table of SimSiam (Chen & He, 2020)."
+  },
+  {
+   "extraction": {
+    "metric": "coco instance seg ap^mk_50",
+    "value": 55.2,
+    "where": "src/tables/detection.tex:6",
+    "text": "SwAV: COCO instance seg AP^mk_50 = 55.2"
+   },
+   "verdict": "baseline",
+   "notes": "Table 4, SwAV COCO instance seg AP^mk_50. The Sup./MoCo-v2/SwAV/SimSiam rows are quoted: the paper claims only its own row ('We evaluate our representations for the localization based tasks'; 'Our results in Table 4'), the competitor rows follow the (He et al., 2019) protocol so published figures are comparable, and all nine of their columns reproduce the transfer table of SimSiam (Chen & He, 2020)."
+  },
+  {
+   "extraction": {
+    "metric": "coco instance seg ap^mk_50",
+    "value": 55.8,
+    "where": "src/tables/detection.tex:6",
+    "text": "MoCo-v2: COCO instance seg AP^mk_50 = 55.8"
+   },
+   "verdict": "baseline",
+   "notes": "Table 4, MoCo-v2 COCO instance seg AP^mk_50. The Sup./MoCo-v2/SwAV/SimSiam rows are quoted: the paper claims only its own row ('We evaluate our representations for the localization based tasks'; 'Our results in Table 4'), the competitor rows follow the (He et al., 2019) protocol so published figures are comparable, and all nine of their columns reproduce the transfer table of SimSiam (Chen & He, 2020)."
+  },
+  {
+   "extraction": {
+    "metric": "coco instance seg ap^mk_50",
+    "value": 56.0,
+    "where": "src/tables/detection.tex:6",
+    "text": "BT (ours): COCO instance seg AP^mk_50 = 56"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 4, Barlow Twins own COCO instance seg AP^mk_50 (56.0). SimSiam's cell in the same column is also 56.0; the representative the extractor surfaces is the BT (ours) row."
+  },
+  {
+   "extraction": {
+    "metric": "coco instance seg ap^mk_75",
+    "value": 35.2,
+    "where": "src/tables/detection.tex:6",
+    "text": "Sup.: COCO instance seg AP^mk_75 = 35.2"
+   },
+   "verdict": "baseline",
+   "notes": "Table 4, supervised COCO instance seg AP^mk_75. The Sup./MoCo-v2/SwAV/SimSiam rows are quoted: the paper claims only its own row ('We evaluate our representations for the localization based tasks'; 'Our results in Table 4'), the competitor rows follow the (He et al., 2019) protocol so published figures are comparable, and all nine of their columns reproduce the transfer table of SimSiam (Chen & He, 2020)."
+  },
+  {
+   "extraction": {
+    "metric": "coco instance seg ap^mk_75",
+    "value": 35.9,
+    "where": "src/tables/detection.tex:6",
+    "text": "SwAV: COCO instance seg AP^mk_75 = 35.9"
+   },
+   "verdict": "baseline",
+   "notes": "Table 4, SwAV COCO instance seg AP^mk_75. The Sup./MoCo-v2/SwAV/SimSiam rows are quoted: the paper claims only its own row ('We evaluate our representations for the localization based tasks'; 'Our results in Table 4'), the competitor rows follow the (He et al., 2019) protocol so published figures are comparable, and all nine of their columns reproduce the transfer table of SimSiam (Chen & He, 2020)."
+  },
+  {
+   "extraction": {
+    "metric": "coco instance seg ap^mk_75",
+    "value": 36.5,
+    "where": "src/tables/detection.tex:6",
+    "text": "BT (ours): COCO instance seg AP^mk_75 = 36.5"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 4, Barlow Twins own COCO instance seg AP^mk_75 (36.5). MoCo-v2's cell in the same column is also 36.5; the representative the extractor surfaces is the BT (ours) row."
+  },
+  {
+   "extraction": {
+    "metric": "coco instance seg ap^mk_75",
+    "value": 36.7,
+    "where": "src/tables/detection.tex:6",
+    "text": "SimSiam: COCO instance seg AP^mk_75 = 36.7"
+   },
+   "verdict": "baseline",
+   "notes": "Table 4, SimSiam COCO instance seg AP^mk_75. The Sup./MoCo-v2/SwAV/SimSiam rows are quoted: the paper claims only its own row ('We evaluate our representations for the localization based tasks'; 'Our results in Table 4'), the competitor rows follow the (He et al., 2019) protocol so published figures are comparable, and all nine of their columns reproduce the transfer table of SimSiam (Chen & He, 2020)."
+  },
+  {
+   "extraction": {
+    "metric": "voc07+12 det ap_all",
+    "value": 53.5,
+    "where": "src/tables/detection.tex:6",
+    "text": "Sup.: VOC07+12 det AP_all = 53.5"
+   },
+   "verdict": "baseline",
+   "notes": "Table 4, supervised VOC07+12 det AP_all. The Sup./MoCo-v2/SwAV/SimSiam rows are quoted: the paper claims only its own row ('We evaluate our representations for the localization based tasks'; 'Our results in Table 4'), the competitor rows follow the (He et al., 2019) protocol so published figures are comparable, and all nine of their columns reproduce the transfer table of SimSiam (Chen & He, 2020)."
+  },
+  {
+   "extraction": {
+    "metric": "voc07+12 det ap_all",
+    "value": 56.1,
+    "where": "src/tables/detection.tex:6",
+    "text": "SwAV: VOC07+12 det AP_all = 56.1"
+   },
+   "verdict": "baseline",
+   "notes": "Table 4, SwAV VOC07+12 det AP_all. The Sup./MoCo-v2/SwAV/SimSiam rows are quoted: the paper claims only its own row ('We evaluate our representations for the localization based tasks'; 'Our results in Table 4'), the competitor rows follow the (He et al., 2019) protocol so published figures are comparable, and all nine of their columns reproduce the transfer table of SimSiam (Chen & He, 2020)."
+  },
+  {
+   "extraction": {
+    "metric": "voc07+12 det ap_all",
+    "value": 56.8,
+    "where": "src/tables/detection.tex:6",
+    "text": "BT (ours): VOC07+12 det AP_all = 56.8"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 4, Barlow Twins own VOC07+12 det AP_all."
+  },
+  {
+   "extraction": {
+    "metric": "voc07+12 det ap_all",
+    "value": 57.0,
+    "where": "src/tables/detection.tex:6",
+    "text": "SimSiam: VOC07+12 det AP_all = 57"
+   },
+   "verdict": "baseline",
+   "notes": "Table 4, SimSiam VOC07+12 det AP_all (printed '57'). The Sup./MoCo-v2/SwAV/SimSiam rows are quoted: the paper claims only its own row ('We evaluate our representations for the localization based tasks'; 'Our results in Table 4'), the competitor rows follow the (He et al., 2019) protocol so published figures are comparable, and all nine of their columns reproduce the transfer table of SimSiam (Chen & He, 2020)."
+  },
+  {
+   "extraction": {
+    "metric": "voc07+12 det ap_all",
+    "value": 57.4,
+    "where": "src/tables/detection.tex:6",
+    "text": "MoCo-v2: VOC07+12 det AP_all = 57.4"
+   },
+   "verdict": "baseline",
+   "notes": "Table 4, MoCo-v2 VOC07+12 det AP_all. The Sup./MoCo-v2/SwAV/SimSiam rows are quoted: the paper claims only its own row ('We evaluate our representations for the localization based tasks'; 'Our results in Table 4'), the competitor rows follow the (He et al., 2019) protocol so published figures are comparable, and all nine of their columns reproduce the transfer table of SimSiam (Chen & He, 2020)."
+  },
+  {
+   "extraction": {
     "metric": "inat18",
     "value": 37.2,
-    "where": "tables/linear_probe_transfer.tex:6",
+    "where": "src/tables/linear_probe_transfer.tex:6",
     "text": "SimCLR: iNat18 = 37.2"
    },
    "verdict": "baseline",
@@ -407,7 +1027,7 @@
    "extraction": {
     "metric": "inat18",
     "value": 38.6,
-    "where": "tables/linear_probe_transfer.tex:6",
+    "where": "src/tables/linear_probe_transfer.tex:6",
     "text": "MoCo-v2: iNat18 = 38.6"
    },
    "verdict": "baseline",
@@ -417,7 +1037,7 @@
    "extraction": {
     "metric": "inat18",
     "value": 39.5,
-    "where": "tables/linear_probe_transfer.tex:6",
+    "where": "src/tables/linear_probe_transfer.tex:6",
     "text": "SwAV (w/o multi-crop): iNat18 = 39.5"
    },
    "verdict": "baseline",
@@ -427,7 +1047,7 @@
    "extraction": {
     "metric": "inat18",
     "value": 46.5,
-    "where": "tables/linear_probe_transfer.tex:6",
+    "where": "src/tables/linear_probe_transfer.tex:6",
     "text": "(ours): iNat18 = 46.5"
    },
    "verdict": "real_own_result",
@@ -437,7 +1057,7 @@
    "extraction": {
     "metric": "inat18",
     "value": 46.7,
-    "where": "tables/linear_probe_transfer.tex:6",
+    "where": "src/tables/linear_probe_transfer.tex:6",
     "text": "Supervised: iNat18 = 46.7"
    },
    "verdict": "baseline",
@@ -447,7 +1067,7 @@
    "extraction": {
     "metric": "inat18",
     "value": 47.6,
-    "where": "tables/linear_probe_transfer.tex:6",
+    "where": "src/tables/linear_probe_transfer.tex:6",
     "text": "BYOL: iNat18 = 47.6"
    },
    "verdict": "baseline",
@@ -457,7 +1077,7 @@
    "extraction": {
     "metric": "inat18",
     "value": 48.6,
-    "where": "tables/linear_probe_transfer.tex:6",
+    "where": "src/tables/linear_probe_transfer.tex:6",
     "text": "SwAV: iNat18 = 48.6"
    },
    "verdict": "baseline",
@@ -467,7 +1087,7 @@
    "extraction": {
     "metric": "places-205",
     "value": 51.8,
-    "where": "tables/linear_probe_transfer.tex:6",
+    "where": "src/tables/linear_probe_transfer.tex:6",
     "text": "MoCo-v2: Places-205 = 51.8"
    },
    "verdict": "baseline",
@@ -477,7 +1097,7 @@
    "extraction": {
     "metric": "places-205",
     "value": 52.5,
-    "where": "tables/linear_probe_transfer.tex:6",
+    "where": "src/tables/linear_probe_transfer.tex:6",
     "text": "SimCLR: Places-205 = 52.5"
    },
    "verdict": "baseline",
@@ -487,7 +1107,7 @@
    "extraction": {
     "metric": "places-205",
     "value": 52.8,
-    "where": "tables/linear_probe_transfer.tex:6",
+    "where": "src/tables/linear_probe_transfer.tex:6",
     "text": "SwAV (w/o multi-crop): Places-205 = 52.8"
    },
    "verdict": "baseline",
@@ -497,7 +1117,7 @@
    "extraction": {
     "metric": "places-205",
     "value": 53.2,
-    "where": "tables/linear_probe_transfer.tex:6",
+    "where": "src/tables/linear_probe_transfer.tex:6",
     "text": "Supervised: Places-205 = 53.2"
    },
    "verdict": "baseline",
@@ -506,18 +1126,28 @@
   {
    "extraction": {
     "metric": "places-205",
+    "value": 54.0,
+    "where": "src/tables/linear_probe_transfer.tex:6",
+    "text": "BYOL: Places-205 = 54"
+   },
+   "verdict": "baseline",
+   "notes": "Table 3, BYOL Places-205 (54.0), quoted comparison figure."
+  },
+  {
+   "extraction": {
+    "metric": "places-205",
     "value": 54.1,
-    "where": "tables/linear_probe_transfer.tex:6",
-    "text": "BYOL: Places-205 = 54.1"
+    "where": "src/tables/linear_probe_transfer.tex:6",
+    "text": "(ours): Places-205 = 54.1"
    },
    "verdict": "real_own_result",
-   "notes": "Table 3 row for Places-205 = 54.1 belongs to Barlow Twins (ours), not BYOL: BYOL's real Places-205 value is 54.0, and 54.1 is the paper's own result on the next row. The extractor mislabelled which row this cell came from, but the (metric, value) pair itself -- places-205 = 54.1 -- is real and is the paper's own result, so it is judged on that pair rather than on the mismatched row label."
+   "notes": "Table 3, Barlow Twins own Places-205 result (54.1). BYOL's Places-205 value on the row above is 54.0 and is adjudicated separately."
   },
   {
    "extraction": {
     "metric": "places-205",
     "value": 56.7,
-    "where": "tables/linear_probe_transfer.tex:6",
+    "where": "src/tables/linear_probe_transfer.tex:6",
     "text": "SwAV: Places-205 = 56.7"
    },
    "verdict": "baseline",
@@ -527,7 +1157,7 @@
    "extraction": {
     "metric": "voc07",
     "value": 85.5,
-    "where": "tables/linear_probe_transfer.tex:6",
+    "where": "src/tables/linear_probe_transfer.tex:6",
     "text": "SimCLR: VOC07 = 85.5"
    },
    "verdict": "baseline",
@@ -537,7 +1167,7 @@
    "extraction": {
     "metric": "voc07",
     "value": 86.2,
-    "where": "tables/linear_probe_transfer.tex:6",
+    "where": "src/tables/linear_probe_transfer.tex:6",
     "text": "(ours): VOC07 = 86.2"
    },
    "verdict": "real_own_result",
@@ -547,7 +1177,7 @@
    "extraction": {
     "metric": "voc07",
     "value": 86.4,
-    "where": "tables/linear_probe_transfer.tex:6",
+    "where": "src/tables/linear_probe_transfer.tex:6",
     "text": "MoCo-v2: VOC07 = 86.4"
    },
    "verdict": "baseline",
@@ -557,7 +1187,7 @@
    "extraction": {
     "metric": "voc07",
     "value": 86.6,
-    "where": "tables/linear_probe_transfer.tex:6",
+    "where": "src/tables/linear_probe_transfer.tex:6",
     "text": "BYOL: VOC07 = 86.6"
    },
    "verdict": "baseline",
@@ -567,7 +1197,7 @@
    "extraction": {
     "metric": "voc07",
     "value": 87.5,
-    "where": "tables/linear_probe_transfer.tex:6",
+    "where": "src/tables/linear_probe_transfer.tex:6",
     "text": "Supervised: VOC07 = 87.5"
    },
    "verdict": "baseline",
@@ -577,7 +1207,7 @@
    "extraction": {
     "metric": "voc07",
     "value": 88.9,
-    "where": "tables/linear_probe_transfer.tex:6",
+    "where": "src/tables/linear_probe_transfer.tex:6",
     "text": "SwAV: VOC07 = 88.9"
    },
    "verdict": "baseline",
