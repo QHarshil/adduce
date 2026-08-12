@@ -132,10 +132,15 @@ def _labels_payload() -> dict[str, Any]:
 
 
 def _verifications_payload() -> dict[str, Any]:
-    """Adjudicates all five real extractions plus two constructed for coverage.
+    """Adjudicates the fixture's five real extractions, and only those.
 
-    2 real_own_result, 1 baseline, 2 hyperparameter, 1 not_in_paper, 1
-    unclear -- adjudicated = 6, precision = 2/6.
+    2 real_own_result, 1 baseline, 2 hyperparameter -- adjudicated = 5,
+    precision = 2/5. Every entry names an extraction the fixture really
+    produces, which is what ``evaluate_precision`` now requires: an
+    adjudication of something the extractor does not emit is a verdict about a
+    set that no longer exists. ``not_in_paper``, ``in_repo_not_paper`` and
+    ``unclear`` are exercised against ``compute_precision`` directly instead,
+    where a constructed verdict has no live extraction to correspond to.
     """
     return {
         "pair_id": "fixture-pair",
@@ -159,14 +164,6 @@ def _verifications_payload() -> dict[str, Any]:
             {
                 "extraction": {"metric": "accuracy", "value": 79.5, "where": "paper.tex:6"},
                 "verdict": "hyperparameter", "notes": "the decision threshold, not a result",
-            },
-            {
-                "extraction": {"metric": "bleu", "value": 10.0, "where": "n/a"},
-                "verdict": "not_in_paper", "notes": "constructed for coverage",
-            },
-            {
-                "extraction": {"metric": "f1", "value": 50.0, "where": "n/a"},
-                "verdict": "unclear", "notes": "constructed for coverage",
             },
         ],
     }
@@ -474,6 +471,201 @@ def test_precision_is_none_when_nothing_is_adjudicated():
     assert result.precision is None
 
 
+# -- verification coverage: precision only over the extractions produced now --
+
+
+def _extraction(*claims: recall.ExtractedClaim) -> dict[str, Any]:
+    """An extraction worker payload, in the shape ``evaluate_precision`` reads."""
+    return {
+        "available": True,
+        "claims": [
+            {"metric": c.metric, "value": c.value, "where": c.where, "text": c.text}
+            for c in claims
+        ],
+    }
+
+
+def _fixture_extraction(*extra: recall.ExtractedClaim) -> dict[str, Any]:
+    """The five extractions ``_verifications_payload`` adjudicates, plus any extra."""
+    return _extraction(
+        _claim(metric="accuracy", value=92.4),
+        _claim(metric="recall", value=81.0),
+        _claim(metric="accuracy", value=88.1),
+        _claim(metric="recall", value=77.0),
+        _claim(metric="accuracy", value=79.5),
+        *extra,
+    )
+
+
+def _verifications_file(tmp_path: Path, *, drop: int | None = None) -> Path:
+    payload = _verifications_payload()
+    if drop is not None:
+        del payload["verifications"][drop]
+    path = tmp_path / "verifications.json"
+    _write_json(path, payload)
+    return path
+
+
+def test_precision_is_reported_when_every_extraction_carries_a_verdict(tmp_path):
+    report = recall.evaluate_precision(_verifications_file(tmp_path), _fixture_extraction())
+
+    assert report.available is True
+    assert report.result is not None
+    assert report.result.precision == pytest.approx(2 / 5)
+    assert report.coverage == recall.VerificationCoverage(
+        extractions=5, verdicts=5, unadjudicated=0, stale=0
+    )
+
+
+def test_an_extraction_with_no_verdict_makes_precision_unavailable(tmp_path):
+    """The barlowtwins failure: the extractor moved on and the file did not.
+
+    Tallying the file alone kept reporting 27/58 while the extractor produced
+    61 extractions -- a rate over a set that no longer existed. An extraction
+    nobody adjudicated is never guessed at; the pair reports its counts and no
+    number.
+    """
+    extraction = _fixture_extraction(_claim(metric="accuracy", value=65.3))
+
+    report = recall.evaluate_precision(_verifications_file(tmp_path), extraction)
+
+    assert report.available is False
+    assert report.result is None
+    assert report.coverage == recall.VerificationCoverage(
+        extractions=6, verdicts=5, unadjudicated=1, stale=0
+    )
+    assert "6 extractions" in report.reason
+    assert "5 verdicts" in report.reason
+    assert "1 unadjudicated" in report.reason
+    assert "0 stale" in report.reason
+
+
+def test_a_verdict_matching_no_extraction_makes_precision_unavailable(tmp_path):
+    """The other direction: an adjudication of something the extractor dropped."""
+    extraction = _extraction(
+        _claim(metric="accuracy", value=92.4),
+        _claim(metric="recall", value=81.0),
+        _claim(metric="accuracy", value=88.1),
+        _claim(metric="recall", value=77.0),
+    )
+
+    report = recall.evaluate_precision(_verifications_file(tmp_path), extraction)
+
+    assert report.available is False
+    assert report.result is None
+    assert report.coverage == recall.VerificationCoverage(
+        extractions=4, verdicts=5, unadjudicated=0, stale=1
+    )
+    assert "4 extractions" in report.reason
+    assert "1 stale" in report.reason
+
+
+def test_a_verdict_recorded_under_another_metric_name_is_stale(tmp_path):
+    """The vocabulary split is a real extractor change, not a rename to absorb.
+
+    ``ap50`` and ``ap75`` used to canonicalise onto ``map``; separating them
+    changed which metric each extraction reports. A verdict carrying the old
+    name adjudicated a different extraction, so it is stale and its extraction
+    is unadjudicated -- both, not neither.
+    """
+    _write_json(
+        tmp_path / "verifications.json",
+        {
+            "pair_id": "p",
+            "verifications": [
+                {"extraction": {"metric": "map", "value": 42.0}, "verdict": "real_own_result"}
+            ],
+        },
+    )
+
+    report = recall.evaluate_precision(
+        tmp_path / "verifications.json", _extraction(_claim(metric="ap50", value=42.0))
+    )
+
+    assert report.available is False
+    assert report.coverage == recall.VerificationCoverage(
+        extractions=1, verdicts=1, unadjudicated=1, stale=1
+    )
+
+
+def test_an_extraction_whose_locator_moved_is_still_the_adjudicated_extraction():
+    """Measured on convnext: twelve mIoU figures printed in both paper and README.
+
+    Which of the two locators survives clustering moved with an extractor
+    change that left every number untouched, and all twelve verdicts read
+    ``real_own_result`` noting that both sources state the value. Keying
+    coverage on ``where`` would refuse a precision number over an adjudication
+    that is still exactly right.
+    """
+    verifications = recall.VerificationSet(
+        pair_id="p",
+        verifications=(
+            _verification(
+                metric="iou", value=46.0, where="semantic_segmentation/README.md:18"
+            ),
+        ),
+    )
+
+    coverage = recall.verification_coverage(
+        [_claim(metric="iou", value=46.0, where="main.tex:496")], verifications
+    )
+
+    assert coverage.corresponds is True
+    assert coverage == recall.VerificationCoverage(
+        extractions=1, verdicts=1, unadjudicated=0, stale=0
+    )
+
+
+def test_a_claim_with_no_value_is_not_an_extraction_awaiting_a_verdict():
+    """The README-fallback placeholder asserts no number, so none can be adjudicated.
+
+    ``Verification`` cannot represent it -- its value must be a number -- so
+    counting it would leave precision permanently unavailable for any pair whose
+    extraction includes one, with no adjudication able to fix it.
+    """
+    verifications = recall.VerificationSet(pair_id="p", verifications=(_verification(),))
+
+    coverage = recall.verification_coverage(
+        [_claim(), _claim(metric=None, value=None, text="fill in the metric and value")],
+        verifications,
+    )
+
+    assert coverage.corresponds is True
+    assert coverage.extractions == 1
+
+
+def test_precision_is_unavailable_when_the_extraction_itself_is(tmp_path):
+    """Coverage cannot be checked against a tree that is not there."""
+    report = recall.evaluate_precision(
+        _verifications_file(tmp_path),
+        {"available": False, "reason": "code directory not found: nope"},
+    )
+
+    assert report.available is False
+    assert report.result is None
+    assert report.coverage is None
+    assert "code directory not found: nope" in report.reason
+
+
+def test_the_coverage_counts_reach_the_json_report_when_precision_is_unavailable(tmp_path):
+    """A reader must be able to see how stale a file is, not only that it is."""
+    stale = recall.evaluate_precision(
+        _verifications_file(tmp_path), _fixture_extraction(_claim(metric="accuracy", value=65.3))
+    )
+    pair = recall.PairReport(
+        pair_id="p", recall=recall.RecallReport(available=False, reason="no labels"), precision=stale
+    )
+
+    payload = recall.build_report([pair])
+
+    assert payload["results"][0]["precision"]["coverage"] == {
+        "extractions": 6, "verdicts": 5, "unadjudicated": 1, "stale": 0,
+    }
+    # A stale pair contributes nothing to the pool -- never a zero.
+    assert payload["summary"]["precision"]["pairs_available"] == 0
+    assert payload["summary"]["precision"]["pooled"] is None
+
+
 # -- loading and validating ground truth --------------------------------------
 
 
@@ -546,7 +738,7 @@ def test_missing_label_file_yields_unavailable_recall_not_a_zero(tmp_path):
 
 
 def test_precision_is_unavailable_without_a_verification_file():
-    report = recall.evaluate_precision(None)
+    report = recall.evaluate_precision(None, _extraction())
 
     assert report.available is False
     assert report.result is None
@@ -586,8 +778,9 @@ def test_end_to_end_fixture_reproduces_the_hand_computed_recall_and_precision(tm
     (accuracy=79.5, "Threshold") is `unknown`, since the frame is sampled and
     accuracy is an established result metric.
 
-    The verification file adjudicates 6 non-unclear entries with 2
-    real_own_result: precision = 2/6.
+    The verification file adjudicates each of those five extractions, 2 of
+    them real_own_result: precision = 2/5, over a verification set that
+    corresponds one-to-one with what the extractor produces.
     """
     code, paper = _build_pair_tree(tmp_path)
     labels_path = tmp_path / "labels.json"
@@ -629,15 +822,15 @@ def test_end_to_end_fixture_reproduces_the_hand_computed_recall_and_precision(tm
     assert result.real_own_result == 2
     assert result.baseline == 1
     assert result.hyperparameter == 2
-    assert result.not_in_paper == 1
-    assert result.unclear == 1
-    assert result.adjudicated == 6
-    assert result.precision == pytest.approx(1 / 3)
+    assert result.adjudicated == 5
+    assert result.precision == pytest.approx(2 / 5)
+    assert report.precision.coverage == recall.VerificationCoverage(
+        extractions=5, verdicts=5, unadjudicated=0, stale=0
+    )
 
     rendered = recall.render_text(recall.build_report([report]))
     assert "2/4 = 50.0%" in rendered
-    assert "2/6 = 33.3%" in rendered
-    assert "unclear=1" in rendered
+    assert "2/5 = 40.0% (unclear=0)" in rendered
 
 
 # -- the --src swap: proof, not assertion by convention ----------------------

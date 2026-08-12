@@ -41,7 +41,10 @@ the wrong reason whenever every candidate happens to name the right metric.
 Nothing here fabricates a number. A pair whose code tree, paper tree, label
 file, or verification file is absent is reported ``unavailable`` for the
 metric that input feeds, with the reason, and never contributes a zero to an
-aggregate.
+aggregate. Precision is held to the same standard against a *stale* input as
+against a missing one: an adjudication describes the extractions of the tree
+it was written against, so it is reported only while it still corresponds to
+what the extractor produces now (see :func:`verification_coverage`).
 """
 
 from __future__ import annotations
@@ -51,6 +54,7 @@ import csv
 import json
 import subprocess
 import sys
+from collections import Counter
 from collections.abc import Sequence
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
@@ -522,6 +526,64 @@ def compute_precision(verifications: VerificationSet) -> PrecisionResult:
     )
 
 
+@dataclass(frozen=True)
+class VerificationCoverage:
+    """How far one verification file still describes what the extractor produces.
+
+    ``unadjudicated`` is an extraction carrying no verdict; ``stale`` is a
+    verdict matching no extraction. Both are reported whether or not precision
+    is, so a reader can see *how far* a file has drifted rather than only that
+    it has.
+    """
+
+    extractions: int
+    verdicts: int
+    unadjudicated: int
+    stale: int
+
+    @property
+    def corresponds(self) -> bool:
+        return self.unadjudicated == 0 and self.stale == 0
+
+
+def verification_coverage(
+    claims: Sequence[ExtractedClaim], verifications: VerificationSet
+) -> VerificationCoverage:
+    """Match adjudications to extractions, one to one, on ``(metric, value)``.
+
+    An adjudication is a human reading of one extraction, so it describes the
+    extractor that produced it and nothing else. Tallying the file alone
+    therefore reports a precision for a set that may no longer exist:
+    barlowtwins' file still tallies 27/58, measured, while the extractor it was
+    written against has moved on and 63 of today's extractions carry no verdict
+    at all.
+
+    ``(metric, value)`` is the identity, not ``where``. Two locators for one
+    number are routine: convnext states twelve mIoU figures in both its paper
+    and a task README, and which of the two survives clustering moved with an
+    extractor change that left every number, and every verdict, untouched --
+    all twelve read ``real_own_result``, noting both sources state the value.
+    Keying on the full ``where`` is worse still: detr's verdicts were recorded
+    from a paper root one level above the one measured here, so every one of
+    its 144 paths carries a ``src/`` prefix the extraction does not, and all
+    144 read as stale. Claims carrying no value (the README-fallback
+    placeholder) assert no number to adjudicate and are excluded here exactly
+    as :func:`_numeric_claims` excludes them from matching.
+    """
+    extracted: Counter[tuple[str | None, float]] = Counter(
+        (claim.metric, claim.value) for claim in _numeric_claims(claims)
+    )
+    adjudicated: Counter[tuple[str | None, float]] = Counter(
+        (verification.metric, verification.value) for verification in verifications.verifications
+    )
+    return VerificationCoverage(
+        extractions=sum(extracted.values()),
+        verdicts=sum(adjudicated.values()),
+        unadjudicated=sum((extracted - adjudicated).values()),
+        stale=sum((adjudicated - extracted).values()),
+    )
+
+
 # -- the extraction worker: --src runs here, and only here --------------------
 
 
@@ -646,6 +708,7 @@ class PrecisionReport:
     available: bool
     reason: str | None = None
     result: PrecisionResult | None = None
+    coverage: VerificationCoverage | None = None
 
 
 @dataclass(frozen=True)
@@ -664,14 +727,34 @@ class PairSpec:
     verifications: Path | None = None
 
 
+def extract_claims(*, code: Path, paper: Path, src: Path | None = None) -> dict[str, Any]:
+    """One pair's extraction, refusing an absent tree without spawning a worker."""
+    if not code.is_dir():
+        return {"available": False, "reason": f"code directory not found: {code}"}
+    if not paper.is_dir():
+        return {"available": False, "reason": f"paper directory not found: {paper}"}
+    return _run_extract_worker(code=code, paper=paper, src=src)
+
+
+def _claims_of(extraction: dict[str, Any]) -> list[ExtractedClaim]:
+    return [_extracted_claim_from_json(entry) for entry in extraction.get("claims", [])]
+
+
 def evaluate_recall(
-    *, code: Path, paper: Path, labels_path: Path, src: Path | None = None
+    *,
+    code: Path,
+    paper: Path,
+    labels_path: Path,
+    src: Path | None = None,
+    extraction: dict[str, Any] | None = None,
 ) -> RecallReport:
     """Recall for one pair. Refuses eagerly, cheapest check first.
 
     A missing code or paper directory, or a missing or malformed label file,
     is reported unavailable before any extraction runs; a failed extraction
-    is reported unavailable with the worker's own reason.
+    is reported unavailable with the worker's own reason. ``extraction``
+    supplies an already-computed payload, so a caller wanting both metrics
+    pays for one extraction rather than two.
     """
     if not code.is_dir():
         return RecallReport(available=False, reason=f"code directory not found: {code}")
@@ -682,31 +765,80 @@ def evaluate_recall(
     except RecallInputError as exc:
         return RecallReport(available=False, reason=str(exc))
 
-    extraction = _run_extract_worker(code=code, paper=paper, src=src)
+    if extraction is None:
+        extraction = extract_claims(code=code, paper=paper, src=src)
     if not extraction.get("available"):
         reason = extraction.get("reason", "extraction unavailable")
         return RecallReport(available=False, reason=str(reason))
 
-    claims = [_extracted_claim_from_json(entry) for entry in extraction.get("claims", [])]
+    claims = _claims_of(extraction)
     diagnostic = classify_recall(claims, frame)
     return RecallReport(available=True, claim_count=len(claims), diagnostic=diagnostic)
 
 
-def evaluate_precision(verifications_path: Path | None) -> PrecisionReport:
-    """Precision for one pair. Independent of the code/paper trees and of recall."""
+def evaluate_precision(
+    verifications_path: Path | None, extraction: dict[str, Any]
+) -> PrecisionReport:
+    """Precision for one pair, over the extractions the extractor produces now.
+
+    The verification file is required to account for every current extraction
+    and to describe no extraction that is gone: a file written against an older
+    extractor otherwise keeps reporting a rate over a set that no longer
+    exists. Where it does not, the coverage counts are reported in place of the
+    rate -- a stale file is diagnosed, never guessed at, and never contributes
+    to an aggregate. ``extraction`` is the worker payload, so an unavailable
+    code or paper tree makes precision unavailable for the same reason recall
+    is.
+    """
     if verifications_path is None:
         return PrecisionReport(available=False, reason="no verification file configured for this pair")
     try:
         verifications = load_verification_set(verifications_path)
     except RecallInputError as exc:
         return PrecisionReport(available=False, reason=str(exc))
-    return PrecisionReport(available=True, result=compute_precision(verifications))
+    if not extraction.get("available"):
+        reason = extraction.get("reason", "extraction unavailable")
+        return PrecisionReport(available=False, reason=f"cannot check coverage: {reason}")
+
+    coverage = verification_coverage(_claims_of(extraction), verifications)
+    if not coverage.corresponds:
+        return PrecisionReport(
+            available=False,
+            reason=(
+                f"verification file does not describe the current extractions: "
+                f"{coverage.extractions} extractions, {coverage.verdicts} verdicts, "
+                f"{coverage.unadjudicated} unadjudicated, {coverage.stale} stale"
+            ),
+            coverage=coverage,
+        )
+    return PrecisionReport(
+        available=True, result=compute_precision(verifications), coverage=coverage
+    )
 
 
 def evaluate_pair(spec: PairSpec, *, src: Path | None = None) -> PairReport:
-    """Recall and precision for one pair, each with its own availability."""
-    recall = evaluate_recall(code=spec.code, paper=spec.paper, labels_path=spec.labels, src=src)
-    precision = evaluate_precision(spec.verifications)
+    """Recall and precision for one pair, each with its own availability.
+
+    One extraction serves both metrics. It is skipped entirely for a pair
+    carrying neither ground-truth file, so an unlabelled, unadjudicated roster
+    row still costs a stat rather than a scan.
+    """
+    wanted = spec.labels.is_file() or (
+        spec.verifications is not None and spec.verifications.is_file()
+    )
+    extraction: dict[str, Any] = (
+        extract_claims(code=spec.code, paper=spec.paper, src=src)
+        if wanted
+        else {"available": False, "reason": "no label or verification file for this pair"}
+    )
+    recall = evaluate_recall(
+        code=spec.code,
+        paper=spec.paper,
+        labels_path=spec.labels,
+        src=src,
+        extraction=extraction,
+    )
+    precision = evaluate_precision(spec.verifications, extraction)
     return PairReport(pair_id=spec.id, recall=recall, precision=precision)
 
 
