@@ -125,3 +125,19 @@
     R-RES-001: pass
     R-RES-002: pass
     R-DRIFT-001: fail
+
+- case: synthetic_caption_named_metric
+  # Same shape as synthetic_wrapped_table_header, and the same caveat: the real
+  # assertion is not here. This case's columns are named by a caption and by a
+  # second header row, both of which only reach the claims package, which no rule
+  # reads -- and run_check() below is called without a paper, so the LaTeX
+  # collector never runs for it. What this file pins is that a paper the harness
+  # cannot read yields no verdict rather than a wrong one. The naming itself is
+  # asserted by the --paper byte-identity comparison, which this case is what
+  # makes non-vacuous, and by tests/test_claims_extraction.py; see the README.
+  expect:
+    R-RES-001: not-applicable
+  forbid:
+    R-RES-001: pass
+    R-RES-002: pass
+    R-DRIFT-001: fail
