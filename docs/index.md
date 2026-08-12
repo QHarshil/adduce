@@ -11,6 +11,7 @@ online/execution layers. Start with the root
 | [Rule reference](rules/README.md) | All 78 rules across 17 categories, drift authority ranking, call resolution, and a page per rule |
 | [CLI reference](cli-reference.md) | Installing and upgrading, every command, `reproduce`/`pin-remotes`, reviewer-time estimates, scoring/profiles/suppression |
 | [Continuous integration](continuous-integration.md) | The composite GitHub Action, SARIF upload, pre-commit hook, baseline ratchet |
+| [Claim extraction](claims.md) | How a number in a paper or a README becomes a drafted claim, what the metric vocabulary can name, and how extraction is measured |
 | [Evidence graph](aeg-schema.md) | The typed evidence IR: identity, provenance, resolution methods, versioning, and `adduce graph` |
 | [Extending adduce](extending.md) | Writing a rule or reporter plugin via entry points |
 | [Generation safety](generation-safety.md) | The ten principles governing checklist, appendix, and manifest generation |
