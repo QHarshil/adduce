@@ -110,3 +110,18 @@
     R-DRIFT-001: not-applicable
   forbid:
     R-DRIFT-001: fail
+
+- case: synthetic_wrapped_table_header
+  # This fixture's real assertion is not here. Its metric is named only inside a
+  # \multicolumn wrapping a \rotatebox, and table cells reach the claims package
+  # alone -- no rule reads them -- while run_check() below is called without a
+  # paper, so the LaTeX collector never runs for it. What this file can pin is
+  # that a paper the harness cannot read yields no verdict rather than a wrong
+  # one. The dissolving itself is asserted by the --paper byte-identity
+  # comparison and by tests/test_collectors_new.py; see the case README.
+  expect:
+    R-RES-001: not-applicable
+  forbid:
+    R-RES-001: pass
+    R-RES-002: pass
+    R-DRIFT-001: fail

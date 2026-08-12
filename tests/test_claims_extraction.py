@@ -19,6 +19,7 @@ from adduce.claims import (
     from_latex_tables,
     from_markdown_table,
 )
+from adduce.claims.candidates import caption_metric
 from adduce.evidence.latex import PaperValue, TableCell
 from adduce.manifest_builder import _draft_claims
 from adduce.naming import METRIC_PATTERNS, canonical_metric
@@ -257,6 +258,85 @@ def test_a_real_metric_missing_from_the_vocabulary_still_survives():
     for header in ("FID", "GFLOPs", "AP^box_50", "Throughput"):
         cells = [TableCell(0, "Ours", header, 3.6, "main.tex", 9)]
         assert from_latex_tables(cells), f"{header!r} should be kept"
+
+
+# --- the caption names what the column does not ---------------------------
+
+
+def test_a_caption_names_the_metric_a_dataset_column_leaves_unnamed():
+    """whisper's columns are datasets and its metric is stated once, in the caption.
+
+    Measured: all 121 distinct metric names it extracted were dataset names,
+    every labelled cell was collected, and none could ever match.
+    """
+    cells = [TableCell(0, "Whisper large", "CORAAL", 20.2, "tables/x.tex", 4, "WER (%) on MLS")]
+    (candidate,) = from_latex_tables(cells)
+    assert candidate.metric == "wer"
+    assert candidate.column_label == "CORAAL"
+    assert "CORAAL" in candidate.text
+    # The column did not say "WER"; the caption did. Never certain -- see below.
+    assert candidate.method is ResolutionMethod.LEXICAL_MATCH
+    assert candidate.confidence == 0.5
+
+
+def test_a_caption_derived_metric_is_never_high_confidence():
+    """A caption renames a column it cannot verify, so it must not assert certainty.
+
+    Measured over the dev set, the caption rule renames ~2,259 cells correctly
+    and ~194 wrongly -- MAE's ``hours`` and ``speedup`` under a caption saying
+    "our MAE training", LoRA's ``nist``/``meteor``/``cider`` collapsed to
+    ``bleu``. Nothing in a header separates a dataset column from a cost column,
+    so those 194 cannot be eliminated here; what they must not be is confident.
+    ``zero high-confidence false positives`` is a Phase 3 acceptance criterion,
+    and only the header can satisfy it.
+    """
+    caption = "Accuracy of our method on ImageNet"
+    from_caption = TableCell(0, "ViT-L", "hours", 34.5, "main.tex", 4, caption)
+    (renamed,) = from_latex_tables([from_caption])
+    assert renamed.metric == "accuracy"  # wrong, and known to be wrong
+    assert renamed.method is ResolutionMethod.LEXICAL_MATCH
+    assert renamed.confidence < 1.0
+
+    from_header = TableCell(0, "ViT-L", "accuracy", 34.5, "main.tex", 4, caption)
+    (parsed,) = from_latex_tables([from_header])
+    assert parsed.method is ResolutionMethod.DIRECT_PARSE
+    assert parsed.confidence == 1.0
+
+
+def test_a_header_that_names_a_metric_is_not_overridden_by_its_caption():
+    """The column is the more specific statement, so it wins.
+
+    A caption naming one metric over a table reporting several would otherwise
+    rename every column it does not mean.
+    """
+    cells = [TableCell(0, "Ours", "F1", 89.1, "main.tex", 4, "BLEU scores on CoVoST2")]
+    (candidate,) = from_latex_tables(cells)
+    assert candidate.metric == "f1"
+
+
+def test_a_caption_naming_two_metrics_names_none():
+    """It does not say which column reports which, so it says nothing.
+
+    Guessing would state a confident wrong name where abstaining states none.
+    """
+    caption = "Accuracy and BLEU on the test split"
+    assert caption_metric(caption) is None
+    cells = [TableCell(0, "Ours", "CoVoST2", 20.2, "main.tex", 4, caption)]
+    (candidate,) = from_latex_tables(cells)
+    assert candidate.metric == "covost2"
+    assert candidate.method is ResolutionMethod.LEXICAL_MATCH
+
+
+def test_a_caption_never_revives_a_cell_the_header_filter_dropped():
+    """A caption renames a candidate; it does not admit one.
+
+    A positional or residue header means the parse lost the column, so there is
+    no dataset to attribute the caption's metric to -- and admitting it would
+    reinstate exactly the 2,954 non-metric candidates the header filter removed.
+    """
+    for header in ("col4", "", "1c[origin=rc]270coraal"):
+        cells = [TableCell(0, "Ours", header, 20.2, "main.tex", 4, "WER (%) on MLS")]
+        assert from_latex_tables(cells) == [], f"{header!r} should stay dropped"
 
 
 # --- markdown tables -----------------------------------------------------

@@ -5,6 +5,9 @@ from __future__ import annotations
 
 import json
 
+import pytest
+
+from adduce.evidence.latex import _ROW_MARKUP_RE, _dissolve_multicolumn
 from adduce.rules.base import Status
 from adduce.rules.remote import RawUrlRule
 
@@ -49,6 +52,451 @@ def test_latex_extraction(make_evidence):
     assert latex.ablation_mentions
     # Comment-stripped: the bogus 999 never appears.
     assert not any(v.value == 999 for values in hp.values() for v in values)
+
+
+#: Both shapes of undissolved-wrapper defect, measured on real papers. Whisper
+#: rotates its dataset headers to fit narrow columns; Swin spans a header cell
+#: across two body columns.
+_WRAPPED_HEADERS_TEX = r"""
+\begin{tabular}{lcc}
+Model & \multicolumn{1}{c}{\rotatebox[origin=rc]{270}{LibriSpeech}} & \rotatebox{270}{TED-LIUM3} \\
+Ours & 3.4 & 4.5 \\
+\end{tabular}
+"""
+
+_SPANNING_HEADER_TEX = r"""
+\begin{tabular}{lccc}
+Model & \multicolumn{2}{c}{ImageNet} & Params \\
+Ours & 84.5 & 97.3 & 88 \\
+\end{tabular}
+"""
+
+
+def test_rotated_and_spanned_headers_are_dissolved_to_their_text(make_evidence):
+    r"""A wrapper's arguments are not part of the column's name.
+
+    ``\multicolumn`` and ``\rotatebox`` take their text as the last of several
+    arguments, so stripping command names blindly concatenates the rest onto it
+    and a column named ``LibriSpeech`` arrives as ``1c[origin=rc]270LibriSpeech``
+    -- which names no metric, so the whole column is dropped downstream.
+    """
+    cells = make_evidence({"paper/main.tex": _WRAPPED_HEADERS_TEX}).latex.table_cells
+    by_value = {c.value: c.column_label for c in cells}
+    assert by_value == {3.4: "LibriSpeech", 4.5: "TED-LIUM3"}
+
+
+def test_a_spanning_header_names_every_column_it_covers(make_evidence):
+    """The span is kept, not just the text.
+
+    Dropping it leaves the header row shorter than the body rows, so every
+    column after the spanned one is read against the wrong header -- or off the
+    end of it, and named positionally as ``col3``.
+    """
+    cells = make_evidence({"paper/main.tex": _SPANNING_HEADER_TEX}).latex.table_cells
+    by_value = {c.value: c.column_label for c in cells}
+    assert by_value == {84.5: "ImageNet", 97.3: "ImageNet", 88.0: "Params"}
+
+
+def test_a_spanning_body_cell_states_one_number_not_several(make_evidence):
+    """A body cell spanning two columns is one reported number, not two.
+
+    The header repeats across its span because it names both columns; a value
+    must not, or one measurement would be counted twice.
+    """
+    tex = r"""
+\begin{tabular}{lcc}
+Model & Top-1 & Top-5 \\
+Ours & \multicolumn{2}{c}{91.2} \\
+\end{tabular}
+"""
+    cells = make_evidence({"paper/main.tex": tex}).latex.table_cells
+    assert [(c.column_label, c.value) for c in cells] == [("Top-1", 91.2)]
+
+
+@pytest.mark.parametrize(
+    "field",
+    [
+        r"\multicolumn{2}{c}{Unclosed",  # no closing brace
+        r"\multicolumn{x}{c}{A}",  # span is not a number
+        r"\multicolumn{0}{c}{A}",  # span covers no column
+    ],
+)
+def test_a_malformed_span_falls_back_rather_than_being_guessed(field):
+    """A wrapper it cannot parse is left alone and spans one column.
+
+    The alternative -- guessing a span -- would silently shift every later
+    column onto the wrong header, which is the defect this dissolving exists to
+    remove.
+    """
+    assert _dissolve_multicolumn(field) == (field, 1)
+
+
+#: Every environment a results table is written in, with the arguments each
+#: takes: a width for the two that size themselves, an optional placement for
+#: ``longtable``, and a column spec whose own braces nest.
+_TABLE_ENVIRONMENTS = [
+    (r"\begin{tabular}{l@{\hskip 6pt}cc}", r"\end{tabular}"),
+    (r"\begin{tabularx}{\textwidth}{l@{\hskip 6pt}XX}", r"\end{tabularx}"),
+    (r"\begin{tabular*}{\linewidth}{@{\extracolsep{\fill}}lcc}", r"\end{tabular*}"),
+    (r"\begin{longtable}[c]{l@{\hskip 6pt}cc}", r"\end{longtable}"),
+]
+
+
+@pytest.mark.parametrize(("opening", "closing"), _TABLE_ENVIRONMENTS)
+def test_every_table_environment_yields_its_cells(make_evidence, opening, closing):
+    """A results table is written in whichever of these the layout wanted.
+
+    Matching the name ``tabular`` alone leaves a paper that sizes its tables to
+    the text width with no tables at all: electra writes seven of its eight in
+    ``tabularx``, and reported four cells for the whole paper.
+    """
+    tex = opening + "\nModel & Top-1 & F1 \\\\\nOurs & 92.4 & 89.1 \\\\\n" + closing + "\n"
+    cells = make_evidence({"paper/main.tex": tex}).latex.table_cells
+    assert [(c.row_label, c.column_label, c.value) for c in cells] == [
+        ("Ours", "Top-1", 92.4),
+        ("Ours", "F1", 89.1),
+    ]
+
+
+@pytest.mark.parametrize(("opening", "closing"), _TABLE_ENVIRONMENTS)
+def test_an_environments_own_arguments_are_not_table_content(make_evidence, opening, closing):
+    """A width and a column spec state a layout, not a row.
+
+    Read as the first row they are concatenated onto the header, so every value
+    beneath a spanned header is attributed to a column named after an alignment
+    string -- and a length in that spec is read as a value the paper never
+    stated.
+    """
+    tex = (
+        opening + "\n\\multicolumn{2}{c}{ImageNet} & F1 \\\\\n"
+        "Ours & 92.4 & 89.1 \\\\\n" + closing + "\n"
+    )
+    cells = make_evidence({"paper/main.tex": tex}).latex.table_cells
+    assert [(c.column_label, c.value) for c in cells] == [("ImageNet", 92.4), ("F1", 89.1)]
+
+
+def test_a_longtable_is_not_closed_by_a_stray_end_tabular(make_evidence):
+    r"""The environment that closes a table must be the one that opened it.
+
+    Closing on any ``\end`` ends the table at the first environment to finish
+    inside it, and every row after that point is lost.
+    """
+    tex = (
+        "\\begin{longtable}{lcc}\n"
+        "Model & Top-1 & F1 \\\\\n"
+        "Ours & 92.4 & 89.1 \\\\\n"
+        "\\end{tabular}\n"
+        "Baseline & 90.2 & 87.0 \\\\\n"
+        "\\end{longtable}\n"
+    )
+    cells = make_evidence({"paper/main.tex": tex}).latex.table_cells
+    assert [(c.row_label, c.value) for c in cells] == [
+        ("Ours", 92.4),
+        ("Ours", 89.1),
+        ("Baseline", 90.2),
+        ("Baseline", 87.0),
+    ]
+
+
+#: Mamba's zero-shot table: the columns name datasets and the row beneath them
+#: names what was measured. That one table is 45 of the paper's own results.
+_SECOND_HEADER_TEX = r"""
+\begin{tabular}{lccc}
+Model & Pile & LAMBADA & HellaSwag \\
+      & ppl $\downarrow$ & ppl $\downarrow$ & acc $\uparrow$ \\
+Mamba-2.8B & 6.22 & 4.23 & 66.1 \\
+\end{tabular}
+"""
+
+
+def test_a_second_header_row_names_the_metric_its_columns_leave_unnamed(make_evidence):
+    """Two header rows compose: the dataset from the first, the metric from the second.
+
+    Reading the first row alone names every column after a dataset, so the cell
+    is collected and can never match anything -- the recall gap on this paper
+    was naming, not collection.
+    """
+    cells = make_evidence({"paper/main.tex": _SECOND_HEADER_TEX}).latex.table_cells
+    assert [(c.column_label, c.value) for c in cells] == [
+        ("Pile ppl", 6.22),
+        ("LAMBADA ppl", 4.23),
+        ("HellaSwag acc", 66.1),
+    ]
+
+
+def test_a_second_row_stating_numbers_is_data_and_stays_data(make_evidence):
+    """A results table's first body row must never be read as a header.
+
+    A transposed table is the case that decides this: its row labels are the
+    metrics, so every test but "the row states numbers" says header. Consuming
+    it drops the numbers it states and renames every column beneath it.
+    """
+    tex = r"""
+\begin{tabular}{lcc}
+Metric & Ours & Baseline \\
+AP & 42.0 & 40.1 \\
+AP50 & 62.4 & 60.6 \\
+\end{tabular}
+"""
+    cells = make_evidence({"paper/main.tex": tex}).latex.table_cells
+    assert [(c.row_label, c.column_label, c.value) for c in cells] == [
+        ("AP", "Ours", 42.0),
+        ("AP", "Baseline", 40.1),
+        ("AP50", "Ours", 62.4),
+        ("AP50", "Baseline", 60.6),
+    ]
+
+
+def test_a_second_row_is_not_a_header_when_the_first_already_names_metrics(make_evidence):
+    """A table whose columns are metrics already says what it measured.
+
+    The second row here qualifies them rather than naming them, so composing
+    the two would rename ``Accuracy`` after the qualifier.
+    """
+    tex = r"""
+\begin{tabular}{lcc}
+Model & Accuracy & F1 \\
+      & top-1 & macro \\
+Ours & 92.4 & 89.1 \\
+\end{tabular}
+"""
+    cells = make_evidence({"paper/main.tex": tex}).latex.table_cells
+    assert [(c.column_label, c.value) for c in cells] == [("Accuracy", 92.4), ("F1", 89.1)]
+
+
+#: Two floats, one placing its caption before the tabular and one after, since
+#: both are ordinary. The wrong binding here is silent: every cell would be
+#: named after the other table's metric.
+_TWO_FLOATS_TEX = r"""
+\begin{table}[t]
+\caption{WER (\%) on MLS}
+\begin{tabular}{lc}
+Model & CORAAL \\
+Whisper & 20.2 \\
+\end{tabular}
+\end{table}
+\begin{table*}[t]
+\begin{tabular}{lc}
+Model & CoVoST2 \\
+Whisper & 29.1 \\
+\end{tabular}
+\caption{BLEU scores on CoVoST2}
+\end{table*}
+"""
+
+
+def test_a_caption_is_bound_to_the_tabular_in_its_own_float(make_evidence):
+    r"""A float may write ``\caption`` before or after the table it captions.
+
+    So the two are bound by containment, never by proximity: the nearest
+    caption to the first table here is the second table's.
+    """
+    cells = make_evidence({"paper/main.tex": _TWO_FLOATS_TEX}).latex.table_cells
+    assert [(c.value, c.caption) for c in cells] == [
+        (20.2, "WER (%) on MLS"),
+        (29.1, "BLEU scores on CoVoST2"),
+    ]
+
+
+def test_a_tabular_in_no_float_carries_no_caption(make_evidence):
+    """A caption is recorded only for a table written inside one.
+
+    A file states several; picking the nearest, or the first, would caption a
+    bare tabular after another table's.
+    """
+    tex = _TWO_FLOATS_TEX + _WRAPPED_HEADERS_TEX
+    cells = make_evidence({"paper/main.tex": tex}).latex.table_cells
+    assert [(c.value, c.caption) for c in cells if c.caption is None] == [
+        (3.4, None),
+        (4.5, None),
+    ]
+
+
+def test_a_caption_is_dissolved_of_markup_and_bounded(make_evidence):
+    """Repository content, so what is recorded from it is bounded.
+
+    A command's braces go and the text they wrap stays, with a space in their
+    place: the vocabulary that reads a caption is anchored on word boundaries.
+    """
+    body = "Top-1 accuracy on \\textbf{ImageNet}. " + "Trained for many epochs. " * 40
+    tex = (
+        "\\begin{table}\n\\caption{" + body + "}\n"
+        "\\begin{tabular}{lc}\nModel & ImageNet \\\\\nOurs & 92.4 \\\\\n"
+        "\\end{tabular}\n\\end{table}\n"
+    )
+    (cell,) = make_evidence({"paper/main.tex": tex}).latex.table_cells
+    assert cell.caption is not None
+    assert cell.caption.startswith("Top-1 accuracy on ImageNet .")
+    assert len(cell.caption) == 300
+
+
+@pytest.mark.parametrize("setup", [r"\captionsetup{font=small}", r"\captionsetup {font=small}"])
+def test_captionsetup_is_not_the_caption(make_evidence, setup):
+    r"""It configures the caption and precedes it often enough to matter.
+
+    LaTeX ignores space between a control word and its argument, so matching on
+    the prefix alone reads ``font=small`` as what the table reports.
+    """
+    tex = (
+        "\\begin{table}\n" + setup + "\n\\caption{WER (\\%) on MLS}\n"
+        "\\begin{tabular}{lc}\nModel & CORAAL \\\\\nOurs & 20.2 \\\\\n"
+        "\\end{tabular}\n\\end{table}\n"
+    )
+    (cell,) = make_evidence({"paper/main.tex": tex}).latex.table_cells
+    assert cell.caption == "WER (%) on MLS"
+
+
+@pytest.mark.parametrize(
+    "markup",
+    [
+        r"\begin{tabular}{lcc}",
+        r"\begin{tabularx}{\textwidth}{lXX}",
+        r"\begin{tabular*}{\linewidth}{lcc}",
+        r"\begin{longtable}[c]{lcc}",
+        r"\end{tabular}",
+        r"\end{tabularx}",
+        r"\end{tabular*}",
+        r"\end{longtable}",
+    ],
+)
+def test_a_table_opened_inside_a_cell_contributes_no_cell_text(markup):
+    """A nested table's own markup is structure wherever it appears."""
+    assert _ROW_MARKUP_RE.sub("", markup) == ""
+
+
+def _table(column: str, value: str) -> str:
+    """A minimal two-row ``tabular``: one header, one numeric cell."""
+    return (
+        "\\begin{tabular}{lc}\n"
+        "Model & " + column + " \\\\\n"
+        "Ours & " + value + " \\\\\n"
+        "\\end{tabular}\n"
+    )
+
+
+_ROOT_TEX = r"""
+\documentclass{article}
+\begin{document}
+\input{sections/results}
+\end{document}
+"""
+
+_NESTING_SECTION_TEX = "\\input{tables/main_table}\n" + _table("Accuracy", "92.4")
+_NESTED_TABLE_TEX = _table("F1", "89.1")
+#: A superseded draft, left in the tarball, reachable from no document.
+_ORPHAN_TEX = _table("Accuracy", "71.2")
+
+
+def test_a_tex_file_no_document_reaches_is_not_read(make_evidence):
+    """A source tree keeps drafts the paper does not compile.
+
+    Their numbers appear in no rendered document, so extracting them states a
+    claim the paper never made -- with the same confidence as one it did.
+    """
+    latex = make_evidence(
+        {
+            "paper/main.tex": _ROOT_TEX,
+            "paper/sections/results.tex": _table("Accuracy", "92.4"),
+            "paper/ablations.tex": _ORPHAN_TEX,
+        }
+    ).latex
+    assert latex.tex_files == ["paper/main.tex", "paper/sections/results.tex"]
+    assert latex.main_file == "paper/main.tex"
+    assert [c.value for c in latex.table_cells] == [92.4]
+
+
+def test_an_include_is_followed_through_every_level(make_evidence):
+    """Papers nest: a section inputs its tables, which is where the numbers are."""
+    latex = make_evidence(
+        {
+            "paper/main.tex": _ROOT_TEX,
+            "paper/sections/results.tex": _NESTING_SECTION_TEX,
+            "paper/sections/tables/main_table.tex": _NESTED_TABLE_TEX,
+            "paper/ablations.tex": _ORPHAN_TEX,
+        }
+    ).latex
+    assert latex.tex_files == [
+        "paper/main.tex",
+        "paper/sections/results.tex",
+        "paper/sections/tables/main_table.tex",
+    ]
+    assert [c.value for c in latex.table_cells] == [92.4, 89.1]
+
+
+def test_a_commented_out_include_is_not_an_include(make_evidence):
+    r"""``% \input{ablations}`` is how a draft is taken out of a paper."""
+    latex = make_evidence(
+        {
+            "paper/main.tex": _ROOT_TEX.replace(
+                "\\end{document}", "% \\input{ablations}\n\\end{document}"
+            ),
+            "paper/sections/results.tex": _table("Accuracy", "92.4"),
+            "paper/ablations.tex": _ORPHAN_TEX,
+        }
+    ).latex
+    assert "paper/ablations.tex" not in latex.tex_files
+    assert not any(c.value == 71.2 for c in latex.table_cells)
+
+
+def test_an_include_resolves_against_the_including_file_then_the_tree_root(make_evidence):
+    """Both of LaTeX's search paths, and the implied ``.tex`` extension."""
+    root = (
+        "\\documentclass{article}\n"
+        "\\input{tables/scores.tex}\n"
+        "\\input{shared/appendix}\n"
+    )
+    latex = make_evidence(
+        {
+            "src/main.tex": root,
+            "src/tables/scores.tex": _table("Accuracy", "88.1"),
+            "shared/appendix.tex": _table("F1", "77.3"),
+            "src/old.tex": _ORPHAN_TEX,
+        }
+    ).latex
+    assert latex.tex_files == ["shared/appendix.tex", "src/main.tex", "src/tables/scores.tex"]
+    assert sorted(c.value for c in latex.table_cells) == [77.3, 88.1]
+
+
+def test_a_circular_include_terminates_and_reads_each_file_once(make_evidence):
+    """Two sections inputting each other must not loop or double-count."""
+    latex = make_evidence(
+        {
+            "paper/main.tex": "\\documentclass{article}\n\\input{a}\n",
+            "paper/a.tex": "\\input{b}\n" + _table("Accuracy", "1.5"),
+            "paper/b.tex": "\\input{a}\n\\input{b}\n" + _table("F1", "2.5"),
+        }
+    ).latex
+    assert latex.tex_files == ["paper/a.tex", "paper/b.tex", "paper/main.tex"]
+    assert [c.value for c in latex.table_cells] == [1.5, 2.5]
+
+
+def test_a_paper_with_no_documentclass_is_read_whole(make_evidence):
+    """A directory of fragments has no root to resolve, and must still report.
+
+    Scoping to an include graph that cannot be found would turn every such
+    paper into no evidence at all, which is the worse failure of the two.
+    """
+    latex = make_evidence(
+        {
+            "paper/results.tex": _table("Accuracy", "92.4"),
+            "paper/ablations.tex": _ORPHAN_TEX,
+        }
+    ).latex
+    assert latex.tex_files == ["paper/ablations.tex", "paper/results.tex"]
+    assert latex.main_file is None
+    assert sorted(c.value for c in latex.table_cells) == [71.2, 92.4]
+
+
+def test_a_root_that_reaches_nothing_is_read_whole(make_evidence):
+    """An inclusion mechanism this does not follow reads as no graph at all."""
+    latex = make_evidence(
+        {
+            "paper/main.tex": "\\documentclass{article}\n\\subfile{sections/results}\n",
+            "paper/sections/results.tex": _table("Accuracy", "92.4"),
+        }
+    ).latex
+    assert latex.tex_files == ["paper/main.tex", "paper/sections/results.tex"]
+    assert [c.value for c in latex.table_cells] == [92.4]
 
 
 def test_config_collector_flattens_and_normalises(make_evidence):
