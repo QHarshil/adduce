@@ -217,10 +217,38 @@ It is no longer undefined. `compute_precision` reports `high_confidence_false_po
 adjudicated extractions that are not the paper's own result — excluding the two classes already
 outside the precision denominator — and that were extracted at confidence `1.0`. Confidence is
 not recorded in the verification file, so it is joined from the live extraction on
-`(metric, value)`, the same key staleness uses; a verdict that cannot be joined unambiguously is
-counted separately as `unjoined_false_positives` rather than guessed at. **Measured over the four
-adjudicated pairs the figure is 109 of 273 false positives, so the criterion is currently met by
-no pair.**
+`(metric, value, where)`, the same key staleness uses; a verdict that cannot be joined
+unambiguously is counted separately as `unjoined_false_positives` rather than guessed at.
+**Measured over the four adjudicated pairs the figure is 109 of 273 false positives, so the
+criterion is currently met by no pair.**
+
+### The matching key is `(metric, value, where)`, with `where` normalised and optional
+
+An adjudication describes one extraction, so a verdict is matched to the extraction it
+adjudicates rather than counted against a key. `where` is load-bearing only because it is
+handled carefully in two ways.
+
+**Normalised.** The verification files and the extractions are rooted differently, and by a
+depth that varies within one pair: a verdict records `src/main.tex:449` for a paper measured
+here from `src` itself, while a repository README keeps `object_detection/README.md:12` on both
+sides. So the root is recovered per file — a path resolves to the single extraction path that
+is a `/`-boundary suffix of it, or that it is a suffix of. Measured over 674 verdicts on the
+four adjudicated pairs: the raw locator resolves 26, the basename 660 but collapsing convnext's
+`object_detection/README.md:18` and `semantic_segmentation/README.md:18` onto one key, dropping
+the first path component 601 with the same collapse, and this form 660 with no two locators
+sharing a key.
+
+**Optional.** Two locators for one number are routine, and which of them survives clustering
+moves with extractor changes that leave every number and every verdict untouched. A locator
+that reconciles with no live extraction therefore falls back to `(metric, value)` rather than
+dropping the match, and the fallbacks are counted and reported: `location_fallbacks` in the
+coverage block, and `[no locator: N]` beside the rate in `measure`'s output. Today that is
+convnext 12 and detr 2, barlowtwins and bert 0.
+
+What the stronger key buys is that a repeated `(metric, value)` stays decidable. Extractions
+are unique on `(metric, value)` today only because `claims/cluster.py` de-duplicates globally
+on exactly that key; the moment that is repaired, a multiset difference over it stops naming
+*which* row is stale, and the four adjudicated pairs have no way back to correspondence.
 
 So each pair carries a second, independent artifact, `verifications/<id>.json`, recording one
 verdict per extraction: `real_own_result`, `baseline`, `hyperparameter`, `not_in_paper`,

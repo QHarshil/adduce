@@ -616,13 +616,19 @@ def _extraction(*claims: recall.ExtractedClaim) -> dict[str, Any]:
 
 
 def _fixture_extraction(*extra: recall.ExtractedClaim) -> dict[str, Any]:
-    """The five extractions ``_verifications_payload`` adjudicates, plus any extra."""
+    """The five extractions ``_verifications_payload`` adjudicates, plus any extra.
+
+    Locators included, and they are the ones the real measurement path emits
+    for ``_PAPER_TEX`` -- verified against the worker, not assumed -- so these
+    unit fixtures exercise the located key rather than falling back to
+    ``(metric, value)`` on a placeholder that names no real line.
+    """
     return _extraction(
-        _claim(metric="accuracy", value=92.4),
-        _claim(metric="recall", value=81.0),
-        _claim(metric="accuracy", value=88.1),
-        _claim(metric="recall", value=77.0),
-        _claim(metric="accuracy", value=79.5),
+        _claim(metric="accuracy", value=92.4, where="paper.tex:6"),
+        _claim(metric="recall", value=81.0, where="paper.tex:15"),
+        _claim(metric="accuracy", value=88.1, where="paper.tex:6"),
+        _claim(metric="recall", value=77.0, where="paper.tex:15"),
+        _claim(metric="accuracy", value=79.5, where="paper.tex:6"),
         *extra,
     )
 
@@ -643,7 +649,7 @@ def test_precision_is_reported_when_every_extraction_carries_a_verdict(tmp_path)
     assert report.result is not None
     assert report.result.precision == pytest.approx(2 / 5)
     assert report.coverage == recall.VerificationCoverage(
-        extractions=5, verdicts=5, unadjudicated=0, stale=0
+        extractions=5, verdicts=5, unadjudicated=0, stale=0, location_fallbacks=0
     )
 
 
@@ -683,7 +689,7 @@ def test_an_extraction_with_no_verdict_makes_precision_unavailable(tmp_path):
     assert report.available is False
     assert report.result is None
     assert report.coverage == recall.VerificationCoverage(
-        extractions=6, verdicts=5, unadjudicated=1, stale=0
+        extractions=6, verdicts=5, unadjudicated=1, stale=0, location_fallbacks=0
     )
     assert "6 extractions" in report.reason
     assert "5 verdicts" in report.reason
@@ -694,10 +700,10 @@ def test_an_extraction_with_no_verdict_makes_precision_unavailable(tmp_path):
 def test_a_verdict_matching_no_extraction_makes_precision_unavailable(tmp_path):
     """The other direction: an adjudication of something the extractor dropped."""
     extraction = _extraction(
-        _claim(metric="accuracy", value=92.4),
-        _claim(metric="recall", value=81.0),
-        _claim(metric="accuracy", value=88.1),
-        _claim(metric="recall", value=77.0),
+        _claim(metric="accuracy", value=92.4, where="paper.tex:6"),
+        _claim(metric="recall", value=81.0, where="paper.tex:15"),
+        _claim(metric="accuracy", value=88.1, where="paper.tex:6"),
+        _claim(metric="recall", value=77.0, where="paper.tex:15"),
     )
 
     report = recall.evaluate_precision(_verifications_file(tmp_path), extraction)
@@ -705,7 +711,7 @@ def test_a_verdict_matching_no_extraction_makes_precision_unavailable(tmp_path):
     assert report.available is False
     assert report.result is None
     assert report.coverage == recall.VerificationCoverage(
-        extractions=4, verdicts=5, unadjudicated=0, stale=1
+        extractions=4, verdicts=5, unadjudicated=0, stale=1, location_fallbacks=0
     )
     assert "4 extractions" in report.reason
     assert "1 stale" in report.reason
@@ -735,7 +741,7 @@ def test_a_verdict_recorded_under_another_metric_name_is_stale(tmp_path):
 
     assert report.available is False
     assert report.coverage == recall.VerificationCoverage(
-        extractions=1, verdicts=1, unadjudicated=1, stale=1
+        extractions=1, verdicts=1, unadjudicated=1, stale=1, location_fallbacks=0
     )
 
 
@@ -763,7 +769,7 @@ def test_an_extraction_whose_locator_moved_is_still_the_adjudicated_extraction()
 
     assert coverage.corresponds is True
     assert coverage == recall.VerificationCoverage(
-        extractions=1, verdicts=1, unadjudicated=0, stale=0
+        extractions=1, verdicts=1, unadjudicated=0, stale=0, location_fallbacks=1
     )
 
 
@@ -783,6 +789,208 @@ def test_a_claim_with_no_value_is_not_an_extraction_awaiting_a_verdict():
 
     assert coverage.corresponds is True
     assert coverage.extractions == 1
+
+
+# -- the matching key: a normalised locator, and what it decides --------------
+
+
+def test_a_locator_rooted_above_the_measured_paper_still_matches_its_extraction():
+    """The recorded trap, and why the root is recovered per file rather than assumed.
+
+    detr's verdicts were recorded from a paper root one level above the one
+    measured here, so matching the locator raw read all 144 of them as both
+    unadjudicated and stale. A repository README carries the same path on
+    both sides and must not be disturbed by the repair, so the two are
+    reconciled in one pass and neither needs a fallback.
+    """
+    claims = [
+        _claim(metric="map", value=42.0, where="experiments.tex:402"),
+        _claim(metric="accuracy", value=91.2, where="object_detection/README.md:12"),
+    ]
+    verifications = recall.VerificationSet(
+        pair_id="p",
+        verifications=(
+            _verification(metric="map", value=42.0, where="src/experiments.tex:402"),
+            _verification(metric="accuracy", value=91.2, where="object_detection/README.md:12"),
+        ),
+    )
+
+    alignment = recall.align_verdicts(claims, verifications)
+
+    assert alignment.matched == {0: 0, 1: 1}
+    assert alignment.fallbacks == frozenset()
+
+
+def test_two_files_sharing_a_basename_at_one_line_are_not_collapsed_onto_it():
+    """Measured on convnext: the basename is not injective over its own verdicts.
+
+    ``object_detection/README.md:18`` and ``semantic_segmentation/README.md:18``
+    state the same mIoU at the same line, so reducing a locator to its
+    basename makes the two verdicts interchangeable. They are recorded here in
+    the reverse order, so an assignment that dropped the directory would swap
+    them and read each verdict against the other's extraction.
+    """
+    claims = [
+        _claim(metric="iou", value=46.0, where="object_detection/README.md:18"),
+        _claim(metric="iou", value=46.0, where="semantic_segmentation/README.md:18"),
+    ]
+    verifications = recall.VerificationSet(
+        pair_id="p",
+        verifications=(
+            _verification(metric="iou", value=46.0, where="semantic_segmentation/README.md:18"),
+            _verification(metric="iou", value=46.0, where="object_detection/README.md:18"),
+        ),
+    )
+
+    alignment = recall.align_verdicts(claims, verifications)
+
+    assert alignment.matched == {0: 1, 1: 0}
+    assert alignment.fallbacks == frozenset()
+
+
+def test_a_locator_two_extraction_paths_could_answer_is_not_resolved_to_either():
+    """Ambiguity falls back to the weaker key rather than picking a path.
+
+    ``guide/docs/README.md`` ends in both extraction paths, and both state the
+    same number, so resolving it to either would name a row on nothing but the
+    order the candidates happened to arrive in. The verdict is still matched --
+    on ``(metric, value)``, which is what the fallback is for -- and the match
+    is reported as one the locator did not decide.
+    """
+    claims = [
+        _claim(metric="accuracy", value=90.0, where="README.md:3"),
+        _claim(metric="accuracy", value=90.0, where="docs/README.md:3"),
+    ]
+    verifications = recall.VerificationSet(
+        pair_id="p",
+        verifications=(_verification(value=90.0, where="guide/docs/README.md:3"),),
+    )
+
+    alignment = recall.align_verdicts(claims, verifications)
+
+    assert alignment.matched == {0: 0}
+    assert alignment.fallbacks == frozenset({0})
+
+
+def test_a_path_ending_in_another_is_reconciled_only_at_a_component_boundary():
+    """``submain.tex`` is not ``main.tex`` under some other root."""
+    claims = [_claim(metric="accuracy", value=90.0, where="main.tex:3")]
+    verifications = recall.VerificationSet(
+        pair_id="p", verifications=(_verification(value=90.0, where="submain.tex:3"),)
+    )
+
+    alignment = recall.align_verdicts(claims, verifications)
+
+    assert alignment.fallbacks == frozenset({0})
+
+
+def test_a_where_that_is_not_a_file_and_line_is_no_locator_at_all():
+    """``where`` is free text and the README-fallback claim really does put prose in it."""
+    claims = [_claim(metric="accuracy", value=90.0, where="README results table")]
+    verifications = recall.VerificationSet(
+        pair_id="p", verifications=(_verification(value=90.0, where="README results table"),)
+    )
+
+    alignment = recall.align_verdicts(claims, verifications)
+
+    assert alignment.matched == {0: 0}
+    assert alignment.fallbacks == frozenset({0})
+
+
+def _repeated_value() -> tuple[list[recall.ExtractedClaim], recall.VerificationSet]:
+    """One value printed in two tables, adjudicated differently in each.
+
+    This is what repairing clustering's global de-duplication produces, and it
+    is the reason the key had to be strengthened first: extractions are unique
+    on ``(metric, value)`` today only because clustering merges on exactly
+    that key. The verdicts are recorded in the reverse order of the
+    extractions, so no positional accident can pass for an assignment, and the
+    two extractions carry different confidences so a wrong assignment is
+    visible in the precision counts as well as in the alignment.
+    """
+    claims = [
+        _claim(metric="accuracy", value=82.9, where="main.tex:449", confidence=1.0),
+        _claim(metric="accuracy", value=82.9, where="main.tex:683", confidence=0.5),
+    ]
+    verifications = recall.VerificationSet(
+        pair_id="p",
+        verifications=(
+            _verification(value=82.9, where="src/main.tex:683", verdict="baseline"),
+            _verification(value=82.9, where="src/main.tex:449", verdict="real_own_result"),
+        ),
+    )
+    return claims, verifications
+
+
+def test_a_repeated_metric_value_is_undecidable_on_the_old_key_and_decided_on_the_new():
+    """Why this change exists, asserted rather than argued.
+
+    Under ``(metric, value)`` both extractions and both verdicts collapse onto
+    a single entry, so a multiset over that key holds nothing that could tell
+    the two apart and any assignment built on it is arbitrary. The normalised
+    locator separates them and gives each verdict its own extraction.
+    """
+    claims, verifications = _repeated_value()
+
+    assert {(claim.metric, claim.value) for claim in claims} == {("accuracy", 82.9)}
+    assert {(v.metric, v.value) for v in verifications.verifications} == {("accuracy", 82.9)}
+
+    alignment = recall.align_verdicts(claims, verifications)
+
+    assert alignment.matched == {0: 1, 1: 0}
+    assert alignment.fallbacks == frozenset()
+    assert alignment.unmatched_verdicts == ()
+    assert alignment.unmatched_claims == ()
+
+
+def test_staleness_over_a_repeated_metric_value_names_the_row_rather_than_a_count():
+    """A multiset excess says "one stale"; it cannot say which one.
+
+    With only the second extraction surviving, the verdict that adjudicated
+    the first is identified by position, so the repair is a decision about a
+    named row rather than arithmetic over a key.
+    """
+    claims, verifications = _repeated_value()
+    surviving = [claims[1]]
+
+    alignment = recall.align_verdicts(surviving, verifications)
+    coverage = recall.verification_coverage(surviving, verifications)
+
+    assert alignment.matched == {0: 0}
+    assert alignment.unmatched_verdicts == (1,)
+    assert verifications.verifications[1].where == "src/main.tex:449"
+    assert coverage.stale == 1
+    assert coverage.location_fallbacks == 0
+
+
+def test_a_repeated_metric_value_no_longer_leaves_its_confidence_undecidable():
+    """``unjoined`` is reachable in fewer cases, and the locator is what decides.
+
+    Two extractions of one ``(metric, value)`` disagreeing on confidence were
+    undecidable from the old join and counted as ``unjoined`` rather than
+    guessed. The locator resolves which one the human read, and moving the
+    baseline verdict onto the other locator -- changing nothing else -- flips
+    the answer, so the count follows the locator and not the fixture's luck.
+    """
+    claims, verifications = _repeated_value()
+
+    result = recall.compute_precision(verifications, claims)
+
+    assert result.high_confidence_false_positives == 0
+    assert result.unjoined_false_positives == 0
+
+    mirrored = recall.VerificationSet(
+        pair_id="p",
+        verifications=(
+            _verification(value=82.9, where="src/main.tex:449", verdict="baseline"),
+            _verification(value=82.9, where="src/main.tex:683", verdict="real_own_result"),
+        ),
+    )
+
+    flipped = recall.compute_precision(mirrored, claims)
+
+    assert flipped.high_confidence_false_positives == 1
+    assert flipped.unjoined_false_positives == 0
 
 
 def test_precision_is_unavailable_when_the_extraction_itself_is(tmp_path):
@@ -811,10 +1019,43 @@ def test_the_coverage_counts_reach_the_json_report_when_precision_is_unavailable
 
     assert payload["results"][0]["precision"]["coverage"] == {
         "extractions": 6, "verdicts": 5, "unadjudicated": 1, "stale": 0,
+        "location_fallbacks": 0,
     }
     # A stale pair contributes nothing to the pool -- never a zero.
     assert payload["summary"]["precision"]["pairs_available"] == 0
     assert payload["summary"]["precision"]["pooled"] is None
+
+
+def test_the_measure_output_states_how_many_verdicts_had_no_usable_locator(tmp_path):
+    """How much of the key a pair could not supply belongs beside its rate.
+
+    Measured on the four adjudicated pairs: convnext 12 and detr 2 of 674
+    verdicts name a file no live extraction does, so their precision rests on
+    ``(metric, value)`` for those rows. A reader of ``measure`` sees that.
+    """
+    corresponding = recall.evaluate_precision(
+        _verifications_file(tmp_path),
+        _extraction(
+            _claim(metric="accuracy", value=92.4, where="other.tex:6"),
+            _claim(metric="recall", value=81.0, where="other.tex:15"),
+            _claim(metric="accuracy", value=88.1, where="other.tex:6"),
+            _claim(metric="recall", value=77.0, where="other.tex:15"),
+            _claim(metric="accuracy", value=79.5, where="other.tex:6"),
+        ),
+    )
+    pair = recall.PairReport(
+        pair_id="p",
+        recall=recall.RecallReport(available=False, reason="no labels"),
+        precision=corresponding,
+    )
+
+    assert corresponding.available is True
+    assert corresponding.coverage is not None
+    assert corresponding.coverage.location_fallbacks == 5
+
+    rendered = recall.render_text(recall.build_report([pair]))
+
+    assert "2/5 = 40.0% (unclear=0) [no locator: 5]" in rendered
 
 
 # -- loading and validating ground truth --------------------------------------
@@ -981,7 +1222,7 @@ def test_end_to_end_fixture_reproduces_the_hand_computed_recall_and_precision(tm
     assert result.high_confidence_false_positives == 3
     assert result.unjoined_false_positives == 0
     assert report.precision.coverage == recall.VerificationCoverage(
-        extractions=5, verdicts=5, unadjudicated=0, stale=0
+        extractions=5, verdicts=5, unadjudicated=0, stale=0, location_fallbacks=0
     )
 
     rendered = recall.render_text(recall.build_report([report]))

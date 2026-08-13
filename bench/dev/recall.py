@@ -52,10 +52,10 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import re
 import subprocess
 import sys
-from collections import Counter
-from collections.abc import Sequence
+from collections.abc import Iterable, Sequence
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
@@ -356,9 +356,12 @@ class _NumericClaim:
     Isolated so ``value`` is ``float``, not ``float | None``, everywhere
     matching touches it: a claim with no value (the README-fallback
     placeholder) cannot be compared numerically and is filtered out once,
-    here, rather than guarded at every comparison site.
+    here, rather than guarded at every comparison site. ``index`` is the
+    claim's position in the sequence it was filtered out of, so an assignment
+    made here names a row of the caller's own extraction.
     """
 
+    index: int
     metric: str | None
     value: float
     where: str | None
@@ -368,11 +371,12 @@ class _NumericClaim:
 
 def _numeric_claims(claims: Sequence[ExtractedClaim]) -> list[_NumericClaim]:
     result: list[_NumericClaim] = []
-    for claim in claims:
+    for index, claim in enumerate(claims):
         if claim.value is None:
             continue
         result.append(
             _NumericClaim(
+                index=index,
                 metric=claim.metric,
                 value=claim.value,
                 where=claim.where,
@@ -530,14 +534,191 @@ class PrecisionResult:
     unjoined_false_positives: int | None = None
 
 
-def _confidences_by_key(
-    claims: Sequence[ExtractedClaim],
-) -> dict[tuple[str | None, float], frozenset[float | None]]:
-    """Every confidence the extractor states for each ``(metric, value)``."""
-    grouped: dict[tuple[str | None, float], set[float | None]] = {}
-    for claim in _numeric_claims(claims):
-        grouped.setdefault((claim.metric, claim.value), set()).add(claim.confidence)
-    return {key: frozenset(values) for key, values in grouped.items()}
+_LOCATOR_PATTERN = re.compile(r"^(?P<path>.+):(?P<line>\d+)$")
+
+_ValueKey = tuple[str | None, float]
+_LocatedKey = tuple[str | None, float, str, str]
+
+
+def _split_locator(where: str | None) -> tuple[str, str] | None:
+    """A ``path:line`` locator split into its parts, or ``None`` for anything else.
+
+    ``manifest.Claim.where`` is a free-text field and the README-fallback
+    claim really does put prose in it, so a locator is parsed, never assumed.
+    """
+    if where is None:
+        return None
+    match = _LOCATOR_PATTERN.match(where)
+    if match is None:
+        return None
+    return match.group("path"), match.group("line")
+
+
+def _is_path_suffix(candidate: str, path: str) -> bool:
+    return path == candidate or path.endswith("/" + candidate)
+
+
+def _resolve_paths(extracted: Sequence[str], adjudicated: Iterable[str]) -> dict[str, str]:
+    """Each adjudicated path mapped onto the extraction path naming the same file.
+
+    The two sides are rooted differently, and by a depth that varies within
+    one pair rather than by a constant prefix: a verification file records
+    ``src/main.tex`` for a paper measured here from ``src`` itself, while a
+    repository README keeps ``object_detection/README.md`` on both sides. So
+    the root is recovered per file. A path resolves to itself when the
+    extraction already states it, and otherwise to the single extraction path
+    that is a ``/``-boundary suffix of it, or that it is a suffix of. Several
+    candidates and none are both left unresolved rather than guessed.
+
+    Measured over the four adjudicated pairs, against 674 verdicts: the raw
+    locator resolves 26, the basename 660 but collapsing convnext's
+    ``object_detection/README.md:18`` and ``semantic_segmentation/README.md:18``
+    onto one key, dropping the first path component 601 with the same
+    collapse, and this 660 with no two locators sharing a key.
+    """
+    known = set(extracted)
+    resolved: dict[str, str] = {}
+    for path in adjudicated:
+        if path in resolved:
+            continue
+        if path in known:
+            resolved[path] = path
+            continue
+        candidates = [
+            candidate
+            for candidate in extracted
+            if _is_path_suffix(candidate, path) or _is_path_suffix(path, candidate)
+        ]
+        if len(candidates) == 1:
+            resolved[path] = candidates[0]
+    return resolved
+
+
+@dataclass(frozen=True)
+class _MatchIndex:
+    """One pair's extraction under both keys the join may use.
+
+    Built once and shared, so :func:`compute_precision` reads the confidence
+    of the extraction a verdict was actually assigned rather than repeating
+    the assignment under a weaker key.
+    """
+
+    claims: tuple[_NumericClaim, ...]
+    by_location: dict[_LocatedKey, tuple[int, ...]]
+    by_value: dict[_ValueKey, tuple[int, ...]]
+    resolved_paths: dict[str, str]
+
+    def value_key(self, verification: Verification) -> _ValueKey:
+        return (verification.metric, verification.value)
+
+    def located_key(self, verification: Verification) -> _LocatedKey | None:
+        split = _split_locator(verification.where)
+        if split is None:
+            return None
+        path = self.resolved_paths.get(split[0])
+        if path is None:
+            return None
+        return (verification.metric, verification.value, path, split[1])
+
+
+def _build_match_index(
+    claims: Sequence[ExtractedClaim], verifications: VerificationSet
+) -> _MatchIndex:
+    numeric = _numeric_claims(claims)
+    extracted_paths: list[str] = []
+    located: dict[_LocatedKey, list[int]] = {}
+    valued: dict[_ValueKey, list[int]] = {}
+    for position, claim in enumerate(numeric):
+        valued.setdefault((claim.metric, claim.value), []).append(position)
+        split = _split_locator(claim.where)
+        if split is None:
+            continue
+        extracted_paths.append(split[0])
+        located.setdefault((claim.metric, claim.value, split[0], split[1]), []).append(position)
+    adjudicated_paths = (
+        split[0]
+        for split in (_split_locator(v.where) for v in verifications.verifications)
+        if split is not None
+    )
+    return _MatchIndex(
+        claims=tuple(numeric),
+        by_location={key: tuple(positions) for key, positions in located.items()},
+        by_value={key: tuple(positions) for key, positions in valued.items()},
+        resolved_paths=_resolve_paths(sorted(set(extracted_paths)), adjudicated_paths),
+    )
+
+
+@dataclass(frozen=True)
+class VerdictAlignment:
+    """Which live extraction each verdict adjudicates, and how that was decided.
+
+    ``matched`` maps a verdict's position in the verification file to the
+    position of its extraction in the sequence supplied, so a stale verdict
+    and an unadjudicated extraction are identified rows rather than an excess
+    counted per key. ``fallbacks`` is the subset matched on ``(metric, value)``
+    alone -- the verdict carries no locator, or one no live extraction can be
+    reconciled with, or one whose extraction has since moved.
+    """
+
+    matched: dict[int, int]
+    fallbacks: frozenset[int]
+    unmatched_verdicts: tuple[int, ...]
+    unmatched_claims: tuple[int, ...]
+
+
+def _align(index: _MatchIndex, verifications: VerificationSet) -> VerdictAlignment:
+    taken: set[int] = set()
+    matched: dict[int, int] = {}
+    fallbacks: set[int] = set()
+    pending: list[int] = []
+
+    def take(pool: tuple[int, ...]) -> int | None:
+        return next((position for position in pool if position not in taken), None)
+
+    for order, verification in enumerate(verifications.verifications):
+        key = index.located_key(verification)
+        position = take(index.by_location.get(key, ())) if key is not None else None
+        if position is None:
+            pending.append(order)
+            continue
+        taken.add(position)
+        matched[order] = index.claims[position].index
+    for order in pending:
+        verification = verifications.verifications[order]
+        position = take(index.by_value.get(index.value_key(verification), ()))
+        if position is None:
+            continue
+        taken.add(position)
+        matched[order] = index.claims[position].index
+        fallbacks.add(order)
+
+    return VerdictAlignment(
+        matched=matched,
+        fallbacks=frozenset(fallbacks),
+        unmatched_verdicts=tuple(
+            order for order in range(len(verifications.verifications)) if order not in matched
+        ),
+        unmatched_claims=tuple(
+            claim.index for position, claim in enumerate(index.claims) if position not in taken
+        ),
+    )
+
+
+def align_verdicts(
+    claims: Sequence[ExtractedClaim], verifications: VerificationSet
+) -> VerdictAlignment:
+    """Assign each verdict the extraction it adjudicates, on ``(metric, value, where)``.
+
+    Two passes, both one-to-one. The first matches on the full key, with the
+    verdict's path resolved into the extraction's own rooting by
+    :func:`_resolve_paths`. The second offers whatever is left to the verdicts
+    the first could not place, on ``(metric, value)`` alone -- the key this
+    join used before locators were reconciled -- so a stronger key never loses
+    a match that is genuinely the same extraction. Both passes walk the
+    verification file and each key's extractions in order, so the assignment
+    does not depend on iteration order anywhere.
+    """
+    return _align(_build_match_index(claims, verifications), verifications)
 
 
 def compute_precision(
@@ -552,14 +733,19 @@ def compute_precision(
     ``None`` when nothing was adjudicated -- undefined, never a fabricated zero.
 
     ``claims`` supplies the live extraction so each verdict can be joined to the
-    confidence its extraction carried. Existing verification files record no
-    confidence, so the join is on ``(metric, value)``, exactly as
-    :func:`verification_coverage` establishes correspondence. A verdict is
-    counted as a high-confidence false positive only where every live extraction
-    under its key states ``1.0``; where they disagree, or where the extraction
-    states no confidence at all, the assignment is undecidable from the join and
-    the verdict is counted as ``unjoined`` rather than guessed either way.
-    Omitting ``claims`` leaves both counts ``None``.
+    confidence its extraction carried. Verification files record no confidence,
+    so the join runs through :func:`align_verdicts`, exactly as
+    :func:`verification_coverage` establishes correspondence, and reads the
+    confidences of the extractions that shared the key the verdict was assigned
+    under -- the located key where the locator reconciled, ``(metric, value)``
+    where it fell back. A verdict is counted as a high-confidence false positive
+    only where every extraction under that key states ``1.0``; where they
+    disagree, where the extraction states no confidence at all, or where no
+    extraction was assigned, the answer is undecidable from the join and the
+    verdict is counted as ``unjoined`` rather than guessed either way. The
+    located key is the narrower group, so a locator that reconciles can only
+    reduce the number left unjoined. Omitting ``claims`` leaves both counts
+    ``None``.
     """
     tally = dict.fromkeys(_VALID_VERDICTS, 0)
     for verification in verifications.verifications:
@@ -572,14 +758,23 @@ def compute_precision(
     high_confidence: int | None = None
     unjoined: int | None = None
     if claims is not None:
-        confidences = _confidences_by_key(claims)
+        index = _build_match_index(claims, verifications)
+        alignment = _align(index, verifications)
         high_confidence = unjoined = 0
-        for verification in verifications.verifications:
+        for order, verification in enumerate(verifications.verifications):
             if verification.verdict in _EXCLUDED_FROM_PRECISION:
                 continue
             if verification.verdict == "real_own_result":
                 continue
-            stated = confidences.get((verification.metric, verification.value), frozenset())
+            if order not in alignment.matched:
+                unjoined += 1
+                continue
+            if order in alignment.fallbacks:
+                pool = index.by_value.get(index.value_key(verification), ())
+            else:
+                key = index.located_key(verification)
+                pool = index.by_location.get(key, ()) if key is not None else ()
+            stated = frozenset(index.claims[position].confidence for position in pool)
             if stated == frozenset({1.0}):
                 high_confidence += 1
             elif len(stated) != 1 or None in stated:
@@ -606,13 +801,19 @@ class VerificationCoverage:
     ``unadjudicated`` is an extraction carrying no verdict; ``stale`` is a
     verdict matching no extraction. Both are reported whether or not precision
     is, so a reader can see *how far* a file has drifted rather than only that
-    it has.
+    it has. ``location_fallbacks`` is how much of the key the file could not
+    supply: verdicts placed on ``(metric, value)`` alone because their locator
+    could not be reconciled with any live extraction. It does not stop a file
+    corresponding -- those verdicts are matched, and refusing them would throw
+    away an adjudication that is still exactly right -- but it states how far
+    the identity rests on the weaker key.
     """
 
     extractions: int
     verdicts: int
     unadjudicated: int
     stale: int
+    location_fallbacks: int
 
     @property
     def corresponds(self) -> bool:
@@ -622,7 +823,7 @@ class VerificationCoverage:
 def verification_coverage(
     claims: Sequence[ExtractedClaim], verifications: VerificationSet
 ) -> VerificationCoverage:
-    """Match adjudications to extractions, one to one, on ``(metric, value)``.
+    """Match adjudications to extractions, one to one, through :func:`align_verdicts`.
 
     An adjudication is a human reading of one extraction, so it describes the
     extractor that produced it and nothing else. Tallying the file alone
@@ -631,29 +832,35 @@ def verification_coverage(
     written against has moved on and 63 of today's extractions carry no verdict
     at all.
 
-    ``(metric, value)`` is the identity, not ``where``. Two locators for one
-    number are routine: convnext states twelve mIoU figures in both its paper
-    and a task README, and which of the two survives clustering moved with an
-    extractor change that left every number, and every verdict, untouched --
-    all twelve read ``real_own_result``, noting both sources state the value.
-    Keying on the full ``where`` is worse still: detr's verdicts were recorded
-    from a paper root one level above the one measured here, so every one of
-    its 144 paths carries a ``src/`` prefix the extraction does not, and all
-    144 read as stale. Claims carrying no value (the README-fallback
-    placeholder) assert no number to adjudicate and are excluded here exactly
-    as :func:`_numeric_claims` excludes them from matching.
+    The identity is ``(metric, value, where)``, and ``where`` is load-bearing
+    only because it is normalised and optional. Normalised, because the two
+    sides are rooted differently: detr's verdicts were recorded from a paper
+    root one level above the one measured here, and matching the locator raw
+    reported all 144 of them as both unadjudicated and stale. Optional,
+    because two locators for one number are routine -- convnext states twelve
+    mIoU figures in both its paper and a task README, and which of the two
+    survives clustering moved with an extractor change that left every number,
+    and every verdict, untouched, all twelve still reading ``real_own_result``.
+    A locator that cannot be reconciled therefore falls back rather than
+    dropping the match, and the fallbacks are counted.
+
+    What the stronger key buys is that a repeated ``(metric, value)`` stays
+    decidable. Extractions are unique on ``(metric, value)`` today only
+    because clustering de-duplicates globally on exactly that key; the moment
+    that is repaired, a multiset difference over it stops naming which row is
+    stale, and four adjudicated pairs have no way back to correspondence.
+
+    Claims carrying no value (the README-fallback placeholder) assert no
+    number to adjudicate and are excluded here exactly as
+    :func:`_numeric_claims` excludes them from matching.
     """
-    extracted: Counter[tuple[str | None, float]] = Counter(
-        (claim.metric, claim.value) for claim in _numeric_claims(claims)
-    )
-    adjudicated: Counter[tuple[str | None, float]] = Counter(
-        (verification.metric, verification.value) for verification in verifications.verifications
-    )
+    alignment = align_verdicts(claims, verifications)
     return VerificationCoverage(
-        extractions=sum(extracted.values()),
-        verdicts=sum(adjudicated.values()),
-        unadjudicated=sum((extracted - adjudicated).values()),
-        stale=sum((adjudicated - extracted).values()),
+        extractions=len(_numeric_claims(claims)),
+        verdicts=len(verifications.verifications),
+        unadjudicated=len(alignment.unmatched_claims),
+        stale=len(alignment.unmatched_verdicts),
+        location_fallbacks=len(alignment.fallbacks),
     )
 
 
@@ -891,7 +1098,8 @@ def evaluate_precision(
             reason=(
                 f"verification file does not describe the current extractions: "
                 f"{coverage.extractions} extractions, {coverage.verdicts} verdicts, "
-                f"{coverage.unadjudicated} unadjudicated, {coverage.stale} stale"
+                f"{coverage.unadjudicated} unadjudicated, {coverage.stale} stale, "
+                f"{coverage.location_fallbacks} matched without a locator"
             ),
             coverage=coverage,
         )
@@ -1052,10 +1260,14 @@ def _format_precision(precision: dict[str, Any]) -> str:
     result = precision["result"]
     if result is None or result["precision"] is None:
         return "undefined (adjudicated 0)"
-    return (
+    coverage = precision["coverage"] or {}
+    fallbacks = coverage.get("location_fallbacks") or 0
+    rendered = (
         f"{result['real_own_result']}/{result['adjudicated']} = "
         f"{result['precision']:.1%} (unclear={result['unclear']})"
     )
+    # Stated rather than hidden: this many verdicts rest on the weaker key.
+    return rendered if not fallbacks else f"{rendered} [no locator: {fallbacks}]"
 
 
 def render_text(report: dict[str, Any]) -> str:
