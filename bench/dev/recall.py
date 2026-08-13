@@ -281,21 +281,32 @@ def load_verification_set(path: Path) -> VerificationSet:
 
 @dataclass(frozen=True)
 class ExtractedClaim:
-    """One ``manifest.Claim``, reduced to what matching needs."""
+    """One ``manifest.Claim``, reduced to what matching needs.
+
+    ``confidence`` and ``resolution_method`` are how the number was read, not
+    how good it is. They are optional because a tree measured through ``--src``
+    may predate the manifest fields that carry them, in which case they are
+    absent rather than zero -- an unknown confidence is not a low one.
+    """
 
     metric: str | None
     value: float | None
     where: str | None
     text: str
+    confidence: float | None = None
+    resolution_method: str | None = None
 
 
 def _extracted_claim_from_json(entry: dict[str, Any]) -> ExtractedClaim:
     raw_value = entry.get("value")
+    raw_confidence = entry.get("confidence")
     return ExtractedClaim(
         metric=_optional_str(entry.get("metric")),
         value=float(raw_value) if _is_number(raw_value) else None,
         where=_optional_str(entry.get("where")),
         text=_optional_str(entry.get("text")) or "",
+        confidence=float(raw_confidence) if _is_number(raw_confidence) else None,
+        resolution_method=_optional_str(entry.get("resolution_method")),
     )
 
 
@@ -352,6 +363,7 @@ class _NumericClaim:
     value: float
     where: str | None
     text: str
+    confidence: float | None = None
 
 
 def _numeric_claims(claims: Sequence[ExtractedClaim]) -> list[_NumericClaim]:
@@ -359,7 +371,15 @@ def _numeric_claims(claims: Sequence[ExtractedClaim]) -> list[_NumericClaim]:
     for claim in claims:
         if claim.value is None:
             continue
-        result.append(_NumericClaim(metric=claim.metric, value=claim.value, where=claim.where, text=claim.text))
+        result.append(
+            _NumericClaim(
+                metric=claim.metric,
+                value=claim.value,
+                where=claim.where,
+                text=claim.text,
+                confidence=claim.confidence,
+            )
+        )
     return result
 
 
@@ -486,7 +506,17 @@ def classify_recall(claims: Sequence[ExtractedClaim], frame: LabelFrame) -> Reca
 
 @dataclass(frozen=True)
 class PrecisionResult:
-    """A tally over one pair's verification file. Independent of any label."""
+    """A tally over one pair's verification file, plus what it cost confidently.
+
+    ``high_confidence_false_positives`` counts adjudicated extractions inside
+    the precision denominator that are not ``real_own_result`` and that the
+    extractor produced at ``confidence == 1.0``. It is the §17 acceptance
+    criterion "zero high-confidence false positives", which was not computable
+    while the manifest dropped a claim's resolution method on the floor.
+    ``unjoined_false_positives`` counts the ones whose confidence could not be
+    established -- see :func:`compute_precision`. Both are ``None`` when no
+    extraction was supplied to join against: not measured, never zero.
+    """
 
     real_own_result: int
     baseline: int
@@ -496,9 +526,23 @@ class PrecisionResult:
     unclear: int
     adjudicated: int  # every verdict except those excluded from the denominator
     precision: float | None
+    high_confidence_false_positives: int | None = None
+    unjoined_false_positives: int | None = None
 
 
-def compute_precision(verifications: VerificationSet) -> PrecisionResult:
+def _confidences_by_key(
+    claims: Sequence[ExtractedClaim],
+) -> dict[tuple[str | None, float], frozenset[float | None]]:
+    """Every confidence the extractor states for each ``(metric, value)``."""
+    grouped: dict[tuple[str | None, float], set[float | None]] = {}
+    for claim in _numeric_claims(claims):
+        grouped.setdefault((claim.metric, claim.value), set()).add(claim.confidence)
+    return {key: frozenset(values) for key, values in grouped.items()}
+
+
+def compute_precision(
+    verifications: VerificationSet, claims: Sequence[ExtractedClaim] | None = None
+) -> PrecisionResult:
     """Precision from adjudications alone: real_own_result / adjudicated.
 
     ``unclear`` and ``in_repo_not_paper`` are excluded from the denominator and
@@ -506,6 +550,16 @@ def compute_precision(verifications: VerificationSet) -> PrecisionResult:
     decided, the second because it is a claim the repository genuinely makes and
     a paper-scoped adjudication cannot credit or condemn it. ``precision`` is
     ``None`` when nothing was adjudicated -- undefined, never a fabricated zero.
+
+    ``claims`` supplies the live extraction so each verdict can be joined to the
+    confidence its extraction carried. Existing verification files record no
+    confidence, so the join is on ``(metric, value)``, exactly as
+    :func:`verification_coverage` establishes correspondence. A verdict is
+    counted as a high-confidence false positive only where every live extraction
+    under its key states ``1.0``; where they disagree, or where the extraction
+    states no confidence at all, the assignment is undecidable from the join and
+    the verdict is counted as ``unjoined`` rather than guessed either way.
+    Omitting ``claims`` leaves both counts ``None``.
     """
     tally = dict.fromkeys(_VALID_VERDICTS, 0)
     for verification in verifications.verifications:
@@ -514,6 +568,23 @@ def compute_precision(verifications: VerificationSet) -> PrecisionResult:
         count for verdict, count in tally.items() if verdict not in _EXCLUDED_FROM_PRECISION
     )
     precision = tally["real_own_result"] / adjudicated if adjudicated else None
+
+    high_confidence: int | None = None
+    unjoined: int | None = None
+    if claims is not None:
+        confidences = _confidences_by_key(claims)
+        high_confidence = unjoined = 0
+        for verification in verifications.verifications:
+            if verification.verdict in _EXCLUDED_FROM_PRECISION:
+                continue
+            if verification.verdict == "real_own_result":
+                continue
+            stated = confidences.get((verification.metric, verification.value), frozenset())
+            if stated == frozenset({1.0}):
+                high_confidence += 1
+            elif len(stated) != 1 or None in stated:
+                unjoined += 1
+
     return PrecisionResult(
         real_own_result=tally["real_own_result"],
         baseline=tally["baseline"],
@@ -523,6 +594,8 @@ def compute_precision(verifications: VerificationSet) -> PrecisionResult:
         unclear=tally["unclear"],
         adjudicated=adjudicated,
         precision=precision,
+        high_confidence_false_positives=high_confidence,
+        unjoined_false_positives=unjoined,
     )
 
 
@@ -634,8 +707,18 @@ def _cmd_extract(arguments: argparse.Namespace) -> int:
         {
             "available": True,
             "adduce_loaded_from": loaded_from,
+            # getattr, not attribute access: a tree reached through --src may
+            # predate the manifest fields carrying how a claim was resolved,
+            # and a retroactive measurement must still run against it.
             "claims": [
-                {"metric": c.metric, "value": c.value, "where": c.where, "text": c.text}
+                {
+                    "metric": c.metric,
+                    "value": c.value,
+                    "where": c.where,
+                    "text": c.text,
+                    "confidence": getattr(c, "confidence", None),
+                    "resolution_method": getattr(c, "resolution_method", None),
+                }
                 for c in manifest.claims
             ],
         },
@@ -800,7 +883,8 @@ def evaluate_precision(
         reason = extraction.get("reason", "extraction unavailable")
         return PrecisionReport(available=False, reason=f"cannot check coverage: {reason}")
 
-    coverage = verification_coverage(_claims_of(extraction), verifications)
+    claims = _claims_of(extraction)
+    coverage = verification_coverage(claims, verifications)
     if not coverage.corresponds:
         return PrecisionReport(
             available=False,
@@ -812,7 +896,7 @@ def evaluate_precision(
             coverage=coverage,
         )
     return PrecisionReport(
-        available=True, result=compute_precision(verifications), coverage=coverage
+        available=True, result=compute_precision(verifications, claims), coverage=coverage
     )
 
 

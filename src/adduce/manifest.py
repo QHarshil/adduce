@@ -12,10 +12,11 @@ import json
 import math
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, TypeGuard, cast
 
 import yaml
 
+from .aeg.schema import CERTAIN_METHODS, ResolutionMethod
 from .safe_write import (
     SafeWriteError,
     create_text_exclusive,
@@ -27,6 +28,16 @@ from .safe_write import (
 SCHEMA = "adduce/1"
 MANIFEST_DIR = ".adduce"
 MANIFEST_NAME = "manifest.yaml"
+
+#: The wire vocabulary of :class:`~adduce.aeg.schema.ResolutionMethod`. Held as
+#: strings so the manifest stays plain data that round-trips through YAML and
+#: JSON without carrying an enum.
+RESOLUTION_METHODS = frozenset(method.value for method in ResolutionMethod)
+
+#: The subset that may carry confidence ``1.0`` -- the methods that *read* a
+#: value rather than infer it. Derived from the AEG's own set rather than
+#: restated, so the two cannot drift apart.
+_CERTAIN_METHOD_NAMES = frozenset(method.value for method in CERTAIN_METHODS)
 
 
 @dataclass
@@ -81,6 +92,8 @@ class Claim:
     seeds: list[int] = field(default_factory=list)
     produced_by: ProducedBy = field(default_factory=ProducedBy)
     status: str | None = None
+    confidence: float | None = None
+    resolution_method: str | None = None  # a ResolutionMethod value, or nothing
 
 
 @dataclass
@@ -156,6 +169,8 @@ class Manifest:
                         "commit": c.produced_by.commit,
                     },
                     "status": c.status,
+                    "confidence": c.confidence,
+                    "resolution_method": c.resolution_method,
                 }
                 for c in self.claims
             ],
@@ -173,7 +188,7 @@ def _as_str(value: Any) -> str | None:
     return None if value is None else cast(str, value)
 
 
-def _is_finite_number(value: object) -> bool:
+def _is_finite_number(value: object) -> TypeGuard[int | float]:
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         return False
     try:
@@ -185,6 +200,7 @@ def _is_finite_number(value: object) -> bool:
 def _parse_claim(raw: dict[str, Any]) -> Claim:
     produced = cast(dict[str, Any], raw.get("produced_by") or {})
     value = raw.get("value")
+    confidence = raw.get("confidence")
     return Claim(
         id=cast(str, raw["id"]),
         text=_as_str(raw.get("text")),
@@ -201,6 +217,8 @@ def _parse_claim(raw: dict[str, Any]) -> Claim:
             commit=_as_str(produced.get("commit")),
         ),
         status=_as_str(raw.get("status")),
+        confidence=float(confidence) if _is_finite_number(confidence) else None,
+        resolution_method=_as_str(raw.get("resolution_method")),
     )
 
 
@@ -259,7 +277,7 @@ def _validate_manifest_data(data: dict[str, Any]) -> str | None:
             return f"claims[{index}].id is required"
         if error := validate_strings(
             claim,
-            ("text", "kind", "where", "metric", "status"),
+            ("text", "kind", "where", "metric", "status", "resolution_method"),
             f"claims[{index}].",
         ):
             return error
@@ -293,6 +311,32 @@ def _validate_manifest_data(data: dict[str, Any]) -> str | None:
             isinstance(seed, bool) or not isinstance(seed, int) for seed in seeds
         ):
             return f"every claims[{index}].seeds entry must be an integer"
+        confidence = claim.get("confidence")
+        if confidence is not None and (
+            not _is_finite_number(confidence) or not 0.0 <= float(confidence) <= 1.0
+        ):
+            return f"claims[{index}].confidence must be a number from 0 to 1"
+        method = claim.get("resolution_method")
+        if method is not None and method not in RESOLUTION_METHODS:
+            known = ", ".join(repr(name) for name in sorted(RESOLUTION_METHODS))
+            return f"claims[{index}].resolution_method must be one of {known}"
+        # The same coupling ClaimCandidate.__post_init__ enforces. Full
+        # confidence means the value was read, not inferred, so only a method
+        # that reads may claim it. Enforcing it here too keeps a hand-written
+        # manifest from asserting what the extractor is forbidden to assert --
+        # otherwise the manifest is a way around the rule rather than a record
+        # of it.
+        if (
+            confidence is not None
+            and float(confidence) == 1.0
+            and method is not None
+            and method not in _CERTAIN_METHOD_NAMES
+        ):
+            certain = ", ".join(repr(name) for name in sorted(_CERTAIN_METHOD_NAMES))
+            return (
+                f"claims[{index}].confidence of 1.0 requires a resolution_method "
+                f"that reads rather than infers ({certain}), not {method!r}"
+            )
     smoke = data.get("smoke") or {}
     if error := validate_strings(smoke, ("command",), "smoke."):
         return error

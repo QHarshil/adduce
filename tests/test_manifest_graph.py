@@ -14,6 +14,7 @@ from adduce.manifest import load_manifest, write_manifest
 from adduce.manifest_builder import scaffold_manifest
 from adduce.modes import badge_eligibility
 from adduce.report.json_report import render as render_json
+from tests.conftest import plain
 from tests.test_engine import BARE, WELL_FORMED, _write
 
 _MANIFEST = {
@@ -68,6 +69,49 @@ def test_manifest_round_trip(tmp_path):
     assert (roundtrip / ".adduce" / "manifest.json").is_file()
 
 
+def test_manifest_round_trip_carries_how_a_claim_was_resolved(tmp_path):
+    """A claim's confidence and resolution method survive write and reload.
+
+    Held as the ``ResolutionMethod``'s string value, so the manifest stays
+    plain data rather than carrying an enum through YAML and JSON.
+    """
+    manifest_data = dict(_MANIFEST)
+    manifest_data["claims"] = [
+        dict(_MANIFEST["claims"][0], confidence=0.5, resolution_method="lexical_match")
+    ]
+    (tmp_path / ".adduce").mkdir()
+    (tmp_path / ".adduce" / "manifest.yaml").write_text(
+        yaml.safe_dump(manifest_data), encoding="utf-8"
+    )
+
+    manifest = load_manifest(tmp_path)
+    assert manifest.claims[0].confidence == 0.5
+    assert manifest.claims[0].resolution_method == "lexical_match"
+
+    roundtrip = tmp_path / "roundtrip"
+    roundtrip.mkdir()
+    write_manifest(roundtrip, manifest)
+    reloaded = load_manifest(roundtrip)
+
+    assert reloaded.claims[0].confidence == 0.5
+    assert reloaded.claims[0].resolution_method == "lexical_match"
+    mirror = json.loads((roundtrip / ".adduce" / "manifest.json").read_text(encoding="utf-8"))
+    assert mirror["claims"][0]["resolution_method"] == "lexical_match"
+
+
+def test_a_manifest_stating_neither_field_stays_valid_and_writes_neither(tmp_path):
+    """The migration is additive: every manifest written before this loads unchanged."""
+    _write_manifest_file(tmp_path)
+
+    manifest = load_manifest(tmp_path)
+
+    assert manifest.error is None
+    assert manifest.claims[0].confidence is None
+    assert manifest.claims[0].resolution_method is None
+    assert "confidence" not in manifest.to_dict()["claims"][0]
+    assert "resolution_method" not in manifest.to_dict()["claims"][0]
+
+
 def test_malformed_manifest_is_recorded_as_an_error(tmp_path):
     (tmp_path / ".adduce").mkdir()
     (tmp_path / ".adduce" / "manifest.yaml").write_text(":\n  - not valid: [", encoding="utf-8")
@@ -113,6 +157,41 @@ def test_check_rejects_malformed_manifest_structure(tmp_path):
             "smoke:\n  expected_outputs: [result.json, 3]\n",
             r"every smoke\.expected_outputs entry must be a string",
         ),
+        (
+            "claims:\n  - id: C1\n    confidence: high\n",
+            r"claims\[0\]\.confidence must be a number from 0 to 1",
+        ),
+        (
+            "claims:\n  - id: C1\n    confidence: 1.5\n",
+            r"claims\[0\]\.confidence must be a number from 0 to 1",
+        ),
+        (
+            "claims:\n  - id: C1\n    confidence: -0.1\n",
+            r"claims\[0\]\.confidence must be a number from 0 to 1",
+        ),
+        (
+            "claims:\n  - id: C1\n    confidence: .nan\n",
+            r"claims\[0\]\.confidence must be a number from 0 to 1",
+        ),
+        (
+            "claims:\n  - id: C1\n    resolution_method: vibes\n",
+            r"claims\[0\]\.resolution_method must be one of .*'direct_parse'",
+        ),
+        (
+            "claims:\n  - id: C1\n    resolution_method: [direct_parse]\n",
+            r"claims\[0\]\.resolution_method must be a string",
+        ),
+        # Full confidence means the value was read, not inferred. A manifest
+        # must not be a way around the rule ClaimCandidate enforces at
+        # construction.
+        (
+            "claims:\n  - id: C1\n    confidence: 1.0\n    resolution_method: lexical_match\n",
+            r"claims\[0\]\.confidence of 1\.0 requires a resolution_method that reads",
+        ),
+        (
+            "claims:\n  - id: C1\n    confidence: 1.0\n    resolution_method: model_ranked\n",
+            r"claims\[0\]\.confidence of 1\.0 requires a resolution_method that reads",
+        ),
     ],
 )
 def test_manifest_rejects_scalar_coercion(
@@ -129,6 +208,26 @@ def test_manifest_rejects_scalar_coercion(
 
     with pytest.raises(ValueError, match=message):
         run_check(tmp_path)
+
+
+def test_check_refuses_an_out_of_range_confidence_without_a_traceback(tmp_path):
+    """The validator's discipline, all the way out to the exit code."""
+    from typer.testing import CliRunner
+
+    from adduce.cli import app
+
+    manifest_dir = tmp_path / ".adduce"
+    manifest_dir.mkdir()
+    (manifest_dir / "manifest.yaml").write_text(
+        "schema: adduce/1\nclaims:\n  - id: C1\n    confidence: 3\n", encoding="utf-8"
+    )
+
+    result = CliRunner().invoke(app, ["check", str(tmp_path)])
+
+    assert result.exit_code == 2
+    assert "claims[0].confidence must be a number from 0 to 1" in plain(result.output)
+    assert result.exception is None or isinstance(result.exception, SystemExit)
+    assert "Traceback" not in result.output
 
 
 def test_manifest_command_refuses_to_overwrite_malformed_file(tmp_path):
@@ -189,6 +288,46 @@ def test_scaffold_manifest_from_evidence(tmp_path):
     draft = scaffold_manifest(result.evidence)
     assert any("bert-base-uncased" in r.call for r in draft.remotes)
     assert draft.environment.python is not None
+
+
+def test_a_drafted_claim_carries_how_its_number_was_read(tmp_path):
+    """A parsed cell and a number recovered from a sentence are not the same evidence.
+
+    The distinction is enforced when a candidate is constructed and was then
+    dropped at the manifest boundary, so nothing downstream could act on it.
+    """
+    _write(
+        tmp_path,
+        {
+            "README.md": "# Demo\n\n| Model | Accuracy |\n|---|---|\n| ours | 92.1 |\n",
+            "paper.tex": (
+                "\\documentclass{article}\n\\begin{document}\n"
+                "We reach an accuracy of 88.5 on the test split.\n\\end{document}\n"
+            ),
+            "train.py": "import torch\n",
+        },
+    )
+
+    claims = scaffold_manifest(run_check(tmp_path).evidence).claims
+    by_value = {claim.value: claim for claim in claims}
+
+    assert by_value[92.1].resolution_method == "direct_parse"
+    assert by_value[92.1].confidence == 1.0
+    assert by_value[88.5].resolution_method == "lexical_match"
+    assert by_value[88.5].confidence == 0.5
+
+
+def test_the_results_table_placeholder_claim_states_no_confidence(tmp_path):
+    """It asserts no number, so it has nothing to have read confidently."""
+    files = dict(WELL_FORMED)
+    files["README.md"] = "# Demo\n\n## Results\n\n| Model | Score |\n|---|---|\n| ours | 92.1 |\n"
+    _write(tmp_path, files)
+
+    claims = scaffold_manifest(run_check(tmp_path).evidence).claims
+
+    assert [claim.value for claim in claims] == [None]
+    assert claims[0].confidence is None
+    assert claims[0].resolution_method is None
 
 
 def test_manifest_refresh_preserves_author_content_and_appends_detected_entries(tmp_path):
