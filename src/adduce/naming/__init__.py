@@ -198,8 +198,15 @@ _METRIC_GROUPS: tuple[tuple[str, ...], ...] = (
     # disagreement.
     ("error_rate", "err", "err.", "error", "error rate", "top-1 err", "top-1 error"),
     ("f1", "f-1", "f1-score", "f score", "f-score", "macro-f1", "micro-f1", "macro f1", "micro f1"),
-    ("bleu", "bleu-4", "bleu4", "sacrebleu"),
-    ("rouge", "rouge-l", "rouge-1", "rouge-2", "rougel"),
+    ("bleu", "bleu-4", "bleu4", "sacrebleu", "b@4"),
+    # ROUGE-1, ROUGE-2 and ROUGE-L are three summarisation metrics printed side
+    # by side in one row, so they are separated for the reason AP50 and AP75
+    # are. The bare name stays for a paper reporting one and not saying which.
+    # The ``-F`` suffix names the F-measure of the same variant.
+    ("rouge",),
+    ("rouge_1", "rouge-1", "rouge1", "rouge-1-f", "r-1-f"),
+    ("rouge_2", "rouge-2", "rouge2", "rouge-2-f", "r-2-f"),
+    ("rouge_l", "rouge-l", "rougel", "rouge-l-f", "r-l-f"),
     ("ndcg", "ndcg@10", "ndcg@5"),
     # COCO's bare "AP" is already averaged over IoU thresholds, so it belongs
     # with mAP. AP50 and AP75 are that same average taken at one fixed
@@ -244,7 +251,7 @@ _METRIC_GROUPS: tuple[tuple[str, ...], ...] = (
     ("ssim",),
     ("nll", "negative log-likelihood", "negative log likelihood"),
     ("gflops", "flops", "gflop"),
-    ("spearman", "spearman correlation", "spearman's rho", "rho"),
+    ("spearman", "spearman correlation", "spearman's rho", "rho", "scc"),
     ("pearson", "pearson correlation", "pearson's r"),
     # Loss is the reported result in a language-modelling repository as often
     # as accuracy is in a classification one. The splits stay distinct: a
@@ -253,6 +260,69 @@ _METRIC_GROUPS: tuple[tuple[str, ...], ...] = (
     ("train_loss", "train loss", "training loss", "trn loss", "loss (train)"),
     ("val_loss", "val loss", "validation loss", "valid loss", "dev loss", "loss (val)"),
     ("test_loss", "test loss", "eval loss", "evaluation loss", "loss (test)"),
+    # Cost, not quality. Measured over 20 labelled paper/code pairs these are
+    # the names the papers print that the vocabulary could not read at all, so
+    # every one of them was a recall zero by construction rather than an
+    # extraction failure. A rate of inference is reported as a throughput, as
+    # frames per second, or as a latency, and a paper printing two of them in
+    # one row means two different measurements, so they stay separate.
+    (
+        "throughput",
+        "image throughput",
+        "inference throughput",
+        "generation throughput",
+        "im/s",
+        "im/sec",
+        "images/s",
+        "images/sec",
+        "img/s",
+        "imgs/s",
+    ),
+    ("fps", "frames per second"),
+    ("latency", "inference latency"),
+    ("speedup", "speed-up", "speed up", "wall-clock speedup"),
+    (
+        "training_time",
+        "hours",
+        "gpu hours",
+        "gpu-hours",
+        "training time",
+        "train time",
+        "pre-training time",
+        "pretraining time",
+    ),
+    ("peak_memory", "peak memory", "peak memory per gpu", "peak mem"),
+    # A count of parameters, kept apart from the bare ``params`` a README
+    # argument table heads a column of option names with -- that one stays
+    # unnamed deliberately, and the sigil is what distinguishes them.
+    ("param_count", "#params", "#param", "#param."),
+    # Captioning and translation.
+    ("cider", "cider-d", "ciderd"),
+    ("spice",),
+    ("meteor", "met"),
+    ("ter", "translation edit rate"),
+    ("vqa_score", "vqa score"),
+    # Retrieval reports recall at several ranks in one row, and text-to-image
+    # and image-to-text retrieval in adjacent column groups: four numbers that
+    # differ, so four metrics.
+    ("recall_at_1", "r@1", "recall@1"),
+    ("recall_at_5", "r@5", "recall@5"),
+    ("recall_at_10", "r@10", "recall@10"),
+    ("text_recall_at_1", "tr@1"),
+    ("image_recall_at_1", "ir@1"),
+    ("average_recall_at_1", "average recall@1"),
+    # AP at one object scale, and AP75 for keypoint and dense-pose tasks:
+    # separate from AP for the reason AP50 and AP75 are separate from it.
+    ("ap_large", "apl", "ap_l", "ap^l"),
+    ("keypoint_ap75", "apkp75", "ap^kp_75"),
+    ("densepose_ap75", "apdp75", "ap^dp_75"),
+    # Matthews correlation is CoLA's metric; the dataset name itself is not a
+    # metric and is deliberately absent.
+    ("matthews", "mcc", "matthews correlation", "matthews correlation coefficient"),
+    # Linear probing and end-to-end fine-tuning are two protocols evaluated in
+    # adjacent columns of one table, so a linear-probe accuracy is its own
+    # metric rather than an accuracy.
+    ("linear_probe_accuracy", "lin", "lin.", "linear probe", "linear probing"),
 )
 
 #: The names a dataset split goes by when a table header puts it in front of the
