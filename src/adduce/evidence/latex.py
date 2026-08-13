@@ -20,6 +20,7 @@ import posixpath
 import re
 from collections.abc import Iterable
 from dataclasses import dataclass, field
+from itertools import zip_longest
 
 from ..model import Repo
 from ..naming import HYPERPARAM_SYNONYMS, METRIC_PATTERNS, canonical_metric
@@ -519,22 +520,29 @@ def _cell_number(cell: str) -> float | None:
     return float(match.group(0)) if match else None
 
 
-def _names_metric(cells: list[str]) -> bool:
-    return any(canonical_metric(cell) is not None for cell in cells)
+def _names_metric(cell: str) -> bool:
+    return canonical_metric(cell) is not None
 
 
 def _is_second_header(first: list[str], second: list[str]) -> bool:
-    """Whether *second* is a header row naming the metric *first* leaves unnamed.
+    """Whether *second* is a header row naming a metric *first* leaves unnamed.
 
-    Three conditions, all required. The second row states no number in any
-    column; no cell of the first row names a metric; some cell of the second
-    row does. A body row of a results table fails the first, a table whose
-    columns are already metrics fails the second, and a units or group-label
-    row fails the third.
+    Two conditions, both required. The second row states no number in any
+    column, and some *column* pairs a first-row cell naming no metric with a
+    second-row cell that names one. A body row of a results table fails the
+    first; a table whose columns are already metrics, and a units or
+    group-label row, both fail the second.
 
-    The first condition is also what bounds the cost of a wrong answer: a row
-    stating no number yields no cell either way, so reading one as a header can
-    never drop a value -- at worst it renames the columns beneath it.
+    The second condition is per column because a header row mixes: ELECTRA
+    heads one column ``Train FLOPs`` and the rest with dataset names whose
+    metric sits underneath, and asking that *no* cell of the first row name a
+    metric refuses that whole table. Composition keeps a column the first row
+    already named, so the mixed case costs the named column nothing.
+
+    The first condition is what bounds the cost of a wrong answer, and it
+    bounds it per column exactly as it bounded it per row: a row stating no
+    number yields no cell either way, so reading one as a header can never
+    drop a value -- at worst it renames the columns beneath it.
 
     Mamba's zero-shot table is the shape this exists for: ``LAMBADA`` and
     ``HellaSwag`` head the columns with ``ppl``/``acc`` underneath, so the
@@ -542,7 +550,10 @@ def _is_second_header(first: list[str], second: list[str]) -> bool:
     """
     if any(_cell_number(cell) is not None for cell in second):
         return False
-    return not _names_metric(first) and _names_metric(second)
+    return any(
+        not _names_metric(dataset) and _names_metric(metric)
+        for dataset, metric in zip_longest(first, second, fillvalue="")
+    )
 
 
 def _compose_headers(first: list[str], second: list[str]) -> list[str]:
@@ -551,13 +562,14 @@ def _compose_headers(first: list[str], second: list[str]) -> list[str]:
     Both are kept because both are read downstream: the metric is what the
     column reports and the dataset is what it reports it on, and a composed
     header canonicalises on its trailing metric word where the dataset alone
-    canonicalises to nothing.
+    canonicalises to nothing. A column whose first row already names a metric
+    keeps it, so the row beneath cannot rename ``Accuracy`` after a qualifier.
     """
-    width = max(len(first), len(second))
     composed: list[str] = []
-    for index in range(width):
-        dataset = first[index] if index < len(first) else ""
-        metric = second[index] if index < len(second) else ""
+    for dataset, metric in zip_longest(first, second, fillvalue=""):
+        if _names_metric(dataset):
+            composed.append(dataset)
+            continue
         composed.append(" ".join(part for part in (dataset, metric) if part))
     return composed
 

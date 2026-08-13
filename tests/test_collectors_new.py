@@ -270,6 +270,74 @@ Ours & 92.4 & 89.1 \\
     assert [(c.column_label, c.value) for c in cells] == [("Accuracy", 92.4), ("F1", 89.1)]
 
 
+#: ELECTRA's SQuAD table: one column of the first header row states a cost the
+#: vocabulary knows and the rest name datasets whose metric sits underneath.
+#: Asking that no cell of the first row name a metric refuses the whole table,
+#: leaving all 331 of its cells named after a dataset and 0 canonical.
+_MIXED_HEADER_TEX = r"""
+\begin{tabular}{lcccc}
+Model & Train FLOPs & \multicolumn{2}{c}{SQuAD 1.1 dev} & Params \\
+ & & EM & F1 & \\
+BERT & 1.9 & 84.1 & 90.9 & 335 \\
+\end{tabular}
+"""
+
+
+def test_a_mixed_header_row_composes_the_columns_it_leaves_unnamed(make_evidence):
+    """A header row naming a metric in one column still leaves the others unnamed.
+
+    Composition is per column, so the cost column keeps the name it already
+    has and the dataset columns take the metric written beneath them.
+    """
+    cells = make_evidence({"paper/main.tex": _MIXED_HEADER_TEX}).latex.table_cells
+    assert [(c.column_label, c.value) for c in cells] == [
+        ("Train FLOPs", 1.9),
+        ("SQuAD 1.1 dev EM", 84.1),
+        ("SQuAD 1.1 dev F1", 90.9),
+        ("Params", 335.0),
+    ]
+
+
+def test_a_column_the_first_row_named_is_not_renamed_by_the_row_beneath(make_evidence):
+    """The row-level refusal protected an already-named column; per column, this does.
+
+    ``top-1`` qualifies ``Accuracy`` rather than naming it, and a column
+    composed with its qualifier reports a metric the table never named.
+    """
+    tex = r"""
+\begin{tabular}{lcc}
+Model & Accuracy & SQuAD \\
+      & top-1 & F1 \\
+Ours & 92.4 & 88.5 \\
+\end{tabular}
+"""
+    cells = make_evidence({"paper/main.tex": tex}).latex.table_cells
+    assert [(c.column_label, c.value) for c in cells] == [("Accuracy", 92.4), ("SQuAD F1", 88.5)]
+
+
+def test_a_second_row_stating_a_number_is_data_even_beneath_a_mixed_header(make_evidence):
+    """The number test is the whole protection now that the row-level one is gone.
+
+    A transposed table names its metrics down the first column, so ``AP``
+    under an unnamed ``Method`` is exactly the pairing that now composes.
+    Consuming that row drops the numbers it states.
+    """
+    tex = r"""
+\begin{tabular}{lcc}
+Method & GFLOPs & Score \\
+AP & 42.0 & 40.1 \\
+AP50 & 62.4 & 60.6 \\
+\end{tabular}
+"""
+    cells = make_evidence({"paper/main.tex": tex}).latex.table_cells
+    assert [(c.row_label, c.column_label, c.value) for c in cells] == [
+        ("AP", "GFLOPs", 42.0),
+        ("AP", "Score", 40.1),
+        ("AP50", "GFLOPs", 62.4),
+        ("AP50", "Score", 60.6),
+    ]
+
+
 #: Two floats, one placing its caption before the tabular and one after, since
 #: both are ordinary. The wrong binding here is silent: every cell would be
 #: named after the other table's metric.
