@@ -56,6 +56,28 @@ row stays in step with the body rows. The first cell of each row is taken as
 the row label; the rest are read as values, and a cell is a value only when
 what remains after markup is dissolved is exactly a number.
 
+Rows are separated by `\\`, and a paper that ends its rows with a command it
+defined itself would otherwise be read as one very long row — so the commands a
+paper defines for itself are expanded first. That expansion is deliberately
+small: zero-argument `\newcommand` and `\def` only, one pass with no recursion,
+total growth capped at the length of the source, a limit on how long a single
+definition may be, and verbatim environments left untouched. Paper sources are
+untrusted input, so those are bounds against a runaway expansion rather than
+tidiness.
+
+Expansion also recovers row labels that name a model through a macro, which
+would otherwise be deleted with the markup — a row printed as `BERT_LARGE
+(Single)` was read as `(Single)` alone. The row label is the text a reader is
+being asked to check, so losing it costs more than tidiness.
+
+One definition is deliberately *not* expanded: a macro whose whole body is a
+length, such as a rule width or a strut. Substituting those replaces a token the
+cell cleanup removed cleanly with markup it cannot dissolve, and the residue
+lands in the metric name — measured, a `1pt` prefix on every row label of one
+paper and a header reading `GLUE 0pt2.6ex` in another. That refusal is a bound
+fitted to the development set rather than a principle, and it is stated here as
+one.
+
 ### Markdown tables
 
 A GFM table is recognised by its delimiter row (`|---|:---:|`), which is what
