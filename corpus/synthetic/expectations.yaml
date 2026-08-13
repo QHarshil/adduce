@@ -157,3 +157,37 @@
     R-RES-001: pass
     R-RES-002: pass
     R-DRIFT-001: fail
+
+- case: synthetic_mixed_header_row
+  # Same shape as the three cases above, and the same caveat: the real assertion is
+  # not here. This case heads one column with a metric and the rest with dataset
+  # names whose metric sits in a second header row, and that composition only
+  # reaches the claims package, which no rule reads -- and run_check() below is
+  # called without a paper, so the LaTeX collector never runs for it. What this
+  # file pins is that a paper the harness cannot read yields no verdict rather than
+  # a wrong one. The per-column composition itself is asserted by the --paper
+  # byte-identity comparison, which this case is what makes non-vacuous, and by
+  # tests/test_collectors_new.py; see the README.
+  expect:
+    R-RES-001: not-applicable
+  forbid:
+    R-RES-001: pass
+    R-RES-002: pass
+    R-DRIFT-001: fail
+
+- case: synthetic_coincident_values
+  # Same shape as the cases above, and the same caveat: the real assertion is not
+  # here. This case's three measurements sharing one value, and the restatement of
+  # one of them that must still merge, are decided in the claims package, which no
+  # rule reads -- and run_check() below is called without a paper, so the LaTeX
+  # collector never runs for it. What this file pins is that a paper the harness
+  # cannot read yields no verdict rather than a wrong one. The clustering itself is
+  # asserted by the --paper byte-identity comparison, which this case is what makes
+  # non-vacuous -- it is the corpus's first multi-member cluster -- and by
+  # tests/test_claims_extraction.py; see the README.
+  expect:
+    R-RES-001: not-applicable
+  forbid:
+    R-RES-001: pass
+    R-RES-002: pass
+    R-DRIFT-001: fail
