@@ -9,6 +9,11 @@ Clustering replaces the ``[:10]`` truncation it inherits. Truncation dropped
 claims without saying so; clustering drops nothing and every member keeps its
 own location, so an author can be shown all three places a number appears.
 
+The premise is restatement, never coincidence. Two cells of a results table
+report two measurements side by side, and one of them rounding to the other does
+not make them one statement, so a candidate that names what it measured -- its
+row and its column -- joins only a claim naming the same thing.
+
 Rounding is handled deliberately: a paper writing ``92.4`` and a log writing
 ``92.41`` are agreeing, so members are compared at the precision of the *less*
 precise one. Cross-unit reconciliation (``0.924`` against ``92.4``) is
@@ -94,7 +99,11 @@ class ClaimCluster:
 
 
 def _sort_key(candidate: ClaimCandidate) -> tuple:
-    """Total order over candidates, so clustering never depends on input order."""
+    """Total order over candidates, so clustering never depends on input order.
+
+    The labels are part of the key because they decide membership below, and a
+    field that decides membership cannot be left to fall back on input order.
+    """
     return (
         candidate.metric,
         candidate.value,
@@ -103,6 +112,8 @@ def _sort_key(candidate: ClaimCandidate) -> tuple:
         candidate.location.line,
         _METHOD_RANK[candidate.method],
         candidate.text,
+        candidate.row_label or "",
+        candidate.column_label or "",
     )
 
 
@@ -117,8 +128,9 @@ def _same_place_other_number(cluster: ClaimCluster, candidate: ClaimCandidate, /
     the other cell's row -- ConvNeXt reports 81.3 for Swin-T and 81.33 for its
     own ablation in one table, which agree at one decimal place.
 
-    Identical values at one location are still one claim: a table repeating a
-    number across two columns states it twice, and that is a restatement.
+    Identical values at one location are still one claim here. Where those cells
+    name what they measured, :func:`_other_measurement` is what separates them;
+    this rule is what remains for a number the parse could not label.
     """
     return any(
         member.location.path == candidate.location.path
@@ -126,6 +138,52 @@ def _same_place_other_number(cluster: ClaimCluster, candidate: ClaimCandidate, /
         and member.value != candidate.value
         for member in cluster.members
     )
+
+
+def _measurement(candidate: ClaimCandidate, /) -> tuple[str, str] | None:
+    """Which measurement a candidate states: the row and column naming it.
+
+    ``None`` where the candidate names neither, which is every prose match: a
+    sentence reports a number without saying which cell of which table it
+    restates, so it is free to join whichever cell states that number.
+    """
+    if candidate.row_label is None and candidate.column_label is None:
+        return None
+    return (candidate.row_label or "", candidate.column_label or "")
+
+
+def _other_measurement(cluster: ClaimCluster, candidate: ClaimCandidate, /) -> bool:
+    """Would joining put two *different* measurements in one claim?
+
+    A location is too coarse to answer this. Every cell of one ``tabular``
+    records the line the environment opens on, so two cells of one table are
+    indistinguishable by locator, and cells of two tables are not compared at
+    all -- which is how bert lost its own ``(Ens.+TriviaQA)`` F1 of 92.2 to an
+    ELMo baseline of 92.2 printed in another table, and how barlowtwins' Table 6
+    yielded three claims from eight cells.
+
+    A row and a column together name what was measured, so two cells naming
+    different ones are different measurements however closely their values
+    round, and merging them destroys the coarser number and leaves the survivor
+    carrying the other cell's row. Two cells naming the *same* measurement are
+    still one claim -- barlowtwins repeats its baseline row in every ablation
+    table, and that is one number stated several times.
+
+    The labels are compared as printed, so where two documents name one
+    measurement differently the cells stay two claims, each keeping its own
+    locator: ConvNeXt's paper heads a column ``mIoU`` and its README heads the
+    same numbers ``mIoU (ms+flip)``. Erasing the qualifier to recover that merge
+    is not available -- the README prints ``mIoU`` and ``mIoU (ms+flip)`` side
+    by side, and those are two measurements.
+    """
+    measurement = _measurement(candidate)
+    if measurement is None:
+        return False
+    for member in cluster.members:
+        other = _measurement(member)
+        if other is not None and other != measurement:
+            return True
+    return False
 
 
 def cluster_candidates(candidates: list[ClaimCandidate], /) -> list[ClaimCluster]:
@@ -140,8 +198,10 @@ def cluster_candidates(candidates: list[ClaimCandidate], /) -> list[ClaimCluster
     for candidate in sorted(candidates, key=_sort_key):
         bucket = by_metric.setdefault(candidate.metric, [])
         for existing in bucket:
-            if _agree(existing.value, candidate.value) and not _same_place_other_number(
-                existing, candidate
+            if (
+                _agree(existing.value, candidate.value)
+                and not _same_place_other_number(existing, candidate)
+                and not _other_measurement(existing, candidate)
             ):
                 existing.members.append(candidate)
                 # The more precise statement is the better representative.
