@@ -96,6 +96,28 @@ def test_canonical_metric_reads_real_table_headers(header, expected):
         # printed in the same row as different numbers.
         ("AP50", "AP75"),
         ("AP50", "AP"),
+        # Recall at three ranks is three numbers in one row, and text-to-image
+        # and image-to-text retrieval are two more beside them.
+        ("R@1", "R@5"),
+        ("R@5", "R@10"),
+        ("TR@1", "IR@1"),
+        ("TR@1", "R@1"),
+        ("average recall@1", "R@1"),
+        # AP at large scale, and AP75 for keypoint and dense-pose tasks.
+        ("APL", "AP"),
+        ("APkp75", "AP75"),
+        ("APkp75", "APdp75"),
+        # ROUGE-1, ROUGE-2 and ROUGE-L are printed side by side.
+        ("R-1-F", "R-2-F"),
+        ("R-2-F", "R-L-F"),
+        # A rate of inference is reported three ways and a paper may print two
+        # of them in one row; a linear probe and a fine-tune likewise.
+        ("throughput", "FPS"),
+        ("throughput", "inference latency"),
+        ("lin", "Accuracy"),
+        # Matthews and Spearman correlation are two correlations, and CoLA and
+        # STS-B are reported in adjacent columns of one GLUE row.
+        ("MCC", "SCC"),
     ],
 )
 def test_distinct_metrics_do_not_share_a_canonical_name(left, right):
@@ -153,6 +175,12 @@ def test_a_qualifier_before_the_metric_does_not_hide_it(header, expected):
         ("word error rate", "wer"),
         ("character error rate", "cer"),
         ("mean average precision", "map"),
+        # Its trailing word is "gpu", which names nothing; its trailing two are
+        # "per gpu".
+        ("peak memory per GPU", "peak_memory"),
+        # And this one's trailing word is itself a metric: without the
+        # whole-name lookup it would read as recall@1, which it is not.
+        ("average recall@1", "average_recall_at_1"),
     ],
 )
 def test_a_compound_metric_is_never_flattened_onto_its_last_word(header, expected):
@@ -163,6 +191,128 @@ def test_a_compound_metric_is_never_flattened_onto_its_last_word(header, expecte
 def test_a_qualifier_fallback_does_not_invent_a_metric(header):
     """A delta and a composite score are not the metric their words contain."""
     assert canonical_metric(header) is None
+
+
+@pytest.mark.parametrize(
+    ("header", "expected"),
+    [
+        # Cost, reported as a rate, a frame count, a duration or a footprint.
+        ("throughput", "throughput"),
+        ("image throughput", "throughput"),
+        ("im/s", "throughput"),
+        ("FPS", "fps"),
+        ("inference latency", "latency"),
+        ("Speedup", "speedup"),
+        ("wall-clock speedup", "speedup"),
+        ("hours", "training_time"),
+        ("pre-training time", "training_time"),
+        ("peak memory per GPU", "peak_memory"),
+        ("#param.", "param_count"),
+        ("#params", "param_count"),
+        # Captioning, translation and retrieval.
+        ("CIDEr", "cider"),
+        ("SPICE", "spice"),
+        ("METEOR", "meteor"),
+        ("MET", "meteor"),
+        ("B@4", "bleu"),
+        ("TER", "ter"),
+        ("VQA score", "vqa_score"),
+        ("R@1", "recall_at_1"),
+        ("R@5", "recall_at_5"),
+        ("R@10", "recall_at_10"),
+        ("TR@1", "text_recall_at_1"),
+        ("IR@1", "image_recall_at_1"),
+        ("average recall@1", "average_recall_at_1"),
+        # Detection at one scale or one task, and the summarisation variants.
+        ("APL", "ap_large"),
+        ("APkp75", "keypoint_ap75"),
+        ("APdp75", "densepose_ap75"),
+        ("ROUGE-2-F", "rouge_2"),
+        ("R-1-F", "rouge_1"),
+        ("R-L-F", "rouge_l"),
+        # Two correlations, and a protocol reported beside a fine-tune.
+        ("MCC", "matthews"),
+        ("SCC", "spearman"),
+        ("lin", "linear_probe_accuracy"),
+    ],
+)
+def test_canonical_metric_reads_the_names_the_dev_set_prints(header, expected):
+    """Each of these is a printed header or phrase from a labelled paper.
+
+    Measured over the twenty labelled pairs, 112 of 296 eligible labels named a
+    metric the vocabulary could not read at all, so their recall ceiling was
+    zero by construction. These are the names that closed 58 of them.
+    """
+    _canonical_metric_case(header, expected)
+
+
+@pytest.mark.parametrize(
+    "header",
+    [
+        # A dataset the paper heads a column with, recorded in the label's
+        # metric field because that is what was printed. Naming one here would
+        # canonicalise a dataset into a metric and corrupt both sides of every
+        # later match: CoLA is a dataset and its metric is Matthews correlation.
+        "CoLA",
+        "MNLI",
+        "MultiNLI",
+        "SST",
+        "SST-2",
+        "QNLI",
+        "QQP",
+        "MRPC",
+        "RTE",
+        "STS",
+        "RACE",
+        "GLUE",
+        "points on GLUE",
+        # A column of option names in a README argument table, which is why the
+        # bare word is excluded while ``#params`` is not.
+        "params",
+    ],
+)
+def test_a_dataset_name_in_the_metric_field_stays_unnameable(header):
+    assert canonical_metric(header) is None
+
+
+@pytest.mark.parametrize(
+    "header",
+    [
+        "nonlinear",  # contains "lin"
+        "hours of pre-training",  # a leading qualifier is not the metric
+        "Speedup vs. baseline",
+        "MET Analysis",
+    ],
+)
+def test_a_short_alias_is_not_matched_inside_an_unrelated_header(header):
+    """The fallback reads trailing words, so a short name must not leak in.
+
+    ``lin``, ``met`` and ``hours`` are short enough to appear inside a header
+    that means something else. Only a whole header, or its trailing one or two
+    words, may name the metric -- never a substring and never a leading word.
+    """
+    assert canonical_metric(header) is None
+
+
+def test_no_alias_names_two_metrics():
+    """A repeated alias would resolve by group order, silently and invisibly.
+
+    :data:`~adduce.naming.METRIC_SYNONYMS` is built by walking the groups in
+    order, so a second group claiming an alias the first already took would
+    overwrite it with no error anywhere -- and the loser's metric would then be
+    unreachable under the name its paper prints.
+    """
+    from adduce.naming import _METRIC_GROUPS
+
+    owners: dict[str, str] = {}
+    collisions = []
+    for group in _METRIC_GROUPS:
+        for alias in group:
+            for key in (alias.lower(), alias.lower().replace(" ", "_")):
+                if key in owners and owners[key] != group[0]:
+                    collisions.append((key, owners[key], group[0]))
+                owners[key] = group[0]
+    assert collisions == []
 
 
 def _canonical_metric_case(header, expected):
@@ -213,9 +363,9 @@ def test_latex_table_cells_become_candidates_and_are_not_discarded():
 
 
 def test_latex_cell_under_an_unknown_column_is_kept_but_not_certain():
-    cells = [TableCell(0, "Ours", "Throughput", 1200.0, "main.tex", 9)]
+    cells = [TableCell(0, "Ours", "Mask quality rating", 1200.0, "main.tex", 9)]
     (candidate,) = from_latex_tables(cells)
-    assert candidate.metric == "throughput"
+    assert candidate.metric == "mask quality rating"
     assert candidate.method is ResolutionMethod.LEXICAL_MATCH
     assert candidate.confidence < 1.0
 
@@ -236,7 +386,8 @@ def test_latex_cell_under_a_header_that_is_not_a_metric_name_is_dropped(header):
     """Measured on ten real papers, these are what an unfiltered header admits.
 
     They are not metrics under any vocabulary, so there is nothing to abstain
-    on -- unlike ``Throughput`` above, which is kept at reduced confidence.
+    on -- unlike ``Mask quality rating`` above, which is kept at reduced
+    confidence.
     """
     cells = [TableCell(0, "Ours", header, 92.4, "main.tex", 9)]
     assert from_latex_tables(cells) == []
@@ -254,8 +405,14 @@ def test_a_header_the_length_of_a_sentence_is_not_a_metric_name():
 
 
 def test_a_real_metric_missing_from_the_vocabulary_still_survives():
-    """The filter must not become a second, stricter vocabulary check."""
-    for header in ("FID", "GFLOPs", "AP^box_50", "Throughput"):
+    """The filter must not become a second, stricter vocabulary check.
+
+    ``Mask quality rating`` is segment-anything's own column header and the
+    vocabulary does not name it, so it is the case that carries this test: the
+    other three canonicalise, and a header that canonicalises would be kept
+    whatever the filter did.
+    """
+    for header in ("FID", "GFLOPs", "AP^box_50", "Mask quality rating"):
         cells = [TableCell(0, "Ours", header, 3.6, "main.tex", 9)]
         assert from_latex_tables(cells), f"{header!r} should be kept"
 
@@ -282,16 +439,17 @@ def test_a_caption_names_the_metric_a_dataset_column_leaves_unnamed():
 def test_a_caption_derived_metric_is_never_high_confidence():
     """A caption renames a column it cannot verify, so it must not assert certainty.
 
-    Measured over the dev set, the caption rule renames ~2,259 cells correctly
+    Measured over the dev set, the caption rule renamed ~2,259 cells correctly
     and ~194 wrongly -- MAE's ``hours`` and ``speedup`` under a caption saying
     "our MAE training", LoRA's ``nist``/``meteor``/``cider`` collapsed to
-    ``bleu``. Nothing in a header separates a dataset column from a cost column,
-    so those 194 cannot be eliminated here; what they must not be is confident.
-    ``zero high-confidence false positives`` is a Phase 3 acceptance criterion,
-    and only the header can satisfy it.
+    ``bleu``. The vocabulary has since learned every one of those but ``nist``,
+    which is why ``nist`` is the case here. Nothing in a header separates a
+    dataset column from a cost column, so the rest cannot be eliminated here;
+    what they must not be is confident. ``zero high-confidence false positives``
+    is a Phase 3 acceptance criterion, and only the header can satisfy it.
     """
     caption = "Accuracy of our method on ImageNet"
-    from_caption = TableCell(0, "ViT-L", "hours", 34.5, "main.tex", 4, caption)
+    from_caption = TableCell(0, "ViT-L", "nist", 34.5, "main.tex", 4, caption)
     (renamed,) = from_latex_tables([from_caption])
     assert renamed.metric == "accuracy"  # wrong, and known to be wrong
     assert renamed.method is ResolutionMethod.LEXICAL_MATCH
@@ -747,7 +905,9 @@ def test_two_claims_are_linked_to_the_files_that_actually_state_them(tmp_path):
 
 def test_a_results_table_naming_no_metric_still_reports_something(tmp_path):
     """Unreadable is not the same state as absent, and must not look like it."""
-    evidence = _repo(tmp_path, "| model | throughput |\n| --- | --- |\n| ours | 1200 |\n")
+    evidence = _repo(
+        tmp_path, "| model | mask quality rating |\n| --- | --- |\n| ours | 1200 |\n"
+    )
     claims = _draft_claims(evidence)
     if evidence.docs.has_results_table:
         assert len(claims) == 1
