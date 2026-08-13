@@ -485,6 +485,55 @@ def test_a_caption_naming_two_metrics_names_none():
     assert candidate.method is ResolutionMethod.LEXICAL_MATCH
 
 
+def test_a_cell_the_paper_attributes_to_prior_work_is_not_certain():
+    """107 of the 109 confident false positives are numbers credited elsewhere.
+
+    The reading is right -- the header names a metric, the cell states a value
+    -- and what is wrong is offering a competitor's result as a claim about
+    this artifact. So the cell is still a claim, at the same metric, value and
+    location, and only how confidently it was read moves.
+    """
+    own = TableCell(0, "Ours", "Accuracy", 92.4, "main.tex", 40)
+    quoted = TableCell(0, "ResNet-50", "Accuracy", 76.1, "main.tex", 41, prior_work=True)
+    parsed, demoted = from_latex_tables([own, quoted])
+
+    assert parsed.method is ResolutionMethod.DIRECT_PARSE
+    assert parsed.confidence == 1.0
+
+    assert demoted.metric == "accuracy"
+    assert demoted.value == 76.1
+    assert str(demoted.location) == "main.tex:41"
+    assert demoted.method is ResolutionMethod.LEXICAL_MATCH
+    assert demoted.method not in CERTAIN_METHODS
+    assert demoted.confidence == 0.5
+
+
+def test_prior_work_never_revives_a_cell_the_header_filter_dropped():
+    """It lowers confidence; it does not admit a candidate.
+
+    A positional or residue header means the parse lost the column, and whose
+    number it is has no bearing on whether the column names a metric.
+    """
+    for header in ("col4", "", "1c[origin=rc]270coraal"):
+        cells = [TableCell(0, "ResNet-50", header, 76.1, "main.tex", 9, prior_work=True)]
+        assert from_latex_tables(cells) == [], f"{header!r} should stay dropped"
+
+
+def test_prior_work_does_not_change_which_metric_is_chosen():
+    """Attribution moves the method and the confidence and nothing else.
+
+    A cell already at ``lexical_match`` for taking its metric from the caption
+    stays exactly where it was: there is no lower reading to demote it to, and
+    the caption still names the metric the column does not.
+    """
+    caption = "Accuracy of our method on ImageNet"
+    cells = [TableCell(0, "ResNet-50", "nist", 34.5, "main.tex", 4, caption, prior_work=True)]
+    (candidate,) = from_latex_tables(cells)
+    assert candidate.metric == "accuracy"
+    assert candidate.method is ResolutionMethod.LEXICAL_MATCH
+    assert candidate.confidence == 0.5
+
+
 def test_a_caption_never_revives_a_cell_the_header_filter_dropped():
     """A caption renames a candidate; it does not admit one.
 

@@ -438,6 +438,186 @@ def test_a_table_opened_inside_a_cell_contributes_no_cell_text(markup):
     assert _ROW_MARKUP_RE.sub("", markup) == ""
 
 
+# --- rows the paper attributes to somebody else ---------------------------
+
+
+@pytest.mark.parametrize(
+    "citation",
+    [
+        r"\cite{he2016deep}",
+        r"\citep{he2016deep}",
+        r"\citet{he2016deep}",
+        r"\shortcite{he2016deep}",
+        r"\autocite{he2016deep}",
+        r"\cite[see][p.~4]{he2016deep}",
+    ],
+)
+def test_a_citation_in_the_row_label_marks_the_row_as_prior_work(make_evidence, citation):
+    r"""The one piece of markup that says a number came from another paper.
+
+    ConvNeXt cites 34 of its 170 numeric rows this way. It has to be read
+    before the cell cleanup runs: the cleanup erases the command name and
+    leaves the bibliography key against the label, where ``ResNet-50~he2016deep``
+    is indistinguishable from a model whose name ends in a year.
+    """
+    tex = (
+        "\\begin{tabular}{lc}\n"
+        "Model & Accuracy \\\\\n"
+        "ResNet-50~" + citation + " & 76.1 \\\\\n"
+        "Ours & 92.4 \\\\\n"
+        "\\end{tabular}\n"
+    )
+    cells = make_evidence({"paper/main.tex": tex}).latex.table_cells
+    assert [(c.row_label.split("~")[0], c.value, c.prior_work) for c in cells] == [
+        ("ResNet-50", 76.1, True),
+        ("Ours", 92.4, False),
+    ]
+
+
+def test_a_citation_beside_a_number_does_not_mark_the_row(make_evidence):
+    """A citation in a data cell annotates that number; it does not attribute it.
+
+    A paper cites the source of a dataset, a metric definition or an evaluation
+    protocol in the cell reporting its own result often enough that reading any
+    citation in the row would demote whole tables of own results.
+    """
+    tex = (
+        "\\begin{tabular}{lcc}\n"
+        "Model & Accuracy & Protocol \\\\\n"
+        "Ours & 92.4 & \\cite{russakovsky2015imagenet} \\\\\n"
+        "\\end{tabular}\n"
+    )
+    cells = make_evidence({"paper/main.tex": tex}).latex.table_cells
+    assert [(c.value, c.prior_work) for c in cells] == [(92.4, False)]
+
+
+_SECTION_TABLE_TEX = r"""
+\begin{tabular}{lcc}
+System & Accuracy & F1 \\
+\multicolumn{3}{c}{Top Leaderboard Systems (Dec 10th, 2018)} \\
+Human & 82.3 & 91.2 \\
+\multicolumn{3}{c}{Published} \\
+BiDAF+ELMo & 85.6 & 85.8 \\
+\multicolumn{3}{c}{Ours} \\
+TinyNet & 91.3 & 93.7 \\
+\end{tabular}
+"""
+
+
+def test_a_full_width_section_row_marks_the_rows_beneath_it(make_evidence):
+    """BERT's SQuAD shape: one table, partitioned into prior work and its own.
+
+    The rows carry no citation at all, so the section header is the only thing
+    on the page that says whose numbers these are. Both senses are written with
+    identical markup, which is why an unrecognised label can default to
+    neither. The trailing date qualifies the heading rather than naming it.
+    """
+    cells = make_evidence({"paper/main.tex": _SECTION_TABLE_TEX}).latex.table_cells
+    assert [(c.row_label, c.value, c.prior_work) for c in cells] == [
+        ("Human", 82.3, True),
+        ("Human", 91.2, True),
+        ("BiDAF+ELMo", 85.6, True),
+        ("BiDAF+ELMo", 85.8, True),
+        ("TinyNet", 91.3, False),
+        ("TinyNet", 93.7, False),
+    ]
+
+
+@pytest.mark.parametrize(
+    "label",
+    [
+        "ImageNet-22K pre-trained",  # ConvNeXt partitions by pre-training corpus
+        "Self-supervised",  # DINO, by supervision regime
+        "zero-shot",  # BLIP, by evaluation setting
+        "our supervised training baselines",  # MAE: the authors' own baselines
+    ],
+)
+def test_a_section_row_naming_no_owner_marks_nothing(make_evidence, label):
+    """The common case by a wide margin, and the one that must abstain.
+
+    Measured over twenty development papers, a full-width section row is far
+    more often a corpus, a regime or a setting than a statement of ownership.
+    Reading one as prior work would demote a paper's own results wholesale, so
+    an unrecognised heading clears the sense rather than continuing or
+    inventing one.
+    """
+    tex = (
+        "\\begin{tabular}{lcc}\n"
+        "System & Accuracy & F1 \\\\\n"
+        "\\multicolumn{3}{c}{Published} \\\\\n"
+        "BiDAF & 85.6 & 85.8 \\\\\n"
+        "\\multicolumn{3}{c}{" + label + "} \\\\\n"
+        "TinyNet & 91.3 & 93.7 \\\\\n"
+        "\\end{tabular}\n"
+    )
+    cells = make_evidence({"paper/main.tex": tex}).latex.table_cells
+    assert [(c.value, c.prior_work) for c in cells] == [
+        (85.6, True),
+        (85.8, True),
+        (91.3, False),
+        (93.7, False),
+    ]
+
+
+def test_a_spanning_row_that_states_a_number_is_data_not_a_section(make_evidence):
+    """The same bound the second-header test uses, for the same reason.
+
+    A row stating no number yields no cell either way, so reading one as a
+    section header can at worst mislabel the rows beneath it. Here the number
+    row would otherwise read as a heading naming no owner and clear the sense
+    ``Published`` set for the row that follows it.
+    """
+    tex = (
+        "\\begin{tabular}{lcc}\n"
+        "System & Accuracy & F1 \\\\\n"
+        "\\multicolumn{3}{c}{Published} \\\\\n"
+        "\\multicolumn{3}{c}{88.5} \\\\\n"
+        "BiDAF & 85.6 & 85.8 \\\\\n"
+        "\\end{tabular}\n"
+    )
+    cells = make_evidence({"paper/main.tex": tex}).latex.table_cells
+    assert [(c.value, c.prior_work) for c in cells] == [(85.6, True), (85.8, True)]
+
+
+def test_a_partial_span_is_a_group_label_rather_than_a_section(make_evidence):
+    """A heading that partitions a table spans it.
+
+    One spanning two of five columns heads those two, and the rows below it in
+    the other three are not below it at all, so it cannot say whose they are.
+    """
+    tex = (
+        "\\begin{tabular}{lcccc}\n"
+        "System & Dev & Dev & Test & Test \\\\\n"
+        "\\multicolumn{2}{c}{Published} & & & \\\\\n"
+        "BiDAF & 85.6 & 85.8 & 84.1 & 90.9 \\\\\n"
+        "\\end{tabular}\n"
+    )
+    cells = make_evidence({"paper/main.tex": tex}).latex.table_cells
+    assert [(c.value, c.prior_work) for c in cells] == [
+        (85.6, False),
+        (85.8, False),
+        (84.1, False),
+        (90.9, False),
+    ]
+
+
+def test_a_spanning_label_beside_a_number_is_a_row_and_keeps_its_number(make_evidence):
+    """A section row carries the row and nothing else; this one carries a value.
+
+    The row is skipped once it is read as a heading, so admitting a row that
+    also states a number would delete that number from the paper rather than
+    merely mislabel it.
+    """
+    tex = (
+        "\\begin{tabular}{lcc}\n"
+        "System & Accuracy & F1 \\\\\n"
+        "\\multicolumn{2}{c}{Published} & 88.5 \\\\\n"
+        "\\end{tabular}\n"
+    )
+    cells = make_evidence({"paper/main.tex": tex}).latex.table_cells
+    assert [(c.value, c.prior_work) for c in cells] == [(88.5, False)]
+
+
 #: ELECTRA's shape. Every row after the first header ends with the paper's own
 #: ``\tsep`` rather than ``\\``, so a body split on ``\\`` alone reads the
 #: second header row and the first body row as one row -- which states numbers,

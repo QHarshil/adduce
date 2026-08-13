@@ -191,3 +191,21 @@
     R-RES-001: pass
     R-RES-002: pass
     R-DRIFT-001: fail
+
+- case: synthetic_quoted_baseline_rows
+  # Same shape as the cases above, and the same caveat, with one difference worth
+  # knowing. This case's cited rows and its section headers decide how confidently
+  # each cell is read, which only reaches the claims package, which no rule reads
+  # -- and run_check() below is called without a paper, so the LaTeX collector
+  # never runs for it. What this file pins is that a paper the harness cannot read
+  # yields no verdict rather than a wrong one. Unlike the cases above, the --paper
+  # byte-identity comparison cannot assert this one either: the default JSON report
+  # carries no claim confidence and no resolution method. The demotion is asserted
+  # by tests/test_collectors_new.py and tests/test_claims_extraction.py, and is
+  # visible in the manifest; see the README.
+  expect:
+    R-RES-001: not-applicable
+  forbid:
+    R-RES-001: pass
+    R-RES-002: pass
+    R-DRIFT-001: fail
