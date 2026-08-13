@@ -118,9 +118,10 @@ matching the whole name first so that `word error rate` is not flattened onto
 `rate`.
 
 A header that canonicalises makes the cell a `direct_parse`. A header that
-fails to canonicalise but still reads like the name of a metric — `Throughput`
-is real and merely absent from the vocabulary — is kept as a `lexical_match`,
-because dropping it would lose a reported number instead of abstaining on it.
+fails to canonicalise but still reads like the name of a metric — a `mask
+quality rating` is real and merely absent from the vocabulary — is kept as a
+`lexical_match`, because dropping it would lose a reported number instead of
+abstaining on it.
 A header that is not a metric name under any vocabulary is skipped outright:
 
 - a positional placeholder the table parser filled in (`col4`)
@@ -160,13 +161,20 @@ column label. Three constraints hold:
   candidate that would have been kept anyway.
 
 **A caption-derived metric is never certain.** Measured over the development
-set, the caption rule renames about 2,259 cells correctly and about 194 wrongly
-— roughly 8%. The wrong ones are cost and size columns rather than datasets: a
+set, the caption rule renamed about 2,259 cells correctly and about 194 wrongly
+— roughly 8%. The wrong ones were cost and size columns rather than datasets: an
 `hours` or `speedup` column under a caption describing the authors' training, a
 `throughput (image/s)` column under a caption naming both throughput and
-accuracy. Nothing in a header alone separates a dataset column from a cost
-column, so the rule cannot be made exact; what it must not do is assert those
-194 at confidence `1.0`. It is emitted as `lexical_match` at `0.5`.
+accuracy.
+
+Those figures predate the vocabulary below and now overstate the error, because
+every column just named canonicalises from its own header today and never
+consults the caption. The shape of the problem is unchanged — a header naming no
+known metric may still be a cost column rather than a dataset, and nothing in a
+header alone separates the two — but restating the error rate needs a fresh
+adjudication, so the measurement is left as what it was rather than adjusted by
+guess. What the rule must not do is assert a caption-derived metric at
+confidence `1.0`; it is emitted as `lexical_match` at `0.5`.
 
 ## When the metric is one row lower
 
@@ -281,7 +289,7 @@ Measured over the 20 of 34 pairs labelled so far:
 | pooled recall | 97 / 296 = 32.8% |
 | recall against labels whose metric the vocabulary can name | 97 / 184 = 52.7% |
 | pooled precision, over the 4 pairs adjudicated | 395 / 668 = 59.1% |
-| metric names the vocabulary canonicalises | 165 of 296 eligible labels, over 16 names |
+| metric names the vocabulary canonicalises | 242 of 296 eligible labels, over 43 names |
 
 Precision per pair, each against an adjudication that corresponds one-to-one with
 what the extractor produces today:

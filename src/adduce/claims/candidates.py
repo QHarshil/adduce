@@ -97,9 +97,9 @@ def is_plausible_metric_name(header: str, /) -> bool:
 
     This is deliberately weaker than :func:`~adduce.naming.canonical_metric`,
     which asks whether a header names a metric adduce *knows*. A header can
-    fail that and still be a metric -- ``Throughput`` is real and merely absent
-    from the vocabulary, and dropping it would lose a reported number instead of
-    abstaining on it. What this rejects is a header that is not a metric name
+    fail that and still be a metric -- ``mask quality rating`` is real and
+    merely absent from the vocabulary, and dropping it would lose a reported
+    number instead of abstaining on it. What this rejects is a header that is not a metric name
     under any vocabulary, so there is nothing to abstain about.
     """
     text = header.strip().strip("*_`$ ")
@@ -219,7 +219,7 @@ def from_latex_tables(table_cells: list, /) -> list[ClaimCandidate]:
     A header that is not a metric *name* at all is skipped. A header that reads
     like one but is unknown to the vocabulary is kept, at reduced confidence and
     as :data:`~adduce.aeg.schema.ResolutionMethod.LEXICAL_MATCH`, because
-    ``Throughput`` is a real metric the vocabulary simply lacks and dropping it
+    ``mask quality rating`` is a real metric the vocabulary lacks and dropping it
     would lose a reported number rather than abstain on it.
 
     The distinction is what the measurement demanded. Emitting every header
@@ -245,15 +245,25 @@ def from_latex_tables(table_cells: list, /) -> list[ClaimCandidate]:
     :data:`~adduce.aeg.schema.ResolutionMethod.LEXICAL_MATCH`, because the column
     did not say it and the inference comes from another part of the document.
     Measured, the distinction is not academic: over the dev set the caption rule
-    renames ~2,259 cells correctly and ~194 wrongly (~8%). The wrong ones are
-    cost and size columns, not datasets -- MAE's ``hours`` and ``speedup`` under
-    a caption saying "our MAE training", DeiT's ``throughput (image/s)`` under a
-    caption naming both throughput and accuracy, LoRA's ``nist``/``meteor``/
-    ``cider`` collapsed to ``bleu``. Nothing in a header alone separates a
-    dataset column from a cost column, so the rule cannot be made exact here;
-    what it must not do is assert those 194 with confidence ``1.0``. Reporting a
-    wrong metric confidently is the failure mode that costs the most trust, and
-    ``zero high-confidence false positives`` is a Phase 3 acceptance criterion.
+    renamed ~2,259 cells correctly and ~194 wrongly (~8%). The wrong ones were
+    cost and size columns rather than datasets -- MAE's ``hours`` and
+    ``speedup``, DeiT's ``throughput (image/s)``, LoRA's ``meteor`` and ``cider``
+    collapsed onto ``bleu``.
+
+    **Those figures predate the vocabulary extension and now overstate the
+    error.** Every example just listed names a metric the vocabulary knows today,
+    so those columns canonicalise from their own header and the caption is never
+    consulted for them. The rule's shape is unchanged and so is the reason for
+    it: a header that names no metric may still be a cost column rather than a
+    dataset -- ``nist``, ``mask quality rating``, ``p-value`` are current
+    examples -- and nothing in a header alone separates the two. Restating the
+    error rate needs a fresh adjudication, so it is left as the measurement it
+    was rather than adjusted by guess.
+
+    What the rule must not do is assert a caption-derived metric with confidence
+    ``1.0``. Reporting a wrong metric confidently is the failure mode that costs
+    the most trust, and ``zero high-confidence false positives`` is a Phase 3
+    acceptance criterion.
     """
     candidates: list[ClaimCandidate] = []
     for cell in table_cells:
