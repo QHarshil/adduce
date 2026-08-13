@@ -108,6 +108,12 @@ def _draft_claims(ev: Evidence) -> list[Claim]:
     the costume of a resolution. ``command`` and ``config`` remain
     repository-level scaffold defaults and are still guesses; resolving those
     needs the producer graph, not a numeric comparison.
+
+    ``confidence`` and ``resolution_method`` are carried across from the
+    cluster. How a number was read is the difference between a cell parsed
+    under a header that names the metric and one recovered from prose by
+    regular expression, and dropping it here left that distinction enforced at
+    construction and then unavailable to everything downstream.
     """
     claims: list[Claim] = []
     command = _guess_command(ev)
@@ -131,6 +137,8 @@ def _draft_claims(ev: Evidence) -> list[Claim]:
                     command=command, config=config, log=logs[0] if logs else None
                 ),
                 status="draft",
+                confidence=cluster.confidence,
+                resolution_method=cluster.method.value,
             )
         )
     if not claims and ev.docs.has_results_table:

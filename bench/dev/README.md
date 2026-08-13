@@ -213,6 +213,15 @@ adjudicating each extraction, not by hoping it fell inside the labelled sample. 
 most extractions land outside it, so precision derived from labels is largely undefined, and
 "zero high-confidence false positives" is a precision statement that cannot be left undefined.
 
+It is no longer undefined. `compute_precision` reports `high_confidence_false_positives`: the
+adjudicated extractions that are not the paper's own result — excluding the two classes already
+outside the precision denominator — and that were extracted at confidence `1.0`. Confidence is
+not recorded in the verification file, so it is joined from the live extraction on
+`(metric, value)`, the same key staleness uses; a verdict that cannot be joined unambiguously is
+counted separately as `unjoined_false_positives` rather than guessed at. **Measured over the four
+adjudicated pairs the figure is 109 of 273 false positives, so the criterion is currently met by
+no pair.**
+
 So each pair carries a second, independent artifact, `verifications/<id>.json`, recording one
 verdict per extraction: `real_own_result`, `baseline`, `hyperparameter`, `not_in_paper`,
 `in_repo_not_paper` or `unclear`. Precision is computed from that file alone. The

@@ -207,7 +207,17 @@ claims:
       config: configs/base.yaml
       log: results/eval.csv
     status: draft
+    confidence: 1.0
+    resolution_method: direct_parse
 ```
+
+`confidence` and `resolution_method` record how the number was read, in the
+same vocabulary as the table above, so a reader downstream can tell a parsed
+cell from a number recovered by regular expression. Both are optional: a
+manifest that states neither is valid and loads unchanged, and the placeholder
+claim below asserts no number, so it carries neither. A `confidence` outside
+`[0, 1]` or a `resolution_method` outside the vocabulary is refused with the
+rest of the manifest's validation.
 
 This is the shape of a drafted claim, not captured output. Read it with the
 [manifest section of Concepts](concepts.md#the-reproducibility-manifest): every
@@ -264,6 +274,15 @@ what the extractor produces today:
 **Quoted baselines are the dominant cost, not fabrication.** 226 of the 668
 adjudicated extractions are numbers the paper really reports but attributes to
 prior work; only 9 are values the paper does not state at all.
+
+Because a claim now records the confidence it was read at, a stricter question
+can be asked: how many of the extractions that are *not* the paper's own result
+were nonetheless asserted at confidence `1.0`? Measured over the same four
+pairs, **109 of 273**, distributed very unevenly — 3 on `detr`, 25 on `bert`,
+38 on `barlowtwins`, 43 on `convnext`. That figure is reported rather than
+smoothed: it is the number a reader should weigh before treating a
+full-confidence claim as settled, and reducing it is what the caption rule's
+demotion to `lexical_match` and the metric-header requirement are both for.
 
 The vocabulary's coverage is concentrated: `accuracy` accounts for 98 of those
 165 labels, `map` for 12 and `wer` for 11.

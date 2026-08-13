@@ -189,7 +189,20 @@ def _frame(*labels: recall.Label, sampled: bool = False) -> recall.LabelFrame:
 
 
 def _claim(**overrides: Any) -> recall.ExtractedClaim:
-    defaults: dict[str, Any] = {"metric": "accuracy", "value": 92.4, "where": "a.tex:1", "text": ""}
+    """One extraction. Full confidence by default, as the fixture tree really is.
+
+    Every cell of ``_PAPER_TEX`` sits under a header the vocabulary names, so
+    the real measurement path reports all five at ``direct_parse``/1.0 --
+    verified against the worker, not assumed.
+    """
+    defaults: dict[str, Any] = {
+        "metric": "accuracy",
+        "value": 92.4,
+        "where": "a.tex:1",
+        "text": "",
+        "confidence": 1.0,
+        "resolution_method": "direct_parse",
+    }
     defaults.update(overrides)
     return recall.ExtractedClaim(**defaults)
 
@@ -471,6 +484,116 @@ def test_precision_is_none_when_nothing_is_adjudicated():
     assert result.precision is None
 
 
+# -- high-confidence false positives ------------------------------------------
+
+
+def test_a_false_positive_extracted_at_full_confidence_is_counted():
+    """The §17 criterion: not merely wrong, but confidently wrong.
+
+    Both verdicts are false positives against a paper-scoped adjudication. Only
+    the one the extractor produced at 1.0 is a high-confidence one; the other
+    was already stated as an inference.
+    """
+    verifications = recall.VerificationSet(
+        pair_id="p",
+        verifications=(
+            _verification(value=88.1, verdict="baseline"),
+            _verification(value=79.5, verdict="not_in_paper"),
+        ),
+    )
+    claims = [
+        _claim(value=88.1, confidence=1.0, resolution_method="direct_parse"),
+        _claim(value=79.5, confidence=0.5, resolution_method="lexical_match"),
+    ]
+
+    result = recall.compute_precision(verifications, claims)
+
+    assert result.adjudicated == 2
+    assert result.high_confidence_false_positives == 1
+    assert result.unjoined_false_positives == 0
+
+
+def test_a_correct_extraction_is_never_a_high_confidence_false_positive():
+    """Confidence is not the thing being counted -- being wrong is."""
+    verifications = recall.VerificationSet(
+        pair_id="p", verifications=(_verification(verdict="real_own_result"),)
+    )
+
+    result = recall.compute_precision(verifications, [_claim(confidence=1.0)])
+
+    assert result.precision == 1.0
+    assert result.high_confidence_false_positives == 0
+
+
+def test_a_verdict_outside_the_precision_denominator_is_not_a_false_positive():
+    """``unclear`` was not decided and ``in_repo_not_paper`` is a real repository claim.
+
+    Both are excluded from the denominator, so counting either here would
+    contradict the rate reported beside it.
+    """
+    verifications = recall.VerificationSet(
+        pair_id="p",
+        verifications=(
+            _verification(metric="f1", value=50.0, verdict="unclear"),
+            _verification(value=88.1, verdict="in_repo_not_paper"),
+        ),
+    )
+    claims = [_claim(metric="f1", value=50.0), _claim(value=88.1)]
+
+    result = recall.compute_precision(verifications, claims)
+
+    assert result.adjudicated == 0
+    assert result.high_confidence_false_positives == 0
+
+
+def test_a_false_positive_whose_confidence_disagrees_across_its_key_is_not_guessed():
+    """Two extractions of one ``(metric, value)`` disagreeing cannot be assigned.
+
+    Which extraction the human adjudicated is undecidable from a join the
+    verification file carries no confidence for, and counting it either way
+    states a guess as a measurement.
+    """
+    verifications = recall.VerificationSet(
+        pair_id="p", verifications=(_verification(value=88.1, verdict="baseline"),)
+    )
+    claims = [
+        _claim(value=88.1, where="a.tex:1", confidence=1.0),
+        _claim(value=88.1, where="b.tex:2", confidence=0.5),
+    ]
+
+    result = recall.compute_precision(verifications, claims)
+
+    assert result.high_confidence_false_positives == 0
+    assert result.unjoined_false_positives == 1
+
+
+def test_a_false_positive_from_a_tree_that_states_no_confidence_is_not_guessed():
+    """An unknown confidence is not a low one -- the --src retroactive case."""
+    verifications = recall.VerificationSet(
+        pair_id="p", verifications=(_verification(value=88.1, verdict="baseline"),)
+    )
+
+    result = recall.compute_precision(
+        verifications, [_claim(value=88.1, confidence=None, resolution_method=None)]
+    )
+
+    assert result.high_confidence_false_positives == 0
+    assert result.unjoined_false_positives == 1
+
+
+def test_omitting_the_extraction_leaves_the_counts_unmeasured_rather_than_zero():
+    """No extraction to join against is undefined, exactly as an undefined rate is."""
+    verifications = recall.VerificationSet(
+        pair_id="p", verifications=(_verification(value=88.1, verdict="baseline"),)
+    )
+
+    result = recall.compute_precision(verifications)
+
+    assert result.precision == 0.0
+    assert result.high_confidence_false_positives is None
+    assert result.unjoined_false_positives is None
+
+
 # -- verification coverage: precision only over the extractions produced now --
 
 
@@ -479,7 +602,14 @@ def _extraction(*claims: recall.ExtractedClaim) -> dict[str, Any]:
     return {
         "available": True,
         "claims": [
-            {"metric": c.metric, "value": c.value, "where": c.where, "text": c.text}
+            {
+                "metric": c.metric,
+                "value": c.value,
+                "where": c.where,
+                "text": c.text,
+                "confidence": c.confidence,
+                "resolution_method": c.resolution_method,
+            }
             for c in claims
         ],
     }
@@ -515,6 +645,27 @@ def test_precision_is_reported_when_every_extraction_carries_a_verdict(tmp_path)
     assert report.coverage == recall.VerificationCoverage(
         extractions=5, verdicts=5, unadjudicated=0, stale=0
     )
+
+
+def test_the_high_confidence_false_positive_count_reaches_the_json_report(tmp_path):
+    """A diagnostic no reader can see answers nothing.
+
+    The fixture's five extractions are all ``direct_parse``/1.0, so its three
+    false positives (one baseline, two hyperparameters) are all confident.
+    """
+    report = recall.evaluate_precision(_verifications_file(tmp_path), _fixture_extraction())
+    pair = recall.PairReport(
+        pair_id="p",
+        recall=recall.RecallReport(available=False, reason="no labels"),
+        precision=report,
+    )
+
+    payload = recall.build_report([pair])
+
+    result = payload["results"][0]["precision"]["result"]
+    assert result["precision"] == pytest.approx(2 / 5)
+    assert result["high_confidence_false_positives"] == 3
+    assert result["unjoined_false_positives"] == 0
 
 
 def test_an_extraction_with_no_verdict_makes_precision_unavailable(tmp_path):
@@ -824,6 +975,11 @@ def test_end_to_end_fixture_reproduces_the_hand_computed_recall_and_precision(tm
     assert result.hyperparameter == 2
     assert result.adjudicated == 5
     assert result.precision == pytest.approx(2 / 5)
+    # Every fixture cell sits under a header the vocabulary names, so all five
+    # extractions are direct_parse at 1.0 and all three false positives are
+    # confident ones.
+    assert result.high_confidence_false_positives == 3
+    assert result.unjoined_false_positives == 0
     assert report.precision.coverage == recall.VerificationCoverage(
         extractions=5, verdicts=5, unadjudicated=0, stale=0
     )
@@ -877,6 +1033,13 @@ def test_src_swaps_the_loaded_adduce_tree_and_the_claims_it_produces(tmp_path):
     assert len(historical["claims"]) == 2
     historical_values = {(c["metric"], c["value"]) for c in historical["claims"]}
     assert historical_values == {("accuracy", 92.4), ("recall", 81.0)}
+
+    # 6f00c8b's Claim has no confidence and no resolution method to report, so
+    # the worker must state their absence rather than fail against that tree.
+    assert all(c["confidence"] == 1.0 for c in current["claims"])
+    assert all(c["resolution_method"] == "direct_parse" for c in current["claims"])
+    assert all(c["confidence"] is None for c in historical["claims"])
+    assert all(c["resolution_method"] is None for c in historical["claims"])
 
 
 # -- the roster and the aggregate ---------------------------------------------
