@@ -141,3 +141,19 @@
     R-RES-001: pass
     R-RES-002: pass
     R-DRIFT-001: fail
+
+- case: synthetic_macro_row_separator
+  # Same shape as the two cases above, and the same caveat: the real assertion is
+  # not here. This case's rows are ended by a command the paper defines and its
+  # row label is written as another, both of which only reach the claims package,
+  # which no rule reads -- and run_check() below is called without a paper, so the
+  # LaTeX collector never runs for it. What this file pins is that a paper the
+  # harness cannot read yields no verdict rather than a wrong one. The expansion
+  # itself is asserted by the --paper byte-identity comparison, which this case is
+  # what makes non-vacuous, and by tests/test_collectors_new.py; see the README.
+  expect:
+    R-RES-001: not-applicable
+  forbid:
+    R-RES-001: pass
+    R-RES-002: pass
+    R-DRIFT-001: fail
