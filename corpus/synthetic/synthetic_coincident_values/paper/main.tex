@@ -1,0 +1,25 @@
+\documentclass{article}
+\begin{document}
+\section{Results}
+
+\begin{table}
+\begin{tabular}{lcc}
+Model & Dev EM & Test EM \\
+\hline
+Ours & 84.1 & 84.1 \\
+Prior work & 84.1 & 82.6 \\
+\end{tabular}
+\caption{Question answering, exact match on both splits.}
+\end{table}
+
+\begin{table}
+\begin{tabular}{lcc}
+Model & Dev EM & Dev F1 \\
+\hline
+Ours & 84.1 & 90.9 \\
+w/o pretraining & 79.4 & 86.2 \\
+\end{tabular}
+\caption{Ablation, with the full model repeated from the table above.}
+\end{table}
+
+\end{document}
