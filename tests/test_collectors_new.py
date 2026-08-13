@@ -7,7 +7,13 @@ import json
 
 import pytest
 
-from adduce.evidence.latex import _ROW_MARKUP_RE, _dissolve_multicolumn
+from adduce.evidence.latex import (
+    _MAX_MACRO_BODY_CHARS,
+    _ROW_MARKUP_RE,
+    _dissolve_multicolumn,
+    _expand_macros,
+    _zero_argument_macros,
+)
 from adduce.rules.base import Status
 from adduce.rules.remote import RawUrlRule
 
@@ -362,6 +368,172 @@ def test_captionsetup_is_not_the_caption(make_evidence, setup):
 def test_a_table_opened_inside_a_cell_contributes_no_cell_text(markup):
     """A nested table's own markup is structure wherever it appears."""
     assert _ROW_MARKUP_RE.sub("", markup) == ""
+
+
+#: ELECTRA's shape. Every row after the first header ends with the paper's own
+#: ``\tsep`` rather than ``\\``, so a body split on ``\\`` alone reads the
+#: second header row and the first body row as one row -- which states numbers,
+#: so it is no longer a header, and the metric beneath each dataset is lost.
+_MACRO_SEPARATOR_TEX = r"""
+\newcommand{\tsep}	{\bstrut \\ \thinline}
+\begin{tabular}{lcccc}
+Model & \multicolumn{2}{c}{SQuAD} & \multicolumn{2}{c}{MNLI} \\
+ & EM & F1 & EM & F1 \tsep
+Ours & 84.1 & 90.9 & 80.5 & 88.1 \tsep
+\end{tabular}
+"""
+
+
+def test_a_row_separator_the_paper_defined_itself_ends_a_row(make_evidence):
+    """A paper may name its own row break, and a table read without it collapses."""
+    cells = make_evidence({"paper/main.tex": _MACRO_SEPARATOR_TEX}).latex.table_cells
+    assert [(c.column_label, c.value) for c in cells] == [
+        ("SQuAD EM", 84.1),
+        ("SQuAD F1", 90.9),
+        ("MNLI EM", 80.5),
+        ("MNLI F1", 88.1),
+    ]
+
+
+def test_a_row_label_written_as_a_macro_keeps_the_name_it_prints(make_evidence):
+    r"""BERT labels its own rows ``\bertlarge (Single)``.
+
+    Unexpanded, the cleanup strips the command and the model name with it, so
+    the paper's own results read ``(Single)`` -- which loses the one signal on
+    the page saying whose result the row is, and states a claim text no reader
+    can check against the paper.
+    """
+    tex = (
+        "\\newcommand\\bertlarge{BERT$_{\\textsc{LARGE}}$}\n"
+        "\\begin{tabular}{lc}\n"
+        "System & F1 \\\\\n"
+        "\\bertlarge (Single) & 90.9 \\\\\n"
+        "\\end{tabular}\n"
+    )
+    cells = make_evidence({"paper/main.tex": tex}).latex.table_cells
+    assert [(c.row_label, c.value) for c in cells] == [("BERT_LARGE (Single)", 90.9)]
+
+
+def test_a_spacing_macro_is_not_expanded_into_the_label_beside_it(make_evidence):
+    r"""``\newcommand\tstrut{\rule{0pt}{2.6ex}}`` prints nothing and must stay unread.
+
+    The cell cleanup erases a command by name but cannot dissolve one taking
+    several arguments, so expanding this one replaces a token that vanished
+    cleanly with two lengths that do not. Measured on MoCo, whose ``\shline``
+    is the same shape, expanding it prefixed every row label in the paper with
+    ``1pt``.
+    """
+    tex = (
+        "\\newcommand\\tstrut{\\rule{0pt}{2.6ex}}\n"
+        "\\begin{tabular}{lc}\n"
+        "Model & Accuracy \\tstrut \\\\\n"
+        "Ours & 92.4 \\\\\n"
+        "\\end{tabular}\n"
+    )
+    cells = make_evidence({"paper/main.tex": tex}).latex.table_cells
+    assert [(c.column_label, c.value) for c in cells] == [("Accuracy", 92.4)]
+
+
+def test_a_macro_whose_body_is_an_environment_is_not_expanded(make_evidence):
+    """MoCo writes row labels as whole nested ``tabular`` environments.
+
+    One textual pass cannot place an environment: substituted into a cell it
+    opens a table inside a table, and the enclosing parse loses the rows it was
+    reading.
+    """
+    tex = (
+        "\\newcommand{\\randinit}{\\begin{tabular}{cc} random init. & \\end{tabular}}\n"
+        "\\begin{tabular}{lc}\n"
+        "Model & Accuracy \\\\\n"
+        "\\randinit & 61.8 \\\\\n"
+        "\\end{tabular}\n"
+    )
+    cells = make_evidence({"paper/main.tex": tex}).latex.table_cells
+    assert [(c.row_label, c.column_label, c.value) for c in cells] == [("", "Accuracy", 61.8)]
+
+
+def test_a_separator_carrying_a_dimension_is_still_a_separator(make_evidence):
+    r"""``\newcommand{\rowgap}{\\[4pt]}`` is a row break that also states a length.
+
+    Refusing it for the length would cost the whole table, where refusing a
+    spacing command costs one label, so a body that ends a row is expanded
+    whatever else it says.
+    """
+    tex = (
+        "\\newcommand{\\rowgap}{\\\\[4pt]}\n"
+        "\\begin{tabular}{lc}\n"
+        "Model & Accuracy \\rowgap\n"
+        "Ours & 92.4 \\rowgap\n"
+        "\\end{tabular}\n"
+    )
+    cells = make_evidence({"paper/main.tex": tex}).latex.table_cells
+    assert [(c.column_label, c.value) for c in cells] == [("Accuracy", 92.4)]
+
+
+def test_a_parameterised_macro_is_not_expanded(make_evidence):
+    r"""``\newcommand{\demph}[1]{...}`` takes its text from the call, not the body.
+
+    Substituting the body alone would print the definition's own placeholder
+    where the paper prints an argument.
+    """
+    tex = (
+        "\\newcommand{\\demph}[1]{\\textcolor{gray}{#1}}\n"
+        "\\begin{tabular}{lc}\n"
+        "Model & Accuracy \\\\\n"
+        "\\demph{Ours} & 92.4 \\\\\n"
+        "\\end{tabular}\n"
+    )
+    cells = make_evidence({"paper/main.tex": tex}).latex.table_cells
+    assert [(c.row_label, c.value) for c in cells] == [("Ours", 92.4)]
+
+
+def test_macro_expansion_does_not_recurse():
+    """One pass, so no definition can expand through another or into itself.
+
+    Paper sources are untrusted content: an expansion that recurses is a denial
+    of service rather than a parsing mistake.
+    """
+    assert _expand_macros(r"\a", {"a": r"\b", "b": "reached"}) == r"\b"
+    assert _expand_macros(r"\loop", {"loop": r"\loop"}) == r"\loop"
+
+
+def test_macro_expansion_cannot_grow_a_document_without_bound():
+    """Expansion adds at most as many characters as the source holds."""
+    text = r"\wide " * 200
+    expanded = _expand_macros(text, {"wide": "x" * 200})
+    assert len(expanded) <= 2 * len(text)
+    assert expanded.endswith(r"\wide ")
+
+
+def test_a_macro_body_longer_than_the_bound_is_not_read():
+    """A body that long is a document fragment, not a name."""
+    body = "x" * _MAX_MACRO_BODY_CHARS
+    assert _zero_argument_macros(["\\newcommand{\\essay}{" + body + "}"]) == {"essay": body}
+    assert _zero_argument_macros(["\\newcommand{\\essay}{" + body + "x}"]) == {}
+
+
+def test_expansion_does_not_move_the_line_a_claim_is_recorded_at(make_evidence):
+    """A body spanning lines is one space in TeX, and must stay one line here.
+
+    Substituting it verbatim moves every line after the first use: measured on
+    DETR, a claim recorded at line 135 was reported at 145. The locator is what
+    sends a reader to the number.
+    """
+    tex = (
+        "\\newcommand{\\ours}{Tiny\n Net}\n"
+        "\\ours reaches an accuracy of 92.4 on the test set.\n"
+        "We also report an accuracy of 88.1 on the development set.\n"
+    )
+    metrics = make_evidence({"paper/main.tex": tex}).latex.metrics
+    assert [(m.value, m.line) for m in metrics] == [(92.4, 3), (88.1, 4)]
+
+
+def test_a_command_inside_a_verbatim_environment_is_not_expanded():
+    """A verbatim block prints what it holds, so its commands are text."""
+    text = "\\newcommand{\\sam}{SAM}\n\\begin{verbatim}\n\\sam\n\\end{verbatim}\n\\sam\n"
+    expanded = _expand_macros(text, _zero_argument_macros([text]))
+    assert "\\begin{verbatim}\n\\sam\n\\end{verbatim}" in expanded
+    assert expanded.endswith("SAM\n")
 
 
 def _table(column: str, value: str) -> str:

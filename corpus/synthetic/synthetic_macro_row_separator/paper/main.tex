@@ -1,0 +1,21 @@
+\documentclass{article}
+
+\newcommand{\tsep}	{\bstrut \\ \thinline}
+\newcommand\tstrut{\rule{0pt}{2.6ex}}
+\newcommand\ourmodel{TinyNet$_{\textsc{LARGE}}$}
+\newcommand{\demph}[1]{\textcolor{gray}{#1}}
+
+\begin{document}
+\section{Results}
+
+\begin{table}
+\begin{tabular}{lcccc}
+Model & \multicolumn{2}{c}{SQuAD} & \multicolumn{2}{c}{MNLI} \tstrut \\
+ & EM & F1 & EM & F1 \tsep
+\ourmodel & 84.1 & 90.9 & 80.5 & 88.1 \tsep
+\demph{Prior work} & 80.8 & 88.5 & 78.2 & 86.4 \tsep
+\end{tabular}
+\caption{Development-set results for the base configuration.}
+\end{table}
+
+\end{document}

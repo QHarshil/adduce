@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import posixpath
 import re
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 
 from ..model import Repo
@@ -62,6 +63,31 @@ _MULTICOLUMN_RE = re.compile(r"\\multicolumn\s*")
 #: Wrappers nest (a ``\multicolumn`` holding a ``\rotatebox``), but not deeply;
 #: the bound keeps a malformed cell from looping.
 _MAX_MARKUP_NESTING = 8
+
+#: How a paper defines a command of its own, in the spellings that reach a
+#: zero-argument definition: ``\newcommand{\tsep}{...}``, ``\newcommand\tsep{...}``,
+#: ``\def\tsep{...}``, and the ``renew``/``provide`` variants. The body is not in
+#: the pattern -- it is brace-matched from the end of the match, which is also
+#: what excludes a parameterised definition: its ``[2]`` arity argument sits
+#: where the body would be, so no group opens there.
+_MACRO_DEFINITION_RE = re.compile(
+    r"\\(?:(?:new|renew|provide)command\*?|def)\s*"
+    r"(?:\{\s*\\([a-zA-Z]+)\s*\}|\\([a-zA-Z]+))\s*"
+)
+_MACRO_USE_RE = re.compile(r"\\([a-zA-Z]+)")
+#: A verbatim-like environment prints its contents, so a command inside one is
+#: text the paper shows rather than markup it uses, and expanding it would
+#: rewrite the page.
+_VERBATIM_RE = re.compile(
+    r"\\begin\{(verbatim\*?|lstlisting|minted|alltt)\}.*?\\end\{\1\}", re.DOTALL
+)
+_ENVIRONMENT_RE = re.compile(r"\\(?:begin|end)\{")
+#: A TeX dimension: a digit against a length unit.
+_DIMENSION_RE = re.compile(r"\d\s*(?:pt|ex|em|in|mm|cm|pc|bp|dd|cc|sp)\b")
+#: A body longer than this is a document fragment, not a name. The bound is one
+#: of several: paper sources are untrusted content, and an expansion that can
+#: grow without limit is a denial of service rather than a parsing mistake.
+_MAX_MACRO_BODY_CHARS = 200
 
 #: The float a table's caption lives in. Closed by back-reference for the same
 #: reason ``_TABLE_RE`` is: a ``table*`` must not be closed by ``\end{table}``.
@@ -362,6 +388,93 @@ def _table_body(environment: str, body: str) -> str:
     return body[index:]
 
 
+def _zero_argument_macros(sources: Iterable[str]) -> dict[str, str]:
+    """What each command the document defines expands to, where that is safe.
+
+    A command the parser never resolves is a hole in the page it reads. ELECTRA
+    ends its table rows with ``\\newcommand{\\tsep}{\\bstrut \\\\ \\thinline}``
+    rather than ``\\\\``, so a body split on ``\\\\`` alone keeps most of a
+    table as one row -- and the damage is not confined to the rows joined, since
+    a second header row glued to the first body row states numbers and is no
+    longer read as a header. BERT labels its own rows ``\\bertlarge (Single)``,
+    where the cleanup strips the command and the model name with it, leaving
+    ``(Single)``.
+
+    Only a definition taking no arguments is read. The arity argument of a
+    parameterised one sits where its body would be, so no group opens there, and
+    a body still carrying a ``#`` parameter is refused outright.
+
+    Three further bodies are refused, each because expanding it would state
+    something the page does not. A body longer than
+    :data:`_MAX_MACRO_BODY_CHARS` is a document fragment rather than a name. A
+    body opening or closing an environment restructures the document and one
+    textual pass cannot place it: MoCo defines row labels as whole nested
+    ``tabular`` environments. And a body stating a TeX dimension is a spacing or
+    rule command -- ``\\newcommand\\tstrut{\\rule{0pt}{2.6ex}}`` -- which the
+    cell cleanup erases cleanly by name but cannot dissolve once expanded, so
+    its lengths leak into the label beside them: measured on MoCo, every row
+    label in the paper gained a ``1pt`` prefix. A body that ends a row is
+    exempt, because failing to expand that one costs a whole table.
+
+    Definitions are collected across the document because a command is defined
+    once and used anywhere, and the last definition wins, as ``\\renewcommand``
+    means it to.
+    """
+    macros: dict[str, str] = {}
+    for text in sources:
+        for match in _MACRO_DEFINITION_RE.finditer(text):
+            group = _brace_group(text, match.end())
+            if group is None:
+                continue
+            body = group[0]
+            if len(body) > _MAX_MACRO_BODY_CHARS or "#" in body:
+                continue
+            if _ENVIRONMENT_RE.search(body):
+                continue
+            if "\\\\" not in body and _DIMENSION_RE.search(body):
+                continue
+            # A newline in a body is a space in TeX, and substituting it would
+            # move every line after the first use: measured on DETR, a claim
+            # recorded at line 135 was reported at 145. A locator is what sends
+            # a reader to the number, so the expansion keeps the count.
+            macros[match.group(1) or match.group(2)] = body.replace("\n", " ")
+    return macros
+
+
+def _expand_macros(text: str, macros: dict[str, str]) -> str:
+    """Every command the document defines replaced by its body, once.
+
+    One pass, and that is a bound rather than a simplification: :meth:`re.sub`
+    never rescans what it substituted, so a command appearing in another's body
+    stays as it is and no definition can expand into itself. Paper sources are
+    untrusted content, where an expansion that recurses is a denial of service.
+
+    Growth is bounded for the same reason. Expansion adds at most as many
+    characters as the source holds, so a document can at most double however
+    many commands it defines; past that the rest are left alone.
+    """
+    if not macros:
+        return text
+    budget = len(text)
+
+    def replace(match: re.Match[str]) -> str:
+        nonlocal budget
+        body = macros.get(match.group(1))
+        if body is None or len(body) > budget:
+            return match.group(0)
+        budget -= len(body)
+        return body
+
+    parts: list[str] = []
+    position = 0
+    for protected in _VERBATIM_RE.finditer(text):
+        parts.append(_MACRO_USE_RE.sub(replace, text[position : protected.start()]))
+        parts.append(protected.group(0))
+        position = protected.end()
+    parts.append(_MACRO_USE_RE.sub(replace, text[position:]))
+    return "".join(parts)
+
+
 def _clean_caption(raw: str) -> str:
     text = _CAPTION_CLEANUP_RE.sub(" ", _CAPTION_ESCAPE_RE.sub(r"\1", raw))
     return " ".join(text.split())[:_MAX_CAPTION_CHARS]
@@ -555,9 +668,10 @@ def collect_latex(repo: Repo) -> LatexEvidence:
             sources[str(entry.path)] = strip_comments(text)
     compiled = _compiled_sources(sources)
     evidence.tex_files = [str(f.path) for f in tex_entries if str(f.path) in compiled]
+    macros = _zero_argument_macros(sources[rel] for rel in evidence.tex_files)
 
     for rel in evidence.tex_files:
-        clean = sources[rel]
+        clean = _expand_macros(sources[rel], macros)
         if "\\documentclass" in clean and evidence.main_file is None:
             evidence.main_file = rel
         if evidence.title is None:
