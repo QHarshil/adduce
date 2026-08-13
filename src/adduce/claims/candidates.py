@@ -264,6 +264,30 @@ def from_latex_tables(table_cells: list, /) -> list[ClaimCandidate]:
     ``1.0``. Reporting a wrong metric confidently is the failure mode that costs
     the most trust, and ``zero high-confidence false positives`` is a Phase 3
     acceptance criterion.
+
+    **A number the paper attributes to somebody else is read at reduced
+    confidence too, and this is the larger of the two effects.** Adjudicated
+    over four dev pairs, 107 of the 109 extractions that were both confident and
+    wrong are numbers the paper really prints and really credits to prior work:
+    the header names a metric and the cell states a value, so the *reading* is
+    right, and what is wrong is offering a competitor's result as a claim about
+    this artifact. Where the collector saw the attribution in the markup -- a
+    citation in the row label, or a section header partitioning the table -- the
+    cell is still a claim, at ``lexical_match``/``0.5``.
+
+    Demoted rather than dropped, deliberately. The detector is a heuristic over
+    markup, so a false positive in it would silently destroy a real own result,
+    which is the more expensive mistake; and a demotion costs no recall, because
+    matching a claim to a reported number reads the metric and the value and
+    never the confidence. The demotion moves the method and the confidence and
+    nothing else: it does not choose a different metric, does not drop the cell,
+    and cannot revive one the header filter refused.
+
+    **It is partial by construction and must not be read as more.** Two papers
+    of the four carry neither signal anywhere -- their comparison tables simply
+    name the methods they compare against -- so the majority of those 107 are
+    out of reach here. Deciding whether a printed number is this artifact's own
+    result is the resolver's question, not the parser's.
     """
     candidates: list[ClaimCandidate] = []
     for cell in table_cells:
@@ -275,6 +299,7 @@ def from_latex_tables(table_cells: list, /) -> list[ClaimCandidate]:
         named_by_header = metric is not None
         if metric is None and cell.caption:
             metric = caption_metric(cell.caption)
+        certain = named_by_header and not cell.prior_work
         candidates.append(
             ClaimCandidate(
                 metric=metric or cell.column_label.strip().lower(),
@@ -282,11 +307,9 @@ def from_latex_tables(table_cells: list, /) -> list[ClaimCandidate]:
                 source=CandidateSource.LATEX_TABLE,
                 location=ClaimLocation(cell.file, cell.line),
                 method=(
-                    ResolutionMethod.DIRECT_PARSE
-                    if named_by_header
-                    else ResolutionMethod.LEXICAL_MATCH
+                    ResolutionMethod.DIRECT_PARSE if certain else ResolutionMethod.LEXICAL_MATCH
                 ),
-                confidence=1.0 if named_by_header else 0.5,
+                confidence=1.0 if certain else 0.5,
                 text=f"{cell.row_label} {cell.column_label} {cell.value}".strip(),
                 row_label=cell.row_label or None,
                 column_label=cell.column_label or None,

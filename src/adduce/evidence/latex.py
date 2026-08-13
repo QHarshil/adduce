@@ -90,6 +90,41 @@ _DIMENSION_RE = re.compile(r"\d\s*(?:pt|ex|em|in|mm|cm|pc|bp|dd|cc|sp)\b")
 #: grow without limit is a denial of service rather than a parsing mistake.
 _MAX_MACRO_BODY_CHARS = 200
 
+#: A citation command, in the natbib and biblatex spellings alike, with the
+#: optional pre- and post-notes ``\cite[see][p.~4]{key}`` takes. Matched against
+#: the raw row, because ``_CELL_CLEANUP_RE`` erases the command name and leaves
+#: the bibliography key glued to the label, where nothing can tell it from part
+#: of a model's name.
+_CITATION_RE = re.compile(r"\\[a-zA-Z]*cite[a-zA-Z*]*\s*(?:\[[^\]]*\]\s*){0,2}\{")
+#: A trailing parenthetical qualifies a section label rather than naming it:
+#: BERT writes ``Top Leaderboard Systems (Dec 10th, 2018)``.
+_SECTION_QUALIFIER_RE = re.compile(r"\s*\([^()]*\)\s*$")
+#: Section labels that state the rows beneath them are somebody else's work.
+#: Measured over the twenty development papers, a section row is far more often
+#: a training regime, a setting or an architecture family than a statement of
+#: ownership, so this is matched against the whole normalised label and not
+#: searched within it. ``baselines`` is deliberately absent: MAE heads a section
+#: ``our supervised training baselines``, which are the authors' own.
+_PRIOR_WORK_SECTIONS = frozenset(
+    {
+        "published",
+        "published results",
+        "published methods",
+        "published systems",
+        "top leaderboard systems",
+        "leaderboard systems",
+        "prior work",
+        "prior art",
+        "prior methods",
+        "previous work",
+        "previous methods",
+        "related work",
+        "concurrent work",
+        "existing methods",
+        "other methods",
+    }
+)
+
 #: The float a table's caption lives in. Closed by back-reference for the same
 #: reason ``_TABLE_RE`` is: a ``table*`` must not be closed by ``\end{table}``.
 _FLOAT_RE = re.compile(r"\\begin\{(table\*?)\}(.*?)\\end\{\1\}", re.DOTALL)
@@ -180,6 +215,12 @@ class TableCell:
     #: Recorded, not interpreted: whether a caption names this cell's metric is
     #: a vocabulary question and belongs to :mod:`adduce.claims`.
     caption: str | None = None
+    #: Whether the markup around this cell attributes its row to somebody else:
+    #: the row label cites a paper, or the row sits under a section header
+    #: naming prior work. One flag rather than one per signal, because the two
+    #: are read identically and a field no reader distinguishes is a field that
+    #: costs memory to record and nothing to drop.
+    prior_work: bool = False
 
 
 @dataclass
@@ -574,6 +615,45 @@ def _compose_headers(first: list[str], second: list[str]) -> list[str]:
     return composed
 
 
+def _section_label(row: list[tuple[str, int]], width: int) -> str | None:
+    """The label of a full-width section row, or ``None`` when this is not one.
+
+    A results table is often partitioned by a row that spans it and states a
+    heading rather than a measurement -- BERT splits its SQuAD tables into
+    ``Top Leaderboard Systems``, ``Published`` and ``Ours``. Three conditions
+    identify one: a single cell carries the row, it states no number, and it
+    spans all the table's columns or all but one. The number test is what
+    bounds a wrong answer, exactly as it does for a second header row: a row
+    stating no number yields no cell either way.
+    """
+    filled = [(cell, span) for cell, span in row if cell]
+    if len(filled) != 1:
+        return None
+    label, span = filled[0]
+    if span < 2 or span + 1 < width or _cell_number(label) is not None:
+        return None
+    return label
+
+
+def _section_marks_prior_work(label: str, /) -> bool:
+    """Whether a section label says the rows beneath it are somebody else's.
+
+    False where the label says nothing about ownership, which is the common
+    case and the conservative one: ConvNeXt partitions a table by pre-training
+    corpus, DINO by supervision regime and BLIP by evaluation setting, and none
+    of those states who produced anything. Reading an unrecognised heading as
+    prior work would demote a paper's own results across whole tables.
+
+    An unrecognised heading therefore *clears* the sense the heading above it
+    set, which is why the opposite statement -- BERT's ``Ours`` beneath its
+    ``Published`` -- needs no vocabulary of its own. Not naming prior work is
+    already the whole of what it has to do, and a second list would assert a
+    distinction nothing downstream could observe.
+    """
+    normalised = _SECTION_QUALIFIER_RE.sub("", label.strip())
+    return " ".join(normalised.lower().split()).strip(" .:,;-*") in _PRIOR_WORK_SECTIONS
+
+
 def _parse_tables(text: str, file: str) -> list[TableCell]:
     cells: list[TableCell] = []
     caption_spans = _float_captions(text)
@@ -582,10 +662,15 @@ def _parse_tables(text: str, file: str) -> list[TableCell]:
         body = _table_body(tab_match.group(1), tab_match.group(3))
         base_line = _line_of(text, tab_match.start())
         rows: list[list[tuple[str, int]]] = []
+        cited: list[bool] = []
         for raw_row in body.split("\\\\"):
             columns = _split_columns(_ROW_MARKUP_RE.sub("", raw_row))
             if any(cell for cell, _ in columns):
                 rows.append(columns)
+                # The label only, and before the cleanup: a citation beside a
+                # number is a note on that number, while a citation in the row
+                # label names the paper the whole row came from.
+                cited.append(_CITATION_RE.search(raw_row.split("&")[0]) is not None)
         if len(rows) < 2:
             continue
         # A spanning header names every column it covers, so it is repeated
@@ -594,11 +679,20 @@ def _parse_tables(text: str, file: str) -> list[TableCell]:
         # in step with the header.
         header = [cell for cell, span in rows[0] for _ in range(span)]
         second = [cell for cell, span in rows[1] for _ in range(span)]
-        body_rows = rows[1:]
+        first_body = 1
         if _is_second_header(header, second):
             header = _compose_headers(header, second)
-            body_rows = rows[2:]
-        for spanned_row in body_rows:
+            first_body = 2
+        # Rows inherit the sense of the last section header above them, and a
+        # heading naming no owner clears it rather than continuing one that no
+        # longer applies.
+        section = False
+        for index in range(first_body, len(rows)):
+            spanned_row = rows[index]
+            label = _section_label(spanned_row, len(header))
+            if label is not None:
+                section = _section_marks_prior_work(label)
+                continue
             row: list[str] = []
             for cell, span in spanned_row:
                 row.append(cell)
@@ -606,6 +700,7 @@ def _parse_tables(text: str, file: str) -> list[TableCell]:
             if not row:
                 continue
             row_label = row[0]
+            prior_work = section or cited[index]
             for col_index, cell in enumerate(row[1:], start=1):
                 number = _cell_number(cell)
                 if number is None:
@@ -620,6 +715,7 @@ def _parse_tables(text: str, file: str) -> list[TableCell]:
                         file=file,
                         line=base_line,
                         caption=caption,
+                        prior_work=prior_work,
                     )
                 )
     return cells
