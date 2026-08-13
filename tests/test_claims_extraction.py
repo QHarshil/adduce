@@ -447,6 +447,20 @@ def _candidate(metric, value, path="a.tex", line=1, source=CandidateSource.LATEX
     )
 
 
+def _cell(metric, value, row, column, path="main.tex", line=1, text=None):
+    return ClaimCandidate(
+        metric=metric,
+        value=value,
+        source=CandidateSource.LATEX_TABLE,
+        location=ClaimLocation(path, line),
+        method=ResolutionMethod.DIRECT_PARSE,
+        confidence=1.0,
+        text=text if text is not None else f"{row} {column} {value}",
+        row_label=row,
+        column_label=column,
+    )
+
+
 def test_the_same_number_stated_three_ways_is_one_claim():
     """Abstract, results table and README are three statements of one claim."""
     candidates = [
@@ -555,6 +569,73 @@ def test_the_same_number_in_two_places_is_still_one_claim_after_the_table_rule()
     )
     assert len(cluster.members) == 2
     assert cluster.restated
+
+
+@pytest.mark.parametrize("other_line", [6, 40])
+def test_two_cells_reporting_one_value_stay_two_claims(other_line):
+    """Two rows printing the same number are two measurements, not one restated.
+
+    The locator answers neither case: every cell of a ``tabular`` records the
+    line the environment opens on, so two cells of one table (``other_line``
+    6) are indistinguishable by it, and cells of two tables (40) were compared
+    on nothing at all. bert prints its own ``(Ens.+TriviaQA)`` F1 of 92.2 and an
+    ELMo baseline of 92.2; merging them destroyed the own result and left the
+    survivor carrying the baseline's row, and barlowtwins' Table 6 yielded
+    three claims from eight cells the same way.
+    """
+    clusters = cluster_candidates(
+        [
+            _cell("f1", 92.2, "BERT (Ens.+TriviaQA)", "Test F1", line=6),
+            _cell("f1", 92.2, "ELMo", "Test F1", line=other_line),
+        ]
+    )
+    assert len(clusters) == 2
+    assert sorted(member.row_label for c in clusters for member in c.members) == [
+        "BERT (Ens.+TriviaQA)",
+        "ELMo",
+    ]
+
+
+def test_one_measurement_restated_in_three_places_is_still_one_claim():
+    """The rule above keys on what was measured, not on where it was printed.
+
+    barlowtwins repeats its baseline row in every ablation table and states the
+    number in prose as well: same row, same column, one measurement stated three
+    times. Splitting those is the failure the module exists to prevent, and the
+    cluster still reports the best method and the highest confidence any member
+    carries.
+    """
+    (cluster,) = cluster_candidates(
+        [
+            _candidate("accuracy", 71.4, "4_ablations.tex", 5, CandidateSource.LATEX_PROSE),
+            _cell("accuracy", 71.4, "Baseline", "Top-1", path="4_ablations.tex", line=25),
+            _cell("accuracy", 71.4, "Baseline", "Top-1", path="4_ablations.tex", line=184),
+        ]
+    )
+    assert len(cluster.members) == 3
+    assert cluster.restated
+    assert cluster.method is ResolutionMethod.DIRECT_PARSE
+    assert cluster.confidence == 1.0
+
+
+def test_the_order_candidates_cluster_in_covers_what_they_measure():
+    """A field that decides membership cannot be left out of the total order.
+
+    These two cells agree on every other field a candidate carries, so without
+    the labels in the key their order -- and with it the member order of every
+    run they take part in -- would follow the order they were extracted in.
+    """
+    first = _cell("accuracy", 89.0, "SimCLR", "Top-5", line=19, text="accuracy 89.0")
+    second = _cell("accuracy", 89.0, "BYOL", "Top-5", line=19, text="accuracy 89.0")
+
+    def shape(clusters):
+        return [[(m.row_label, m.column_label) for m in c.members] for c in clusters]
+
+    assert shape(cluster_candidates([first, second])) == [
+        [("BYOL", "Top-5")],
+        [("SimCLR", "Top-5")],
+    ]
+    assert shape(cluster_candidates([second, first])) == shape(cluster_candidates([first, second]))
 
 
 def test_percent_and_fraction_are_not_silently_reconciled():
