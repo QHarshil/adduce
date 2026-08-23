@@ -414,6 +414,22 @@
     R-RES-004: partial
     R-DRIFT-003: partial
 
+- case: synthetic_third_header_row
+  # Same caveat as synthetic_wrapped_table_header, stated in full there: the
+  # real assertion is not here. This case's columns are named by a *third*
+  # header row, which reaches the claims package alone, and no rule reads a
+  # table cell. What this file pins is that a paper whose cells reach no rule
+  # yields no verdict rather than a wrong one. The composition itself is
+  # asserted by the --paper byte-identity comparison and by
+  # tests/test_collectors_new.py; see the README.
+  expect:
+    R-RES-001: not-applicable
+    R-RES-002: unknown
+  forbid:
+    R-RES-001: pass
+    R-RES-002: pass
+    R-DRIFT-001: fail
+
 - case: synthetic_macro_wrapped_float
   # Asserted here, unusually for a paper-side case, because this one bites in both
   # directions on one rule. The paper wraps a whole `table` float in a command and

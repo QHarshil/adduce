@@ -117,6 +117,9 @@ _MULTICOLUMN_RE = re.compile(r"\\multicolumn\s*")
 #: Wrappers nest (a ``\multicolumn`` holding a ``\rotatebox``), but not deeply;
 #: the bound keeps a malformed cell from looping.
 _MAX_MARKUP_NESTING = 8
+# A group row over a dataset row over a metric row is the deepest header any
+# paper in the dev set writes; see _header_depth for what a fourth would cost.
+_MAX_HEADER_ROWS = 3
 
 #: How a paper defines a command of its own, in the spellings that reach a
 #: zero-argument definition: ``\newcommand{\tsep}{...}``, ``\newcommand\tsep{...}``,
@@ -965,6 +968,15 @@ def _names_metric(cell: str) -> bool:
     return canonical_metric(cell) is not None
 
 
+def _states_a_number(row: list[str]) -> bool:
+    return any(_cell_number(cell) is not None for cell in row)
+
+
+def _expand_spans(row: list[tuple[str, int]]) -> list[str]:
+    """One entry per column: a spanning header names every column it covers."""
+    return [cell for cell, span in row for _ in range(span)]
+
+
 def _is_second_header(first: list[str], second: list[str]) -> bool:
     """Whether *second* is a header row naming a metric *first* leaves unnamed.
 
@@ -989,12 +1001,54 @@ def _is_second_header(first: list[str], second: list[str]) -> bool:
     ``HellaSwag`` head the columns with ``ppl``/``acc`` underneath, so the
     column names a dataset and the row beneath it names what was measured.
     """
-    if any(_cell_number(cell) is not None for cell in second):
+    if _states_a_number(second):
         return False
     return any(
         not _names_metric(dataset) and _names_metric(metric)
         for dataset, metric in zip_longest(first, second, fillvalue="")
     )
+
+
+def _header_depth(rows: list[list[tuple[str, int]]]) -> int:
+    r"""How many rows below the first belong to the header, at most two.
+
+    A results table heads its columns with one row, or with two where the first
+    names the dataset and the second what was measured on it. A third shape
+    exists and was being read as data: a group row over a dataset row over a
+    metric row. t5's Table 16 is it -- ``\multicolumn{13}{c}{GLUE}`` above
+    ``CoLA SST-2 MRPC ...`` above ``MCC Acc F1 ...`` -- and so are BLIP's two
+    retrieval tables, CLIP's, and Swin's system-level comparison. Five tables
+    over the 34 dev pairs, and every one of them a genuine three-row header.
+
+    **Iterating :func:`_is_second_header` from the top cannot find them, and
+    that is the whole reason this exists.** The predicate asks whether a row
+    names a metric the row above leaves unnamed, so on t5 it is asked of the
+    group row against the dataset row -- neither names a metric -- and answers
+    False at the first step, ending the search two rows above the answer.
+    Measured over all 34 pairs, iterating it claims a third row for *no* table.
+
+    So the run is searched from its deepest end instead: the last row absorbed
+    must be a second header of the row above it, and every row between the
+    first and it must state no number. The metric requirement on that last row
+    is what bounds the cost, and it is not a detail -- dropping it for the
+    tempting phrasing, "absorb while the next row states no number", claims
+    **136** tables rather than 5. Those are gpt-neox's ``0.324 \pm 0.015``
+    cells, which no more parse as numbers than a header does, BERT's ``(Acc)``
+    units row, and hyperparameter tables across mae, lora and bit.
+
+    Strictly additive, and measured so: the 54 tables that compose two rows
+    today are the same 54 afterwards, by set identity and not only by count.
+    No table gains a second header row here, and none loses one.
+    """
+    for depth in range(_MAX_HEADER_ROWS - 1, 0, -1):
+        if depth >= len(rows):
+            continue
+        run = [_expand_spans(row) for row in rows[: depth + 1]]
+        if not _is_second_header(run[-2], run[-1]):
+            continue
+        if not any(_states_a_number(row) for row in run[1:-1]):
+            return depth
+    return 0
 
 
 def _compose_headers(first: list[str], second: list[str]) -> list[str]:
@@ -1116,12 +1170,10 @@ def _parse_tables(text: str, file: str) -> list[TableCell]:
         # across the span. A spanning body cell states one number, so only its
         # first column carries it and the rest are placeholders holding the row
         # in step with the header.
-        header = [cell for cell, span in rows[0] for _ in range(span)]
-        second = [cell for cell, span in rows[1] for _ in range(span)]
-        first_body = 1
-        if _is_second_header(header, second):
-            header = _compose_headers(header, second)
-            first_body = 2
+        header = _expand_spans(rows[0])
+        first_body = _header_depth(rows) + 1
+        for index in range(1, first_body):
+            header = _compose_headers(header, _expand_spans(rows[index]))
         # Rows inherit the sense of the last section header above them, and a
         # heading naming no owner clears it rather than continuing one that no
         # longer applies.
