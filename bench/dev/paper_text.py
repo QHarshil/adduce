@@ -35,6 +35,40 @@ DEFAULT_PAIRS_ROOT = _DEV_DIR / "pairs"
 #: affects digits, but a labeller searching for a word should know.
 LIGATURE_NOTE = "extracted text renders 'fi' as the ligature 'fi'; digits are unaffected"
 
+#: What an unmappable glyph becomes. See :func:`sanitise_extracted_text`.
+UNMAPPABLE_GLYPH = "�"
+
+#: Tabs, newlines and carriage returns are layout and are kept; every other C0
+#: and C1 control character is replaced.
+_KEPT_CONTROLS = "\t\n\r"
+_CONTROL_REPLACEMENTS = {
+    codepoint: UNMAPPABLE_GLYPH
+    for codepoint in (*range(0x00, 0x20), *range(0x7F, 0xA0))
+    if chr(codepoint) not in _KEPT_CONTROLS
+}
+
+
+def sanitise_extracted_text(text: str) -> str:
+    """Replace every control character the page text carries with U+FFFD.
+
+    A glyph with no Unicode counterpart is extracted as a control character:
+    detr's ``\\big(`` and ``\\big)`` arrive as U+0000 and U+0001. One NUL byte
+    is enough for a search tool to classify the whole dump as binary and stop
+    reporting matching lines -- ``grep -I`` skips such a file outright and says
+    nothing -- so a labeller searching for a value that *is* printed reads
+    absence and can record a false ``not_in_paper``. That is the verdict this
+    set asks adjudicators to be surest about, so the dump must not be able to
+    manufacture it.
+
+    Replaced rather than deleted. Deleting closes the gap between the
+    characters either side, which can join two printed tokens into one that is
+    not on the page -- two digits becoming a third number is exactly the error
+    labelling from the rendered paper exists to keep out. U+FFFD holds the
+    position, records that a glyph was there and could not be mapped, and
+    carries no NUL byte.
+    """
+    return text.translate(_CONTROL_REPLACEMENTS)
+
 
 def _open(pdf: Path):
     try:
@@ -49,12 +83,17 @@ def _open(pdf: Path):
 
 
 def dump_text(pdf: Path, destination: Path) -> int:
-    """Write the paper's text, one delimited block per page. Returns page count."""
+    """Write the paper's text, one delimited block per page. Returns page count.
+
+    Every page's text goes through :func:`sanitise_extracted_text`, so the file
+    a labeller greps holds no control character that would make it read as
+    binary.
+    """
     document = _open(pdf)
     blocks = []
     for number, page in enumerate(document, start=1):
         blocks.append(f"\n=================== PAGE {number} of {len(document)} ===================\n")
-        blocks.append(page.get_text())
+        blocks.append(sanitise_extracted_text(page.get_text()))
     destination.parent.mkdir(parents=True, exist_ok=True)
     destination.write_text("".join(blocks), encoding="utf-8")
     return len(document)
