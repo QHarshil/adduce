@@ -91,7 +91,7 @@
     "text": "ConvNeXt-B: mask mAP = 46.9"
    },
    "verdict": "real_own_result",
-   "notes": "Repository README states this (README table caption: box/mask mAP), and the paper also states the identical number for the same model/setting: Table 3, ConvNeXt-B‡ row (Cascade Mask-RCNN 3x, IN-22K), AP^mask. Own result either way, so real_own_result rather than in_repo_not_paper."
+   "notes": "Repository README states this (README table caption: box/mask mAP), and the paper also states the identical number for the same model/setting: Table 3, ConvNeXt-B\u2021 row (Cascade Mask-RCNN 3x, IN-22K), AP^mask. Own result either way, so real_own_result rather than in_repo_not_paper."
   },
   {
    "extraction": {
@@ -101,7 +101,7 @@
     "text": "ConvNeXt-B: box mAP = 54"
    },
    "verdict": "real_own_result",
-   "notes": "Repository README states this (README table caption: box/mask mAP), and the paper also states the identical number for the same model/setting: Table 3, ConvNeXt-B‡ row (Cascade Mask-RCNN 3x, IN-22K), AP^box. Own result either way, so real_own_result rather than in_repo_not_paper."
+   "notes": "Repository README states this (README table caption: box/mask mAP), and the paper also states the identical number for the same model/setting: Table 3, ConvNeXt-B\u2021 row (Cascade Mask-RCNN 3x, IN-22K), AP^box. Own result either way, so real_own_result rather than in_repo_not_paper."
   },
   {
    "extraction": {
@@ -111,7 +111,7 @@
     "text": "ConvNeXt-L: mask mAP = 47.6"
    },
    "verdict": "real_own_result",
-   "notes": "Repository README states this (README table caption: box/mask mAP), and the paper also states the identical number for the same model/setting: Table 3, ConvNeXt-L‡ row (Cascade Mask-RCNN 3x, IN-22K), AP^mask. Own result either way, so real_own_result rather than in_repo_not_paper."
+   "notes": "Repository README states this (README table caption: box/mask mAP), and the paper also states the identical number for the same model/setting: Table 3, ConvNeXt-L\u2021 row (Cascade Mask-RCNN 3x, IN-22K), AP^mask. Own result either way, so real_own_result rather than in_repo_not_paper."
   },
   {
    "extraction": {
@@ -121,7 +121,7 @@
     "text": "ConvNeXt-L: box mAP = 54.8"
    },
    "verdict": "real_own_result",
-   "notes": "Repository README states this (README table caption: box/mask mAP), and the paper also states the identical number for the same model/setting: Table 3, ConvNeXt-L‡ row (Cascade Mask-RCNN 3x, IN-22K), AP^box. Own result either way, so real_own_result rather than in_repo_not_paper."
+   "notes": "Repository README states this (README table caption: box/mask mAP), and the paper also states the identical number for the same model/setting: Table 3, ConvNeXt-L\u2021 row (Cascade Mask-RCNN 3x, IN-22K), AP^box. Own result either way, so real_own_result rather than in_repo_not_paper."
   },
   {
    "extraction": {
@@ -131,7 +131,7 @@
     "text": "ConvNeXt-XL: mask mAP = 47.7"
    },
    "verdict": "real_own_result",
-   "notes": "Repository README states this (README table caption: box/mask mAP), and the paper also states the identical number for the same model/setting: Table 3, ConvNeXt-XL‡ row (Cascade Mask-RCNN 3x, IN-22K), AP^mask. Own result either way, so real_own_result rather than in_repo_not_paper."
+   "notes": "Repository README states this (README table caption: box/mask mAP), and the paper also states the identical number for the same model/setting: Table 3, ConvNeXt-XL\u2021 row (Cascade Mask-RCNN 3x, IN-22K), AP^mask. Own result either way, so real_own_result rather than in_repo_not_paper."
   },
   {
    "extraction": {
@@ -141,7 +141,7 @@
     "text": "ConvNeXt-XL: box mAP = 55.2"
    },
    "verdict": "real_own_result",
-   "notes": "Repository README states this (README table caption: box/mask mAP), and the paper also states the identical number for the same model/setting: Table 3, ConvNeXt-XL‡ row (Cascade Mask-RCNN 3x, IN-22K), AP^box. Own result either way, so real_own_result rather than in_repo_not_paper."
+   "notes": "Repository README states this (README table caption: box/mask mAP), and the paper also states the identical number for the same model/setting: Table 3, ConvNeXt-XL\u2021 row (Cascade Mask-RCNN 3x, IN-22K), AP^box. Own result either way, so real_own_result rather than in_repo_not_paper."
   },
   {
    "extraction": {
@@ -211,7 +211,7 @@
     "text": "-B^: mIoU = 52.6"
    },
    "verdict": "real_own_result",
-   "notes": "Repository README states this mIoU, and the paper also states the identical number for the same model/setting: Table 7 (single-scale ADE20K), ConvNeXt-B‡ row, mIoU. Own result either way, so real_own_result rather than in_repo_not_paper."
+   "notes": "Repository README states this mIoU, and the paper also states the identical number for the same model/setting: Table 7 (single-scale ADE20K), ConvNeXt-B\u2021 row, mIoU. Own result either way, so real_own_result rather than in_repo_not_paper."
   },
   {
    "extraction": {
@@ -221,7 +221,7 @@
     "text": "-B^: mIoU = 53.1"
    },
    "verdict": "real_own_result",
-   "notes": "Repository README states this mIoU, and the paper also states the identical number for the same model/setting: Table 4 (multi-scale ADE20K), ConvNeXt-B‡ row, mIoU. Own result either way, so real_own_result rather than in_repo_not_paper."
+   "notes": "Repository README states this mIoU, and the paper also states the identical number for the same model/setting: Table 4 (multi-scale ADE20K), ConvNeXt-B\u2021 row, mIoU. Own result either way, so real_own_result rather than in_repo_not_paper."
   },
   {
    "extraction": {
@@ -231,7 +231,7 @@
     "text": "-L^: mIoU = 53.2"
    },
    "verdict": "real_own_result",
-   "notes": "Repository README states this mIoU, and the paper also states the identical number for the same model/setting: Table 7 (single-scale ADE20K), ConvNeXt-L‡ row, mIoU. Own result either way, so real_own_result rather than in_repo_not_paper."
+   "notes": "Repository README states this mIoU, and the paper also states the identical number for the same model/setting: Table 7 (single-scale ADE20K), ConvNeXt-L\u2021 row, mIoU. Own result either way, so real_own_result rather than in_repo_not_paper."
   },
   {
    "extraction": {
@@ -241,7 +241,7 @@
     "text": "-L^: mIoU = 53.7"
    },
    "verdict": "real_own_result",
-   "notes": "Repository README states this mIoU, and the paper also states the identical number for the same model/setting: Table 4 (multi-scale ADE20K), ConvNeXt-L‡ row, mIoU. Own result either way, so real_own_result rather than in_repo_not_paper."
+   "notes": "Repository README states this mIoU, and the paper also states the identical number for the same model/setting: Table 4 (multi-scale ADE20K), ConvNeXt-L\u2021 row, mIoU. Own result either way, so real_own_result rather than in_repo_not_paper."
   },
   {
    "extraction": {
@@ -251,7 +251,7 @@
     "text": "-XL^: mIoU = 53.6"
    },
    "verdict": "real_own_result",
-   "notes": "Repository README states this mIoU, and the paper also states the identical number for the same model/setting: Table 7 (single-scale ADE20K), ConvNeXt-XL‡ row, mIoU. Own result either way, so real_own_result rather than in_repo_not_paper."
+   "notes": "Repository README states this mIoU, and the paper also states the identical number for the same model/setting: Table 7 (single-scale ADE20K), ConvNeXt-XL\u2021 row, mIoU. Own result either way, so real_own_result rather than in_repo_not_paper."
   },
   {
    "extraction": {
@@ -261,7 +261,7 @@
     "text": "-XL^: mIoU = 54"
    },
    "verdict": "real_own_result",
-   "notes": "Repository README states this mIoU, and the paper also states the identical number for the same model/setting: Table 4 (multi-scale ADE20K), ConvNeXt-XL‡ row, mIoU. Own result either way, so real_own_result rather than in_repo_not_paper."
+   "notes": "Repository README states this mIoU, and the paper also states the identical number for the same model/setting: Table 4 (multi-scale ADE20K), ConvNeXt-XL\u2021 row, mIoU. Own result either way, so real_own_result rather than in_repo_not_paper."
   },
   {
    "extraction": {
@@ -271,7 +271,7 @@
     "text": "accuracy from 78.8"
    },
    "verdict": "real_own_result",
-   "notes": "Sec 2.2 Macro Design / Table 10: \"This improves the model accuracy from 78.8% to 79.4%.\" 78.8% is the enhanced-recipe ResNet-50 baseline (Table 10, 78.82 ± 0.07) that the modernization roadmap starts from -- the authors' own trained baseline."
+   "notes": "Sec 2.2 Macro Design / Table 10: \"This improves the model accuracy from 78.8% to 79.4%.\" 78.8% is the enhanced-recipe ResNet-50 baseline (Table 10, 78.82 \u00b1 0.07) that the modernization roadmap starts from -- the authors' own trained baseline."
   },
   {
    "extraction": {
@@ -281,7 +281,7 @@
     "text": "accuracy of 81.5"
    },
    "verdict": "real_own_result",
-   "notes": "Sec 2.6 Micro Design, \"Substituting BN with LN\": \"obtaining an accuracy of 81.5%.\" Matches Table 10's BN→LN roadmap step (81.47 ± 0.09). Own roadmap experiment."
+   "notes": "Sec 2.6 Micro Design, \"Substituting BN with LN\": \"obtaining an accuracy of 81.5%.\" Matches Table 10's BN\u2192LN roadmap step (81.47 \u00b1 0.09). Own roadmap experiment."
   },
   {
    "extraction": {
@@ -391,7 +391,7 @@
     "text": "0.3\n Swin-B^: AP^box = 53"
    },
    "verdict": "real_own_result",
-   "notes": "Table 3, Swin-B‡ row, box_ap. Appendix A.3: \"We fine-tune the ImageNet-22K pre-trained Swin-B/L on COCO using the same sweep... official code and pre-trained model weights\" -- this is the authors' own rerun/fine-tuning of Swin on COCO, not a number quoted from the Swin paper or repository, so it counts as an own result."
+   "notes": "Table 3, Swin-B\u2021 row, box_ap. Appendix A.3: \"We fine-tune the ImageNet-22K pre-trained Swin-B/L on COCO using the same sweep... official code and pre-trained model weights\" -- this is the authors' own rerun/fine-tuning of Swin on COCO, not a number quoted from the Swin paper or repository, so it counts as an own result."
   },
   {
    "extraction": {
@@ -401,7 +401,7 @@
     "text": "Swin-L^: AP^box = 53.9"
    },
    "verdict": "real_own_result",
-   "notes": "Table 3, Swin-L‡ row, box_ap. Appendix A.3: \"We fine-tune the ImageNet-22K pre-trained Swin-B/L on COCO using the same sweep... official code and pre-trained model weights\" -- this is the authors' own rerun/fine-tuning of Swin on COCO, not a number quoted from the Swin paper or repository, so it counts as an own result."
+   "notes": "Table 3, Swin-L\u2021 row, box_ap. Appendix A.3: \"We fine-tune the ImageNet-22K pre-trained Swin-B/L on COCO using the same sweep... official code and pre-trained model weights\" -- this is the authors' own rerun/fine-tuning of Swin on COCO, not a number quoted from the Swin paper or repository, so it counts as an own result."
   },
   {
    "extraction": {
@@ -411,7 +411,7 @@
     "text": "-B^: AP^box = 54"
    },
    "verdict": "real_own_result",
-   "notes": "Table 3, ConvNeXt-B‡ row, box_ap. The paper's own COCO detection/segmentation result."
+   "notes": "Table 3, ConvNeXt-B\u2021 row, box_ap. The paper's own COCO detection/segmentation result."
   },
   {
    "extraction": {
@@ -421,7 +421,7 @@
     "text": "-L^: AP^box = 54.8"
    },
    "verdict": "real_own_result",
-   "notes": "Table 3, ConvNeXt-L‡ row, box_ap. The paper's own COCO detection/segmentation result."
+   "notes": "Table 3, ConvNeXt-L\u2021 row, box_ap. The paper's own COCO detection/segmentation result."
   },
   {
    "extraction": {
@@ -431,7 +431,7 @@
     "text": "-XL^: AP^box = 55.2"
    },
    "verdict": "real_own_result",
-   "notes": "Table 3, ConvNeXt-XL‡ row, box_ap. The paper's own COCO detection/segmentation result."
+   "notes": "Table 3, ConvNeXt-XL\u2021 row, box_ap. The paper's own COCO detection/segmentation result."
   },
   {
    "extraction": {
@@ -551,7 +551,7 @@
     "text": "0.3\n Swin-B^: AP^box_50 = 71.8"
    },
    "verdict": "real_own_result",
-   "notes": "Table 3, Swin-B‡ row, box_ap50. Appendix A.3: \"We fine-tune the ImageNet-22K pre-trained Swin-B/L on COCO using the same sweep... official code and pre-trained model weights\" -- this is the authors' own rerun/fine-tuning of Swin on COCO, not a number quoted from the Swin paper or repository, so it counts as an own result."
+   "notes": "Table 3, Swin-B\u2021 row, box_ap50. Appendix A.3: \"We fine-tune the ImageNet-22K pre-trained Swin-B/L on COCO using the same sweep... official code and pre-trained model weights\" -- this is the authors' own rerun/fine-tuning of Swin on COCO, not a number quoted from the Swin paper or repository, so it counts as an own result."
   },
   {
    "extraction": {
@@ -561,7 +561,7 @@
     "text": "Swin-L^: AP^box_50 = 72.4"
    },
    "verdict": "real_own_result",
-   "notes": "Table 3, Swin-L‡ row, box_ap50. Appendix A.3: \"We fine-tune the ImageNet-22K pre-trained Swin-B/L on COCO using the same sweep... official code and pre-trained model weights\" -- this is the authors' own rerun/fine-tuning of Swin on COCO, not a number quoted from the Swin paper or repository, so it counts as an own result."
+   "notes": "Table 3, Swin-L\u2021 row, box_ap50. Appendix A.3: \"We fine-tune the ImageNet-22K pre-trained Swin-B/L on COCO using the same sweep... official code and pre-trained model weights\" -- this is the authors' own rerun/fine-tuning of Swin on COCO, not a number quoted from the Swin paper or repository, so it counts as an own result."
   },
   {
    "extraction": {
@@ -571,7 +571,7 @@
     "text": "-B^: AP^box_50 = 73.1"
    },
    "verdict": "real_own_result",
-   "notes": "Table 3, ConvNeXt-B‡ row, box_ap50. The paper's own COCO detection/segmentation result."
+   "notes": "Table 3, ConvNeXt-B\u2021 row, box_ap50. The paper's own COCO detection/segmentation result."
   },
   {
    "extraction": {
@@ -581,7 +581,7 @@
     "text": "-L^: AP^box_50 = 73.8"
    },
    "verdict": "real_own_result",
-   "notes": "Table 3, ConvNeXt-L‡ row, box_ap50. The paper's own COCO detection/segmentation result."
+   "notes": "Table 3, ConvNeXt-L\u2021 row, box_ap50. The paper's own COCO detection/segmentation result."
   },
   {
    "extraction": {
@@ -591,7 +591,7 @@
     "text": "-XL^: AP^box_50 = 74.2"
    },
    "verdict": "real_own_result",
-   "notes": "Table 3, ConvNeXt-XL‡ row, box_ap50. The paper's own COCO detection/segmentation result."
+   "notes": "Table 3, ConvNeXt-XL\u2021 row, box_ap50. The paper's own COCO detection/segmentation result."
   },
   {
    "extraction": {
@@ -711,7 +711,7 @@
     "text": "0.3\n Swin-B^: AP^box_75 = 57.5"
    },
    "verdict": "real_own_result",
-   "notes": "Table 3, Swin-B‡ row, box_ap75. Appendix A.3: \"We fine-tune the ImageNet-22K pre-trained Swin-B/L on COCO using the same sweep... official code and pre-trained model weights\" -- this is the authors' own rerun/fine-tuning of Swin on COCO, not a number quoted from the Swin paper or repository, so it counts as an own result."
+   "notes": "Table 3, Swin-B\u2021 row, box_ap75. Appendix A.3: \"We fine-tune the ImageNet-22K pre-trained Swin-B/L on COCO using the same sweep... official code and pre-trained model weights\" -- this is the authors' own rerun/fine-tuning of Swin on COCO, not a number quoted from the Swin paper or repository, so it counts as an own result."
   },
   {
    "extraction": {
@@ -721,7 +721,7 @@
     "text": "-B^: AP^box_75 = 58.8"
    },
    "verdict": "real_own_result",
-   "notes": "Table 3, ConvNeXt-B‡ row, box_ap75. The paper's own COCO detection/segmentation result."
+   "notes": "Table 3, ConvNeXt-B\u2021 row, box_ap75. The paper's own COCO detection/segmentation result."
   },
   {
    "extraction": {
@@ -731,7 +731,7 @@
     "text": "-L^: AP^box_75 = 59.8"
    },
    "verdict": "real_own_result",
-   "notes": "Table 3, ConvNeXt-L‡ row, box_ap75. The paper's own COCO detection/segmentation result."
+   "notes": "Table 3, ConvNeXt-L\u2021 row, box_ap75. The paper's own COCO detection/segmentation result."
   },
   {
    "extraction": {
@@ -741,7 +741,7 @@
     "text": "-XL^: AP^box_75 = 59.9"
    },
    "verdict": "real_own_result",
-   "notes": "Table 3, ConvNeXt-XL‡ row, box_ap75. The paper's own COCO detection/segmentation result."
+   "notes": "Table 3, ConvNeXt-XL\u2021 row, box_ap75. The paper's own COCO detection/segmentation result."
   },
   {
    "extraction": {
@@ -751,7 +751,7 @@
     "text": "-XL^: FPS = 8.6"
    },
    "verdict": "real_own_result",
-   "notes": "Table 3, ConvNeXt-XL‡ row, FPS column. Caption: \"We measure FPS on an A100 GPU\" applies to every row in this table, competitors included; ownership of FPS is per-cell, not per-row, so this is an own measurement even though ConvNeXt-XL‡'s AP beside it may be a citation."
+   "notes": "Table 3, ConvNeXt-XL\u2021 row, FPS column. Caption: \"We measure FPS on an A100 GPU\" applies to every row in this table, competitors included; ownership of FPS is per-cell, not per-row, so this is an own measurement even though ConvNeXt-XL\u2021's AP beside it may be a citation."
   },
   {
    "extraction": {
@@ -761,7 +761,7 @@
     "text": "Swin-L^: FPS = 9.2"
    },
    "verdict": "real_own_result",
-   "notes": "Table 3, Swin-L‡ row, FPS column. Caption: \"We measure FPS on an A100 GPU\" applies to every row in this table, competitors included; ownership of FPS is per-cell, not per-row, so this is an own measurement even though Swin-L‡'s AP beside it may be a citation."
+   "notes": "Table 3, Swin-L\u2021 row, FPS column. Caption: \"We measure FPS on an A100 GPU\" applies to every row in this table, competitors included; ownership of FPS is per-cell, not per-row, so this is an own measurement even though Swin-L\u2021's AP beside it may be a citation."
   },
   {
    "extraction": {
@@ -771,7 +771,7 @@
     "text": "-L^: FPS = 10"
    },
    "verdict": "real_own_result",
-   "notes": "Table 3, ConvNeXt-L‡ row, FPS column. Caption: \"We measure FPS on an A100 GPU\" applies to every row in this table, competitors included; ownership of FPS is per-cell, not per-row, so this is an own measurement even though ConvNeXt-L‡'s AP beside it may be a citation."
+   "notes": "Table 3, ConvNeXt-L\u2021 row, FPS column. Caption: \"We measure FPS on an A100 GPU\" applies to every row in this table, competitors included; ownership of FPS is per-cell, not per-row, so this is an own measurement even though ConvNeXt-L\u2021's AP beside it may be a citation."
   },
   {
    "extraction": {
@@ -781,7 +781,7 @@
     "text": "0.3\n Swin-B^: FPS = 10.7"
    },
    "verdict": "real_own_result",
-   "notes": "Table 3, Swin-B‡ row, FPS column. Caption: \"We measure FPS on an A100 GPU\" applies to every row in this table, competitors included; ownership of FPS is per-cell, not per-row, so this is an own measurement even though Swin-B‡'s AP beside it may be a citation."
+   "notes": "Table 3, Swin-B\u2021 row, FPS column. Caption: \"We measure FPS on an A100 GPU\" applies to every row in this table, competitors included; ownership of FPS is per-cell, not per-row, so this is an own measurement even though Swin-B\u2021's AP beside it may be a citation."
   },
   {
    "extraction": {
@@ -801,7 +801,7 @@
     "text": "-B^: FPS = 11.5"
    },
    "verdict": "real_own_result",
-   "notes": "Table 3, ConvNeXt-B‡ row, FPS column. Caption: \"We measure FPS on an A100 GPU\" applies to every row in this table, competitors included; ownership of FPS is per-cell, not per-row, so this is an own measurement even though ConvNeXt-B‡'s AP beside it may be a citation."
+   "notes": "Table 3, ConvNeXt-B\u2021 row, FPS column. Caption: \"We measure FPS on an A100 GPU\" applies to every row in this table, competitors included; ownership of FPS is per-cell, not per-row, so this is an own measurement even though ConvNeXt-B\u2021's AP beside it may be a citation."
   },
   {
    "extraction": {
@@ -951,7 +951,7 @@
     "text": "0.3\n Swin-B^: AP^mask = 45.8"
    },
    "verdict": "real_own_result",
-   "notes": "Table 3, Swin-B‡ row, mask_ap. Appendix A.3: \"We fine-tune the ImageNet-22K pre-trained Swin-B/L on COCO using the same sweep... official code and pre-trained model weights\" -- this is the authors' own rerun/fine-tuning of Swin on COCO, not a number quoted from the Swin paper or repository, so it counts as an own result."
+   "notes": "Table 3, Swin-B\u2021 row, mask_ap. Appendix A.3: \"We fine-tune the ImageNet-22K pre-trained Swin-B/L on COCO using the same sweep... official code and pre-trained model weights\" -- this is the authors' own rerun/fine-tuning of Swin on COCO, not a number quoted from the Swin paper or repository, so it counts as an own result."
   },
   {
    "extraction": {
@@ -961,7 +961,7 @@
     "text": "Swin-L^: AP^mask = 46.7"
    },
    "verdict": "real_own_result",
-   "notes": "Table 3, Swin-L‡ row, mask_ap. Appendix A.3: \"We fine-tune the ImageNet-22K pre-trained Swin-B/L on COCO using the same sweep... official code and pre-trained model weights\" -- this is the authors' own rerun/fine-tuning of Swin on COCO, not a number quoted from the Swin paper or repository, so it counts as an own result."
+   "notes": "Table 3, Swin-L\u2021 row, mask_ap. Appendix A.3: \"We fine-tune the ImageNet-22K pre-trained Swin-B/L on COCO using the same sweep... official code and pre-trained model weights\" -- this is the authors' own rerun/fine-tuning of Swin on COCO, not a number quoted from the Swin paper or repository, so it counts as an own result."
   },
   {
    "extraction": {
@@ -971,7 +971,7 @@
     "text": "-B^: AP^mask = 46.9"
    },
    "verdict": "real_own_result",
-   "notes": "Table 3, ConvNeXt-B‡ row, mask_ap. The paper's own COCO detection/segmentation result."
+   "notes": "Table 3, ConvNeXt-B\u2021 row, mask_ap. The paper's own COCO detection/segmentation result."
   },
   {
    "extraction": {
@@ -981,7 +981,7 @@
     "text": "-L^: AP^mask = 47.6"
    },
    "verdict": "real_own_result",
-   "notes": "Table 3, ConvNeXt-L‡ row, mask_ap. The paper's own COCO detection/segmentation result."
+   "notes": "Table 3, ConvNeXt-L\u2021 row, mask_ap. The paper's own COCO detection/segmentation result."
   },
   {
    "extraction": {
@@ -991,7 +991,7 @@
     "text": "-XL^: AP^mask = 47.7"
    },
    "verdict": "real_own_result",
-   "notes": "Table 3, ConvNeXt-XL‡ row, mask_ap. The paper's own COCO detection/segmentation result."
+   "notes": "Table 3, ConvNeXt-XL\u2021 row, mask_ap. The paper's own COCO detection/segmentation result."
   },
   {
    "extraction": {
@@ -1111,7 +1111,7 @@
     "text": "0.3\n Swin-B^: AP^mask_50 = 69.4"
    },
    "verdict": "real_own_result",
-   "notes": "Table 3, Swin-B‡ row, mask_ap50. Appendix A.3: \"We fine-tune the ImageNet-22K pre-trained Swin-B/L on COCO using the same sweep... official code and pre-trained model weights\" -- this is the authors' own rerun/fine-tuning of Swin on COCO, not a number quoted from the Swin paper or repository, so it counts as an own result."
+   "notes": "Table 3, Swin-B\u2021 row, mask_ap50. Appendix A.3: \"We fine-tune the ImageNet-22K pre-trained Swin-B/L on COCO using the same sweep... official code and pre-trained model weights\" -- this is the authors' own rerun/fine-tuning of Swin on COCO, not a number quoted from the Swin paper or repository, so it counts as an own result."
   },
   {
    "extraction": {
@@ -1121,7 +1121,7 @@
     "text": "Swin-L^: AP^mask_50 = 70.1"
    },
    "verdict": "real_own_result",
-   "notes": "Table 3, Swin-L‡ row, mask_ap50. Appendix A.3: \"We fine-tune the ImageNet-22K pre-trained Swin-B/L on COCO using the same sweep... official code and pre-trained model weights\" -- this is the authors' own rerun/fine-tuning of Swin on COCO, not a number quoted from the Swin paper or repository, so it counts as an own result."
+   "notes": "Table 3, Swin-L\u2021 row, mask_ap50. Appendix A.3: \"We fine-tune the ImageNet-22K pre-trained Swin-B/L on COCO using the same sweep... official code and pre-trained model weights\" -- this is the authors' own rerun/fine-tuning of Swin on COCO, not a number quoted from the Swin paper or repository, so it counts as an own result."
   },
   {
    "extraction": {
@@ -1131,7 +1131,7 @@
     "text": "-B^: AP^mask_50 = 70.6"
    },
    "verdict": "real_own_result",
-   "notes": "Table 3, ConvNeXt-B‡ row, mask_ap50. The paper's own COCO detection/segmentation result."
+   "notes": "Table 3, ConvNeXt-B\u2021 row, mask_ap50. The paper's own COCO detection/segmentation result."
   },
   {
    "extraction": {
@@ -1141,7 +1141,7 @@
     "text": "-L^: AP^mask_50 = 71.3"
    },
    "verdict": "real_own_result",
-   "notes": "Table 3, ConvNeXt-L‡ row, mask_ap50. The paper's own COCO detection/segmentation result."
+   "notes": "Table 3, ConvNeXt-L\u2021 row, mask_ap50. The paper's own COCO detection/segmentation result."
   },
   {
    "extraction": {
@@ -1151,7 +1151,7 @@
     "text": "-XL^: AP^mask_50 = 71.6"
    },
    "verdict": "real_own_result",
-   "notes": "Table 3, ConvNeXt-XL‡ row, mask_ap50. The paper's own COCO detection/segmentation result."
+   "notes": "Table 3, ConvNeXt-XL\u2021 row, mask_ap50. The paper's own COCO detection/segmentation result."
   },
   {
    "extraction": {
@@ -1251,7 +1251,7 @@
     "text": "0.3\n Swin-B^: AP^mask_75 = 49.7"
    },
    "verdict": "real_own_result",
-   "notes": "Table 3, Swin-B‡ row, mask_ap75. Appendix A.3: \"We fine-tune the ImageNet-22K pre-trained Swin-B/L on COCO using the same sweep... official code and pre-trained model weights\" -- this is the authors' own rerun/fine-tuning of Swin on COCO, not a number quoted from the Swin paper or repository, so it counts as an own result."
+   "notes": "Table 3, Swin-B\u2021 row, mask_ap75. Appendix A.3: \"We fine-tune the ImageNet-22K pre-trained Swin-B/L on COCO using the same sweep... official code and pre-trained model weights\" -- this is the authors' own rerun/fine-tuning of Swin on COCO, not a number quoted from the Swin paper or repository, so it counts as an own result."
   },
   {
    "extraction": {
@@ -1261,7 +1261,7 @@
     "text": "Swin-L^: AP^mask_75 = 50.8"
    },
    "verdict": "real_own_result",
-   "notes": "Table 3, Swin-L‡ row, mask_ap75. Appendix A.3: \"We fine-tune the ImageNet-22K pre-trained Swin-B/L on COCO using the same sweep... official code and pre-trained model weights\" -- this is the authors' own rerun/fine-tuning of Swin on COCO, not a number quoted from the Swin paper or repository, so it counts as an own result."
+   "notes": "Table 3, Swin-L\u2021 row, mask_ap75. Appendix A.3: \"We fine-tune the ImageNet-22K pre-trained Swin-B/L on COCO using the same sweep... official code and pre-trained model weights\" -- this is the authors' own rerun/fine-tuning of Swin on COCO, not a number quoted from the Swin paper or repository, so it counts as an own result."
   },
   {
    "extraction": {
@@ -1271,7 +1271,7 @@
     "text": "-B^: AP^mask_75 = 51.3"
    },
    "verdict": "real_own_result",
-   "notes": "Table 3, ConvNeXt-B‡ row, mask_ap75. The paper's own COCO detection/segmentation result."
+   "notes": "Table 3, ConvNeXt-B\u2021 row, mask_ap75. The paper's own COCO detection/segmentation result."
   },
   {
    "extraction": {
@@ -1281,7 +1281,7 @@
     "text": "-L^: AP^mask_75 = 51.7"
    },
    "verdict": "real_own_result",
-   "notes": "Table 3, ConvNeXt-L‡ row, mask_ap75. The paper's own COCO detection/segmentation result."
+   "notes": "Table 3, ConvNeXt-L\u2021 row, mask_ap75. The paper's own COCO detection/segmentation result."
   },
   {
    "extraction": {
@@ -1291,7 +1291,7 @@
     "text": "-XL^: AP^mask_75 = 52.2"
    },
    "verdict": "real_own_result",
-   "notes": "Table 3, ConvNeXt-XL‡ row, mask_ap75. The paper's own COCO detection/segmentation result."
+   "notes": "Table 3, ConvNeXt-XL\u2021 row, mask_ap75. The paper's own COCO detection/segmentation result."
   },
   {
    "extraction": {
@@ -1342,266 +1342,6 @@
    },
    "verdict": "baseline",
    "notes": "Table 4 (ADE20K), Swin-L^ row, mIoU. Caption: \"Swins' results are from its GitHub repository\" (unqualified by pretraining size, unlike Table 3's COCO caption), so all Swin rows in this table, including IN-22K ones, are quoted, not rerun."
-  },
-  {
-   "extraction": {
-    "metric": "-t/s/b/l",
-    "value": 0.05,
-    "where": "src/main.tex:564",
-    "text": "weight decay: -T/S/B/L = 0.05"
-   },
-   "verdict": "hyperparameter",
-   "notes": "Table 5 (ImageNet-1K/22K (pre-)training settings), \"weight decay\" row. Training configuration value, not a reported result."
-  },
-  {
-   "extraction": {
-    "metric": "-t/s/b/l",
-    "value": 0.1,
-    "where": "src/main.tex:564",
-    "text": "label smoothing Szegedy2016a: -T/S/B/L = 0.1"
-   },
-   "verdict": "hyperparameter",
-   "notes": "Table 5 (ImageNet-1K/22K (pre-)training settings), \"label smoothing Szegedy2016a\" row. Training configuration value, not a reported result."
-  },
-  {
-   "extraction": {
-    "metric": "-t/s/b/l",
-    "value": 0.25,
-    "where": "src/main.tex:564",
-    "text": "random erasing Zhong2020: -T/S/B/L = 0.25"
-   },
-   "verdict": "hyperparameter",
-   "notes": "Table 5 (ImageNet-1K/22K (pre-)training settings), \"random erasing Zhong2020\" row. Training configuration value, not a reported result."
-  },
-  {
-   "extraction": {
-    "metric": "-t/s/b/l",
-    "value": 0.8,
-    "where": "src/main.tex:564",
-    "text": "mixup Zhang2018a: -T/S/B/L = 0.8"
-   },
-   "verdict": "hyperparameter",
-   "notes": "Table 5 (ImageNet-1K/22K (pre-)training settings), \"mixup Zhang2018a\" row. Training configuration value, not a reported result."
-  },
-  {
-   "extraction": {
-    "metric": "-t/s/b/l",
-    "value": 0.9999,
-    "where": "src/main.tex:564",
-    "text": "exp. mov. avg. (EMA) Polyak1992: -T/S/B/L = 0.9999"
-   },
-   "verdict": "hyperparameter",
-   "notes": "Table 5 (ImageNet-1K/22K (pre-)training settings), \"exp. mov. avg. (EMA) Polyak1992\" row. Training configuration value, not a reported result."
-  },
-  {
-   "extraction": {
-    "metric": "-t/s/b/l",
-    "value": 1.0,
-    "where": "src/main.tex:564",
-    "text": "cutmix Yun2019: -T/S/B/L = 1"
-   },
-   "verdict": "hyperparameter",
-   "notes": "Table 5 (ImageNet-1K/22K (pre-)training settings), \"cutmix Yun2019\" row. Training configuration value, not a reported result."
-  },
-  {
-   "extraction": {
-    "metric": "-t/s/b/l",
-    "value": 20.0,
-    "where": "src/main.tex:564",
-    "text": "warmup epochs: -T/S/B/L = 20"
-   },
-   "verdict": "hyperparameter",
-   "notes": "Table 5 (ImageNet-1K/22K (pre-)training settings), \"warmup epochs\" row. Training configuration value, not a reported result."
-  },
-  {
-   "extraction": {
-    "metric": "-t/s/b/l",
-    "value": 300.0,
-    "where": "src/main.tex:564",
-    "text": "training epochs: -T/S/B/L = 300"
-   },
-   "verdict": "hyperparameter",
-   "notes": "Table 5 (ImageNet-1K/22K (pre-)training settings), \"training epochs\" row. Training configuration value, not a reported result."
-  },
-  {
-   "extraction": {
-    "metric": "-t/s/b/l",
-    "value": 4096.0,
-    "where": "src/main.tex:564",
-    "text": "batch size: -T/S/B/L = 4096"
-   },
-   "verdict": "hyperparameter",
-   "notes": "Table 5 (ImageNet-1K/22K (pre-)training settings), \"batch size\" row. Training configuration value, not a reported result."
-  },
-  {
-   "extraction": {
-    "metric": "-t/s/b/l/xl",
-    "value": 0.05,
-    "where": "src/main.tex:564",
-    "text": "weight decay: -T/S/B/L/XL = 0.05"
-   },
-   "verdict": "hyperparameter",
-   "notes": "Table 5 (ImageNet-1K/22K (pre-)training settings), \"weight decay\" row. Training configuration value, not a reported result."
-  },
-  {
-   "extraction": {
-    "metric": "-t/s/b/l/xl",
-    "value": 0.1,
-    "where": "src/main.tex:564",
-    "text": "label smoothing Szegedy2016a: -T/S/B/L/XL = 0.1"
-   },
-   "verdict": "hyperparameter",
-   "notes": "Table 5 (ImageNet-1K/22K (pre-)training settings), \"label smoothing Szegedy2016a\" row. Training configuration value, not a reported result."
-  },
-  {
-   "extraction": {
-    "metric": "-t/s/b/l/xl",
-    "value": 0.25,
-    "where": "src/main.tex:564",
-    "text": "random erasing Zhong2020: -T/S/B/L/XL = 0.25"
-   },
-   "verdict": "hyperparameter",
-   "notes": "Table 5 (ImageNet-1K/22K (pre-)training settings), \"random erasing Zhong2020\" row. Training configuration value, not a reported result."
-  },
-  {
-   "extraction": {
-    "metric": "-t/s/b/l/xl",
-    "value": 0.8,
-    "where": "src/main.tex:564",
-    "text": "mixup Zhang2018a: -T/S/B/L/XL = 0.8"
-   },
-   "verdict": "hyperparameter",
-   "notes": "Table 5 (ImageNet-1K/22K (pre-)training settings), \"mixup Zhang2018a\" row. Training configuration value, not a reported result."
-  },
-  {
-   "extraction": {
-    "metric": "-t/s/b/l/xl",
-    "value": 1.0,
-    "where": "src/main.tex:564",
-    "text": "cutmix Yun2019: -T/S/B/L/XL = 1"
-   },
-   "verdict": "hyperparameter",
-   "notes": "Table 5 (ImageNet-1K/22K (pre-)training settings), \"cutmix Yun2019\" row. Training configuration value, not a reported result."
-  },
-  {
-   "extraction": {
-    "metric": "-t/s/b/l/xl",
-    "value": 5.0,
-    "where": "src/main.tex:564",
-    "text": "warmup epochs: -T/S/B/L/XL = 5"
-   },
-   "verdict": "hyperparameter",
-   "notes": "Table 5 (ImageNet-1K/22K (pre-)training settings), \"warmup epochs\" row. Training configuration value, not a reported result."
-  },
-  {
-   "extraction": {
-    "metric": "-t/s/b/l/xl",
-    "value": 90.0,
-    "where": "src/main.tex:564",
-    "text": "training epochs: -T/S/B/L/XL = 90"
-   },
-   "verdict": "hyperparameter",
-   "notes": "Table 5 (ImageNet-1K/22K (pre-)training settings), \"training epochs\" row. Training configuration value, not a reported result."
-  },
-  {
-   "extraction": {
-    "metric": "-t/s/b/l/xl",
-    "value": 4096.0,
-    "where": "src/main.tex:564",
-    "text": "batch size: -T/S/B/L/XL = 4096"
-   },
-   "verdict": "hyperparameter",
-   "notes": "Table 5 (ImageNet-1K/22K (pre-)training settings), \"batch size\" row. Training configuration value, not a reported result."
-  },
-  {
-   "extraction": {
-    "metric": "-b/l",
-    "value": 0.001,
-    "where": "src/main.tex:599",
-    "text": "head init scale: -B/L = 0.001"
-   },
-   "verdict": "hyperparameter",
-   "notes": "Table 6 (ImageNet-1K fine-tuning settings), \"head init scale\" row. Training configuration value, not a reported result."
-  },
-  {
-   "extraction": {
-    "metric": "-b/l",
-    "value": 0.1,
-    "where": "src/main.tex:599",
-    "text": "label smoothing: -B/L = 0.1"
-   },
-   "verdict": "hyperparameter",
-   "notes": "Table 6 (ImageNet-1K fine-tuning settings), \"label smoothing\" row. Training configuration value, not a reported result."
-  },
-  {
-   "extraction": {
-    "metric": "-b/l",
-    "value": 0.25,
-    "where": "src/main.tex:599",
-    "text": "random erasing: -B/L = 0.25"
-   },
-   "verdict": "hyperparameter",
-   "notes": "Table 6 (ImageNet-1K fine-tuning settings), \"random erasing\" row. Training configuration value, not a reported result."
-  },
-  {
-   "extraction": {
-    "metric": "-b/l",
-    "value": 0.7,
-    "where": "src/main.tex:599",
-    "text": "layer-wise lr decay: -B/L = 0.7"
-   },
-   "verdict": "hyperparameter",
-   "notes": "Table 6 (ImageNet-1K fine-tuning settings), \"layer-wise lr decay\" row. Training configuration value, not a reported result."
-  },
-  {
-   "extraction": {
-    "metric": "-b/l",
-    "value": 30.0,
-    "where": "src/main.tex:599",
-    "text": "training epochs: -B/L = 30"
-   },
-   "verdict": "hyperparameter",
-   "notes": "Table 6 (ImageNet-1K fine-tuning settings), \"training epochs\" row. Training configuration value, not a reported result."
-  },
-  {
-   "extraction": {
-    "metric": "-b/l",
-    "value": 512.0,
-    "where": "src/main.tex:599",
-    "text": "batch size: -B/L = 512"
-   },
-   "verdict": "hyperparameter",
-   "notes": "Table 6 (ImageNet-1K fine-tuning settings), \"batch size\" row. Training configuration value, not a reported result."
-  },
-  {
-   "extraction": {
-    "metric": "-t/s/b/l/xl",
-    "value": 0.001,
-    "where": "src/main.tex:599",
-    "text": "head init scale: -T/S/B/L/XL = 0.001"
-   },
-   "verdict": "hyperparameter",
-   "notes": "Table 6 (ImageNet-1K fine-tuning settings), \"head init scale\" row. Training configuration value, not a reported result."
-  },
-  {
-   "extraction": {
-    "metric": "-t/s/b/l/xl",
-    "value": 30.0,
-    "where": "src/main.tex:599",
-    "text": "training epochs: -T/S/B/L/XL = 30"
-   },
-   "verdict": "hyperparameter",
-   "notes": "Table 6 (ImageNet-1K fine-tuning settings), \"training epochs\" row. Training configuration value, not a reported result."
-  },
-  {
-   "extraction": {
-    "metric": "-t/s/b/l/xl",
-    "value": 512.0,
-    "where": "src/main.tex:599",
-    "text": "batch size: -T/S/B/L/XL = 512"
-   },
-   "verdict": "hyperparameter",
-   "notes": "Table 6 (ImageNet-1K fine-tuning settings), \"batch size\" row. Training configuration value, not a reported result."
   },
   {
    "extraction": {
@@ -1721,7 +1461,7 @@
     "text": "ConvNeXt-XL: C () = 27.1"
    },
    "verdict": "real_own_result",
-   "notes": "Table 8 (robustness evaluation), ConvNeXt-XL row, C/C̄ column. Prose: \"We directly test our ImageNet-1K trained/fine-tuned classification models on several robustness benchmark datasets\" -- own evaluation of the paper's own trained model."
+   "notes": "Table 8 (robustness evaluation), ConvNeXt-XL row, C/C\u0304 column. Prose: \"We directly test our ImageNet-1K trained/fine-tuned classification models on several robustness benchmark datasets\" -- own evaluation of the paper's own trained model."
   },
   {
    "extraction": {
@@ -1731,7 +1471,7 @@
     "text": "ConvNeXt-L: C () = 29.9"
    },
    "verdict": "real_own_result",
-   "notes": "Table 8 (robustness evaluation), ConvNeXt-L row, C/C̄ column. Prose: \"We directly test our ImageNet-1K trained/fine-tuned classification models on several robustness benchmark datasets\" -- own evaluation of the paper's own trained model."
+   "notes": "Table 8 (robustness evaluation), ConvNeXt-L row, C/C\u0304 column. Prose: \"We directly test our ImageNet-1K trained/fine-tuned classification models on several robustness benchmark datasets\" -- own evaluation of the paper's own trained model."
   },
   {
    "extraction": {
@@ -1741,7 +1481,7 @@
     "text": "ConvNeXt-B: C () = 30.7"
    },
    "verdict": "real_own_result",
-   "notes": "Table 8 (robustness evaluation), ConvNeXt-B row, C/C̄ column. Prose: \"We directly test our ImageNet-1K trained/fine-tuned classification models on several robustness benchmark datasets\" -- own evaluation of the paper's own trained model."
+   "notes": "Table 8 (robustness evaluation), ConvNeXt-B row, C/C\u0304 column. Prose: \"We directly test our ImageNet-1K trained/fine-tuned classification models on several robustness benchmark datasets\" -- own evaluation of the paper's own trained model."
   },
   {
    "extraction": {
@@ -1751,7 +1491,7 @@
     "text": "RVT-B*~mao2021towards: C () = 30.8"
    },
    "verdict": "baseline",
-   "notes": "Table 8 (robustness evaluation), RVT-B* row, C/C̄ column. Comparison figure for prior work (Swin/RVT rows carry explicit citations); no statement that the authors produced this row's robustness numbers themselves."
+   "notes": "Table 8 (robustness evaluation), RVT-B* row, C/C\u0304 column. Comparison figure for prior work (Swin/RVT rows carry explicit citations); no statement that the authors produced this row's robustness numbers themselves."
   },
   {
    "extraction": {
@@ -1761,7 +1501,7 @@
     "text": "ConvNeXt-B: C () = 34.4"
    },
    "verdict": "real_own_result",
-   "notes": "Table 8 (robustness evaluation), ConvNeXt-B row, C/C̄ column. Prose: \"We directly test our ImageNet-1K trained/fine-tuned classification models on several robustness benchmark datasets\" -- own evaluation of the paper's own trained model."
+   "notes": "Table 8 (robustness evaluation), ConvNeXt-B row, C/C\u0304 column. Prose: \"We directly test our ImageNet-1K trained/fine-tuned classification models on several robustness benchmark datasets\" -- own evaluation of the paper's own trained model."
   },
   {
    "extraction": {
@@ -1771,7 +1511,7 @@
     "text": "RVT-S*~mao2021towards: C () = 37.5"
    },
    "verdict": "baseline",
-   "notes": "Table 8 (robustness evaluation), RVT-S* row, C/C̄ column. Comparison figure for prior work (Swin/RVT rows carry explicit citations); no statement that the authors produced this row's robustness numbers themselves."
+   "notes": "Table 8 (robustness evaluation), RVT-S* row, C/C\u0304 column. Comparison figure for prior work (Swin/RVT rows carry explicit citations); no statement that the authors produced this row's robustness numbers themselves."
   },
   {
    "extraction": {
@@ -1781,7 +1521,7 @@
     "text": "ConvNeXt-XL: C () = 38.8"
    },
    "verdict": "real_own_result",
-   "notes": "Table 8 (robustness evaluation), ConvNeXt-XL row, C/C̄ column. Prose: \"We directly test our ImageNet-1K trained/fine-tuned classification models on several robustness benchmark datasets\" -- own evaluation of the paper's own trained model."
+   "notes": "Table 8 (robustness evaluation), ConvNeXt-XL row, C/C\u0304 column. Prose: \"We directly test our ImageNet-1K trained/fine-tuned classification models on several robustness benchmark datasets\" -- own evaluation of the paper's own trained model."
   },
   {
    "extraction": {
@@ -1791,7 +1531,7 @@
     "text": "ConvNeXt-T: C () = 40"
    },
    "verdict": "real_own_result",
-   "notes": "Table 8 (robustness evaluation), ConvNeXt-T row, C/C̄ column. Prose: \"We directly test our ImageNet-1K trained/fine-tuned classification models on several robustness benchmark datasets\" -- own evaluation of the paper's own trained model."
+   "notes": "Table 8 (robustness evaluation), ConvNeXt-T row, C/C\u0304 column. Prose: \"We directly test our ImageNet-1K trained/fine-tuned classification models on several robustness benchmark datasets\" -- own evaluation of the paper's own trained model."
   },
   {
    "extraction": {
@@ -1801,7 +1541,7 @@
     "text": "ConvNeXt-L: C () = 40.2"
    },
    "verdict": "real_own_result",
-   "notes": "Table 8 (robustness evaluation), ConvNeXt-L row, C/C̄ column. Prose: \"We directly test our ImageNet-1K trained/fine-tuned classification models on several robustness benchmark datasets\" -- own evaluation of the paper's own trained model."
+   "notes": "Table 8 (robustness evaluation), ConvNeXt-L row, C/C\u0304 column. Prose: \"We directly test our ImageNet-1K trained/fine-tuned classification models on several robustness benchmark datasets\" -- own evaluation of the paper's own trained model."
   },
   {
    "extraction": {
@@ -1811,7 +1551,7 @@
     "text": "ConvNeXt-B: C () = 43.1"
    },
    "verdict": "real_own_result",
-   "notes": "Table 8 (robustness evaluation), ConvNeXt-B row, C/C̄ column. Prose: \"We directly test our ImageNet-1K trained/fine-tuned classification models on several robustness benchmark datasets\" -- own evaluation of the paper's own trained model."
+   "notes": "Table 8 (robustness evaluation), ConvNeXt-B row, C/C\u0304 column. Prose: \"We directly test our ImageNet-1K trained/fine-tuned classification models on several robustness benchmark datasets\" -- own evaluation of the paper's own trained model."
   },
   {
    "extraction": {
@@ -1821,7 +1561,7 @@
     "text": "ConvNeXt-B: C () = 46.8"
    },
    "verdict": "real_own_result",
-   "notes": "Table 8 (robustness evaluation), ConvNeXt-B row, C/C̄ column. Prose: \"We directly test our ImageNet-1K trained/fine-tuned classification models on several robustness benchmark datasets\" -- own evaluation of the paper's own trained model."
+   "notes": "Table 8 (robustness evaluation), ConvNeXt-B row, C/C\u0304 column. Prose: \"We directly test our ImageNet-1K trained/fine-tuned classification models on several robustness benchmark datasets\" -- own evaluation of the paper's own trained model."
   },
   {
    "extraction": {
@@ -1831,7 +1571,7 @@
     "text": "RVT-S*~mao2021towards: C () = 49.4"
    },
    "verdict": "baseline",
-   "notes": "Table 8 (robustness evaluation), RVT-S* row, C/C̄ column. Comparison figure for prior work (Swin/RVT rows carry explicit citations); no statement that the authors produced this row's robustness numbers themselves."
+   "notes": "Table 8 (robustness evaluation), RVT-S* row, C/C\u0304 column. Comparison figure for prior work (Swin/RVT rows carry explicit citations); no statement that the authors produced this row's robustness numbers themselves."
   },
   {
    "extraction": {
@@ -1841,7 +1581,7 @@
     "text": "ConvNeXt-T: C () = 53.2"
    },
    "verdict": "real_own_result",
-   "notes": "Table 8 (robustness evaluation), ConvNeXt-T row, C/C̄ column. Prose: \"We directly test our ImageNet-1K trained/fine-tuned classification models on several robustness benchmark datasets\" -- own evaluation of the paper's own trained model."
+   "notes": "Table 8 (robustness evaluation), ConvNeXt-T row, C/C\u0304 column. Prose: \"We directly test our ImageNet-1K trained/fine-tuned classification models on several robustness benchmark datasets\" -- own evaluation of the paper's own trained model."
   },
   {
    "extraction": {
@@ -1851,7 +1591,7 @@
     "text": "Swin-B~Liu2021swin: C () = 54.4"
    },
    "verdict": "baseline",
-   "notes": "Table 8 (robustness evaluation), Swin-B row, C/C̄ column. Comparison figure for prior work (Swin/RVT rows carry explicit citations); no statement that the authors produced this row's robustness numbers themselves."
+   "notes": "Table 8 (robustness evaluation), Swin-B row, C/C\u0304 column. Comparison figure for prior work (Swin/RVT rows carry explicit citations); no statement that the authors produced this row's robustness numbers themselves."
   },
   {
    "extraction": {
@@ -1861,7 +1601,7 @@
     "text": "ResNet-50: C () = 57.7"
    },
    "verdict": "baseline",
-   "notes": "Table 8 (robustness evaluation), ResNet-50 row, C/C̄ column. Comparison figure for prior work (Swin/RVT rows carry explicit citations); no statement that the authors produced this row's robustness numbers themselves."
+   "notes": "Table 8 (robustness evaluation), ResNet-50 row, C/C\u0304 column. Comparison figure for prior work (Swin/RVT rows carry explicit citations); no statement that the authors produced this row's robustness numbers themselves."
   },
   {
    "extraction": {
@@ -1871,7 +1611,7 @@
     "text": "Swin-T~Liu2021swin: C () = 62"
    },
    "verdict": "baseline",
-   "notes": "Table 8 (robustness evaluation), Swin-T row, C/C̄ column. Comparison figure for prior work (Swin/RVT rows carry explicit citations); no statement that the authors produced this row's robustness numbers themselves."
+   "notes": "Table 8 (robustness evaluation), Swin-T row, C/C\u0304 column. Comparison figure for prior work (Swin/RVT rows carry explicit citations); no statement that the authors produced this row's robustness numbers themselves."
   },
   {
    "extraction": {
@@ -1881,7 +1621,7 @@
     "text": "ResNet-50: C () = 76.7"
    },
    "verdict": "baseline",
-   "notes": "Table 8 (robustness evaluation), ResNet-50 row, C/C̄ column. Comparison figure for prior work (Swin/RVT rows carry explicit citations); no statement that the authors produced this row's robustness numbers themselves."
+   "notes": "Table 8 (robustness evaluation), ResNet-50 row, C/C\u0304 column. Comparison figure for prior work (Swin/RVT rows carry explicit citations); no statement that the authors produced this row's robustness numbers themselves."
   },
   {
    "extraction": {
@@ -2228,10 +1968,12 @@
     "metric": "gflops",
     "value": 4.09,
     "where": "src/main.tex:805",
-    "text": "ResNet-50 (PyTorchtorchvision): GFLOPs = 4.09"
+    "text": "ResNet-50 (enhanced recipe): GFLOPs = 4.09",
+    "row_label": "ResNet-50 (enhanced recipe)",
+    "column_label": "GFLOPs"
    },
-   "verdict": "baseline",
-   "notes": "Table 10 (detailed ResNet-50 modernization results), \"ResNet-50 (PyTorch) / ResNet-50 (enhanced recipe) [tied]\" row, GFLOPs. Quoted/reference architecture spec, not an own experimental result."
+   "verdict": "real_own_result",
+   "notes": "Table 10 (detailed results for modernizing a ResNet-50, p11), \"ResNet-50 (enhanced recipe)\" row, GFLOPs. The authors' own modernization step, so its architecture spec is an own result, matching this file's treatment of \"ResNet-200 (enhanced recipe)\" GFLOPs = 15.01 and of every other roadmap-step row. Re-pointed from the tied cited \"ResNet-50 (PyTorch)\" cell, which now carries its own labelled baseline verdict: before cell labels existed this verdict could name either of the two 4.09 cells and the earlier note recorded them as tied."
   },
   {
    "extraction": {
@@ -2241,7 +1983,7 @@
     "text": "kernel size  5: GFLOPs = 4.1"
    },
    "verdict": "real_own_result",
-   "notes": "Table 10 (detailed ResNet-50 modernization results), \"kernel size →5\" row, GFLOPs. Own roadmap experiment's model spec."
+   "notes": "Table 10 (detailed ResNet-50 modernization results), \"kernel size \u21925\" row, GFLOPs. Own roadmap experiment's model spec."
   },
   {
    "extraction": {
@@ -2251,7 +1993,7 @@
     "text": "ReLU  GELU: GFLOPs = 4.15"
    },
    "verdict": "real_own_result",
-   "notes": "Table 10 (detailed ResNet-50 modernization results), \"kernel size →7 / ReLU→GELU / fewer activations / fewer norms [4-way tied]\" row, GFLOPs. Own roadmap experiment's model spec."
+   "notes": "Table 10 (detailed ResNet-50 modernization results), \"kernel size \u21927 / ReLU\u2192GELU / fewer activations / fewer norms [4-way tied]\" row, GFLOPs. Own roadmap experiment's model spec."
   },
   {
    "extraction": {
@@ -2261,7 +2003,7 @@
     "text": "kernel size  9: GFLOPs = 4.21"
    },
    "verdict": "real_own_result",
-   "notes": "Table 10 (detailed ResNet-50 modernization results), \"kernel size →9\" row, GFLOPs. Own roadmap experiment's model spec."
+   "notes": "Table 10 (detailed ResNet-50 modernization results), \"kernel size \u21929\" row, GFLOPs. Own roadmap experiment's model spec."
   },
   {
    "extraction": {
@@ -2271,7 +2013,7 @@
     "text": "kernel size  11: GFLOPs = 4.29"
    },
    "verdict": "real_own_result",
-   "notes": "Table 10 (detailed ResNet-50 modernization results), \"kernel size →11\" row, GFLOPs. Own roadmap experiment's model spec."
+   "notes": "Table 10 (detailed ResNet-50 modernization results), \"kernel size \u219211\" row, GFLOPs. Own roadmap experiment's model spec."
   },
   {
    "extraction": {
@@ -2281,7 +2023,7 @@
     "text": "``patchify'' stem: GFLOPs = 4.42"
    },
    "verdict": "real_own_result",
-   "notes": "Table 10 (detailed ResNet-50 modernization results), \"“patchify” stem\" row, GFLOPs. Own roadmap experiment's model spec."
+   "notes": "Table 10 (detailed ResNet-50 modernization results), \"\u201cpatchify\u201d stem\" row, GFLOPs. Own roadmap experiment's model spec."
   },
   {
    "extraction": {
@@ -2291,7 +2033,7 @@
     "text": "BN  LN: GFLOPs = 4.46"
    },
    "verdict": "real_own_result",
-   "notes": "Table 10 (detailed ResNet-50 modernization results), \"BN→LN\" row, GFLOPs. Own roadmap experiment's model spec."
+   "notes": "Table 10 (detailed ResNet-50 modernization results), \"BN\u2192LN\" row, GFLOPs. Own roadmap experiment's model spec."
   },
   {
    "extraction": {
@@ -2381,7 +2123,7 @@
     "text": "``patchify'' stem: IN-1K acc. = 81.59"
    },
    "verdict": "real_own_result",
-   "notes": "Table 11 (detailed ResNet-200 modernization results), \"“patchify” stem\" row, IN-1K acc. Own roadmap experiment."
+   "notes": "Table 11 (detailed ResNet-200 modernization results), \"\u201cpatchify\u201d stem\" row, IN-1K acc. Own roadmap experiment."
   },
   {
    "extraction": {
@@ -2401,7 +2143,7 @@
     "text": "kernel size  11: IN-1K acc. = 82.18"
    },
    "verdict": "real_own_result",
-   "notes": "Table 11 (detailed ResNet-200 modernization results), \"kernel size →11\" row, IN-1K acc. Own roadmap experiment."
+   "notes": "Table 11 (detailed ResNet-200 modernization results), \"kernel size \u219211\" row, IN-1K acc. Own roadmap experiment."
   },
   {
    "extraction": {
@@ -2411,7 +2153,7 @@
     "text": "ReLU  GELU: IN-1K acc. = 82.19"
    },
    "verdict": "real_own_result",
-   "notes": "Table 11 (detailed ResNet-200 modernization results), \"ReLU→GELU\" row, IN-1K acc. Own roadmap experiment."
+   "notes": "Table 11 (detailed ResNet-200 modernization results), \"ReLU\u2192GELU\" row, IN-1K acc. Own roadmap experiment."
   },
   {
    "extraction": {
@@ -2421,7 +2163,7 @@
     "text": "kernel size  9: IN-1K acc. = 82.27"
    },
    "verdict": "real_own_result",
-   "notes": "Table 11 (detailed ResNet-200 modernization results), \"kernel size →9\" row, IN-1K acc. Own roadmap experiment."
+   "notes": "Table 11 (detailed ResNet-200 modernization results), \"kernel size \u21929\" row, IN-1K acc. Own roadmap experiment."
   },
   {
    "extraction": {
@@ -2431,7 +2173,7 @@
     "text": "kernel size  7: IN-1K acc. = 82.3"
    },
    "verdict": "real_own_result",
-   "notes": "Table 11 (detailed ResNet-200 modernization results), \"kernel size →7\" row, IN-1K acc. Own roadmap experiment."
+   "notes": "Table 11 (detailed ResNet-200 modernization results), \"kernel size \u21927\" row, IN-1K acc. Own roadmap experiment."
   },
   {
    "extraction": {
@@ -2441,7 +2183,7 @@
     "text": "kernel size  5: IN-1K acc. = 82.32"
    },
    "verdict": "real_own_result",
-   "notes": "Table 11 (detailed ResNet-200 modernization results), \"kernel size →5\" row, IN-1K acc. Own roadmap experiment."
+   "notes": "Table 11 (detailed ResNet-200 modernization results), \"kernel size \u21925\" row, IN-1K acc. Own roadmap experiment."
   },
   {
    "extraction": {
@@ -2481,7 +2223,7 @@
     "text": "BN  LN: IN-1K acc. = 83.35"
    },
    "verdict": "real_own_result",
-   "notes": "Table 11 (detailed ResNet-200 modernization results), \"BN→LN\" row, IN-1K acc. Own roadmap experiment."
+   "notes": "Table 11 (detailed ResNet-200 modernization results), \"BN\u2192LN\" row, IN-1K acc. Own roadmap experiment."
   },
   {
    "extraction": {
@@ -2521,7 +2263,7 @@
     "text": "``patchify'' stem: GFLOPs = 14.38"
    },
    "verdict": "real_own_result",
-   "notes": "Table 11 (detailed ResNet-200 modernization results), \"“patchify” stem\" row, GFLOPs. Own roadmap experiment's model spec."
+   "notes": "Table 11 (detailed ResNet-200 modernization results), \"\u201cpatchify\u201d stem\" row, GFLOPs. Own roadmap experiment's model spec."
   },
   {
    "extraction": {
@@ -2551,7 +2293,7 @@
     "text": "kernel size  5: GFLOPs = 14.7"
    },
    "verdict": "real_own_result",
-   "notes": "Table 11 (detailed ResNet-200 modernization results), \"kernel size →5\" row, GFLOPs. Own roadmap experiment's model spec."
+   "notes": "Table 11 (detailed ResNet-200 modernization results), \"kernel size \u21925\" row, GFLOPs. Own roadmap experiment's model spec."
   },
   {
    "extraction": {
@@ -2561,7 +2303,7 @@
     "text": "BN  LN: GFLOPs = 14.81"
    },
    "verdict": "real_own_result",
-   "notes": "Table 11 (detailed ResNet-200 modernization results), \"BN→LN / kernel size →7 / ReLU→GELU / fewer activations / fewer norms [tied]\" row, GFLOPs. Own roadmap experiment's model spec."
+   "notes": "Table 11 (detailed ResNet-200 modernization results), \"BN\u2192LN / kernel size \u21927 / ReLU\u2192GELU / fewer activations / fewer norms [tied]\" row, GFLOPs. Own roadmap experiment's model spec."
   },
   {
    "extraction": {
@@ -2571,7 +2313,7 @@
     "text": "kernel size  9: GFLOPs = 14.95"
    },
    "verdict": "real_own_result",
-   "notes": "Table 11 (detailed ResNet-200 modernization results), \"kernel size →9\" row, GFLOPs. Own roadmap experiment's model spec."
+   "notes": "Table 11 (detailed ResNet-200 modernization results), \"kernel size \u21929\" row, GFLOPs. Own roadmap experiment's model spec."
   },
   {
    "extraction": {
@@ -2591,7 +2333,7 @@
     "text": "kernel size  11: GFLOPs = 15.13"
    },
    "verdict": "real_own_result",
-   "notes": "Table 11 (detailed ResNet-200 modernization results), \"kernel size →11\" row, GFLOPs. Own roadmap experiment's model spec."
+   "notes": "Table 11 (detailed ResNet-200 modernization results), \"kernel size \u219211\" row, GFLOPs. Own roadmap experiment's model spec."
   },
   {
    "extraction": {
@@ -2632,6 +2374,726 @@
    },
    "verdict": "real_own_result",
    "notes": "Table 11 (detailed ResNet-200 modernization results), \"increase width\" row, GFLOPs. Own roadmap experiment's model spec."
+  },
+  {
+   "extraction": {
+    "metric": "box_ap",
+    "value": 50.4,
+    "where": "src/main.tex:449",
+    "text": "Swin-T: AP^box = 50.4",
+    "row_label": "Swin-T",
+    "column_label": "AP^box"
+   },
+   "verdict": "baseline",
+   "notes": "Table 3 (COCO detection/segmentation, p8), Swin-T row, AP^box. Caption: \"ImageNet-1K pre-trained Swin results are from their Github repository [3]\" - an AP cell attributed to prior work's own repository. FPS in the same row is the authors' own measurement, but this cell is not: ownership is per cell. Tied in value with a ConvNeXt cell in the same column, so the row label is what separates them."
+  },
+  {
+   "extraction": {
+    "metric": "box_ap",
+    "value": 51.9,
+    "where": "src/main.tex:449",
+    "text": "Swin-B: AP^box = 51.9",
+    "row_label": "Swin-B",
+    "column_label": "AP^box"
+   },
+   "verdict": "baseline",
+   "notes": "Table 3 (COCO detection/segmentation, p8), Swin-B row, AP^box. Caption: \"ImageNet-1K pre-trained Swin results are from their Github repository [3]\" - an AP cell attributed to prior work's own repository. FPS in the same row is the authors' own measurement, but this cell is not: ownership is per cell. Tied in value with a ConvNeXt cell in the same column, so the row label is what separates them."
+  },
+  {
+   "extraction": {
+    "metric": "box_ap",
+    "value": 51.9,
+    "where": "src/main.tex:449",
+    "text": "Swin-S: AP^box = 51.9",
+    "row_label": "Swin-S",
+    "column_label": "AP^box"
+   },
+   "verdict": "baseline",
+   "notes": "Table 3 (COCO detection/segmentation, p8), Swin-S row, AP^box. Caption: \"ImageNet-1K pre-trained Swin results are from their Github repository [3]\" - an AP cell attributed to prior work's own repository. FPS in the same row is the authors' own measurement, but this cell is not: ownership is per cell. Tied in value with a ConvNeXt cell in the same column, so the row label is what separates them."
+  },
+  {
+   "extraction": {
+    "metric": "mask_ap",
+    "value": 43.7,
+    "where": "src/main.tex:449",
+    "text": "Swin-T: AP^mask = 43.7",
+    "row_label": "Swin-T",
+    "column_label": "AP^mask"
+   },
+   "verdict": "baseline",
+   "notes": "Table 3 (COCO detection/segmentation, p8), Swin-T row, AP^mask. Caption: \"ImageNet-1K pre-trained Swin results are from their Github repository [3]\" - an AP cell attributed to prior work's own repository. FPS in the same row is the authors' own measurement, but this cell is not: ownership is per cell. Tied in value with a ConvNeXt cell in the same column, so the row label is what separates them."
+  },
+  {
+   "extraction": {
+    "metric": "mask_ap",
+    "value": 45.0,
+    "where": "src/main.tex:449",
+    "text": "Swin-B: AP^mask = 45",
+    "row_label": "Swin-B",
+    "column_label": "AP^mask"
+   },
+   "verdict": "baseline",
+   "notes": "Table 3 (COCO detection/segmentation, p8), Swin-B row, AP^mask. Caption: \"ImageNet-1K pre-trained Swin results are from their Github repository [3]\" - an AP cell attributed to prior work's own repository. FPS in the same row is the authors' own measurement, but this cell is not: ownership is per cell. Tied in value with a ConvNeXt cell in the same column, so the row label is what separates them."
+  },
+  {
+   "extraction": {
+    "metric": "mask_ap",
+    "value": 45.0,
+    "where": "src/main.tex:449",
+    "text": "Swin-S: AP^mask = 45",
+    "row_label": "Swin-S",
+    "column_label": "AP^mask"
+   },
+   "verdict": "baseline",
+   "notes": "Table 3 (COCO detection/segmentation, p8), Swin-S row, AP^mask. Caption: \"ImageNet-1K pre-trained Swin results are from their Github repository [3]\" - an AP cell attributed to prior work's own repository. FPS in the same row is the authors' own measurement, but this cell is not: ownership is per cell. Tied in value with a ConvNeXt cell in the same column, so the row label is what separates them."
+  },
+  {
+   "extraction": {
+    "metric": "mask_ap75",
+    "value": 44.9,
+    "where": "src/main.tex:449",
+    "text": "Swin-T: AP^mask_75 = 44.9",
+    "row_label": "Swin-T",
+    "column_label": "AP^mask_75"
+   },
+   "verdict": "baseline",
+   "notes": "Table 3 (COCO detection/segmentation, p8), Swin-T row, AP^mask_75. Caption: \"ImageNet-1K pre-trained Swin results are from their Github repository [3]\" - an AP cell attributed to prior work's own repository. FPS in the same row is the authors' own measurement, but this cell is not: ownership is per cell. Tied in value with a ConvNeXt cell in the same column, so the row label is what separates them."
+  },
+  {
+   "extraction": {
+    "metric": "mask_ap75",
+    "value": 47.3,
+    "where": "src/main.tex:449",
+    "text": "Swin-T: AP^mask_75 = 47.3",
+    "row_label": "Swin-T",
+    "column_label": "AP^mask_75"
+   },
+   "verdict": "baseline",
+   "notes": "Table 3 (COCO detection/segmentation, p8), Swin-T row, AP^mask_75. Caption: \"ImageNet-1K pre-trained Swin results are from their Github repository [3]\" - an AP cell attributed to prior work's own repository. FPS in the same row is the authors' own measurement, but this cell is not: ownership is per cell. Tied in value with a ConvNeXt cell in the same column, so the row label is what separates them."
+  },
+  {
+   "extraction": {
+    "metric": "mask_ap",
+    "value": 41.6,
+    "where": "src/main.tex:449",
+    "text": "X101-32: AP^mask = 41.6",
+    "row_label": "X101-32",
+    "column_label": "AP^mask"
+   },
+   "verdict": "baseline",
+   "notes": "Table 3 (COCO detection/segmentation, p8), X101-32 row, AP^mask. Caption: \"AP numbers of the ResNet-50 and X101 models are from [45]\" - quoted from prior work. The FPS cell in the same row is the authors' own measurement; ownership is per cell."
+  },
+  {
+   "extraction": {
+    "metric": "mask_ap",
+    "value": 41.7,
+    "where": "src/main.tex:449",
+    "text": "X101-64: AP^mask = 41.7",
+    "row_label": "X101-64",
+    "column_label": "AP^mask"
+   },
+   "verdict": "baseline",
+   "notes": "Table 3 (COCO detection/segmentation, p8), X101-64 row, AP^mask. Caption: \"AP numbers of the ResNet-50 and X101 models are from [45]\" - quoted from prior work. The FPS cell in the same row is the authors' own measurement; ownership is per cell."
+  },
+  {
+   "extraction": {
+    "metric": "fps",
+    "value": 10.7,
+    "where": "src/main.tex:449",
+    "text": "Swin-B^: FPS = 10.7",
+    "row_label": "Swin-B^",
+    "column_label": "FPS"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 3 (COCO detection/segmentation, p8), Swin-B^ row, FPS. Caption: \"We measure FPS on an A100 GPU\" applies to every row of the table, competitors included, so this is the authors' own measurement even though the AP cells beside it in a Swin row are quoted. Ownership is per cell, not per row. Value 10.7 is tied with another FPS cell in the same column; the row label separates them and both are own measurements."
+  },
+  {
+   "extraction": {
+    "metric": "fps",
+    "value": 11.4,
+    "where": "src/main.tex:449",
+    "text": "Swin-S: FPS = 11.4",
+    "row_label": "Swin-S",
+    "column_label": "FPS"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 3 (COCO detection/segmentation, p8), Swin-S row, FPS. Caption: \"We measure FPS on an A100 GPU\" applies to every row of the table, competitors included, so this is the authors' own measurement even though the AP cells beside it in a Swin row are quoted. Ownership is per cell, not per row. Value 11.4 is tied with another FPS cell in the same column; the row label separates them and both are own measurements."
+  },
+  {
+   "extraction": {
+    "metric": "box_ap75",
+    "value": 58.8,
+    "where": "src/main.tex:449",
+    "text": "Swin-L^: AP^box_75 = 58.8",
+    "row_label": "Swin-L^",
+    "column_label": "AP^box_75"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 3 (COCO detection/segmentation, p8), Swin-L^ row, AP^box_75. Appendix A.3 (p10): \"We fine-tune the ImageNet-22K pre-trained Swin-B/L on COCO using the same sweep. We use the official code and pre-trained model weights [3]\" - the authors' own run of prior work's model, so a real own result, and outside the caption's \"ImageNet-1K pre-trained Swin results are from their Github repository\". Tied in value with ConvNeXt-B\u2021's 58.8 in the same column; the row label separates them. Matches the existing verdicts for the other ten Swin-B\u2021/Swin-L\u2021 AP cells."
+  },
+  {
+   "extraction": {
+    "metric": "iou",
+    "value": 46.7,
+    "where": "src/main.tex:496",
+    "text": "ConvNeXt-T: mIoU = 46.7",
+    "row_label": "ConvNeXt-T",
+    "column_label": "mIoU"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 4 (ADE20K validation, p8), ConvNeXt-T row, mIoU (multi-scale testing). A ConvNeXt row: the paper's own segmentation result. The caption attributes only the Swin rows (\"Swins' results are from its GitHub repository [2]\")."
+  },
+  {
+   "extraction": {
+    "metric": "iou",
+    "value": 49.6,
+    "where": "src/main.tex:496",
+    "text": "ConvNeXt-S: mIoU = 49.6",
+    "row_label": "ConvNeXt-S",
+    "column_label": "mIoU"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 4 (ADE20K validation, p8), ConvNeXt-S row, mIoU (multi-scale testing). A ConvNeXt row: the paper's own segmentation result. The caption attributes only the Swin rows (\"Swins' results are from its GitHub repository [2]\")."
+  },
+  {
+   "extraction": {
+    "metric": "iou",
+    "value": 49.9,
+    "where": "src/main.tex:496",
+    "text": "ConvNeXt-B: mIoU = 49.9",
+    "row_label": "ConvNeXt-B",
+    "column_label": "mIoU"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 4 (ADE20K validation, p8), ConvNeXt-B row, mIoU (multi-scale testing). A ConvNeXt row: the paper's own segmentation result. The caption attributes only the Swin rows (\"Swins' results are from its GitHub repository [2]\")."
+  },
+  {
+   "extraction": {
+    "metric": "iou",
+    "value": 53.1,
+    "where": "src/main.tex:496",
+    "text": "ConvNeXt-B^: mIoU = 53.1",
+    "row_label": "ConvNeXt-B^",
+    "column_label": "mIoU"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 4 (ADE20K validation, p8), ConvNeXt-B^ row, mIoU (multi-scale testing). A ConvNeXt row: the paper's own segmentation result. The caption attributes only the Swin rows (\"Swins' results are from its GitHub repository [2]\")."
+  },
+  {
+   "extraction": {
+    "metric": "iou",
+    "value": 53.7,
+    "where": "src/main.tex:496",
+    "text": "ConvNeXt-L^: mIoU = 53.7",
+    "row_label": "ConvNeXt-L^",
+    "column_label": "mIoU"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 4 (ADE20K validation, p8), ConvNeXt-L^ row, mIoU (multi-scale testing). A ConvNeXt row: the paper's own segmentation result. The caption attributes only the Swin rows (\"Swins' results are from its GitHub repository [2]\")."
+  },
+  {
+   "extraction": {
+    "metric": "iou",
+    "value": 54.0,
+    "where": "src/main.tex:496",
+    "text": "ConvNeXt-XL^: mIoU = 54",
+    "row_label": "ConvNeXt-XL^",
+    "column_label": "mIoU"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 4 (ADE20K validation, p8), ConvNeXt-XL^ row, mIoU (multi-scale testing). A ConvNeXt row: the paper's own segmentation result. The caption attributes only the Swin rows (\"Swins' results are from its GitHub repository [2]\")."
+  },
+  {
+   "extraction": {
+    "metric": "iou",
+    "value": 52.6,
+    "where": "src/main.tex:654",
+    "text": "ConvNeXt-B^: mIoU = 52.6",
+    "row_label": "ConvNeXt-B^",
+    "column_label": "mIoU"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 7 (ADE20K validation with single-scale testing, p10), ConvNeXt-B^ row, mIoU. ConvNeXt-only table, no citation on any row: the paper's own result. The same number also appears in semantic_segmentation/README.md, which already carries its own verdict at that locator; this verdict is for the paper cell."
+  },
+  {
+   "extraction": {
+    "metric": "iou",
+    "value": 53.2,
+    "where": "src/main.tex:654",
+    "text": "ConvNeXt-L^: mIoU = 53.2",
+    "row_label": "ConvNeXt-L^",
+    "column_label": "mIoU"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 7 (ADE20K validation with single-scale testing, p10), ConvNeXt-L^ row, mIoU. ConvNeXt-only table, no citation on any row: the paper's own result. The same number also appears in semantic_segmentation/README.md, which already carries its own verdict at that locator; this verdict is for the paper cell."
+  },
+  {
+   "extraction": {
+    "metric": "iou",
+    "value": 53.6,
+    "where": "src/main.tex:654",
+    "text": "ConvNeXt-XL^: mIoU = 53.6",
+    "row_label": "ConvNeXt-XL^",
+    "column_label": "mIoU"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 7 (ADE20K validation with single-scale testing, p10), ConvNeXt-XL^ row, mIoU. ConvNeXt-only table, no citation on any row: the paper's own result. The same number also appears in semantic_segmentation/README.md, which already carries its own verdict at that locator; this verdict is for the paper cell."
+  },
+  {
+   "extraction": {
+    "metric": "convnext-t/s/b/l/xl",
+    "value": 0.8,
+    "where": "src/main.tex:599",
+    "text": "layer-wise lr decay: ConvNeXt-T/S/B/L/XL = 0.8",
+    "row_label": "layer-wise lr decay",
+    "column_label": "ConvNeXt-T/S/B/L/XL"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Table 6 (ImageNet-1K fine-tuning settings, p10), \"layer-wise lr decay\" row, ConvNeXt-T/S/B/L/XL column: 0.8 (the ConvNeXt-B/L column beside it reads 0.7). A training setting, not an outcome. Read from the rendered page image, which shows both columns of that row. This is the one extraction in the convnext-* group with no stale verdict to carry across: the old parse recorded only three values for this column at main.tex:599 (0.001, 30, 512) and never this cell."
+  },
+  {
+   "extraction": {
+    "metric": "c ()",
+    "value": 46.8,
+    "where": "src/main.tex:683",
+    "text": "RVT-B*: C () = 46.8",
+    "row_label": "RVT-B*",
+    "column_label": "C ()"
+   },
+   "verdict": "baseline",
+   "notes": "Table 8 (robustness evaluation, p10), RVT-B* row, C (mCE, lower is better) column = 46.8. The row reads \"RVT-B* [47]\", a citation, and the prose claims only that \"we directly test our ImageNet-1K trained/fine-tuned classification models\" - the authors' own rows are the ConvNeXt ones. Note ConvNeXt-B carries 46.8 in the same column (bold) and already has its own real_own_result verdict; the row label is the only thing separating the two cells."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 81.3,
+    "where": "src/main.tex:805",
+    "text": "Swin-T: IN-1K acc. = 81.3",
+    "row_label": "Swin-T",
+    "column_label": "IN-1K acc."
+   },
+   "verdict": "baseline",
+   "notes": "Table 10 (detailed results for modernizing a ResNet-50, p11), \"Swin-T [45]\" row, IN-1K acc. The paper prints 81.30; a cited comparison figure, not an own run. The existing verdict on 81.33 notes that Swin-T's 81.30 \"is not separately extracted anywhere\" - it now is, and this is that cell."
+  },
+  {
+   "extraction": {
+    "metric": "gflops",
+    "value": 4.09,
+    "where": "src/main.tex:805",
+    "text": "ResNet-50 (PyTorch): GFLOPs = 4.09",
+    "row_label": "ResNet-50 (PyTorch)",
+    "column_label": "GFLOPs"
+   },
+   "verdict": "baseline",
+   "notes": "Table 10 (detailed results for modernizing a ResNet-50, p11), \"ResNet-50 (PyTorch [1])\" row, GFLOPs. A cited torchvision reference model - the accuracy 76.13 in the same row already carries a baseline verdict - so its architecture spec is quoted, not an own experimental result. Follows the file's existing treatment of GFLOPs on cited rows (Swin-T 4.50, Swin-B 15.43, both baseline). 4.09 is tied with the authors' own \"ResNet-50 (enhanced recipe)\" row, which is the same architecture; the row label is what separates the two cells."
+  },
+  {
+   "extraction": {
+    "metric": "gflops",
+    "value": 4.15,
+    "where": "src/main.tex:805",
+    "text": "fewer activations: GFLOPs = 4.15",
+    "row_label": "fewer activations",
+    "column_label": "GFLOPs"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 10 (detailed results for modernizing a ResNet-50, p11), \"fewer activations\" row, GFLOPs. A step on the authors' own modernization roadmap, so the model spec is their own. GFLOPs 4.15 is tied across several roadmap rows in this table; the row label is what separates them and all of them are own results."
+  },
+  {
+   "extraction": {
+    "metric": "gflops",
+    "value": 4.15,
+    "where": "src/main.tex:805",
+    "text": "fewer norms: GFLOPs = 4.15",
+    "row_label": "fewer norms",
+    "column_label": "GFLOPs"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 10 (detailed results for modernizing a ResNet-50, p11), \"fewer norms\" row, GFLOPs. A step on the authors' own modernization roadmap, so the model spec is their own. GFLOPs 4.15 is tied across several roadmap rows in this table; the row label is what separates them and all of them are own results."
+  },
+  {
+   "extraction": {
+    "metric": "gflops",
+    "value": 4.15,
+    "where": "src/main.tex:805",
+    "text": "kernel size 7: GFLOPs = 4.15",
+    "row_label": "kernel size 7",
+    "column_label": "GFLOPs"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 10 (detailed results for modernizing a ResNet-50, p11), \"kernel size 7\" row, GFLOPs. A step on the authors' own modernization roadmap, so the model spec is their own. GFLOPs 4.15 is tied across several roadmap rows in this table; the row label is what separates them and all of them are own results."
+  },
+  {
+   "extraction": {
+    "metric": "gflops",
+    "value": 14.81,
+    "where": "src/main.tex:841",
+    "text": "ReLU GELU: GFLOPs = 14.81",
+    "row_label": "ReLU GELU",
+    "column_label": "GFLOPs"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 11 (detailed results for modernizing a ResNet-200, p11), \"ReLU GELU\" row, GFLOPs. A step on the authors' own modernization roadmap, so the model spec is their own. GFLOPs 14.81 is tied across several roadmap rows in this table; the row label is what separates them and all of them are own results."
+  },
+  {
+   "extraction": {
+    "metric": "gflops",
+    "value": 14.81,
+    "where": "src/main.tex:841",
+    "text": "fewer activations: GFLOPs = 14.81",
+    "row_label": "fewer activations",
+    "column_label": "GFLOPs"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 11 (detailed results for modernizing a ResNet-200, p11), \"fewer activations\" row, GFLOPs. A step on the authors' own modernization roadmap, so the model spec is their own. GFLOPs 14.81 is tied across several roadmap rows in this table; the row label is what separates them and all of them are own results."
+  },
+  {
+   "extraction": {
+    "metric": "gflops",
+    "value": 14.81,
+    "where": "src/main.tex:841",
+    "text": "fewer norms: GFLOPs = 14.81",
+    "row_label": "fewer norms",
+    "column_label": "GFLOPs"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 11 (detailed results for modernizing a ResNet-200, p11), \"fewer norms\" row, GFLOPs. A step on the authors' own modernization roadmap, so the model spec is their own. GFLOPs 14.81 is tied across several roadmap rows in this table; the row label is what separates them and all of them are own results."
+  },
+  {
+   "extraction": {
+    "metric": "gflops",
+    "value": 14.81,
+    "where": "src/main.tex:841",
+    "text": "kernel size 7: GFLOPs = 14.81",
+    "row_label": "kernel size 7",
+    "column_label": "GFLOPs"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 11 (detailed results for modernizing a ResNet-200, p11), \"kernel size 7\" row, GFLOPs. A step on the authors' own modernization roadmap, so the model spec is their own. GFLOPs 14.81 is tied across several roadmap rows in this table; the row label is what separates them and all of them are own results."
+  },
+  {
+   "extraction": {
+    "metric": "gflops",
+    "value": 15.01,
+    "where": "src/main.tex:841",
+    "text": "ResNet-200: GFLOPs = 15.01",
+    "row_label": "ResNet-200",
+    "column_label": "GFLOPs"
+   },
+   "verdict": "baseline",
+   "notes": "Table 11 (detailed results for modernizing a ResNet-200, p11), \"ResNet-200 [29]\" row, GFLOPs. The row is cited and its accuracy 78.20 already carries a baseline verdict, so the architecture spec beside it is quoted rather than an own experimental result; consistent with Swin-B 15.43 and ResNet-50 (PyTorch) 4.09 in the sibling table. GFLOPs 15.01 is tied with the authors' own \"ResNet-200 (enhanced recipe)\" row in the same table - two cells, one value, one locator - and only the row label separates them; that other cell keeps its existing real_own_result verdict."
+  },
+  {
+   "extraction": {
+    "metric": "convnext-t/s/b/l",
+    "value": 0.05,
+    "where": "src/main.tex:564",
+    "text": "weight decay: ConvNeXt-T/S/B/L = 0.05",
+    "row_label": "weight decay",
+    "column_label": "ConvNeXt-T/S/B/L"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Table 5 (ImageNet-1K/22K (pre-)training settings), \"weight decay\" row. Training configuration value, not a reported result. [Verdict carried across unchanged from the verdict recorded for metric \"-t/s/b/l\": bounded macro expansion restored the \"ConvNeXt\" row-label prefix, so the metric string became \"convnext-t/s/b/l\" while the cell, value 0.05 and locator src/main.tex:564 are the same. Matched pairwise on metric suffix, value and locator, one to one, and corroborated by the row name the old note records.]"
+  },
+  {
+   "extraction": {
+    "metric": "convnext-t/s/b/l",
+    "value": 0.1,
+    "where": "src/main.tex:564",
+    "text": "label smoothing: ConvNeXt-T/S/B/L = 0.1",
+    "row_label": "label smoothing",
+    "column_label": "ConvNeXt-T/S/B/L"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Table 5 (ImageNet-1K/22K (pre-)training settings), \"label smoothing Szegedy2016a\" row. Training configuration value, not a reported result. [Verdict carried across unchanged from the verdict recorded for metric \"-t/s/b/l\": bounded macro expansion restored the \"ConvNeXt\" row-label prefix, so the metric string became \"convnext-t/s/b/l\" while the cell, value 0.1 and locator src/main.tex:564 are the same. Matched pairwise on metric suffix, value and locator, one to one, and corroborated by the row name the old note records.]"
+  },
+  {
+   "extraction": {
+    "metric": "convnext-t/s/b/l",
+    "value": 0.25,
+    "where": "src/main.tex:564",
+    "text": "random erasing: ConvNeXt-T/S/B/L = 0.25",
+    "row_label": "random erasing",
+    "column_label": "ConvNeXt-T/S/B/L"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Table 5 (ImageNet-1K/22K (pre-)training settings), \"random erasing Zhong2020\" row. Training configuration value, not a reported result. [Verdict carried across unchanged from the verdict recorded for metric \"-t/s/b/l\": bounded macro expansion restored the \"ConvNeXt\" row-label prefix, so the metric string became \"convnext-t/s/b/l\" while the cell, value 0.25 and locator src/main.tex:564 are the same. Matched pairwise on metric suffix, value and locator, one to one, and corroborated by the row name the old note records.]"
+  },
+  {
+   "extraction": {
+    "metric": "convnext-t/s/b/l",
+    "value": 0.8,
+    "where": "src/main.tex:564",
+    "text": "mixup: ConvNeXt-T/S/B/L = 0.8",
+    "row_label": "mixup",
+    "column_label": "ConvNeXt-T/S/B/L"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Table 5 (ImageNet-1K/22K (pre-)training settings), \"mixup Zhang2018a\" row. Training configuration value, not a reported result. [Verdict carried across unchanged from the verdict recorded for metric \"-t/s/b/l\": bounded macro expansion restored the \"ConvNeXt\" row-label prefix, so the metric string became \"convnext-t/s/b/l\" while the cell, value 0.8 and locator src/main.tex:564 are the same. Matched pairwise on metric suffix, value and locator, one to one, and corroborated by the row name the old note records.]"
+  },
+  {
+   "extraction": {
+    "metric": "convnext-t/s/b/l",
+    "value": 0.9999,
+    "where": "src/main.tex:564",
+    "text": "exp. mov. avg. (EMA): ConvNeXt-T/S/B/L = 0.9999",
+    "row_label": "exp. mov. avg. (EMA)",
+    "column_label": "ConvNeXt-T/S/B/L"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Table 5 (ImageNet-1K/22K (pre-)training settings), \"exp. mov. avg. (EMA) Polyak1992\" row. Training configuration value, not a reported result. [Verdict carried across unchanged from the verdict recorded for metric \"-t/s/b/l\": bounded macro expansion restored the \"ConvNeXt\" row-label prefix, so the metric string became \"convnext-t/s/b/l\" while the cell, value 0.9999 and locator src/main.tex:564 are the same. Matched pairwise on metric suffix, value and locator, one to one, and corroborated by the row name the old note records.]"
+  },
+  {
+   "extraction": {
+    "metric": "convnext-t/s/b/l",
+    "value": 1.0,
+    "where": "src/main.tex:564",
+    "text": "cutmix: ConvNeXt-T/S/B/L = 1",
+    "row_label": "cutmix",
+    "column_label": "ConvNeXt-T/S/B/L"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Table 5 (ImageNet-1K/22K (pre-)training settings), \"cutmix Yun2019\" row. Training configuration value, not a reported result. [Verdict carried across unchanged from the verdict recorded for metric \"-t/s/b/l\": bounded macro expansion restored the \"ConvNeXt\" row-label prefix, so the metric string became \"convnext-t/s/b/l\" while the cell, value 1.0 and locator src/main.tex:564 are the same. Matched pairwise on metric suffix, value and locator, one to one, and corroborated by the row name the old note records.]"
+  },
+  {
+   "extraction": {
+    "metric": "convnext-t/s/b/l",
+    "value": 20.0,
+    "where": "src/main.tex:564",
+    "text": "warmup epochs: ConvNeXt-T/S/B/L = 20",
+    "row_label": "warmup epochs",
+    "column_label": "ConvNeXt-T/S/B/L"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Table 5 (ImageNet-1K/22K (pre-)training settings), \"warmup epochs\" row. Training configuration value, not a reported result. [Verdict carried across unchanged from the verdict recorded for metric \"-t/s/b/l\": bounded macro expansion restored the \"ConvNeXt\" row-label prefix, so the metric string became \"convnext-t/s/b/l\" while the cell, value 20.0 and locator src/main.tex:564 are the same. Matched pairwise on metric suffix, value and locator, one to one, and corroborated by the row name the old note records.]"
+  },
+  {
+   "extraction": {
+    "metric": "convnext-t/s/b/l",
+    "value": 300.0,
+    "where": "src/main.tex:564",
+    "text": "training epochs: ConvNeXt-T/S/B/L = 300",
+    "row_label": "training epochs",
+    "column_label": "ConvNeXt-T/S/B/L"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Table 5 (ImageNet-1K/22K (pre-)training settings), \"training epochs\" row. Training configuration value, not a reported result. [Verdict carried across unchanged from the verdict recorded for metric \"-t/s/b/l\": bounded macro expansion restored the \"ConvNeXt\" row-label prefix, so the metric string became \"convnext-t/s/b/l\" while the cell, value 300.0 and locator src/main.tex:564 are the same. Matched pairwise on metric suffix, value and locator, one to one, and corroborated by the row name the old note records.]"
+  },
+  {
+   "extraction": {
+    "metric": "convnext-t/s/b/l",
+    "value": 4096.0,
+    "where": "src/main.tex:564",
+    "text": "batch size: ConvNeXt-T/S/B/L = 4096",
+    "row_label": "batch size",
+    "column_label": "ConvNeXt-T/S/B/L"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Table 5 (ImageNet-1K/22K (pre-)training settings), \"batch size\" row. Training configuration value, not a reported result. [Verdict carried across unchanged from the verdict recorded for metric \"-t/s/b/l\": bounded macro expansion restored the \"ConvNeXt\" row-label prefix, so the metric string became \"convnext-t/s/b/l\" while the cell, value 4096.0 and locator src/main.tex:564 are the same. Matched pairwise on metric suffix, value and locator, one to one, and corroborated by the row name the old note records.]"
+  },
+  {
+   "extraction": {
+    "metric": "convnext-t/s/b/l/xl",
+    "value": 0.05,
+    "where": "src/main.tex:564",
+    "text": "weight decay: ConvNeXt-T/S/B/L/XL = 0.05",
+    "row_label": "weight decay",
+    "column_label": "ConvNeXt-T/S/B/L/XL"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Table 5 (ImageNet-1K/22K (pre-)training settings), \"weight decay\" row. Training configuration value, not a reported result. [Verdict carried across unchanged from the verdict recorded for metric \"-t/s/b/l/xl\": bounded macro expansion restored the \"ConvNeXt\" row-label prefix, so the metric string became \"convnext-t/s/b/l/xl\" while the cell, value 0.05 and locator src/main.tex:564 are the same. Matched pairwise on metric suffix, value and locator, one to one, and corroborated by the row name the old note records.]"
+  },
+  {
+   "extraction": {
+    "metric": "convnext-t/s/b/l/xl",
+    "value": 0.1,
+    "where": "src/main.tex:564",
+    "text": "label smoothing: ConvNeXt-T/S/B/L/XL = 0.1",
+    "row_label": "label smoothing",
+    "column_label": "ConvNeXt-T/S/B/L/XL"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Table 5 (ImageNet-1K/22K (pre-)training settings), \"label smoothing Szegedy2016a\" row. Training configuration value, not a reported result. [Verdict carried across unchanged from the verdict recorded for metric \"-t/s/b/l/xl\": bounded macro expansion restored the \"ConvNeXt\" row-label prefix, so the metric string became \"convnext-t/s/b/l/xl\" while the cell, value 0.1 and locator src/main.tex:564 are the same. Matched pairwise on metric suffix, value and locator, one to one, and corroborated by the row name the old note records.]"
+  },
+  {
+   "extraction": {
+    "metric": "convnext-t/s/b/l/xl",
+    "value": 0.25,
+    "where": "src/main.tex:564",
+    "text": "random erasing: ConvNeXt-T/S/B/L/XL = 0.25",
+    "row_label": "random erasing",
+    "column_label": "ConvNeXt-T/S/B/L/XL"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Table 5 (ImageNet-1K/22K (pre-)training settings), \"random erasing Zhong2020\" row. Training configuration value, not a reported result. [Verdict carried across unchanged from the verdict recorded for metric \"-t/s/b/l/xl\": bounded macro expansion restored the \"ConvNeXt\" row-label prefix, so the metric string became \"convnext-t/s/b/l/xl\" while the cell, value 0.25 and locator src/main.tex:564 are the same. Matched pairwise on metric suffix, value and locator, one to one, and corroborated by the row name the old note records.]"
+  },
+  {
+   "extraction": {
+    "metric": "convnext-t/s/b/l/xl",
+    "value": 0.8,
+    "where": "src/main.tex:564",
+    "text": "mixup: ConvNeXt-T/S/B/L/XL = 0.8",
+    "row_label": "mixup",
+    "column_label": "ConvNeXt-T/S/B/L/XL"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Table 5 (ImageNet-1K/22K (pre-)training settings), \"mixup Zhang2018a\" row. Training configuration value, not a reported result. [Verdict carried across unchanged from the verdict recorded for metric \"-t/s/b/l/xl\": bounded macro expansion restored the \"ConvNeXt\" row-label prefix, so the metric string became \"convnext-t/s/b/l/xl\" while the cell, value 0.8 and locator src/main.tex:564 are the same. Matched pairwise on metric suffix, value and locator, one to one, and corroborated by the row name the old note records.]"
+  },
+  {
+   "extraction": {
+    "metric": "convnext-t/s/b/l/xl",
+    "value": 1.0,
+    "where": "src/main.tex:564",
+    "text": "cutmix: ConvNeXt-T/S/B/L/XL = 1",
+    "row_label": "cutmix",
+    "column_label": "ConvNeXt-T/S/B/L/XL"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Table 5 (ImageNet-1K/22K (pre-)training settings), \"cutmix Yun2019\" row. Training configuration value, not a reported result. [Verdict carried across unchanged from the verdict recorded for metric \"-t/s/b/l/xl\": bounded macro expansion restored the \"ConvNeXt\" row-label prefix, so the metric string became \"convnext-t/s/b/l/xl\" while the cell, value 1.0 and locator src/main.tex:564 are the same. Matched pairwise on metric suffix, value and locator, one to one, and corroborated by the row name the old note records.]"
+  },
+  {
+   "extraction": {
+    "metric": "convnext-t/s/b/l/xl",
+    "value": 5.0,
+    "where": "src/main.tex:564",
+    "text": "warmup epochs: ConvNeXt-T/S/B/L/XL = 5",
+    "row_label": "warmup epochs",
+    "column_label": "ConvNeXt-T/S/B/L/XL"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Table 5 (ImageNet-1K/22K (pre-)training settings), \"warmup epochs\" row. Training configuration value, not a reported result. [Verdict carried across unchanged from the verdict recorded for metric \"-t/s/b/l/xl\": bounded macro expansion restored the \"ConvNeXt\" row-label prefix, so the metric string became \"convnext-t/s/b/l/xl\" while the cell, value 5.0 and locator src/main.tex:564 are the same. Matched pairwise on metric suffix, value and locator, one to one, and corroborated by the row name the old note records.]"
+  },
+  {
+   "extraction": {
+    "metric": "convnext-t/s/b/l/xl",
+    "value": 90.0,
+    "where": "src/main.tex:564",
+    "text": "training epochs: ConvNeXt-T/S/B/L/XL = 90",
+    "row_label": "training epochs",
+    "column_label": "ConvNeXt-T/S/B/L/XL"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Table 5 (ImageNet-1K/22K (pre-)training settings), \"training epochs\" row. Training configuration value, not a reported result. [Verdict carried across unchanged from the verdict recorded for metric \"-t/s/b/l/xl\": bounded macro expansion restored the \"ConvNeXt\" row-label prefix, so the metric string became \"convnext-t/s/b/l/xl\" while the cell, value 90.0 and locator src/main.tex:564 are the same. Matched pairwise on metric suffix, value and locator, one to one, and corroborated by the row name the old note records.]"
+  },
+  {
+   "extraction": {
+    "metric": "convnext-t/s/b/l/xl",
+    "value": 4096.0,
+    "where": "src/main.tex:564",
+    "text": "batch size: ConvNeXt-T/S/B/L/XL = 4096",
+    "row_label": "batch size",
+    "column_label": "ConvNeXt-T/S/B/L/XL"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Table 5 (ImageNet-1K/22K (pre-)training settings), \"batch size\" row. Training configuration value, not a reported result. [Verdict carried across unchanged from the verdict recorded for metric \"-t/s/b/l/xl\": bounded macro expansion restored the \"ConvNeXt\" row-label prefix, so the metric string became \"convnext-t/s/b/l/xl\" while the cell, value 4096.0 and locator src/main.tex:564 are the same. Matched pairwise on metric suffix, value and locator, one to one, and corroborated by the row name the old note records.]"
+  },
+  {
+   "extraction": {
+    "metric": "convnext-b/l",
+    "value": 0.001,
+    "where": "src/main.tex:599",
+    "text": "head init scale: ConvNeXt-B/L = 0.001",
+    "row_label": "head init scale",
+    "column_label": "ConvNeXt-B/L"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Table 6 (ImageNet-1K fine-tuning settings), \"head init scale\" row. Training configuration value, not a reported result. [Verdict carried across unchanged from the verdict recorded for metric \"-b/l\": bounded macro expansion restored the \"ConvNeXt\" row-label prefix, so the metric string became \"convnext-b/l\" while the cell, value 0.001 and locator src/main.tex:599 are the same. Matched pairwise on metric suffix, value and locator, one to one, and corroborated by the row name the old note records.]"
+  },
+  {
+   "extraction": {
+    "metric": "convnext-b/l",
+    "value": 0.1,
+    "where": "src/main.tex:599",
+    "text": "label smoothing: ConvNeXt-B/L = 0.1",
+    "row_label": "label smoothing",
+    "column_label": "ConvNeXt-B/L"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Table 6 (ImageNet-1K fine-tuning settings), \"label smoothing\" row. Training configuration value, not a reported result. [Verdict carried across unchanged from the verdict recorded for metric \"-b/l\": bounded macro expansion restored the \"ConvNeXt\" row-label prefix, so the metric string became \"convnext-b/l\" while the cell, value 0.1 and locator src/main.tex:599 are the same. Matched pairwise on metric suffix, value and locator, one to one, and corroborated by the row name the old note records.]"
+  },
+  {
+   "extraction": {
+    "metric": "convnext-b/l",
+    "value": 0.25,
+    "where": "src/main.tex:599",
+    "text": "random erasing: ConvNeXt-B/L = 0.25",
+    "row_label": "random erasing",
+    "column_label": "ConvNeXt-B/L"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Table 6 (ImageNet-1K fine-tuning settings), \"random erasing\" row. Training configuration value, not a reported result. [Verdict carried across unchanged from the verdict recorded for metric \"-b/l\": bounded macro expansion restored the \"ConvNeXt\" row-label prefix, so the metric string became \"convnext-b/l\" while the cell, value 0.25 and locator src/main.tex:599 are the same. Matched pairwise on metric suffix, value and locator, one to one, and corroborated by the row name the old note records.]"
+  },
+  {
+   "extraction": {
+    "metric": "convnext-b/l",
+    "value": 0.7,
+    "where": "src/main.tex:599",
+    "text": "layer-wise lr decay: ConvNeXt-B/L = 0.7",
+    "row_label": "layer-wise lr decay",
+    "column_label": "ConvNeXt-B/L"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Table 6 (ImageNet-1K fine-tuning settings), \"layer-wise lr decay\" row. Training configuration value, not a reported result. [Verdict carried across unchanged from the verdict recorded for metric \"-b/l\": bounded macro expansion restored the \"ConvNeXt\" row-label prefix, so the metric string became \"convnext-b/l\" while the cell, value 0.7 and locator src/main.tex:599 are the same. Matched pairwise on metric suffix, value and locator, one to one, and corroborated by the row name the old note records.]"
+  },
+  {
+   "extraction": {
+    "metric": "convnext-b/l",
+    "value": 30.0,
+    "where": "src/main.tex:599",
+    "text": "training epochs: ConvNeXt-B/L = 30",
+    "row_label": "training epochs",
+    "column_label": "ConvNeXt-B/L"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Table 6 (ImageNet-1K fine-tuning settings), \"training epochs\" row. Training configuration value, not a reported result. [Verdict carried across unchanged from the verdict recorded for metric \"-b/l\": bounded macro expansion restored the \"ConvNeXt\" row-label prefix, so the metric string became \"convnext-b/l\" while the cell, value 30.0 and locator src/main.tex:599 are the same. Matched pairwise on metric suffix, value and locator, one to one, and corroborated by the row name the old note records.]"
+  },
+  {
+   "extraction": {
+    "metric": "convnext-b/l",
+    "value": 512.0,
+    "where": "src/main.tex:599",
+    "text": "batch size: ConvNeXt-B/L = 512",
+    "row_label": "batch size",
+    "column_label": "ConvNeXt-B/L"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Table 6 (ImageNet-1K fine-tuning settings), \"batch size\" row. Training configuration value, not a reported result. [Verdict carried across unchanged from the verdict recorded for metric \"-b/l\": bounded macro expansion restored the \"ConvNeXt\" row-label prefix, so the metric string became \"convnext-b/l\" while the cell, value 512.0 and locator src/main.tex:599 are the same. Matched pairwise on metric suffix, value and locator, one to one, and corroborated by the row name the old note records.]"
+  },
+  {
+   "extraction": {
+    "metric": "convnext-t/s/b/l/xl",
+    "value": 0.001,
+    "where": "src/main.tex:599",
+    "text": "head init scale: ConvNeXt-T/S/B/L/XL = 0.001",
+    "row_label": "head init scale",
+    "column_label": "ConvNeXt-T/S/B/L/XL"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Table 6 (ImageNet-1K fine-tuning settings), \"head init scale\" row. Training configuration value, not a reported result. [Verdict carried across unchanged from the verdict recorded for metric \"-t/s/b/l/xl\": bounded macro expansion restored the \"ConvNeXt\" row-label prefix, so the metric string became \"convnext-t/s/b/l/xl\" while the cell, value 0.001 and locator src/main.tex:599 are the same. Matched pairwise on metric suffix, value and locator, one to one, and corroborated by the row name the old note records.]"
+  },
+  {
+   "extraction": {
+    "metric": "convnext-t/s/b/l/xl",
+    "value": 30.0,
+    "where": "src/main.tex:599",
+    "text": "training epochs: ConvNeXt-T/S/B/L/XL = 30",
+    "row_label": "training epochs",
+    "column_label": "ConvNeXt-T/S/B/L/XL"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Table 6 (ImageNet-1K fine-tuning settings), \"training epochs\" row. Training configuration value, not a reported result. [Verdict carried across unchanged from the verdict recorded for metric \"-t/s/b/l/xl\": bounded macro expansion restored the \"ConvNeXt\" row-label prefix, so the metric string became \"convnext-t/s/b/l/xl\" while the cell, value 30.0 and locator src/main.tex:599 are the same. Matched pairwise on metric suffix, value and locator, one to one, and corroborated by the row name the old note records.]"
+  },
+  {
+   "extraction": {
+    "metric": "convnext-t/s/b/l/xl",
+    "value": 512.0,
+    "where": "src/main.tex:599",
+    "text": "batch size: ConvNeXt-T/S/B/L/XL = 512",
+    "row_label": "batch size",
+    "column_label": "ConvNeXt-T/S/B/L/XL"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Table 6 (ImageNet-1K fine-tuning settings), \"batch size\" row. Training configuration value, not a reported result. [Verdict carried across unchanged from the verdict recorded for metric \"-t/s/b/l/xl\": bounded macro expansion restored the \"ConvNeXt\" row-label prefix, so the metric string became \"convnext-t/s/b/l/xl\" while the cell, value 512.0 and locator src/main.tex:599 are the same. Matched pairwise on metric suffix, value and locator, one to one, and corroborated by the row name the old note records.]"
   }
  ]
 }

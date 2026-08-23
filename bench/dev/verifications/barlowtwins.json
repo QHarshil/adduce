@@ -156,12 +156,36 @@
   {
    "extraction": {
     "metric": "accuracy",
+    "value": 1.0,
+    "where": "src/3_results.tex:49",
+    "text": "Top-5 1.0",
+    "row_label": null,
+    "column_label": "Top-5"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Misparse of Table 2's sub-header row (rendered p.4): the header reads Top-1 / Top-5 over '1% 10% 1% 10%', and the captured 1 is the '1%' header of the Top-5 group -- the fraction of ImageNet training examples used, a configuration of the semi-supervised experiment rather than an outcome. No top-5 accuracy of 1 is reported anywhere in the paper. Same class as the existing hyperparameter verdict on (accuracy, 10) at this same location."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
     "value": 10.0,
     "where": "src/3_results.tex:49",
     "text": "(lr)2-3(lr)4-5: Top-1 = 10"
    },
    "verdict": "hyperparameter",
    "notes": "Misparse of Table 2's sub-header row: the captured 10 is the '10%' column header -- the fraction of ImageNet training examples used -- which is a configuration of the semi-supervised experiment, not an outcome. The row label is a mangled rule specification, not a method name. No top-1 accuracy of 10 is reported anywhere in the paper."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 10.0,
+    "where": "src/3_results.tex:49",
+    "text": "Top-5 10.0",
+    "row_label": null,
+    "column_label": "Top-5"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Misparse of Table 2's sub-header row (rendered p.4): the captured 10 is the '10%' header of the Top-5 group -- the fraction of ImageNet training examples used, a setting of the semi-supervised experiment, not an outcome. No top-5 accuracy of 10 is reported anywhere in the paper. Matches the existing hyperparameter verdict on the label-free extraction of the same cell."
   },
   {
    "extraction": {
@@ -352,6 +376,18 @@
    },
    "verdict": "baseline",
    "notes": "Table 2, SimCLR top-5 at 10% of labels. Table 2, quoted comparison figure."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 89.0,
+    "where": "src/3_results.tex:49",
+    "text": "BYOL: Top-5 = 89",
+    "row_label": "BYOL",
+    "column_label": "Top-5"
+   },
+   "verdict": "baseline",
+   "notes": "Table 2 'Semi-supervised learning on ImageNet' (rendered p.4), BYOL row, top-5 at 10% of labels = 89.0 (BYOL's top-5 at 1% is 78.4, so the 89 on this row is the 10% cell). A quoted competitor figure; the paper's own row is BARLOW TWINS (ours) at 79.2 / 89.3."
   },
   {
    "extraction": {
@@ -556,6 +592,18 @@
   {
    "extraction": {
     "metric": "accuracy",
+    "value": 70.2,
+    "where": "src/4_ablations.tex:184",
+    "text": "(b): Top-1 = 70.2",
+    "row_label": "(b)",
+    "column_label": "Top-1"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6 'Effect of asymmetric settings' (rendered p.6), case (b) = predictor only, Top-1 = 70.2. The paper's own ablation of its own model: 'we experiment with adding a predictor network ... We find that these asymmetries slightly decrease the performance of our network'. This is not SwAV's 70.2: that identical value is Table 2's top-1 at 10% of labels, carried by a separate extraction at src/3_results.tex:49 which is already adjudicated baseline. This extraction is pinned to Table 6 by its location (src/4_ablations.tex:184) and its row label '(b)'."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
     "value": 70.5,
     "where": "src/4_ablations.tex:184",
     "text": "(a): Top-1 = 70.5"
@@ -576,12 +624,60 @@
   {
    "extraction": {
     "metric": "accuracy",
+    "value": 89.0,
+    "where": "src/4_ablations.tex:184",
+    "text": "(a): Top-5 = 89",
+    "row_label": "(a)",
+    "column_label": "Top-5"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6 (rendered p.6), case (a) = stop-gradient only, Top-5 = 89.0: the paper's own asymmetry ablation of its own model. 89.0 is also printed as SimCLR's Table 1 top-5 and as BYOL's Table 2 top-5 at 10% labels, both baselines, but this extraction's location and row label place it in Table 6."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 89.0,
+    "where": "src/4_ablations.tex:184",
+    "text": "(b): Top-5 = 89",
+    "row_label": "(b)",
+    "column_label": "Top-5"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6 (rendered p.6), case (b) = predictor only, Top-5 = 89.0: the paper's own asymmetry ablation. Cases (a) and (b) both print 89.0 in the Top-5 column, so this is the second of two real cells with the same value, not a duplicate of the (a) reading."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
     "value": 72.3,
     "where": "src/4_ablations.tex:207",
     "text": "8192-8192-8192: Acc1 = 72.3"
    },
    "verdict": "real_own_result",
    "notes": "Table 7: 'For a fair comparison with BYOL, we also evaluated BYOL with a wider and/or deeper projector head...' -- this is the authors' own reimplementation/rerun of BYOL under modified architectures, produced by this paper's own experimental work, not a citation of a number reported in the BYOL paper."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 73.2,
+    "where": "src/4_ablations.tex:207",
+    "text": "4096-4096-256: Acc1 = 73.2",
+    "row_label": "4096-4096-256",
+    "column_label": "Acc1"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 7 (rendered p.7), row 'Projector 4096-4096-256 / Predictor 4096-4096-256' ('3 layer proj, 3 layer pred, 256-d repr.'), Acc1 = 73.2%. The authors' own evaluation of BYOL variants ('For a fair comparison with BYOL, we also evaluated BYOL with a wider and/or deeper projector head ...'), so their own measurement even though the model is prior work; consistent with the existing real_own_result verdicts on 74.1 / 74.0 / 73.7 / 72.3 in this table. The row label alone is ambiguous -- two rows begin '4096-4096-256', printing 74.0% and 73.2% -- but the value pins it to the 3-layer-predictor row. Distinct from Table 1's Barlow Twins top-1 of 73.2%, a separate extraction at src/3_results.tex:11."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 73.2,
+    "where": "src/4_ablations.tex:207",
+    "text": "4096-4096-512: Acc1 = 73.2",
+    "row_label": "4096-4096-512",
+    "column_label": "Acc1"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 7 (rendered p.7), row 'Projector 4096-4096-512 / Predictor 4096-4096-512' ('3 layer proj, 3 layer pred, 512-d repr.'), Acc1 = 73.2%. Second row of the same own BYOL re-evaluation that prints 73.2%; the authors ran it themselves, so it is their own result. The row label is again ambiguous on its own (the 4096-512 predictor row prints 73.7%), but the value pins the cell."
   },
   {
    "extraction": {
@@ -665,6 +761,18 @@
   },
   {
    "extraction": {
+    "metric": "ap50",
+    "value": 82.6,
+    "where": "src/tables/detection.tex:6",
+    "text": "SwAV: VOC07+12 det AP_50 = 82.6",
+    "row_label": "SwAV",
+    "column_label": "VOC07+12 det AP_50"
+   },
+   "verdict": "baseline",
+   "notes": "SwAV's VOC07+12 det AP_50 = 82.6 (bold). Table 4 (rendered p.5). Only the 'BT (ours)' row is the paper's own: the prose reads 'Our results in Table 4 indicate that BARLOW TWINS performs comparably or better than state-of-the-art representation learning methods', so the Sup./MoCo-v2/SwAV/SimSiam rows are those methods' published transfer results, quoted for comparison. No citation appears in the row itself; ownership is read off the page. Consistent with the 78 existing baseline verdicts on this table. BT (ours) prints 82.6 in the same column and is adjudicated separately as real_own_result."
+  },
+  {
+   "extraction": {
     "metric": "ap75",
     "value": 58.8,
     "where": "src/tables/detection.tex:6",
@@ -742,6 +850,18 @@
    },
    "verdict": "real_own_result",
    "notes": "Table 4, Barlow Twins own COCO det AP^bb (39.2). SimSiam's cell in the same column is also 39.2; the representative the extractor surfaces is the BT (ours) row."
+  },
+  {
+   "extraction": {
+    "metric": "coco det ap^bb",
+    "value": 39.2,
+    "where": "src/tables/detection.tex:6",
+    "text": "SimSiam: COCO det AP^bb = 39.2",
+    "row_label": "SimSiam",
+    "column_label": "COCO det AP^bb"
+   },
+   "verdict": "baseline",
+   "notes": "SimSiam's COCO det AP^bb = 39.2, confirmed by row and column on the page image. Table 4 (rendered p.5). Only the 'BT (ours)' row is the paper's own: the prose reads 'Our results in Table 4 indicate that BARLOW TWINS performs comparably or better than state-of-the-art representation learning methods', so the Sup./MoCo-v2/SwAV/SimSiam rows are those methods' published transfer results, quoted for comparison. No citation appears in the row itself; ownership is read off the page. Consistent with the 78 existing baseline verdicts on this table. BT (ours) prints 39.2 in the same column and is a separate extraction."
   },
   {
    "extraction": {
@@ -845,6 +965,18 @@
   },
   {
    "extraction": {
+    "metric": "coco det ap^bb_75",
+    "value": 42.5,
+    "where": "src/tables/detection.tex:6",
+    "text": "MoCo-v2: COCO det AP^bb_75 = 42.5",
+    "row_label": "MoCo-v2",
+    "column_label": "COCO det AP^bb_75"
+   },
+   "verdict": "baseline",
+   "notes": "MoCo-v2's COCO det AP^bb_75 = 42.5 (bold), confirmed by row and column on the page image. Table 4 (rendered p.5). Only the 'BT (ours)' row is the paper's own: the prose reads 'Our results in Table 4 indicate that BARLOW TWINS performs comparably or better than state-of-the-art representation learning methods', so the Sup./MoCo-v2/SwAV/SimSiam rows are those methods' published transfer results, quoted for comparison. No citation appears in the row itself; ownership is read off the page. Consistent with the 78 existing baseline verdicts on this table. BT (ours) prints 42.5 in the same column and is a separate extraction."
+  },
+  {
+   "extraction": {
     "metric": "coco instance seg ap^mk",
     "value": 33.3,
     "where": "src/tables/detection.tex:6",
@@ -882,6 +1014,18 @@
    },
    "verdict": "baseline",
    "notes": "Table 4, MoCo-v2 COCO instance seg AP^mk (SimSiam's cell is also 34.4). The Sup./MoCo-v2/SwAV/SimSiam rows are quoted: the paper claims only its own row ('We evaluate our representations for the localization based tasks'; 'Our results in Table 4'), the competitor rows follow the (He et al., 2019) protocol so published figures are comparable, and all nine of their columns reproduce the transfer table of SimSiam (Chen & He, 2020)."
+  },
+  {
+   "extraction": {
+    "metric": "coco instance seg ap^mk",
+    "value": 34.4,
+    "where": "src/tables/detection.tex:6",
+    "text": "SimSiam: COCO instance seg AP^mk = 34.4",
+    "row_label": "SimSiam",
+    "column_label": "COCO instance seg AP^mk"
+   },
+   "verdict": "baseline",
+   "notes": "SimSiam's COCO instance seg AP^mk = 34.4 (bold; MoCo-v2's cell in the same column is also 34.4, and is the other extraction of this value). Table 4 (rendered p.5). Only the 'BT (ours)' row is the paper's own: the prose reads 'Our results in Table 4 indicate that BARLOW TWINS performs comparably or better than state-of-the-art representation learning methods', so the Sup./MoCo-v2/SwAV/SimSiam rows are those methods' published transfer results, quoted for comparison. No citation appears in the row itself; ownership is read off the page. Consistent with the 78 existing baseline verdicts on this table."
   },
   {
    "extraction": {
@@ -925,6 +1069,18 @@
   },
   {
    "extraction": {
+    "metric": "coco instance seg ap^mk_50",
+    "value": 56.0,
+    "where": "src/tables/detection.tex:6",
+    "text": "SimSiam: COCO instance seg AP^mk_50 = 56",
+    "row_label": "SimSiam",
+    "column_label": "COCO instance seg AP^mk_50"
+   },
+   "verdict": "baseline",
+   "notes": "SimSiam's COCO instance seg AP^mk_50 = 56.0 (bold). Table 4 (rendered p.5). Only the 'BT (ours)' row is the paper's own: the prose reads 'Our results in Table 4 indicate that BARLOW TWINS performs comparably or better than state-of-the-art representation learning methods', so the Sup./MoCo-v2/SwAV/SimSiam rows are those methods' published transfer results, quoted for comparison. No citation appears in the row itself; ownership is read off the page. Consistent with the 78 existing baseline verdicts on this table. BT (ours) prints 56.0 in the same column and is adjudicated separately as real_own_result."
+  },
+  {
+   "extraction": {
     "metric": "coco instance seg ap^mk_75",
     "value": 35.2,
     "where": "src/tables/detection.tex:6",
@@ -952,6 +1108,18 @@
    },
    "verdict": "real_own_result",
    "notes": "Table 4, Barlow Twins own COCO instance seg AP^mk_75 (36.5). MoCo-v2's cell in the same column is also 36.5; the representative the extractor surfaces is the BT (ours) row."
+  },
+  {
+   "extraction": {
+    "metric": "coco instance seg ap^mk_75",
+    "value": 36.5,
+    "where": "src/tables/detection.tex:6",
+    "text": "MoCo-v2: COCO instance seg AP^mk_75 = 36.5",
+    "row_label": "MoCo-v2",
+    "column_label": "COCO instance seg AP^mk_75"
+   },
+   "verdict": "baseline",
+   "notes": "MoCo-v2's COCO instance seg AP^mk_75 = 36.5. Table 4 (rendered p.5). Only the 'BT (ours)' row is the paper's own: the prose reads 'Our results in Table 4 indicate that BARLOW TWINS performs comparably or better than state-of-the-art representation learning methods', so the Sup./MoCo-v2/SwAV/SimSiam rows are those methods' published transfer results, quoted for comparison. No citation appears in the row itself; ownership is read off the page. Consistent with the 78 existing baseline verdicts on this table. BT (ours) prints 36.5 in the same column and is adjudicated separately as real_own_result."
   },
   {
    "extraction": {
@@ -1182,6 +1350,18 @@
    },
    "verdict": "baseline",
    "notes": "Table 3, MoCo-v2 VOC07 (also SwAV w/o multi-crop's identical value), quoted comparison figure."
+  },
+  {
+   "extraction": {
+    "metric": "voc07",
+    "value": 86.4,
+    "where": "src/tables/linear_probe_transfer.tex:6",
+    "text": "SwAV (w/o multi-crop): VOC07 = 86.4",
+    "row_label": "SwAV (w/o multi-crop)",
+    "column_label": "VOC07"
+   },
+   "verdict": "baseline",
+   "notes": "Table 3 'Transfer learning: image classification' (rendered p.4), SwAV (w/o multi-crop) row, VOC07 classification mAP = 86.4 (underlined; MoCo-v2's cell in the same column is also 86.4). A quoted competitor row -- the prose says 'We report our results in Table 3. BARLOW TWINS performs competitively against prior work', and the paper's own row is BARLOW TWINS (ours) at 86.2."
   },
   {
    "extraction": {

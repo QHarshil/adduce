@@ -1602,6 +1602,318 @@
    },
    "verdict": "baseline",
    "notes": "Table 3 (SQuAD 2.0 results), 'Top Leaderboard Systems': Human Test F1; not measured by this work."
+  },
+  {
+   "extraction": {
+    "metric": "f1",
+    "value": 93.2,
+    "where": "src/abstract.tex:4",
+    "text": "F1 to 93.2",
+    "row_label": "BERT_ LARGE (Ens.+TriviaQA)",
+    "column_label": "Test F1"
+   },
+   "verdict": "real_own_result",
+   "notes": "Abstract headline, page 1: 'SQuAD v1.1 question answering Test F1 to 93.2 (1.5 point absolute improvement)'. Same number as Table 2's 'Ours' BERT-LARGE (Ens.+TriviaQA) Test F1, so it is the paper's own measurement stated in prose and in a table. Note the extraction's 'where' is the abstract while its row/column labels name the Table 2 cell; both describe the same value."
+  },
+  {
+   "extraction": {
+    "metric": "dev set",
+    "value": 77.8,
+    "where": "src/direction_ablation_tab.tex:4",
+    "text": "LTR & No NSP: Dev Set = 77.8",
+    "row_label": "LTR & No NSP",
+    "column_label": "Dev Set"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 5 (page 8, ablation over the pre-training tasks, BERT-BASE architecture). 'Dev Set' is the spanning header over MNLI-m/QNLI/MRPC/SST-2/SQuAD, not a metric. Sec 5.1: all four rows are models the authors pre-trained themselves with the same data, fine-tuning scheme and hyperparameters as BERT-BASE. This cell is the 'LTR & No NSP' row, SQuAD (F1) column = 77.8."
+  },
+  {
+   "extraction": {
+    "metric": "dev set",
+    "value": 82.1,
+    "where": "src/direction_ablation_tab.tex:4",
+    "text": "LTR & No NSP: Dev Set = 82.1",
+    "row_label": "LTR & No NSP",
+    "column_label": "Dev Set"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 5 (page 8, ablation over the pre-training tasks, BERT-BASE architecture). 'Dev Set' is the spanning header over MNLI-m/QNLI/MRPC/SST-2/SQuAD, not a metric. Sec 5.1: all four rows are models the authors pre-trained themselves with the same data, fine-tuning scheme and hyperparameters as BERT-BASE. This cell is the 'LTR & No NSP' row, MNLI-m (Acc) column = 82.1; the same 82.1 also appears one row down as '+ BiLSTM' MNLI-m."
+  },
+  {
+   "extraction": {
+    "metric": "dev set",
+    "value": 84.9,
+    "where": "src/direction_ablation_tab.tex:4",
+    "text": "No NSP: Dev Set = 84.9",
+    "row_label": "No NSP",
+    "column_label": "Dev Set"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 5 (page 8, ablation over the pre-training tasks, BERT-BASE architecture). 'Dev Set' is the spanning header over MNLI-m/QNLI/MRPC/SST-2/SQuAD, not a metric. Sec 5.1: all four rows are models the authors pre-trained themselves with the same data, fine-tuning scheme and hyperparameters as BERT-BASE. This cell is the 'No NSP' row, QNLI (Acc) column = 84.9; 84.9 also appears as '+ BiLSTM' SQuAD (F1), which the row label rules out."
+  },
+  {
+   "extraction": {
+    "metric": "dev set results",
+    "value": 94.6,
+    "where": "src/mask_procedure_ablation_tab.tex:5",
+    "text": "80\\%: Dev Set Results = 94.6",
+    "row_label": "80\\%",
+    "column_label": "Dev Set Results"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 8 (page 16, Appendix C.2, ablation over masking strategies). Right-hand 'Dev Set Results' group: NER Feature-based = 94.6 on the 80%/0%/20% row. The row label is only the MASK cell, so three rows begin '80%', but 94.6 in the right-hand group on an 80%-MASK row occurs only there. The authors' own ablation."
+  },
+  {
+   "extraction": {
+    "metric": "dev set results",
+    "value": 94.9,
+    "where": "src/mask_procedure_ablation_tab.tex:5",
+    "text": "0\\%: Dev Set Results = 94.9",
+    "row_label": "0\\%",
+    "column_label": "Dev Set Results"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 8 (page 16, Appendix C.2, ablation over masking strategies). Right-hand 'Dev Set Results' group: NER Fine-tune = 94.9 on the 0%/0%/100% row. The authors' own ablation."
+  },
+  {
+   "extraction": {
+    "metric": "dev set results",
+    "value": 94.9,
+    "where": "src/mask_procedure_ablation_tab.tex:5",
+    "text": "100\\%: Dev Set Results = 94.9",
+    "row_label": "100\\%",
+    "column_label": "Dev Set Results"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 8 (page 16, Appendix C.2, ablation over masking strategies). Right-hand 'Dev Set Results' group: NER Fine-tune = 94.9 on the 100%/0%/0% row. The authors' own ablation."
+  },
+  {
+   "extraction": {
+    "metric": "masking rates",
+    "value": 0.0,
+    "where": "src/mask_procedure_ablation_tab.tex:5",
+    "text": "100\\%: Masking Rates = 0",
+    "row_label": "100\\%",
+    "column_label": "Masking Rates"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Table 8 (page 16, Appendix C.2, ablation over masking strategies). The left-hand 'Masking Rates' group (MASK/SAME/RND) holds the MLM pre-training probabilities -- Appendix C.2: 'the probabilities of the specific strategies used during MLM pre-training (BERT uses 80%, 10%, 10%)' -- a setting, not an outcome. This is the SAME (or RND) probability of 0% on the 100%/0%/0% row."
+  },
+  {
+   "extraction": {
+    "metric": "masking rates",
+    "value": 0.0,
+    "where": "src/mask_procedure_ablation_tab.tex:5",
+    "text": "80\\%: Masking Rates = 0",
+    "row_label": "80\\%",
+    "column_label": "Masking Rates"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Table 8 (page 16, Appendix C.2, ablation over masking strategies). The left-hand 'Masking Rates' group (MASK/SAME/RND) holds the MLM pre-training probabilities -- Appendix C.2: 'the probabilities of the specific strategies used during MLM pre-training (BERT uses 80%, 10%, 10%)' -- a setting, not an outcome. This is the 0% entry on an 80%-MASK row: SAME=0% on the 80%/0%/20% row, or equivalently RND=0% on the 80%/20%/0% row."
+  },
+  {
+   "extraction": {
+    "metric": "masking rates",
+    "value": 20.0,
+    "where": "src/mask_procedure_ablation_tab.tex:5",
+    "text": "80\\%: Masking Rates = 20",
+    "row_label": "80\\%",
+    "column_label": "Masking Rates"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Table 8 (page 16, Appendix C.2, ablation over masking strategies). The left-hand 'Masking Rates' group (MASK/SAME/RND) holds the MLM pre-training probabilities -- Appendix C.2: 'the probabilities of the specific strategies used during MLM pre-training (BERT uses 80%, 10%, 10%)' -- a setting, not an outcome. This is the 20% entry on an 80%-MASK row: RND=20% on the 80%/0%/20% row, or equivalently SAME=20% on the 80%/20%/0% row."
+  },
+  {
+   "extraction": {
+    "metric": "perplexity",
+    "value": 12.0,
+    "where": "src/size_ablation_tab.tex:5",
+    "text": "6: Hyperparams = 12",
+    "row_label": "6",
+    "column_label": "Hyperparams"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Table 6 (page 9, ablation over BERT model size). The three left columns #L/#H/#A sit under the spanning header 'Hyperparams'; the perplexity column is the separate 'LM (ppl)' column, whose values run 5.84 down to 3.23 and include none of these. This cell is #A = 12 (number of attention heads) on the L=6, H=768 row. Not a perplexity despite the extractor's metric name."
+  },
+  {
+   "extraction": {
+    "metric": "perplexity",
+    "value": 12.0,
+    "where": "src/size_ablation_tab.tex:5",
+    "text": "\\ 3: Hyperparams = 12",
+    "row_label": "\\ 3",
+    "column_label": "Hyperparams"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Table 6 (page 9, ablation over BERT model size). The three left columns #L/#H/#A sit under the spanning header 'Hyperparams'; the perplexity column is the separate 'LM (ppl)' column, whose values run 5.84 down to 3.23 and include none of these. This cell is #A = 12 on the L=3, H=768 row. The row label carries the LaTeX '\\ ' spacing residue; the rendered page prints the row as '3 768 12'. Not a perplexity."
+  },
+  {
+   "extraction": {
+    "metric": "perplexity",
+    "value": 16.0,
+    "where": "src/size_ablation_tab.tex:5",
+    "text": "24: Hyperparams = 16",
+    "row_label": "24",
+    "column_label": "Hyperparams"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Table 6 (page 9, ablation over BERT model size). The three left columns #L/#H/#A sit under the spanning header 'Hyperparams'; the perplexity column is the separate 'LM (ppl)' column, whose values run 5.84 down to 3.23 and include none of these. This cell is #A = 16 on the L=24, H=1024 row. Not a perplexity."
+  },
+  {
+   "extraction": {
+    "metric": "perplexity",
+    "value": 768.0,
+    "where": "src/size_ablation_tab.tex:5",
+    "text": "6: Hyperparams = 768",
+    "row_label": "6",
+    "column_label": "Hyperparams"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Table 6 (page 9, ablation over BERT model size). The three left columns #L/#H/#A sit under the spanning header 'Hyperparams'; the perplexity column is the separate 'LM (ppl)' column, whose values run 5.84 down to 3.23 and include none of these. This cell is #H = 768 (hidden size) on an L=6 row. Not a perplexity."
+  },
+  {
+   "extraction": {
+    "metric": "perplexity",
+    "value": 768.0,
+    "where": "src/size_ablation_tab.tex:5",
+    "text": "\\ 3: Hyperparams = 768",
+    "row_label": "\\ 3",
+    "column_label": "Hyperparams"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Table 6 (page 9, ablation over BERT model size). The three left columns #L/#H/#A sit under the spanning header 'Hyperparams'; the perplexity column is the separate 'LM (ppl)' column, whose values run 5.84 down to 3.23 and include none of these. This cell is #H = 768 on the L=3 row. Not a perplexity."
+  },
+  {
+   "extraction": {
+    "metric": "perplexity",
+    "value": 1024.0,
+    "where": "src/size_ablation_tab.tex:5",
+    "text": "24: Hyperparams = 1024",
+    "row_label": "24",
+    "column_label": "Hyperparams"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Table 6 (page 9, ablation over BERT model size). The three left columns #L/#H/#A sit under the spanning header 'Hyperparams'; the perplexity column is the separate 'LM (ppl)' column, whose values run 5.84 down to 3.23 and include none of these. This cell is #H = 1024 on the L=24 row. Not a perplexity."
+  },
+  {
+   "extraction": {
+    "metric": "exact_match",
+    "value": 82.3,
+    "where": "src/squad_tab.tex:6",
+    "text": "R.M. Reader (Ensemble): Test EM = 82.3",
+    "row_label": "R.M. Reader (Ensemble)",
+    "column_label": "Test EM"
+   },
+   "verdict": "baseline",
+   "notes": "Table 2 (page 7, SQuAD 1.1 results). The row sits under the full-width 'Published' section row, so the cell is prior work (R.M. Reader, Hu et al.), not a BERT measurement. The same 82.3 appears in the 'Top Leaderboard Systems' section as Human Test EM; both are quoted, not measured here."
+  },
+  {
+   "extraction": {
+    "metric": "exact_match",
+    "value": 85.1,
+    "where": "src/squad_tab.tex:6",
+    "text": "BERT_ LARGE (Sgl.+TriviaQA): Test EM = 85.1",
+    "row_label": "BERT_ LARGE (Sgl.+TriviaQA)",
+    "column_label": "Test EM"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 2 (page 7, SQuAD 1.1 results). Under the full-width 'Ours' section row: BERT-LARGE (Sgl.+TriviaQA) Test EM, bold in the rendered table. The paper's own measurement."
+  },
+  {
+   "extraction": {
+    "metric": "exact_match",
+    "value": 86.0,
+    "where": "src/squad_tab.tex:6",
+    "text": "\\#1 Ensemble - nlnet: Test EM = 86",
+    "row_label": "\\#1 Ensemble - nlnet",
+    "column_label": "Test EM"
+   },
+   "verdict": "baseline",
+   "notes": "Table 2 (page 7, SQuAD 1.1 results). Under the full-width 'Top Leaderboard Systems (Dec 10th, 2018)' section row: a leaderboard entry by another system, quoted for comparison (Sec 4.2 describes these as prior leaderboard entries and top published work)."
+  },
+  {
+   "extraction": {
+    "metric": "exact_match",
+    "value": 87.4,
+    "where": "src/squad_tab.tex:6",
+    "text": "BERT_ LARGE (Ens.+TriviaQA): Test EM = 87.4",
+    "row_label": "BERT_ LARGE (Ens.+TriviaQA)",
+    "column_label": "Test EM"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 2 (page 7, SQuAD 1.1 results). Under 'Ours': BERT-LARGE (Ens.+TriviaQA) Test EM. The paper's own measurement."
+  },
+  {
+   "extraction": {
+    "metric": "f1",
+    "value": 88.5,
+    "where": "src/squad_tab.tex:6",
+    "text": "R.M. Reader (Ensemble): Test F1 = 88.5",
+    "row_label": "R.M. Reader (Ensemble)",
+    "column_label": "Test F1"
+   },
+   "verdict": "baseline",
+   "notes": "Table 2 (page 7, SQuAD 1.1 results). Under the 'Published' section row: R.M. Reader (Ensemble) Test F1, prior work. 88.5 occurs twice in this table -- the other is BERT-BASE (Single) Dev F1 under 'Ours', which is the authors' own; the row and column labels are what separate them."
+  },
+  {
+   "extraction": {
+    "metric": "f1",
+    "value": 91.7,
+    "where": "src/squad_tab.tex:6",
+    "text": "\\#1 Ensemble - nlnet: Test F1 = 91.7",
+    "row_label": "\\#1 Ensemble - nlnet",
+    "column_label": "Test F1"
+   },
+   "verdict": "baseline",
+   "notes": "Table 2 (page 7, SQuAD 1.1 results). Under 'Top Leaderboard Systems (Dec 10th, 2018)': #1 Ensemble - nlnet Test F1, another system's leaderboard score."
+  },
+  {
+   "extraction": {
+    "metric": "f1",
+    "value": 91.8,
+    "where": "src/squad_tab.tex:6",
+    "text": "BERT_ LARGE (Ensemble): Dev F1 = 91.8",
+    "row_label": "BERT_ LARGE (Ensemble)",
+    "column_label": "Dev F1"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 2 (page 7, SQuAD 1.1 results). Under 'Ours': BERT-LARGE (Ensemble) Dev F1 = 91.8. 91.8 appears twice in this table; the other is BERT-LARGE (Sgl.+TriviaQA) Test F1, also the authors' own."
+  },
+  {
+   "extraction": {
+    "metric": "f1",
+    "value": 91.8,
+    "where": "src/squad_tab.tex:6",
+    "text": "BERT_ LARGE (Sgl.+TriviaQA): Test F1 = 91.8",
+    "row_label": "BERT_ LARGE (Sgl.+TriviaQA)",
+    "column_label": "Test F1"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 2 (page 7, SQuAD 1.1 results). Under 'Ours': BERT-LARGE (Sgl.+TriviaQA) Test F1 = 91.8 (bold). The paper's own measurement; distinct from the BERT-LARGE (Ensemble) Dev F1 cell that also reads 91.8."
+  },
+  {
+   "extraction": {
+    "metric": "f1",
+    "value": 92.2,
+    "where": "src/squad_tab.tex:6",
+    "text": "BERT_ LARGE (Ens.+TriviaQA): Dev F1 = 92.2",
+    "row_label": "BERT_ LARGE (Ens.+TriviaQA)",
+    "column_label": "Dev F1"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 2 (page 7, SQuAD 1.1 results). Under 'Ours': BERT-LARGE (Ens.+TriviaQA) Dev F1 = 92.2. The paper's own measurement. (92.2 also appears in Table 7 as ELMo's Test F1, a different table and a baseline there; the where/row/column here pin this one to Table 2.)"
+  },
+  {
+   "extraction": {
+    "metric": "exact_match",
+    "value": 71.4,
+    "where": "src/squad_tab.tex:40",
+    "text": "unet (Ensemble): Test EM = 71.4",
+    "row_label": "unet (Ensemble)",
+    "column_label": "Test EM"
+   },
+   "verdict": "baseline",
+   "notes": "Table 3 (page 7, SQuAD 2.0 results). Under the full-width 'Published' section row: unet (Ensemble) Test EM, prior work (Sun et al., 2018). SLQA+ (Single) Test EM on the next row is also 71.4 and also published prior work, so either reading is a baseline."
   }
  ]
 }
