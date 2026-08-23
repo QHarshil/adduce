@@ -293,6 +293,19 @@
     R-RES-002: partial
     R-RES-004: partial
 
+- case: synthetic_printed_precision
+  # The paper prints 0.30 and the config holds 0.34, which disagree to the
+  # hundredth the paper printed. Inferring the tolerance from the parsed float
+  # lost the trailing zero, widened it to a tenth, and reported agreement. The
+  # weight decay is the control: it agrees exactly and must keep agreeing once
+  # the tolerance tightens. Asserted here directly, unlike the paper-side cases:
+  # a drift rule reads prose hyperparameters, so this fix moves a verdict.
+  expect:
+    R-DRIFT-001: fail
+    R-DRIFT-003: pass
+  forbid:
+    R-DRIFT-001: pass
+
 - case: synthetic_group_boundary_value
   # The paper states a batch size of 4096 and the config holds 4096, so the two
   # agree. Reading the divisor of a scaling formula as a second, conflicting
