@@ -896,52 +896,12 @@
   {
    "extraction": {
     "metric": "iou",
-    "value": 1.0,
-    "where": "src/math_commands.tex:37",
-    "text": "iou}(#1"
-   },
-   "verdict": "not_in_paper",
-   "notes": "src/math_commands.tex:37 is the preamble macro definition '\\newcommand{\\iouloss}[1]{{\\cal L}_{\\rm iou}(#1)}', \\include-d before \\begin{document} in both main.tex and supplementary_main.tex; it is never printed as page text. The captured value 1.0 is the macro's argument placeholder '#1' misread as the digit 1. No IoU metric of 1 is reported anywhere."
-  },
-  {
-   "extraction": {
-    "metric": "dice",
-    "value": 1.0,
-    "where": "src/math_commands.tex:38",
-    "text": "DICE}(#1"
-   },
-   "verdict": "not_in_paper",
-   "notes": "src/math_commands.tex:38 is the preamble macro definition '\\newcommand{\\diceloss}[1]{{\\cal L}_{\\rm DICE}(#1)}', never printed as page text. Same defect as the adjacent \\iouloss entry: the argument placeholder '#1' misread as 1. No DICE metric of 1 is reported anywhere."
-  },
-  {
-   "extraction": {
-    "metric": "iou",
     "value": 2.0,
     "where": "src/supplementary.tex:48",
     "text": "iou} = 2"
    },
    "verdict": "hyperparameter",
    "notes": "src/supplementary.tex:48 ('Losses' subsubsection): '...with $\\lambda_{\\rm L1} = 5$ and $\\lambda_{\\rm iou} = 2$ weights respectively.' lambda_iou=2 is the GIoU loss weighting coefficient, a real number the paper states, but a training hyperparameter, not a reported IoU result. The extractor's metric name ('iou') collides with the IoU evaluation metric only in name."
-  },
-  {
-   "extraction": {
-    "metric": "auc",
-    "value": 1.0,
-    "where": "src/supplementary_main.tex:135",
-    "text": "auco}{##1"
-   },
-   "verdict": "not_in_paper",
-   "notes": "src/supplementary_main.tex:135 is llncs.cls author-list boilerplate in the preamble (before \\begin{document} at line 152): '\\def\\authcount##1{\\setcounter{auco}{##1}...}'. Never printed as page text. The captured value 1.0 is the macro's '##1' placeholder misread as 1; 'auco' is LaTeX's internal author-count counter, not an AUC metric."
-  },
-  {
-   "extraction": {
-    "metric": "auc",
-    "value": 2.0,
-    "where": "src/supplementary_main.tex:136",
-    "text": "auco}=2"
-   },
-   "verdict": "not_in_paper",
-   "notes": "src/supplementary_main.tex:136 is the same preamble boilerplate, next line: '\\def\\lastand{\\ifnum\\value{auco}=2\\relax...}'. Never printed as page text. The captured value 2.0 is the comparison literal in an \\ifnum test on the author-count counter, not an AUC metric."
   },
   {
    "extraction": {
@@ -1302,6 +1262,150 @@
    },
    "verdict": "real_own_result",
    "notes": "Table 1 (table:frcnn), Faster RCNN-R101-FPN+ row, s column: middle-section '+' row -- the caption/prose (experiments.tex:68-69) states these are 'the same models but trained with the 9x schedule...and the described enhancements' (GIoU loss, random-crop augmentation): the authors' own rerun of Faster R-CNN, produced by this repository."
+  },
+  {
+   "extraction": {
+    "metric": "l",
+    "value": 60.2,
+    "where": "src/experiments.tex:284",
+    "text": "L 60.2",
+    "row_label": null,
+    "column_label": "L"
+   },
+   "verdict": "real_own_result",
+   "notes": "Rendered PDF p13, Table 4, last row, AP_L column = 60.2 -- the authors' own full-loss DETR ablation model. Also reported for the 6-encoder-layer row of the authors' Table 2 (p10)."
+  },
+  {
+   "extraction": {
+    "metric": "m",
+    "value": 44.3,
+    "where": "src/experiments.tex:284",
+    "text": "M 44.3",
+    "row_label": null,
+    "column_label": "M"
+   },
+   "verdict": "real_own_result",
+   "notes": "Rendered PDF p13, Table 4, last row, AP_M column = 44.3 -- the authors' own full-loss DETR ablation model. Also reported for the 6-encoder-layer row of the authors' Table 2 (p10)."
+  },
+  {
+   "extraction": {
+    "metric": "map",
+    "value": 40.6,
+    "where": "src/experiments.tex:284",
+    "text": "AP 40.6",
+    "row_label": null,
+    "column_label": "AP"
+   },
+   "verdict": "real_own_result",
+   "notes": "Rendered PDF p13, Table 4 ('Effect of loss components on AP'), last row, AP column = 40.6. The caption reads 'We train two models turning off l1 loss, and GIoU loss ... Our baseline (last row) combines both losses' -- every row of this table is a model the authors trained, and 'baseline' here names the paper's own full-loss DETR, not prior work. The same value is also stated in prose on p10 ('achieves 40.6 and 42.0 AP on short and long schedules respectively') and appears in the authors' own Table 2 (6 encoder layers) and Table 3 (last row)."
+  },
+  {
+   "extraction": {
+    "metric": "s",
+    "value": 19.9,
+    "where": "src/experiments.tex:284",
+    "text": "S 19.9",
+    "row_label": null,
+    "column_label": "S"
+   },
+   "verdict": "real_own_result",
+   "notes": "Rendered PDF p13, Table 4, AP_S column = 19.9 -- printed twice in that table (the class+GIoU row and the full-loss last row). Both are models the authors trained for this loss ablation, so the cell is DETR's own measurement either way."
+  },
+  {
+   "extraction": {
+    "metric": "map",
+    "value": 34.3,
+    "where": "src/experiments.tex:402",
+    "text": "UPSnet-M: AP = 34.3",
+    "row_label": "UPSnet-M",
+    "column_label": "AP"
+   },
+   "verdict": "baseline",
+   "notes": "Rendered PDF p16, Table 5, UPSnet-M row, AP column = 34.3 (UPSnet R50 prints the same 34.3 one row above). UPSNet is prior work, cited as [51] in the caption; the only retraining the caption claims is of PanopticFPN ('We retrained PanopticFPN with the same data-augmentation as DETR'), while 'UPSNet uses the 1x schedule, UPSNet-M is the version with multiscale test-time augmentations' describes a quoted configuration. Attributed to a citation, so baseline."
+  },
+  {
+   "extraction": {
+    "metric": "rq^th",
+    "value": 60.6,
+    "where": "src/experiments.tex:402",
+    "text": "PanopticFPN++: RQ^th = 60.6",
+    "row_label": "PanopticFPN++",
+    "column_label": "RQ^th"
+   },
+   "verdict": "real_own_result",
+   "notes": "Rendered PDF p16, Table 5, PanopticFPN++ R101 row, RQ^th column = 60.6 (DETR-DC5 prints 60.6 in the same column). PanopticFPN++ was retrained by these authors per the caption, so this is their own measurement."
+  },
+  {
+   "extraction": {
+    "metric": "sq",
+    "value": 79.3,
+    "where": "src/experiments.tex:402",
+    "text": "PanopticFPN++: SQ = 79.3",
+    "row_label": "PanopticFPN++",
+    "column_label": "SQ"
+   },
+   "verdict": "real_own_result",
+   "notes": "Rendered PDF p16, Table 5, PanopticFPN++ R50 row, SQ column = 79.3 (DETR R50 prints 79.3 in the same column). The caption states 'We retrained PanopticFPN with the same data-augmentation as DETR, on a 18x schedule for fair comparison', so the PanopticFPN++ rows are the authors' own reimplementation of prior work and count as their own result."
+  },
+  {
+   "extraction": {
+    "metric": "sq^st",
+    "value": 78.5,
+    "where": "src/experiments.tex:402",
+    "text": "DETR-R101: SQ^st = 78.5",
+    "row_label": "DETR-R101",
+    "column_label": "SQ^st"
+   },
+   "verdict": "real_own_result",
+   "notes": "Rendered PDF p16, Table 5, DETR-R101 row, SQ^st column = 78.5 (DETR R50 prints 78.5 in the same column). DETR's own panoptic-segmentation result."
+  },
+  {
+   "extraction": {
+    "metric": "l",
+    "value": 61.1,
+    "where": "src/table1_alt.tex:11",
+    "text": "DETR-DC5: L = 61.1",
+    "row_label": "DETR-DC5",
+    "column_label": "L"
+   },
+   "verdict": "real_own_result",
+   "notes": "Rendered PDF p9, Table 1, DETR-DC5 row (bottom section), AP_L column = 61.1; the DETR row prints 61.1 in the same column. DETR's own result."
+  },
+  {
+   "extraction": {
+    "metric": "m",
+    "value": 43.5,
+    "where": "src/table1_alt.tex:11",
+    "text": "Faster RCNN-FPN: M = 43.5",
+    "row_label": "Faster RCNN-FPN",
+    "column_label": "M"
+   },
+   "verdict": "baseline",
+   "notes": "Rendered PDF p9, Table 1, Faster RCNN-FPN row (top section), AP_M column = 43.5; Faster RCNN-DC5 prints 43.5 in the same column. The caption and prose state 'The top section shows results for Faster R-CNN models in Detectron2 [50]' / 'In the top section we show Faster R-CNN results from Detectron2 Model Zoo [50] for models trained with the 3x schedule' -- a cell attributed to a citation, so baseline. (Distinct from the DETR-R101 AP of 43.5 in the bottom section, which is already adjudicated separately.)"
+  },
+  {
+   "extraction": {
+    "metric": "map",
+    "value": 42.0,
+    "where": "src/table1_alt.tex:11",
+    "text": "Faster RCNN-FPN+: AP = 42",
+    "row_label": "Faster RCNN-FPN+",
+    "column_label": "AP"
+   },
+   "verdict": "real_own_result",
+   "notes": "Rendered PDF p9, Table 1, Faster RCNN-FPN+ row (middle section), AP column = 42.0. The caption and prose say the middle section is 'Faster R-CNN models with GIoU [38], random crops train-time augmentation, and the long 9x training schedule' / 'In the middle section we show results (with a \"+\") for the same models but trained' by these authors -- the authors' own strengthened reimplementation of Faster R-CNN, so their own result."
+  },
+  {
+   "extraction": {
+    "metric": "map",
+    "value": 42.0,
+    "where": "src/table1_alt.tex:11",
+    "text": "Faster RCNN-R101-FPN: AP = 42",
+    "row_label": "Faster RCNN-R101-FPN",
+    "column_label": "AP"
+   },
+   "verdict": "baseline",
+   "notes": "Rendered PDF p9, Table 1, Faster RCNN-R101-FPN row (top section), AP column = 42.0. Top section is quoted from the Detectron2 Model Zoo [50], so baseline. Three rows print AP 42.0 in this table (this one, the retrained Faster RCNN-FPN+ and DETR); only this one is in the quoted top section."
   }
  ]
 }
