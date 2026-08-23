@@ -338,6 +338,19 @@ _METRIC_GROUPS: tuple[tuple[str, ...], ...] = (
     # adjacent columns of one table, so a linear-probe accuracy is its own
     # metric rather than an accuracy.
     ("linear_probe_accuracy", "lin", "lin.", "linear probe", "linear probing"),
+    # A benchmark suite's headline number is the mean of its tasks' scores, and
+    # the tasks are scored in different units -- GLUE averages Matthews
+    # correlation, Spearman correlation, F1 and accuracy together -- so it is
+    # its own metric and not an accuracy.
+    #
+    # Only the compound forms are aliases. Registering bare "average"/"avg" was
+    # measured and rejected: it reaches 8 further headers across the dev pairs
+    # and a canonicalising header pre-empts the caption fallback, so llama's
+    # "Average" under a caption reading "Five-shot accuracy" would stop being an
+    # accuracy, and whisper's would stop being a word error rate. The suite name
+    # itself stays out for the reason CoLA does -- "GLUE" names what was
+    # measured on, not what was measured.
+    ("average_score", "average score", "avg score", "score average", "score avg"),
 )
 
 #: The names a dataset split goes by when a table header puts it in front of the
