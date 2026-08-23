@@ -284,11 +284,11 @@ def test_a_second_header_row_names_the_metric_its_columns_leave_unnamed(make_evi
 
 
 _THIRD_HEADER_TEX = r"""
-\begin{tabular}{lccc}
- & \multicolumn{2}{c}{GLUE} & \multicolumn{1}{c}{SQuAD} \\
- & CoLA & STS-B & v1.1 \\
-Model & MCC & SCC & F1 \\
-Ours & 53.8 & 87.1 & 88.5 \\
+\begin{tabular}{lcccc}
+ & \multicolumn{3}{c}{GLUE} & \multicolumn{1}{c}{SQuAD} \\
+ & Score & CoLA & STS-B & v1.1 \\
+Model & Average & MCC & SCC & F1 \\
+Ours & 74.7 & 53.8 & 87.1 & 88.5 \\
 \end{tabular}
 """
 
@@ -304,6 +304,7 @@ def test_a_third_header_row_names_the_metric_the_group_row_buries(make_evidence)
     """
     cells = make_evidence({"paper/main.tex": _THIRD_HEADER_TEX}).latex.table_cells
     assert [(c.column_label, c.value) for c in cells] == [
+        ("GLUE Score Average", 74.7),
         ("GLUE CoLA MCC", 53.8),
         ("GLUE STS-B SCC", 87.1),
         ("SQuAD v1.1 F1", 88.5),
@@ -321,9 +322,9 @@ def test_iterating_the_second_header_test_from_the_top_would_find_nothing(make_e
     """
     from adduce.evidence.latex import _compose_headers, _is_second_header
 
-    group = ["", "GLUE", "GLUE", "SQuAD"]
-    dataset = ["", "CoLA", "STS-B", "v1.1"]
-    metric = ["Model", "MCC", "SCC", "F1"]
+    group = ["", "GLUE", "GLUE", "GLUE", "SQuAD"]
+    dataset = ["", "Score", "CoLA", "STS-B", "v1.1"]
+    metric = ["Model", "Average", "MCC", "SCC", "F1"]
     assert not _is_second_header(group, dataset)
     assert _is_second_header(dataset, metric)
     assert _is_second_header(_compose_headers(group, dataset), metric)
@@ -417,6 +418,7 @@ def test_the_third_header_row_fixture_names_every_column_the_page_names():
     )
     cells = _parse_tables(text, "main.tex")
     assert [(c.row_label, c.column_label, c.value) for c in cells] == [
+        ("Ours", "GLUE Score Average", 74.7),
         ("Ours", "GLUE CoLA MCC", 53.8),
         ("Ours", "GLUE STS-B SCC", 87.1),
         ("Ours", "SQuAD v1.1 F1", 88.5),

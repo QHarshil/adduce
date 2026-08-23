@@ -216,6 +216,42 @@ def test_a_qualifier_fallback_does_not_invent_a_metric(header):
 
 
 @pytest.mark.parametrize(
+    "header",
+    [
+        # A bare average names no unit. Registering these was measured and
+        # rejected: a canonicalising header pre-empts the caption fallback, so
+        # llama's "Average" under a caption reading "Five-shot accuracy" would
+        # stop being an accuracy and whisper's would stop being a word error
+        # rate. Eight headers across the dev pairs, 113 cells.
+        "Average",
+        "Avg",
+        "AVG",
+        "K700 AVG",
+        # And a bare "score" is not an average of anything. These two are what
+        # registering it would have claimed.
+        "test score",
+        "MT-Bench Score (GPT-4)",
+        # The suite name stays out for the reason CoLA does: it says what the
+        # number was measured on, not what was measured.
+        "GLUE",
+        "SuperGLUE",
+        "points on GLUE",
+    ],
+)
+def test_a_suite_name_and_a_bare_average_are_not_the_average_score(header):
+    """``average_score`` is registered on its compound forms only.
+
+    The metric exists because a suite's headline number is the mean of tasks
+    scored in different units -- GLUE averages Matthews correlation, Spearman
+    correlation, F1 and accuracy together -- so it is neither an accuracy nor
+    any one of them. What makes it readable is that a composed header states it
+    in full: t5's ``GLUE Score Average``, whose trailing two words are the
+    metric and whose leading word is the suite.
+    """
+    assert canonical_metric(header) is None
+
+
+@pytest.mark.parametrize(
     ("header", "expected"),
     [
         # Cost, reported as a rate, a frame count, a duration or a footprint.
@@ -256,6 +292,10 @@ def test_a_qualifier_fallback_does_not_invent_a_metric(header):
         ("MCC", "matthews"),
         ("SCC", "spearman"),
         ("lin", "linear_probe_accuracy"),
+        # A suite's headline number, and the composed header t5 states it under.
+        ("average score", "average_score"),
+        ("GLUE Score Average", "average_score"),
+        ("SuperGLUE Score Average", "average_score"),
     ],
 )
 def test_canonical_metric_reads_the_names_the_dev_set_prints(header, expected):

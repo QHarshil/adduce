@@ -4,16 +4,27 @@ A header of three rows — a group row over a dataset row over a metric row —
 and, in the same paper, the table shape that a careless reading of it would
 destroy.
 
-The first table is t5's Table 16 in miniature. `\multicolumn{2}{c}{GLUE}` spans
-two columns above `CoLA` and `STS-B`, and the metric — `MCC`, `SCC` — sits in a
-third row beneath those. A parse that composes at most two header rows reads the
+The first table is t5's Table 16 in miniature. `\multicolumn{3}{c}{GLUE}` spans
+three columns above `Score`, `CoLA` and `STS-B`, and the metric — `Average`,
+`MCC`, `SCC` — sits in a third row beneath those. A parse that composes at most two header rows reads the
 third as data: it states no number, so it yields no cell and vanishes silently,
 and every column below it keeps the *group* name. On the real table that is
 2,277 cells labelled `GLUE`, `SuperGLUE`, `WMT` or nothing at all, which is
 coarser than even the dataset names, and it is why t5 scored 0 of 15 with 13 of
 its values already extracted. Read correctly this table states
-`GLUE CoLA MCC = 53.8`, `GLUE STS-B SCC = 87.1` and `SQuAD v1.1 F1 = 88.5`,
-which canonicalise to `matthews`, `spearman` and `f1`.
+`GLUE Score Average = 74.7`, `GLUE CoLA MCC = 53.8`, `GLUE STS-B SCC = 87.1` and
+`SQuAD v1.1 F1 = 88.5`, which canonicalise to `average_score`, `matthews`,
+`spearman` and `f1`.
+
+The `Score`/`Average` column is carried by the rest of the table and is the
+reason it is here. `Average` names no metric on its own, so the pair
+`Score`/`Average` could never satisfy the header test by itself; what makes that
+column readable is that *other* columns of the same row pair a dataset with a
+metric, and the header test is asked of the row rather than the column. This is
+exactly how t5's GLUE average is recovered, and it is why `average_score` is
+registered on `score average` and not on a bare `average` — see
+`tests/test_claims_extraction.py`, where the bare forms are pinned to `None`
+because a canonicalising header pre-empts the caption fallback.
 
 The second table is the control, and it is the more important half. Its `Prior`
 row states `$83.1 \pm 0.4$`, which is not a number any more than a header is, so
@@ -48,7 +59,7 @@ dropping the metric requirement from the search renames `MNLI` to
 Both byte-identity instruments are live on it, which is not something to assume
 — they are blind in different directions. Against a tree capped at two header
 rows, `bench/dev/manifest_identity.py` reports **1 of 30 cases moved**, this
-one, on 3 of its 5 claims and on `column_label`, `metric`, `value`, `text`,
+one, on 4 of its 6 claims and on `column_label`, `metric`, `value`, `text`,
 `confidence`, `resolution_method` and `produced_by`; the `--paper` JSON-report
 comparison over the same two trees also reports **1 of 30**, this one. Every
 other case is identical under both, so the case moves what it was built to move
