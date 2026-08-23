@@ -50,10 +50,12 @@ number reads the metric and the value and never the confidence.
 stating rather than discovering.** The default JSON report carries a claim's
 metric, value, location and trail and carries neither its confidence nor its
 resolution method, so every synthetic case renders identically across this
-change — a true negative, not a check. Nor does `expectations.yaml` reach it:
-`tests/test_synthetic_corpus.py` calls `run_check` without a paper path, so the
-LaTeX collector never runs there, and the entry pins only that an unread paper
-yields no verdict. What does carry the demotion is the manifest, which records
+change — a true negative, not a check. Nor does `expectations.yaml` reach it. The
+LaTeX collector does run under `tests/test_synthetic_corpus.py`, which calls
+`run_check` with no paper path: the collector finds `paper/main.tex` inside the
+case directory either way. What no rule reads is a table cell or a drafted
+claim, so the entry pins only that a paper whose cells reach no rule yields no
+verdict. What does carry the demotion is the manifest, which records
 both fields:
 
 ```console

@@ -18,10 +18,14 @@ Read correctly, the table states `Accuracy = 81.4`, `Accuracy = 79.2` and
 (81.37).
 
 **This case is exercised by the `--paper` byte-identity comparison, not by
-`expectations.yaml`.** Table cells reach the claims package and no rule reads
-them, and `tests/test_synthetic_corpus.py` calls `run_check` without a paper
-path, so the LaTeX collector never runs there. The expectations entry therefore
-pins only that an unread paper produces no verdict. Run
+`expectations.yaml`.** The LaTeX collector does run there:
+`tests/test_synthetic_corpus.py` calls `run_check` with no paper path, and the
+collector finds `paper/main.tex` inside the case directory either way, so the
+paper is read and its cells are parsed. What no rule reads is a table cell or a
+drafted claim, so no fix to how a cell is read can move a verdict. The
+expectations entry therefore pins only that a paper whose cells reach no rule
+produces no verdict rather than a wrong one, and states that caveat in full for
+every paper-side case. Run
 
 ```console
 adduce check corpus/synthetic/synthetic_wrapped_table_header \

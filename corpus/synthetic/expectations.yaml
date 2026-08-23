@@ -112,13 +112,20 @@
     R-DRIFT-001: fail
 
 - case: synthetic_wrapped_table_header
-  # This fixture's real assertion is not here. Its metric is named only inside a
-  # \multicolumn wrapping a \rotatebox, and table cells reach the claims package
-  # alone -- no rule reads them -- while run_check() below is called without a
-  # paper, so the LaTeX collector never runs for it. What this file can pin is
-  # that a paper the harness cannot read yields no verdict rather than a wrong
-  # one. The dissolving itself is asserted by the --paper byte-identity
-  # comparison and by tests/test_collectors_new.py; see the case README.
+  # This fixture's real assertion is not here, and the reason is stated once
+  # here for every paper-side case below. The LaTeX collector does run:
+  # run_check() finds paper/main.tex inside the case directory whether or not a
+  # paper path is passed, so the paper is read and its cells are parsed. What
+  # no rule reads is a table cell or a drafted claim -- the two reconciliation
+  # rules read the paper's prose metric statements and an author-written
+  # manifest, and the drift rules read its hyperparameters -- so a fix to how a
+  # cell is read cannot move a verdict here at all, while a prose or
+  # hyperparameter fix can, once the case gives a rule something to reconcile
+  # against. This case's metric is named only inside a \multicolumn wrapping a
+  # \rotatebox, which is a table fact, so what this file can pin is that a
+  # paper whose cells reach no rule yields no verdict rather than a wrong one.
+  # The dissolving itself is asserted by the --paper byte-identity comparison
+  # and by tests/test_collectors_new.py; see the case README.
   expect:
     R-RES-001: not-applicable
   forbid:
@@ -127,14 +134,14 @@
     R-DRIFT-001: fail
 
 - case: synthetic_caption_named_metric
-  # Same shape as synthetic_wrapped_table_header, and the same caveat: the real
-  # assertion is not here. This case's columns are named by a caption and by a
-  # second header row, both of which only reach the claims package, which no rule
-  # reads -- and run_check() below is called without a paper, so the LaTeX
-  # collector never runs for it. What this file pins is that a paper the harness
-  # cannot read yields no verdict rather than a wrong one. The naming itself is
-  # asserted by the --paper byte-identity comparison, which this case is what
-  # makes non-vacuous, and by tests/test_claims_extraction.py; see the README.
+  # Same shape as synthetic_wrapped_table_header, and the same caveat stated
+  # there: the real assertion is not here. This case's columns are named by a
+  # caption and by a second header row, and both reach the claims package
+  # alone, which no rule reads. What this file pins is that a paper whose cells
+  # reach no rule yields no verdict rather than a wrong one. The naming itself
+  # is asserted by the --paper byte-identity comparison, which this case is
+  # what makes non-vacuous, and by tests/test_claims_extraction.py; see the
+  # README.
   expect:
     R-RES-001: not-applicable
   forbid:
@@ -143,14 +150,16 @@
     R-DRIFT-001: fail
 
 - case: synthetic_macro_row_separator
-  # Same shape as the two cases above, and the same caveat: the real assertion is
-  # not here. This case's rows are ended by a command the paper defines and its
-  # row label is written as another, both of which only reach the claims package,
-  # which no rule reads -- and run_check() below is called without a paper, so the
-  # LaTeX collector never runs for it. What this file pins is that a paper the
-  # harness cannot read yields no verdict rather than a wrong one. The expansion
-  # itself is asserted by the --paper byte-identity comparison, which this case is
-  # what makes non-vacuous, and by tests/test_collectors_new.py; see the README.
+  # Same shape as the two cases above, and the same caveat stated at
+  # synthetic_wrapped_table_header: the real assertion is not here. This case's
+  # rows are ended by a command the paper defines and its row label is written
+  # as another, and both reach the claims package alone, which no rule reads.
+  # This case carries no results file either, so the two reconciliation rules
+  # abstain on that ground as well. What this file pins is that a paper whose
+  # cells reach no rule yields no verdict rather than a wrong one. The
+  # expansion itself is asserted by the --paper byte-identity comparison, which
+  # this case is what makes non-vacuous, and by tests/test_collectors_new.py;
+  # see the README.
   expect:
     R-RES-001: not-applicable
   forbid:
@@ -159,14 +168,14 @@
     R-DRIFT-001: fail
 
 - case: synthetic_mixed_header_row
-  # Same shape as the three cases above, and the same caveat: the real assertion is
-  # not here. This case heads one column with a metric and the rest with dataset
-  # names whose metric sits in a second header row, and that composition only
-  # reaches the claims package, which no rule reads -- and run_check() below is
-  # called without a paper, so the LaTeX collector never runs for it. What this
-  # file pins is that a paper the harness cannot read yields no verdict rather than
-  # a wrong one. The per-column composition itself is asserted by the --paper
-  # byte-identity comparison, which this case is what makes non-vacuous, and by
+  # Same shape as the three cases above, and the same caveat stated at
+  # synthetic_wrapped_table_header: the real assertion is not here. This case
+  # heads one column with a metric and the rest with dataset names whose metric
+  # sits in a second header row, and that composition reaches the claims
+  # package alone, which no rule reads. What this file pins is that a paper
+  # whose cells reach no rule yields no verdict rather than a wrong one. The
+  # per-column composition itself is asserted by the --paper byte-identity
+  # comparison, which this case is what makes non-vacuous, and by
   # tests/test_collectors_new.py; see the README.
   expect:
     R-RES-001: not-applicable
@@ -176,15 +185,17 @@
     R-DRIFT-001: fail
 
 - case: synthetic_coincident_values
-  # Same shape as the cases above, and the same caveat: the real assertion is not
-  # here. This case's three measurements sharing one value, and the restatement of
-  # one of them that must still merge, are decided in the claims package, which no
-  # rule reads -- and run_check() below is called without a paper, so the LaTeX
-  # collector never runs for it. What this file pins is that a paper the harness
-  # cannot read yields no verdict rather than a wrong one. The clustering itself is
-  # asserted by the --paper byte-identity comparison, which this case is what makes
-  # non-vacuous -- it is the corpus's first multi-member cluster -- and by
-  # tests/test_claims_extraction.py; see the README.
+  # Same shape as the cases above, and the same caveat stated at
+  # synthetic_wrapped_table_header: the real assertion is not here. This case's
+  # three measurements sharing one value, and the restatement of one of them
+  # that must still merge, are decided in the claims package, which no rule
+  # reads; the case carries no results file either, so the two reconciliation
+  # rules abstain on that ground as well. What this file pins is that a paper
+  # whose cells reach no rule yields no verdict rather than a wrong one. The
+  # clustering itself is asserted by the --paper byte-identity comparison,
+  # which this case is what makes non-vacuous -- it is the corpus's first
+  # multi-member cluster -- and by tests/test_claims_extraction.py; see the
+  # README.
   expect:
     R-RES-001: not-applicable
   forbid:
@@ -211,15 +222,17 @@
     R-DRIFT-001: fail
 
 - case: synthetic_quoted_baseline_rows
-  # Same shape as the cases above, and the same caveat, with one difference worth
-  # knowing. This case's cited rows and its section headers decide how confidently
-  # each cell is read, which only reaches the claims package, which no rule reads
-  # -- and run_check() below is called without a paper, so the LaTeX collector
-  # never runs for it. What this file pins is that a paper the harness cannot read
-  # yields no verdict rather than a wrong one. Unlike the cases above, the --paper
-  # byte-identity comparison cannot assert this one either: the default JSON report
-  # carries no claim confidence and no resolution method. The demotion is asserted
-  # by tests/test_collectors_new.py and tests/test_claims_extraction.py, and is
+  # Same shape as the cases above, and the same caveat stated at
+  # synthetic_wrapped_table_header, with one difference worth knowing. This
+  # case's cited rows and its section headers decide how confidently each cell
+  # is read, which reaches the claims package alone, which no rule reads; the
+  # case carries no results file either, so the two reconciliation rules
+  # abstain on that ground as well. What this file pins is that a paper whose
+  # cells reach no rule yields no verdict rather than a wrong one. Unlike the
+  # cases above, the --paper byte-identity comparison cannot assert this one
+  # either: the default JSON report carries no claim confidence and no
+  # resolution method. The demotion is asserted by
+  # tests/test_collectors_new.py and tests/test_claims_extraction.py, and is
   # visible in the manifest; see the README.
   expect:
     R-RES-001: not-applicable
@@ -227,6 +240,7 @@
     R-RES-001: pass
     R-RES-002: pass
     R-DRIFT-001: fail
+
 - case: synthetic_preamble_definition
   # Unlike the paper-side cases above, this one is asserted here, because its
   # planted faults reach rules rather than only the claims package. The case
