@@ -414,6 +414,53 @@ def _is_cutoff(tail: str, number: re.Match[str], keyword: str) -> bool:
     return tail[number.start() - 1] == "@"
 
 
+#: One argument of a command closing and the next opening. Adjacent up to
+#: whitespace, because that is what two arguments of one command always are.
+_SIBLING_GROUP_RE = re.compile(r"\}\s*\{")
+
+
+def _crosses_group_boundary(gap: str) -> bool:
+    r"""Whether *gap* leaves the keyword's argument for the next one.
+
+    A keyword at the end of one brace group and a number at the start of the
+    next are not a statement, they are two arguments of one command, and the
+    number belongs to the argument the keyword is not in. The shape that
+    matters is a fraction: BiT writes ``$\frac{\mbox{batch size}}{256}$`` to
+    say the learning rate scales with the batch, and DeiT writes
+    ``\frac{\mathrm{lr}}{\mathrm{batchsize}}{512}``. **Both papers state a batch
+    size of 4096**, so adduce was reporting the denominator of a scaling rule as
+    the hyperparameter -- a wrong number about the paper, not merely a missing
+    one.
+
+    **Adjacent up to whitespace, and the narrowness is the whole design.** Two
+    arguments of one command are written against each other; a brace that closes
+    and one that opens with anything between them is two different pieces of
+    markup, and the number after it is routinely real. Measured over the 34
+    pairs, this refuses **4** candidates and every one is wrong: BiT's 256,
+    DeiT's 512, and two from DETR's ``\oldnew{old}{new}`` revision macro, where
+    the keyword ends the old text and the number opens the new --
+    ``schedule.}\n{for 500 epochs``, an epoch count read as a schedule, and
+    ``two 3-layers}{a 3-layer``, an FFN's depth read as the model's.
+
+    Allowing any text between the braces was measured and **rejected**: it
+    refuses 13 and takes real values with it. fairseq states a BLEU of 28.6 as
+    ``BLEU} & {\it 28.6``, a table header closing and an italic cell opening,
+    which is not one command's two arguments at all. The three further
+    candidates it would also refuse are wrong reads of a different shape --
+    ``ppl)}&\multicolumn{1``, ``Accuracy} & \\\cmidrule{2``, ``mIoU at}
+    \\\n{} & 1`` -- and none of them is a fraction, so refusing them here would
+    be this guard taking credit for a defect it does not describe.
+
+    Only the gap between the keyword and the number is examined. Searching the
+    whole window instead was written first and was wrong in a way every test
+    passed: a brace opening *after* the number set a boundary *before* it, so
+    ``Batch size}: 16`` and ``learning rate:} 0.003`` were refused along with
+    the fractions. Nothing caught it -- the all-pair inventory counts cells and
+    claims, and a hyperparameter is neither.
+    """
+    return _SIBLING_GROUP_RE.search(gap) is not None
+
+
 def _extract_keyword_values(
     text: str, file: str, keywords: dict[str, tuple[str, ...]], kind: str, window: int = 80
 ) -> list[PaperValue]:
@@ -444,7 +491,11 @@ def _extract_keyword_values(
                     num_match = _NUMBER_RE.search(tail, search_from)
                     while num_match is not None and _is_cutoff(tail, num_match, kw_match.group(0)):
                         num_match = _NUMBER_RE.search(tail, num_match.end())
-                    if num_match and num_match.start() <= search_from + 16:
+                    if (
+                        num_match
+                        and num_match.start() <= search_from + 16
+                        and not _crosses_group_boundary(tail[: num_match.start()])
+                    ):
                         # Reject numbers glued to a word ("CIFAR-10") — those
                         # are names, not values.
                         preceding = tail[num_match.start() - 1 : num_match.start()]

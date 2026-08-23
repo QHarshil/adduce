@@ -66,6 +66,58 @@ def test_latex_extraction(make_evidence):
     assert not any(v.value == 999 for values in hp.values() for v in values)
 
 
+@pytest.mark.parametrize(
+    ("prose", "expected"),
+    [
+        # BiT and DeiT, both of which state a batch size of 4096 elsewhere.
+        (r"multiply the learning rate by $\frac{\mbox{batch size}}{256}$", None),
+        (r"$\frac{\mathrm{lr}}{\mathrm{batchsize}}{512}$", None),
+        # DETR's revision macro, where the keyword ends the old text and the
+        # number opens the new. A newline between the braces is still one
+        # command's two arguments.
+        (r"\oldnew{two 3-layers}{a 3-layer} perceptron", None),
+        # A closing brace alone is not a boundary: these are real statements.
+        (r"\textbf{batch size:} 512", 512.0),
+        (r"\textbf{Batch size}: 16", 16.0),
+        # And neither is a brace closing with anything at all between it and the
+        # next opening. This one is why the rule is adjacency and not "a group
+        # closed somewhere": it is a table header closing and an italic cell
+        # opening, and 28.6 is the BLEU fairseq reports.
+        (r"BLEU} & {\it 28.6}", 28.6),
+        # A boundary *after* the number is not a boundary before it. This is
+        # the shape that separates examining the gap from examining the whole
+        # window: BiT states its batch size in one sentence and the scaling
+        # fraction in the next, so a window-wide search refuses the real value
+        # because of a fraction it has already passed.
+        (r"\textbf{Batch size}: 16, then scale by $\frac{lr}{512}$", 16.0),
+    ],
+)
+def test_a_number_in_a_sibling_group_is_not_the_keywords_value(prose, expected, make_evidence):
+    names = {"batch_size", "num_layers", "bleu"}
+    r"""A keyword ending one argument and a number opening the next is not a statement.
+
+    The distinction is a group closing *and another opening*, not a brace. Both
+    papers here scale a learning rate by the batch, so the number after the
+    keyword is a divisor, and reading it reported a batch size neither paper
+    states -- a wrong number rather than a missing one.
+    """
+    latex = make_evidence({"paper/main.tex": prose}).latex
+    read = [v.value for v in (*latex.hyperparameters, *latex.metrics) if v.name in names]
+    assert read == ([] if expected is None else [expected])
+
+
+def test_the_group_boundary_fixture_agrees_with_its_own_config():
+    """The synthetic case reads one batch size, and it is the one both sides state."""
+    from adduce.evidence.latex import _HYPERPARAM_PATTERNS, _extract_keyword_values
+
+    case = Path(__file__).resolve().parent.parent / "corpus" / "synthetic"
+    text = (case / "synthetic_group_boundary_value" / "paper" / "main.tex").read_text(
+        encoding="utf-8"
+    )
+    values = _extract_keyword_values(text, "main.tex", _HYPERPARAM_PATTERNS, "hyperparameter")
+    assert [v.value for v in values if v.name == "batch_size"] == [4096.0]
+
+
 def test_a_cutoff_glued_to_a_metric_name_is_not_a_value(make_evidence):
     r"""``Recall@1`` is the metric's name, and the 1 is the rank, not the recall.
 

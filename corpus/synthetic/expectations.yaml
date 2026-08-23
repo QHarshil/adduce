@@ -279,6 +279,20 @@
     R-RES-002: partial
     R-RES-004: partial
 
+- case: synthetic_group_boundary_value
+  # The paper states a batch size of 4096 and the config holds 4096, so the two
+  # agree. Reading the divisor of a scaling formula as a second, conflicting
+  # batch size made R-DRIFT-001 accuse them of drifting apart -- a wrong number
+  # about the paper, not a missing one, and one that reaches a verdict. Unlike
+  # the paper-side cases above, this one is asserted here directly: a drift rule
+  # reads prose hyperparameters, so a fix to how a prose number is read moves it.
+  expect:
+    R-DRIFT-001: pass
+    R-DRIFT-003: pass
+  forbid:
+    R-DRIFT-001: fail
+    R-DRIFT-003: partial
+
 - case: synthetic_spaced_config_key
   # The config states the decoder depth the paper states, under the key the paper
   # heads its own ablation column with. Resolving a dotted key on an unstripped
