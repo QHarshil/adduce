@@ -424,8 +424,8 @@ corpus rather than of the harness. A case that drafts no claim — the drift, se
 dependency fixtures — can move here only through the paper, dataset, environment, remote or
 smoke sections, and is still measured for exactly that reason. The report counts cases and
 claims on every run, so read the live figures off it rather than off a fraction written down
-here, which goes stale the next time a case is added. Measured over the 29 case directories the
-corpus held when this was written: 18 draft at least one claim and 87 in total,
+here, which goes stale the next time a case is added. Measured over the 32 case directories the
+corpus held when this was last checked: 20 draft at least one claim and 101 in total,
 `synthetic_quoted_baseline_rows` holding 10 and `synthetic_metric_vocabulary` and
 `synthetic_mixed_header_row` 9 each. Those are **manifest-level** counts, so they include the
 one claim `synthetic_hydra_authority` carries in its author-written manifest and extraction
