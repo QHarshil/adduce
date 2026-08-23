@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import posixpath
 import re
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from itertools import zip_longest
 
@@ -46,16 +46,69 @@ _TABLE_RE = re.compile(
     r"\\begin\{(" + _ENVIRONMENTS_PATTERN + r")\}(\s*\[[^\]]*\])?(.*?)\\end\{\1\}",
     re.DOTALL,
 )
-#: Rules and delimiters carry no cell content and are removed before a row is
-#: split into columns.
+#: Rules, delimiters and row colouring carry no cell content and are removed
+#: before a row is split into columns. Each is written with the arguments it
+#: takes, because the generic cleanup below erases a command name and its
+#: braces while keeping what sits between them: measured, ``\cmidrule(lr){2-3}``
+#: leaves BarlowTwins a row labelled ``(lr)2-3(lr)4-5`` and t5 2,440 row labels
+#: carrying a trim specification, and ``\rowcolor[gray]{.95}`` prefixes every
+#: ConvNeXt row label with ``[gray].95``.
+#:
+#: ``\Xhline`` is the ``makecell`` package's rule of a stated thickness, and it
+#: is how three of the twenty development papers draw the rule above a header.
+#: Its argument is that thickness, so the generic cleanup leaves the dimension
+#: standing where the row's first cell begins: measured, Swin heads 24 cells
+#: ``1.0pt (a) Various frameworks ...`` and ConvNeXt labels 14 rows ``0.3 Swin-T``
+#: and ``0.3 Swin-B^`` -- the ``0.3`` of an ``\Xhline{0.3\arrayrulewidth}``, a
+#: rule three-tenths as thick as the default read as part of a model's name.
 _ROW_MARKUP_RE = re.compile(
     r"\\(?:hline|toprule|midrule|bottomrule|cline\{[^}]*\}"
+    r"|Xhline\{[^}]*\}"
+    r"|cmidrule(?:\[[^\]]*\])?(?:\([a-zA-Z]*\))?\{[^}]*\}"
+    r"|morecmidrules|addlinespace(?:\[[^\]]*\])?"
+    r"|(?:row|cell|column)color(?:\[[^\]]*\])?\{[^}]*\}"
     r"|begin\{(?:" + _ENVIRONMENTS_PATTERN + r")\}(?:\[[^\]]*\])?(?:\{[^}]*\})*"
     r"|end\{(?:" + _ENVIRONMENTS_PATTERN + r")\})"
 )
 #: What is left of a cell once its structural wrappers are dissolved: a command
 #: name with its opening brace, and stray braces or math delimiters.
 _CELL_CLEANUP_RE = re.compile(r"\\[a-zA-Z]+\{?|[{}$]")
+#: A tabular's column separator. ``\&`` prints an ampersand and separates
+#: nothing, so only a bare ``&`` divides cells: measured on DINO, whose DAVIS
+#: header writes ``$ (\mathcal{J}$\&$\mathcal{F})_m$``, splitting on the escaped
+#: one made seven headers over six columns, so every column after it was named
+#: by the wrong header and 18 cells reported ``F)_m`` and ``J_m``.
+_COLUMN_SEPARATOR_RE = re.compile(r"(?<!\\)&")
+#: The one escape resolved in a cell rather than left alone, because the split
+#: above is what makes it ambiguous. ``\%`` is deliberately *not* resolved:
+#: :func:`_cell_number` strips it to read a percentage, and a resolved ``%``
+#: would leave a value the number pattern refuses.
+_CELL_ESCAPE_RE = re.compile(r"\\&")
+#: TeX's non-letter spacing escapes, resolved to a space rather than erased so
+#: the words either side stay separate: the metric vocabulary carries ``\b``
+#: anchors and gluing two words together defeats them. ``\,`` is what ConvNeXt
+#: writes ahead of every model name in a results table, and the generic cleanup
+#: cannot reach it -- it requires a letter after the backslash. ``~`` is
+#: deliberately absent; see :data:`_CITATION_RE`.
+_CELL_SPACE_RE = re.compile(r"\\[,;:!]")
+#: Commands that print nothing and whose argument is not cell content: the
+#: skips a paper uses to tighten a table. The generic cleanup keeps what sits
+#: between the braces, so each leaves its dimension glued to the visible text --
+#: measured, CLIP's ``\hspace{-0.3em}Gender\hspace{-0.3em}`` arrives as
+#: ``-0.3emGender-0.3em`` and it heads a column, where the name is what decides
+#: whether the cell is a claim at all.
+_DISCARDED_ARGUMENT_RE = re.compile(r"\\[hv]space\*?\s*(?![a-zA-Z])")
+#: The same family, taking two arguments rather than one. ``\fontsize{7pt}{1em}``
+#: sets a size and the baseline skip that goes with it; both are dimensions and
+#: neither is printed, so both must go, and removing only the first would leave
+#: the second in the cell. Measured on MoCo, which opens each header cell of its
+#: transfer tables with one: 43 cells arrive headed ``7.5pt1em COCO keypoint
+#: detection`` and ``7pt1em accuracy (\%)``.
+#:
+#: ``\rule{0pt}{6ex}``, a strut of the same two-dimension shape, is deliberately
+#: absent: it is in the corpus (DINO and ELECTRA) and leaves no residue in any
+#: label there, so admitting it would be a guess rather than a measurement.
+_DISCARDED_TWO_ARGUMENT_RE = re.compile(r"\\fontsize\s*(?![a-zA-Z])")
 #: The two wrappers whose arguments would otherwise be read as cell content.
 #: Both take their text as the last of several arguments, so the cleanup above
 #: cannot dissolve them: it keeps every argument and concatenates them.
@@ -71,11 +124,28 @@ _MAX_MARKUP_NESTING = 8
 #: the pattern -- it is brace-matched from the end of the match, which is also
 #: what excludes a parameterised definition: its ``[2]`` arity argument sits
 #: where the body would be, so no group opens there.
+#:
+#: ``@`` is a letter in a command name, because ``\makeatletter`` makes it one
+#: and class and style code lives inside that. Without it a definition such as
+#: MoCo's ``\def\@fs@pre{\hrule height.8pt depth0pt \kern2pt}`` is not
+#: recognised as a definition at all, so its body is left standing in the
+#: document and read as prose: measured, MoCo and SimSiam each yielded a
+#: confident ``num_layers = 0.0`` from the ``depth0pt`` in that one line.
 _MACRO_DEFINITION_RE = re.compile(
     r"\\(?:(?:new|renew|provide)command\*?|def)\s*"
-    r"(?:\{\s*\\([a-zA-Z]+)\s*\}|\\([a-zA-Z]+))\s*"
+    r"(?:\{\s*\\([a-zA-Z@]+)\s*\}|\\([a-zA-Z@]+))\s*"
 )
+#: A command *use*, which deliberately does not admit ``@``. Recognising the
+#: definition is what removes the body from the page; substituting an
+#: ``@``-named command at its uses would put class-internal plumbing back into
+#: the text, and no such command prints content a claim could be read from.
 _MACRO_USE_RE = re.compile(r"\\([a-zA-Z]+)")
+#: What may sit between a definition's name and its body: the arity and default
+#: arguments LaTeX takes (``[1]``, ``[2][none]``) and the parameter text TeX
+#: takes (``#1``, ``##1`` inside another definition). Bounded and newline-free,
+#: so a definition written in a shape this does not recognise is left alone
+#: rather than having an arbitrary run of the document read as its body.
+_MACRO_PARAMETERS_RE = re.compile(r"(?:\s*\[[^\]\n]{0,60}\]|\s*#{1,2}\d)*\s*")
 #: A verbatim-like environment prints its contents, so a command inside one is
 #: text the paper shows rather than markup it uses, and expanding it would
 #: rewrite the page.
@@ -90,12 +160,59 @@ _DIMENSION_RE = re.compile(r"\d\s*(?:pt|ex|em|in|mm|cm|pc|bp|dd|cc|sp)\b")
 #: grow without limit is a denial of service rather than a parsing mistake.
 _MAX_MACRO_BODY_CHARS = 200
 
+#: Commands that set a counter or a length, with the number of brace groups each
+#: takes. A counter is not a measurement: its arguments name a piece of
+#: typesetting state and the number it is set to, and neither is printed.
+#: Measured on DETR, ``\setcounter{tocdepth}{2}`` was read as ``num_layers =
+#: 2.0`` -- a table-of-contents depth reported as a layer count -- because the
+#: ``depth`` alias matches inside ``tocdepth`` and the keyword scan then finds
+#: the ``2`` two characters later. Definition-stripping cannot reach it: this is
+#: a *use* of a command, not a definition of one.
+_STATE_COMMANDS: dict[str, int] = {
+    "setcounter": 2,
+    "addtocounter": 2,
+    "stepcounter": 1,
+    "refstepcounter": 1,
+    "setlength": 2,
+    "addtolength": 2,
+    "newcounter": 1,
+    "newlength": 1,
+}
+_STATE_COMMAND_RE = re.compile(
+    r"\\(" + "|".join(sorted(_STATE_COMMANDS, key=len, reverse=True)) + r")\s*(?![a-zA-Z])"
+)
+
 #: A citation command, in the natbib and biblatex spellings alike, with the
-#: optional pre- and post-notes ``\cite[see][p.~4]{key}`` takes. Matched against
-#: the raw row, because ``_CELL_CLEANUP_RE`` erases the command name and leaves
-#: the bibliography key glued to the label, where nothing can tell it from part
-#: of a model's name.
-_CITATION_RE = re.compile(r"\\[a-zA-Z]*cite[a-zA-Z*]*\s*(?:\[[^\]]*\]\s*){0,2}\{")
+#: optional pre- and post-notes ``\cite[see][p.~4]{key}`` takes, up to and
+#: including the brace opening its key. Read twice, for two different jobs: it
+#: is matched against the raw row to decide whether the row is attributed to
+#: somebody else, and it is what :func:`_dissolve_discarded` matches to remove
+#: the key from the label. The two must stay separate -- the flag is set from
+#: the raw row precisely so that dissolving the citation cannot erase the
+#: signal it carries.
+#:
+#: The tie binding the citation to the word before it is part of the match.
+#: ``Swin-T~\cite{Liu2021swin}`` is the standard idiom, so the ``~`` belongs to
+#: the citation and not to the label, and leaving it behind would trade a
+#: bibliography key for a trailing non-breaking space. It is taken here rather
+#: than by resolving every ``~`` in a cell to a space, which was measured and
+#: rejected: a header cell holding nothing but ``~`` is an empty cell, and
+#: emptying it makes two ablation tables of SimSiam compose the identical header
+#: ``acc. (%)``, whereupon ``claims.cluster`` -- which separates measurements by
+#: row and column and cannot see which table they came from -- merges two
+#: distinct 68.1 results into one claim and the pair loses a recall match.
+_CITATION_RE = re.compile(r"~?\\[a-zA-Z]*cite[a-zA-Z*]*\s*(?:\[[^\]]*\]\s*){0,2}\{")
+#: A cross-reference, whose argument is an internal key and whose rendered text
+#: is a number assigned at typesetting time. The generic cleanup keeps the key,
+#: so the key becomes the label: measured, t5's Table 16 leads every row with
+#: ``\ref{tab:baseline}`` naming the main-body table that row restates, and 2,277
+#: of its cells are labelled ``tab:baseline``, ``tab:architectures_results`` and
+#: eleven more keys of the same kind.
+#:
+#: Removing it is *not* enough to give those rows a label, and this pattern is
+#: not used to try: see :func:`_row_label`, which is what decides what a row is
+#: called once a leading cross-reference has gone.
+_CROSS_REFERENCE_RE = re.compile(r"~?\\(?:auto|name|page|eq|[cC])?ref\*?\s*(?:\[[^\]]*\]\s*)?\{")
 #: A trailing parenthetical qualifies a section label rather than naming it:
 #: BERT writes ``Top Leaderboard Systems (Dec 10th, 2018)``.
 _SECTION_QUALIFIER_RE = re.compile(r"\s*\([^()]*\)\s*$")
@@ -271,6 +388,29 @@ def _line_of(text: str, position: int) -> int:
     return text.count("\n", 0, position) + 1
 
 
+def _is_cutoff(tail: str, number: re.Match[str], keyword: str) -> bool:
+    r"""Whether *number* is the rank an ``@`` binds to a metric's name.
+
+    ``Recall@1`` and ``B@4`` name the rank a retrieval metric was measured at,
+    never a value it took, and the ``@`` falls either side of the keyword's own
+    boundary: the pattern ``\brecall\b`` leaves it ahead of the number, and the
+    pattern ``recall@`` takes it into the match, where nothing at all separates
+    the keyword from the number. Both are read here, because a guard holding on
+    one side only leaves the same sentence stating the same false number.
+
+    Measured over the dev set, ten candidates of this shape, all of them
+    BLIP's: ``recall@1`` read as a recall of 1 six times, ``BLEU@4`` as a BLEU
+    of 4, and a header row's ``R@1`` as an MRR of 1, each at confidence 0.5.
+
+    Only ``@`` binds a rank. The other characters sitting ahead of a candidate
+    were measured too, and they carry numbers the paper does state: ``$H/64``
+    gives ALBERT's head count and ``$\geq\!$~1024`` SimSiam's batch size.
+    """
+    if number.start() == 0:
+        return keyword.endswith("@")
+    return tail[number.start() - 1] == "@"
+
+
 def _extract_keyword_values(
     text: str, file: str, keywords: dict[str, tuple[str, ...]], kind: str, window: int = 80
 ) -> list[PaperValue]:
@@ -296,7 +436,11 @@ def _extract_keyword_values(
                     tail = text[kw_match.end() : kw_match.end() + window]
                     connector = re.match(r"[\s\S]{0,24}?(?:of|is|was|to|=|at|:)?\s*\$?", tail)
                     search_from = connector.end() if connector else 0
+                    # A cutoff is passed over rather than refused, because the
+                    # number the sentence states comes after it.
                     num_match = _NUMBER_RE.search(tail, search_from)
+                    while num_match is not None and _is_cutoff(tail, num_match, kw_match.group(0)):
+                        num_match = _NUMBER_RE.search(tail, num_match.end())
                     if num_match and num_match.start() <= search_from + 16:
                         # Reject numbers glued to a word ("CIFAR-10") — those
                         # are names, not values.
@@ -404,12 +548,90 @@ def _dissolve_multicolumn(field: str) -> tuple[str, int]:
     return field[: match.start()] + content[0] + field[content[1] :], span
 
 
+def _dissolve_discarded(field: str) -> str:
+    r"""Commands that print nothing, removed together with the argument they take.
+
+    Four families, dissolved the same way because they fail the generic cleanup
+    the same way: it erases the command name and the braces and keeps what was
+    between them, so the argument survives glued to the visible text. Each is
+    paired with the number of brace groups it takes, because a command whose
+    arguments are all discarded must have *all* of them removed -- dissolving
+    one of two leaves the other standing exactly where the first was.
+
+    A citation's argument is a bibliography key. Measured, ``Swin-T~\\cite{Liu2021swin}``
+    reaches a reader as ``Swin-T~Liu2021swin``, and that string is a claim's
+    ``text`` and a cell label -- now part of the precision verdict key -- so
+    nothing downstream can tell the key from part of a model's name.
+
+    A cross-reference's argument is an internal key, and what it prints is a
+    number this collector cannot compute. t5 leads all 2,277 body cells of its
+    Table 16 with one, so a seventh of the pair's cells are labelled with a
+    ``tab:`` key. Removing it leaves the cell empty, which is the honest reading
+    of a reference whose target number is unknown; :func:`_row_label` is what
+    then finds the row a name.
+
+    A skip's or a font size's arguments are dimensions. CLIP heads its bias-audit
+    columns ``\\hspace{-0.3em}Gender\\hspace{-0.3em}``, which arrives as
+    ``-0.3emGender-0.3em`` on 44 of its cells, and MoCo opens each header cell of
+    its transfer tables with ``\\fontsize{7.5pt}{1em}``, which arrives as
+    ``7.5pt1em COCO keypoint detection`` on 43 of its cells; a column *name* is
+    what decides whether a cell is read as a claim at all, so residue there is
+    not cosmetic.
+
+    A malformed instance -- a command one of whose groups does not brace-match --
+    ends the pass for that family with *nothing* removed for that instance, and
+    is left to the generic cleanup, which is what :func:`_dissolve_rotatebox`
+    does for the same reason: guessing where an unbalanced group ends would
+    remove text the paper prints.
+    """
+    for pattern, arity in (
+        (_CITATION_RE, 1),
+        (_CROSS_REFERENCE_RE, 1),
+        (_DISCARDED_ARGUMENT_RE, 1),
+        (_DISCARDED_TWO_ARGUMENT_RE, 2),
+    ):
+        parts: list[str] = []
+        position = 0
+        while (match := pattern.search(field, position)) is not None:
+            # ``_CITATION_RE`` consumes the brace opening the key; the other
+            # patterns stop in front of it.
+            end = match.end() - 1 if match.group(0).endswith("{") else match.end()
+            for _ in range(arity):
+                group = _brace_group(field, end)
+                if group is None:
+                    break
+                end = group[1]
+            else:
+                parts.append(field[position : match.start()])
+                position = end
+                continue
+            break  # malformed: leave this instance whole for the cleanup
+        parts.append(field[position:])
+        field = "".join(parts)
+    return field
+
+
+def _clean_cell(content: str) -> str:
+    r"""One cell's visible text: markup dissolved, white space normalised.
+
+    Normalised rather than merely stripped. A row label spanning source lines
+    kept its newlines and indentation -- DINO labelled rows ``Light\n\t    DINO``
+    -- and a label is now read by people and by the precision key alike. It also
+    reaches :func:`~adduce.naming.canonical_metric`, whose whole-name lookup is a
+    dictionary hit, so a header carrying a stray newline could not canonicalise
+    however well the vocabulary knew it.
+    """
+    text = _CELL_CLEANUP_RE.sub("", content)
+    text = _CELL_ESCAPE_RE.sub("&", _CELL_SPACE_RE.sub(" ", text))
+    return " ".join(text.split())
+
+
 def _split_columns(row: str) -> list[tuple[str, int]]:
     """One tabular row as ``(cell text, column span)`` pairs."""
     columns: list[tuple[str, int]] = []
-    for raw in row.split("&"):
-        content, span = _dissolve_multicolumn(_dissolve_rotatebox(raw))
-        columns.append((_CELL_CLEANUP_RE.sub("", content).strip(), span))
+    for raw in _COLUMN_SEPARATOR_RE.split(row):
+        content, span = _dissolve_multicolumn(_dissolve_rotatebox(_dissolve_discarded(raw)))
+        columns.append((_clean_cell(content), span))
     return columns
 
 
@@ -517,6 +739,184 @@ def _expand_macros(text: str, macros: dict[str, str]) -> str:
     return "".join(parts)
 
 
+def _definition_spans(text: str) -> list[tuple[int, int]]:
+    """The source span of every command definition whose body prints nothing.
+
+    A definition nests -- llncs defines ``\\authcount`` and ``\\lastand`` inside
+    the body of its own ``\\tableofcontents`` -- so the spans a scan finds
+    overlap. They are merged rather than reported separately, because a caller
+    removing them cannot remove the same characters twice.
+
+    A definition whose body opens or closes an environment is not reported at
+    all, because that body is page content rather than a name; see
+    :func:`_strip_definitions` for what that costs and why it is the gate.
+    Nesting cannot defeat the test: a body holding such a definition holds its
+    environment too, so the enclosing definition is kept for the same reason,
+    and a markup definition written *inside* a kept body is still reported and
+    still removed.
+
+    A definition whose body cannot be brace-matched is not reported at all: the
+    document is malformed there and guessing where the definition ends would
+    remove text the paper prints.
+    """
+    spans: list[tuple[int, int]] = []
+    for match in _MACRO_DEFINITION_RE.finditer(text):
+        arguments = _MACRO_PARAMETERS_RE.match(text, match.end())
+        group = _brace_group(text, arguments.end() if arguments else match.end())
+        if group is None:
+            continue
+        if _ENVIRONMENT_RE.search(group[0]):
+            continue
+        start, end = match.start(), group[1]
+        if spans and start <= spans[-1][1]:
+            spans[-1] = (spans[-1][0], max(spans[-1][1], end))
+            continue
+        spans.append((start, end))
+    return spans
+
+
+def _strip_definitions(text: str) -> str:
+    """The document with every non-printing definition removed, line breaks kept.
+
+    **What is removed.** A definition of a *name* states what the name means,
+    and the page never shows that statement, so a number written inside one is
+    not a number the paper reports. Measured on DETR,
+    ``\\newcommand{\\iouloss}[1]{{\\cal L}_{\\rm iou}(#1)}`` is read as an IoU of
+    1 and llncs' ``\\def\\authcount##1{\\setcounter{auco}{##1}}`` as an AUC of 1,
+    where the value is the parameter placeholder ``#1``; BERT's
+    ``\\def\\aclpaperid{1584}`` is read as an F1 of 584, because expansion
+    substitutes the body at the definition's own site and leaves ``\\def1584``
+    standing. Expansion cannot reach any of these in either direction:
+    substituting a command at its uses leaves its definition where it was.
+
+    **What is not removed: a body that opens an environment.** That body is not
+    a name. CVPR and ICML papers routinely wrap a whole float in a macro and
+    invoke it in the document body, and :func:`_expand_macros` cannot move such
+    a body -- one textual pass cannot place an environment -- so removing the
+    definition would delete printed content with nothing put back in its place.
+    Measured: removing them took latent-diffusion from 624 table cells to 0 and
+    StyleGAN2-ADA from 66 to 0, 20,616 of the 20,647 characters of one file and
+    48,434 of 48,635 of another, destroying reported values including
+    ``Batch Size 48``, ``Learning Rate 1.0e-4`` and ``Recall 0.261``.
+
+    **The environment test is the whole gate, deliberately.** It is not the four
+    conditions :func:`_zero_argument_macros` applies, because the false
+    positives above are *parameterised* definitions, which is exactly what
+    expansion refuses -- keeping whatever expansion would accept restores every
+    one of them. It is not an allowlist of float and table environments either:
+    such a list is a claim about which environments print, the set is open
+    (packages define more), and every omission is a silent deletion of page
+    content. Measured, StyleGAN2-ADA writes its main results tables in ``tabu``,
+    which no list derived from :data:`_TABLE_ENVIRONMENTS` would contain. And it
+    carries no length bound: whether a body prints does not vary with its size
+    -- MoCo writes a printed ``tabular`` in 71 characters and latent-diffusion
+    one in 3,150 -- and the bound expansion applies exists to stop substitution
+    growing without limit, which removal never does.
+
+    What is left is therefore removed without loss of printed text: what a
+    non-environment body contributes to the page it contributes where the
+    command is used, and :func:`_expand_macros` substitutes it there. A body
+    expansion still declines for one of its other reasons -- one stating a
+    dimension, one past the length bound -- loses what it states, and this makes
+    no claim otherwise.
+
+    Line breaks are kept in place of what is removed, because a locator is what
+    sends a reader to a number and a body spanning lines would otherwise move
+    every claim beneath it.
+
+    A definition inside a verbatim environment is left alone. There the command
+    is text the paper shows rather than markup it uses, which is the same reason
+    expansion skips those regions.
+
+    A kept body holding a ``tabular`` is parsed as a table in its own right,
+    which numbers the real ones from further along. That cost is measured and
+    accepted: on MoCo, which writes row labels that way, 12 such phantom tables
+    over 19 real ones, and its 260 cells identical either way -- ``-0 +0`` on
+    the multiset of ``(row, column, value, file, line)``. ``table_index`` is
+    read by nothing outside this module: not by a claim, not by a report, not by
+    the precision join key.
+    """
+    return _remove_spans(text, _definition_spans)
+
+
+def _state_command_spans(text: str) -> list[tuple[int, int]]:
+    r"""The source span of every counter- and length-setting command call.
+
+    Arguments included, because the arguments are the whole problem: the number
+    a counter is set to is what gets read as a measurement. Brace-matched for
+    the reason :func:`_definition_spans` is -- a length is routinely set from
+    another length, ``\setlength{\tabcolsep}{\dimexpr\columnsep/2}`` -- and a
+    call whose groups do not match is left alone rather than guessed at.
+
+    Every argument the command declares must be present for the call to be
+    removed. One that takes two and is written with one is malformed, and
+    removing the name alone would leave its arguments behind as text, which is
+    the failure this exists to prevent rather than a lesser version of it.
+    """
+    spans: list[tuple[int, int]] = []
+    for match in _STATE_COMMAND_RE.finditer(text):
+        end = match.end()
+        for _ in range(_STATE_COMMANDS[match.group(1)]):
+            group = _brace_group(text, end)
+            if group is None:
+                end = -1
+                break
+            end = group[1]
+        if end < 0:
+            continue
+        if spans and match.start() <= spans[-1][1]:
+            spans[-1] = (spans[-1][0], max(spans[-1][1], end))
+            continue
+        spans.append((match.start(), end))
+    return spans
+
+
+def _strip_state_commands(text: str) -> str:
+    r"""The document with every counter and length assignment removed.
+
+    A counter is not a measurement. ``\setcounter{tocdepth}{2}`` sets how deep a
+    table of contents goes; ``\setlength{\tabcolsep}{6pt}`` sets how wide a
+    column gutter is. Neither prints anything, so neither states a number the
+    paper reports -- but both put a keyword and a number two characters apart,
+    which is exactly the shape the keyword scan reads as a value. Measured on
+    DETR, ``depth}{2`` was reported as ``num_layers = 2.0`` at full confidence.
+
+    Removed rather than guarded against at the point of reading. A guard would
+    have to recognise the shape from inside a sixteen-character window, while
+    the command is unambiguous where it is written; and removal also keeps the
+    assignment from leaking into a cell, since a paper sets ``\tabcolsep``
+    beside the table it applies to.
+
+    Line breaks are kept and verbatim regions are skipped, for the same two
+    reasons :func:`_strip_definitions` keeps and skips them: a locator must not
+    move, and a command a paper *prints* is text rather than markup.
+    """
+    return _remove_spans(text, _state_command_spans)
+
+
+def _remove_spans(text: str, finder: Callable[[str], list[tuple[int, int]]]) -> str:
+    """*text* with each span *finder* reports replaced by its own line breaks.
+
+    Shared by the two strippers so that neither can lose the verbatim guard or
+    the line-break preservation the other has.
+    """
+    parts: list[str] = []
+    position = 0
+    for protected in (*_VERBATIM_RE.finditer(text), None):
+        end = protected.start() if protected is not None else len(text)
+        segment = text[position:end]
+        cursor = 0
+        for start, stop in finder(segment):
+            parts.append(segment[cursor:start])
+            parts.append("\n" * segment.count("\n", start, stop))
+            cursor = stop
+        parts.append(segment[cursor:])
+        if protected is not None:
+            parts.append(protected.group(0))
+            position = protected.end()
+    return "".join(parts)
+
+
 def _clean_caption(raw: str) -> str:
     text = _CAPTION_CLEANUP_RE.sub(" ", _CAPTION_ESCAPE_RE.sub(r"\1", raw))
     return " ".join(text.split())[:_MAX_CAPTION_CHARS]
@@ -615,6 +1015,44 @@ def _compose_headers(first: list[str], second: list[str]) -> list[str]:
     return composed
 
 
+def _row_label(row: list[str]) -> str:
+    r"""What a body row is called: the first cell of its leading label block.
+
+    A row's name is its first cell whenever that cell is filled, and this returns
+    it unchanged -- including when it is itself a number, because a number is a
+    perfectly good name for a row: t5's Table 7 labels its rows by span length,
+    and ``10`` is what one of them is called. Only an *empty* first cell starts a
+    search, and only along the leading run of empty cells: the first filled cell
+    ends it, naming the row if it states no number and leaving the row unnamed if
+    it does. A filled numeric cell is already extracted as that row's first
+    value, so reading it as the name too would have one cell play both parts.
+
+    Widening the search past a filled cell was measured and rejected. Letting a
+    numeric first cell be overridden cost bert 55 of its row labels and t5 the
+    ``10`` its span-length rows are named by.
+
+    This exists because a table may spend its first column on something that is
+    not the row's name. t5's Table 16 leads with a ``Table`` column of
+    cross-references to the main-body table each row restates and an
+    ``Experiment`` column holding the name; once the reference is dissolved (see
+    :data:`_CROSS_REFERENCE_RE`) the first cell is empty, and reading it as the
+    label would call 2,277 cells by the same empty name. That is not a cosmetic
+    matter: ``claims.cluster`` separates measurements by row and column and
+    cannot see which table -- or which row -- a cell came from, so identically
+    named cells whose values round together become one claim, and measured, the
+    empty name alone collapsed t5's 2,339 claims to 1,689. Naming the row from
+    the ``Experiment`` column instead keeps them distinct *and* gives a reader
+    the label the paper prints.
+    """
+    if row and row[0]:
+        return row[0]
+    for cell in row[1:]:
+        if not cell:
+            continue
+        return "" if _cell_number(cell) is not None else cell
+    return ""
+
+
 def _section_label(row: list[tuple[str, int]], width: int) -> str | None:
     """The label of a full-width section row, or ``None`` when this is not one.
 
@@ -670,7 +1108,8 @@ def _parse_tables(text: str, file: str) -> list[TableCell]:
                 # The label only, and before the cleanup: a citation beside a
                 # number is a note on that number, while a citation in the row
                 # label names the paper the whole row came from.
-                cited.append(_CITATION_RE.search(raw_row.split("&")[0]) is not None)
+                first = _COLUMN_SEPARATOR_RE.split(raw_row)[0]
+                cited.append(_CITATION_RE.search(first) is not None)
         if len(rows) < 2:
             continue
         # A spanning header names every column it covers, so it is repeated
@@ -699,7 +1138,7 @@ def _parse_tables(text: str, file: str) -> list[TableCell]:
                 row.extend([""] * (span - 1))
             if not row:
                 continue
-            row_label = row[0]
+            row_label = _row_label(row)
             prior_work = section or cited[index]
             for col_index, cell in enumerate(row[1:], start=1):
                 number = _cell_number(cell)
@@ -779,7 +1218,9 @@ def collect_latex(repo: Repo) -> LatexEvidence:
     macros = _zero_argument_macros(sources[rel] for rel in evidence.tex_files)
 
     for rel in evidence.tex_files:
-        clean = _expand_macros(sources[rel], macros)
+        clean = _strip_state_commands(
+            _expand_macros(_strip_definitions(sources[rel]), macros)
+        )
         if "\\documentclass" in clean and evidence.main_file is None:
             evidence.main_file = rel
         if evidence.title is None:

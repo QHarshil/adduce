@@ -1,0 +1,29 @@
+\documentclass{llncs}
+
+\newcommand{\iouloss}[1]{{\cal L}_{\rm iou}(#1)}
+\newcommand{\diceloss}[1]{{\cal L}_{\rm DICE}(#1)}
+\newcommand{\parheadsc}[1]{\medskip \noindent {\boldmath\ignorespaces \textsc{#1}.}\hskip 0.9em plus 0.3em minus 0.3em}
+\newcommand{\ourbleu}{70.4}
+\def\aclpaperid{1584}
+
+\def\tableofcontents{\section*{\contentsname}
+    \def\authcount##1{\setcounter{auco}{##1}\setcounter{@auth}{1}}
+    \def\lastand{\ifnum\value{auco}=2\relax and\fi}
+  }
+
+\begin{document}
+\section{Results}
+
+\parheadsc{Training} The model is trained with \iouloss{b} and \diceloss{m},
+and reaches a BLEU of \ourbleu on the held-out split.
+
+\begin{table}
+\begin{tabular}{lcc}
+Model & IoU & Dice \\
+\hline
+Ours & 82.9 & 91.3 \\
+\end{tabular}
+\caption{Segmentation quality on the validation split.}
+\end{table}
+
+\end{document}

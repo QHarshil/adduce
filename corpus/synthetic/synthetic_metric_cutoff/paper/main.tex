@@ -1,0 +1,28 @@
+\documentclass{article}
+\begin{document}
+\section{Results}
+
+Our model improves image-text retrieval by +2.7\% in average recall@1, and
+image captioning by +2.8\% in CIDEr.
+
+On the held-out split we reach a recall@1 of 82.5.
+
+\begin{table}
+\begin{tabular}{lccc}
+Method & MRR$\uparrow$ & R@1$\uparrow$ & R@5$\uparrow$ \\
+\hline
+Ours & 69.4 & 56.1 & 87.3 \\
+\end{tabular}
+\caption{Visual dialogue on VisDial. C: CIDEr, S: SPICE, B@4: BLEU@4.}
+\end{table}
+
+\begin{table}
+\begin{tabular}{lcc}
+Model & ROUGE-L & B@4 \\
+\hline
+Ours & 40.7 & 38.2 \\
+\end{tabular}
+\caption{Abstractive summarisation on the CNN/DailyMail test split.}
+\end{table}
+
+\end{document}

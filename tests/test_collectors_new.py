@@ -4,16 +4,22 @@ precision, results, run history, portability."""
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import pytest
 
 from adduce.evidence.latex import (
     _MAX_MACRO_BODY_CHARS,
     _ROW_MARKUP_RE,
+    _STATE_COMMANDS,
     _dissolve_multicolumn,
     _expand_macros,
+    _strip_definitions,
+    _strip_state_commands,
     _zero_argument_macros,
+    collect_latex,
 )
+from adduce.model import scan_repository
 from adduce.rules.base import Status
 from adduce.rules.remote import RawUrlRule
 
@@ -58,6 +64,53 @@ def test_latex_extraction(make_evidence):
     assert latex.ablation_mentions
     # Comment-stripped: the bogus 999 never appears.
     assert not any(v.value == 999 for values in hp.values() for v in values)
+
+
+def test_a_cutoff_glued_to_a_metric_name_is_not_a_value(make_evidence):
+    r"""``Recall@1`` is the metric's name, and the 1 is the rank, not the recall.
+
+    BLIP writes ten of these, and the guard rejecting a number glued to a word
+    did not hold for ``@``: they were read as a recall of 1, a BLEU of 4 and an
+    MRR of 1, at confidence 0.5. The cutoff sits either side of the keyword
+    boundary -- the pattern ``\brecall\b`` leaves the ``@`` ahead of the number
+    and the pattern ``recall@`` takes it into the match -- so both sides are
+    refused, and the sentence's own +2.7 is not a result either.
+    """
+    tex = (
+        "Our model improves image-text retrieval by +2.7\\% in average recall@1,\n"
+        "and captioning by +2.8\\% in CIDEr.\n"
+        "Method & MRR$\\uparrow$ & R@1$\\uparrow$ & R@5$\\uparrow$ \\\\\n"
+        "C: CIDEr, S: SPICE, B@4: BLEU@4.\n"
+    )
+    metrics = make_evidence({"paper/main.tex": tex}).latex.metrics
+    assert [(m.name, m.value) for m in metrics] == []
+
+
+def test_the_number_after_a_cutoff_is_the_one_the_sentence_states(make_evidence):
+    r"""A cutoff is passed over, not treated as the end of the search.
+
+    "Recall@1 of 82.5" is how a retrieval paper states a result, and refusing
+    the candidate outright rather than skipping the rank would lose the 82.5 --
+    turning a false positive into a miss on the commonest shape in the class.
+
+    Both of the vocabulary's patterns for this metric match the one phrase, so
+    the collector reads it twice and clustering merges them; the assertion is
+    over the pair read, not over how many times one pattern list matched it.
+    """
+    tex = "We reach a recall@1 of 82.5 on the COCO test split.\n"
+    metrics = make_evidence({"paper/main.tex": tex}).latex.metrics
+    assert {(m.name, m.value) for m in metrics} == {("recall", 82.5)}
+
+
+def test_a_number_glued_to_a_name_by_a_hyphen_is_still_refused(make_evidence):
+    """The characters the guard already rejected keep being rejected.
+
+    ``CIFAR-10`` is a dataset and ``top-1`` a column: neither states a value,
+    and the ``@`` case is added beside them rather than in place of them.
+    """
+    tex = "We report accuracy on CIFAR-10 and follow the top-1 protocol.\n"
+    metrics = make_evidence({"paper/main.tex": tex}).latex.metrics
+    assert [(m.name, m.value) for m in metrics] == []
 
 
 #: Both shapes of undissolved-wrapper defect, measured on real papers. Whisper
@@ -782,6 +835,764 @@ def test_a_command_inside_a_verbatim_environment_is_not_expanded():
     expanded = _expand_macros(text, _zero_argument_macros([text]))
     assert "\\begin{verbatim}\n\\sam\n\\end{verbatim}" in expanded
     assert expanded.endswith("SAM\n")
+
+
+#: DETR's shape, and the reason a definition has to be removed rather than
+#: expanded. The body states a metric name against the parameter placeholder
+#: the command will be given, so it reads as an IoU and a Dice of 1 -- and
+#: expansion cannot reach either, in either direction, because substituting a
+#: command at its uses leaves its definition exactly where it was.
+_DEFINED_LOSS_TEX = r"""
+\newcommand{\bloss}[1]{{\cal L}_{\rm box}(#1)}
+\newcommand{\iouloss}[1]{{\cal L}_{\rm iou}(#1)}
+\newcommand{\diceloss}[1]{{\cal L}_{\rm DICE}(#1)}
+The model is trained with \bloss{b}, \iouloss{b} and \diceloss{m}.
+"""
+
+
+def test_a_number_inside_a_command_definition_is_not_a_number_the_paper_reports(make_evidence):
+    r"""A definition states what a command means, and the page never shows it.
+
+    Measured on DETR, these two lines are read as an IoU of 1 and a Dice of 1
+    at confidence 0.5 -- four such claims in that paper, about numbers in no
+    rendered document.
+    """
+    evidence = make_evidence({"paper/main.tex": _DEFINED_LOSS_TEX}).latex
+    assert evidence.metrics == []
+
+
+def test_a_definition_nested_inside_another_is_removed_with_it(make_evidence):
+    r"""The llncs class defines ``\authcount`` inside its own ``\tableofcontents``.
+
+    The spans a scan finds therefore overlap, and a caller removing them cannot
+    remove the same characters twice. DETR carries this file, where the value
+    read is the parameter placeholder ``##1`` of a counter assignment.
+    """
+    tex = (
+        "\\def\\tableofcontents{\\section*{Contents}\n"
+        "    \\def\\authcount##1{\\setcounter{auco}{##1}\\setcounter{@auth}{1}}\n"
+        "    \\def\\lastand{\\ifnum\\value{auco}=2\\relax and\\fi}\n"
+        "  }\n"
+        "Our model reaches an accuracy of 92.4 on the test set.\n"
+    )
+    evidence = make_evidence({"paper/main.tex": tex}).latex
+    assert [(m.name, m.value, m.line) for m in evidence.metrics] == [("accuracy", 92.4, 5)]
+
+
+def test_a_definition_the_expansion_rewrote_states_nothing(make_evidence):
+    r"""BERT's preamble holds ``\def\aclpaperid{1584}``, a submission number.
+
+    Expansion substitutes the command at every use, and one of those uses is
+    the definition's own name: the line becomes ``\def1584{1584}``, whose
+    ``f1584`` is read as an F1 of 584. So the artifact is not merely left in
+    place by expansion, it is manufactured there -- and a paper ID is not a
+    measurement in any reading.
+    """
+    tex = "\\def\\aclpaperid{1584}\nOur model reaches an accuracy of 92.4 on the test set.\n"
+    evidence = make_evidence({"paper/main.tex": tex}).latex
+    assert [(m.name, m.value) for m in evidence.metrics] == [("accuracy", 92.4)]
+
+
+def test_a_definitions_arity_is_not_a_hyperparameter(make_evidence):
+    r"""LoRA defines ``\parheadsc``, whose ``heads`` is not a count of heads.
+
+    The alias matches inside the command's own name and the value read is the
+    ``[1]`` stating how many arguments it takes. Hyperparameters and metrics
+    are read by the same pass, so both are answered by removing the definition.
+    """
+    tex = (
+        "\\newcommand{\\parheadsc}[1]{\\medskip \\noindent \\textsc{#1}.}\n"
+        "\\parheadsc{Setup} We train with 12 attention heads.\n"
+    )
+    evidence = make_evidence({"paper/main.tex": tex}).latex
+    assert [(h.name, h.value) for h in evidence.hyperparameters] == [("num_heads", 12.0)]
+
+
+def test_a_number_the_paper_prints_through_a_command_survives_at_its_use(make_evidence):
+    """Removing a definition may not remove a number the page shows.
+
+    What a body contributes is contributed where the command is used, and the
+    expansion substitutes it there, so the number is read at the use -- which
+    is also the line a reader would open to check it.
+    """
+    tex = (
+        "\\newcommand{\\ourbleu}{70.4}\n"
+        "\n"
+        "Our model reaches a BLEU of \\ourbleu on the test split.\n"
+    )
+    evidence = make_evidence({"paper/main.tex": tex}).latex
+    assert [(m.name, m.value, m.line) for m in evidence.metrics] == [("bleu", 70.4, 3)]
+
+
+def test_removing_a_definition_does_not_move_the_line_a_claim_is_recorded_at(make_evidence):
+    """A body spanning lines is replaced by its line breaks, not by nothing.
+
+    A locator is what sends a reader to a number, and a definition standing
+    above a result would otherwise pull every claim beneath it upwards.
+    """
+    tex = (
+        "\\newcommand{\\ours}{Tiny\n"
+        "    Net\n"
+        "    Large}\n"
+        "\\ours reaches an accuracy of 92.4 on the test set.\n"
+    )
+    evidence = make_evidence({"paper/main.tex": tex}).latex
+    assert [(m.value, m.line) for m in evidence.metrics] == [(92.4, 4)]
+
+
+#: A whole float wrapped in a macro and invoked in the body -- the CVPR/ICML
+#: idiom that makes a definition's body page content rather than a name. The
+#: real shapes: latent-diffusion's ``\firststagetablecomplete`` is defined in
+#: ``ms_tables_supp.tex`` and invoked at ``ms.tex:1674``; StyleGAN2-ADA's
+#: ``\figSmallDatasetImages`` is defined in ``figures.tex`` and invoked at
+#: ``paper.tex:339``.
+_MACRO_WRAPPED_FLOAT_TEX = r"""
+\newcommand{\segmentationtable}{
+\begin{table}
+\begin{tabular}{lcc}
+Model & IoU & Dice \\
+Ours & 82.9 & 91.3 \\
+\end{tabular}
+\end{table}
+}
+The complete comparison is in Tab.~\ref{tab:seg}.
+\segmentationtable
+"""
+
+
+def test_a_float_a_macro_wraps_is_still_read_as_a_table(make_evidence):
+    r"""A body that opens an environment is page content, so it stays in place.
+
+    The document invokes the command, so the float prints -- and
+    :func:`_expand_macros` cannot put the body at that invocation, because one
+    textual pass cannot place an environment. Removing the definition therefore
+    deletes printed content with nothing put back. Measured: it took
+    latent-diffusion from 624 table cells to 0 and StyleGAN2-ADA from 66 to 0.
+    """
+    cells = make_evidence({"paper/main.tex": _MACRO_WRAPPED_FLOAT_TEX}).latex.table_cells
+    assert [(c.row_label, c.column_label, c.value) for c in cells] == [
+        ("Ours", "IoU", 82.9),
+        ("Ours", "Dice", 91.3),
+    ]
+
+
+def test_a_parameterised_macro_wrapping_a_float_keeps_its_page_content(make_evidence):
+    r"""StyleGAN2-ADA's ``\figSmallDatasetImages`` takes an argument and prints.
+
+    This is why the gate cannot be "whatever the expansion would accept": a
+    parameterised body is exactly what :func:`_zero_argument_macros` refuses,
+    so keeping only expandable bodies would strip this float -- and would also
+    restore DETR's four parameterised false positives, which is the same test
+    reaching the opposite answer on the same input.
+    """
+    tex = (
+        "\\newcommand{\\figresults}[1]{\n"
+        "\\begin{figure}\n"
+        "\\begin{tabular}{lc}\n"
+        "Model & Recall \\\\\n"
+        "Ours & 0.43 \\\\\n"
+        "\\end{tabular}\n"
+        "\\end{figure}\n"
+        "}\n"
+        "\\figresults{fig:results}\n"
+    )
+    cells = make_evidence({"paper/main.tex": tex}).latex.table_cells
+    assert [(c.row_label, c.column_label, c.value) for c in cells] == [("Ours", "Recall", 0.43)]
+
+
+def test_a_float_body_past_the_expansion_length_bound_is_still_kept(make_evidence):
+    r"""Whether a body prints does not vary with its size, so no bound applies.
+
+    :data:`_MAX_MACRO_BODY_CHARS` bounds *substitution*, where an unbounded
+    expansion of untrusted content is a denial of service. Nothing is
+    substituted here, so the bound has no work to do -- and it would fall in the
+    worst possible place: MoCo writes a printed ``tabular`` in 71 characters and
+    latent-diffusion writes one in 3,150, with no fact separating them.
+    """
+    rows = "".join(f"Model{index} & {60 + index}.5 \\\\\n" for index in range(40))
+    tex = (
+        "\\newcommand{\\bigtable}{\n"
+        "\\begin{tabular}{lc}\n"
+        "Model & Accuracy \\\\\n" + rows + "\\end{tabular}\n"
+        "}\n"
+        "\\bigtable\n"
+    )
+    assert len(tex) > _MAX_MACRO_BODY_CHARS
+    cells = make_evidence({"paper/main.tex": tex}).latex.table_cells
+    assert len(cells) == 40
+    assert (cells[0].row_label, cells[0].column_label, cells[0].value) == ("Model0", "Accuracy", 60.5)
+
+
+def test_a_markup_definition_inside_a_kept_float_is_still_removed(make_evidence):
+    r"""Keeping a body does not make what is written inside it page content.
+
+    A float's body routinely sets up its own markup -- StyleGAN2-ADA's figure
+    macros open with five ``\renewcommand`` lines -- and those inner
+    definitions are names, not content. Here the inner one is BERT's
+    ``\def\aclpaperid{1584}``, whose ``f1584`` reads as an F1 of 584 once
+    expansion has rewritten it to ``\def1584{1584}``; the enclosing float must
+    survive without it.
+    """
+    tex = (
+        "\\newcommand{\\resultstable}{\n"
+        "\\def\\aclpaperid{1584}\n"
+        "\\begin{tabular}{lc}\n"
+        "Model & Accuracy \\\\\n"
+        "Ours & 92.4 \\\\\n"
+        "\\end{tabular}\n"
+        "}\n"
+        "\\resultstable\n"
+    )
+    evidence = make_evidence({"paper/main.tex": tex}).latex
+    assert [(c.row_label, c.column_label, c.value) for c in evidence.table_cells] == [
+        ("Ours", "Accuracy", 92.4)
+    ]
+    # The keyword scan reads the column header beside the cell, which is the
+    # number the page really states; what must not be here is an ``f1``.
+    assert [(m.name, m.value) for m in evidence.metrics] == [("accuracy", 92.4)]
+
+
+def test_a_table_inside_a_definition_costs_only_the_index_a_cell_records(make_evidence):
+    r"""MoCo writes row labels as whole nested ``tabular`` environments.
+
+    Those bodies print where the label is used, so the definition is left in
+    place and the body is parsed as a table in its own right, numbering the real
+    ones from further along. That is the whole cost: a row-label tabular states
+    no number, so it yields no cell, and ``table_index`` is read by nothing
+    outside the collector -- not by a claim, not by a report, not by the
+    precision join key. Measured on MoCo, 12 such phantom tables over 19 real
+    ones and its 260 cells identical either way, ``-0 +0`` on the multiset of
+    ``(row, column, value, file, line)``.
+
+    This test formerly asserted the opposite, that the definition was removed
+    and the real table numbered 0. Tidying the index that way was measured to
+    destroy whole floats on the papers that wrap one in a macro:
+    latent-diffusion lost all 624 of its cells and StyleGAN2-ADA all 66.
+    """
+    tex = (
+        "\\newcommand{\\randinit}{\\begin{tabular}{cc} random init. & \\end{tabular}}\n"
+        "\\begin{tabular}{lc}\n"
+        "Model & Accuracy \\\\\n"
+        "\\randinit & 61.8 \\\\\n"
+        "\\end{tabular}\n"
+    )
+    cells = make_evidence({"paper/main.tex": tex}).latex.table_cells
+    assert [(c.table_index, c.column_label, c.value) for c in cells] == [(1, "Accuracy", 61.8)]
+
+
+def test_a_definition_whose_body_cannot_be_matched_is_left_alone():
+    """An unbalanced body is malformed, and guessing where it ends removes text.
+
+    The document is broken there in a way one pass cannot repair, so the
+    definition is reported as no definition at all rather than as one running
+    to the end of the file.
+    """
+    text = "\\newcommand{\\ours}{Tiny\nOur model reaches an accuracy of 92.4.\n"
+    assert _strip_definitions(text) == text
+
+
+def test_a_definition_inside_a_verbatim_environment_is_left_in_place():
+    """A verbatim block prints what it holds, so a definition there is shown text.
+
+    The same reason the expansion skips those regions: what the page displays
+    is the definition itself, and removing it would rewrite the page.
+    """
+    text = (
+        "\\newcommand{\\ours}{TinyNet}\n"
+        "\\begin{verbatim}\n"
+        "\\newcommand{\\ours}{TinyNet}\n"
+        "\\end{verbatim}\n"
+    )
+    stripped = _strip_definitions(text)
+    assert stripped == "\n\\begin{verbatim}\n\\newcommand{\\ours}{TinyNet}\n\\end{verbatim}\n"
+
+
+def test_a_citation_key_is_not_part_of_a_row_label(make_evidence):
+    r"""``Swin-T~\cite{Liu2021swin}`` labels a row ``Swin-T``.
+
+    The generic cell cleanup erases a command name and its braces but keeps what
+    was between them, so the bibliography key survived glued to the label, where
+    nothing downstream can tell it from part of a model's name. Measured, ConvNeXt
+    shipped ``RegNetY-16G~Radosavovic2020designing`` as a claim's text.
+    """
+    tex = (
+        "\\begin{tabular}{lc}\n"
+        "Model & Accuracy \\\\\n"
+        "Swin-T~\\cite{Liu2021swin} & 88.1 \\\\\n"
+        "\\end{tabular}\n"
+    )
+    cells = make_evidence({"paper/main.tex": tex}).latex.table_cells
+    assert [(c.row_label, c.column_label, c.value) for c in cells] == [("Swin-T", "Accuracy", 88.1)]
+
+
+def test_a_row_whose_citation_was_dissolved_is_still_marked_prior_work(make_evidence):
+    """Removing the citation from the label must not remove the signal it carried.
+
+    The attribution flag is read from the raw row and the label is cleaned from a
+    copy, so the two cannot interfere. Were they one pass, dissolving the citation
+    would silently promote every quoted baseline to a confident own result.
+    """
+    tex = (
+        "\\begin{tabular}{lc}\n"
+        "Model & Accuracy \\\\\n"
+        "Swin-T~\\cite{Liu2021swin} & 88.1 \\\\\n"
+        "Ours & 91.4 \\\\\n"
+        "\\end{tabular}\n"
+    )
+    cells = make_evidence({"paper/main.tex": tex}).latex.table_cells
+    assert [(c.row_label, c.prior_work) for c in cells] == [("Swin-T", True), ("Ours", False)]
+
+
+def test_a_cmidrule_trim_specification_is_not_a_row_label(make_evidence):
+    r"""``\cmidrule(lr){2-3}`` is a rule, and a rule labels nothing.
+
+    Only ``\cline`` was recognised, so booktabs' spelling left its trim and column
+    range in the label of the row beneath it: BarlowTwins drew a row labelled
+    ``(lr)2-3(lr)4-5`` and t5 carried the residue on 2,440 cells.
+    """
+    tex = (
+        "\\begin{tabular}{lcc}\n"
+        "Model & Accuracy & F1 \\\\\n"
+        "\\cmidrule(lr){2-3}\\cmidrule(lr){3-3}\n"
+        "Ours & 91.4 & 84.2 \\\\\n"
+        "\\end{tabular}\n"
+    )
+    cells = make_evidence({"paper/main.tex": tex}).latex.table_cells
+    assert {c.row_label for c in cells} == {"Ours"}
+
+
+def test_a_row_colour_is_not_part_of_a_row_label(make_evidence):
+    r"""``\rowcolor[gray]{.95}`` colours a row; it does not name one.
+
+    The colour model and the shade survived as a prefix on every label beneath:
+    ConvNeXt's rows all read ``[gray].95...``, and DINO's read ``Light``, which is
+    a colour name rather than a model. Reached through a macro here, which is how
+    ConvNeXt writes it and why the row-markup pass must run after expansion.
+    """
+    tex = (
+        "\\newcommand{\\gr}{\\rowcolor[gray]{.95}}\n"
+        "\\begin{tabular}{lc}\n"
+        "Model & Accuracy \\\\\n"
+        "\\gr Ours & 91.4 \\\\\n"
+        "\\rowcolor{Light}\n"
+        "Theirs & 88.1 \\\\\n"
+        "\\end{tabular}\n"
+    )
+    cells = make_evidence({"paper/main.tex": tex}).latex.table_cells
+    assert [(c.row_label, c.value) for c in cells] == [("Ours", 91.4), ("Theirs", 88.1)]
+
+
+def test_a_horizontal_skip_is_neither_a_column_name_nor_a_value(make_evidence):
+    r"""``\hspace{-0.3em}Gender\hspace{-0.3em}`` heads a column named ``Gender``.
+
+    A skip has no brace-free spelling the residue pattern in ``claims`` would
+    catch -- no brace, no backslash, no ``=``, no leading digit -- so
+    ``-0.3emGender-0.3em`` passed as a plausible metric name. Worse, CLIP wraps its
+    *values* the same way, and ``-0.9em91.4-0.4em`` states no number the parser can
+    find: 2,025 of its result cells were dropped outright.
+    """
+    tex = (
+        "\\begin{tabular}{lc}\n"
+        "Model & \\hspace{-0.3em}Accuracy\\hspace{-0.3em} \\\\\n"
+        "Ours & \\hspace{-0.9em}91.4\\hspace{-0.4em} \\\\\n"
+        "\\end{tabular}\n"
+    )
+    cells = make_evidence({"paper/main.tex": tex}).latex.table_cells
+    assert [(c.column_label, c.value) for c in cells] == [("Accuracy", 91.4)]
+
+
+def test_a_rule_thickness_is_not_part_of_the_label_beneath_it(make_evidence):
+    r"""``\Xhline{1.0pt}`` draws a rule 1pt thick; it names nothing.
+
+    Only the booktabs and plain spellings were recognised, so ``makecell``'s left
+    its thickness standing where the next row's first cell begins. Measured, Swin
+    heads 24 cells ``1.0pt (a) Various frameworks AP^box`` and ConvNeXt labels 14
+    rows ``0.3 Swin-T`` -- the ``0.3`` of an ``\Xhline{0.3\arrayrulewidth}``, a
+    rule three-tenths of the default thickness read as part of a model's name.
+
+    Both positions are asserted, because the residue lands somewhere different in
+    each. Ahead of a *body* row it prefixes that row's label; ahead of a spanned
+    sub-caption it joins the first header row, and composition then copies it onto
+    every column name beneath -- which is the shape Swin has, and the reason its
+    count is 24 cells rather than one row's worth.
+    """
+    tex = (
+        "\\begin{tabular}{lc}\n"
+        "\\Xhline{1.0pt}\n"
+        "\\multicolumn{2}{c}{(a) Various frameworks} \\\\\n"
+        "Model & Accuracy \\\\\n"
+        "\\Xhline{0.3\\arrayrulewidth}\n"
+        "Swin-T & 88.1 \\\\\n"
+        "\\end{tabular}\n"
+    )
+    cells = make_evidence({"paper/main.tex": tex}).latex.table_cells
+    assert [(c.row_label, c.column_label, c.value) for c in cells] == [
+        ("Swin-T", "(a) Various frameworks Accuracy", 88.1)
+    ]
+
+
+def test_both_arguments_of_a_font_size_leave_the_cell(make_evidence):
+    r"""``\fontsize{7.5pt}{1em}`` sets a size and a baseline skip, and prints neither.
+
+    The generic cleanup keeps what sits between the braces, so a command whose
+    arguments are *all* discarded needs all of them removed: dissolving one of the
+    two would leave ``1em`` exactly where ``7.5pt1em`` was. Measured on MoCo, 43
+    cells headed ``7.5pt1em COCO keypoint detection`` and ``7pt1em accuracy (\%)``.
+    """
+    tex = (
+        "\\begin{tabular}{lc}\n"
+        "\\fontsize{7.5pt}{1em}\\selectfont method"
+        " & \\fontsize{7pt}{1em}\\selectfont COCO keypoint detection \\\\\n"
+        "Ours & 91.4 \\\\\n"
+        "\\end{tabular}\n"
+    )
+    cells = make_evidence({"paper/main.tex": tex}).latex.table_cells
+    assert [(c.row_label, c.column_label, c.value) for c in cells] == [
+        ("Ours", "COCO keypoint detection", 91.4)
+    ]
+
+
+@pytest.mark.parametrize(
+    ("field", "expected"),
+    [
+        (r"\fontsize{7.5pt}{1em Accuracy", "7.5pt1em Accuracy"),  # second group unbalanced
+        (r"\fontsize{7.5pt Accuracy", "7.5pt Accuracy"),  # first group unbalanced
+    ],
+)
+def test_a_malformed_font_size_is_left_whole_for_the_cleanup(make_evidence, field, expected):
+    """A command one of whose groups does not brace-match loses none of them.
+
+    Removing the first argument of a two-argument command whose second is
+    unbalanced would guess where the second ends, and guessing there removes text
+    the paper prints. The generic cleanup still reduces what is left, so the cell
+    degrades to the residue it had before rather than to something shorter.
+    """
+    tex = "\\begin{tabular}{lc}\nModel & " + field + " \\\\\nOurs & 91.4 \\\\\n\\end{tabular}\n"
+    cells = make_evidence({"paper/main.tex": tex}).latex.table_cells
+    assert [c.column_label for c in cells] == [expected]
+
+
+def test_a_cross_reference_key_is_not_a_row_label(make_evidence):
+    r"""``\ref{tab:baseline}`` prints a number assigned at typesetting time.
+
+    The generic cleanup keeps the key, so the key became the label. Measured, t5
+    leads every body row of its Table 16 with one naming the main-body table that
+    row restates, and 2,277 of its cells were labelled ``tab:baseline``,
+    ``tab:architectures_results`` and eleven more keys of the same kind. What the
+    reference prints is not knowable here, so the cell is emptied and the row is
+    named by :func:`~adduce.evidence.latex._row_label` instead.
+    """
+    tex = (
+        "\\begin{tabular}{llc}\n"
+        "Table & Experiment & Accuracy \\\\\n"
+        "\\ref{tab:baseline} & Baseline average & 83.28 \\\\\n"
+        "\\autoref{tab:scaling} & 4x training steps & 85.33 \\\\\n"
+        "\\end{tabular}\n"
+    )
+    cells = make_evidence({"paper/main.tex": tex}).latex.table_cells
+    assert [(c.row_label, c.value) for c in cells] == [
+        ("Baseline average", 83.28),
+        ("4x training steps", 85.33),
+    ]
+
+
+def test_a_row_whose_first_cell_is_empty_is_named_by_the_next_one(make_evidence):
+    r"""A ``\multirow`` continuation row is named by the cell that follows the gap.
+
+    The label was the first cell unconditionally, so every row whose first column
+    was spent on something else -- a spanned label above it, a cross-reference --
+    was called by the empty string. That is the condition ``claims.cluster`` cannot
+    survive: it separates measurements by row and column and cannot see which table
+    a cell came from, so identically named cells whose values round together become
+    one claim. Measured, CLIP carried 1,775 such cells and t5 2,277.
+
+    Swin's own markup, which is why the spanned label is written ``\multirow``. Its
+    arguments are not dissolved -- that is a separate shape, and this test asserts
+    only what the empty-cell search decides, so it does not depend on it.
+    """
+    tex = (
+        "\\begin{tabular}{llc}\n"
+        "Method & Backbone & FPS \\\\\n"
+        "\\multirow{2}{*}{Cascade Mask R-CNN} & R-50 & 18.0 \\\\\n"
+        " & Swin-T & 15.3 \\\\\n"
+        "\\end{tabular}\n"
+    )
+    cells = make_evidence({"paper/main.tex": tex}).latex.table_cells
+    continuation = [(c.row_label, c.value) for c in cells if c.value == 15.3]
+    assert continuation == [("Swin-T", 15.3)]
+
+
+def test_a_numeric_first_cell_is_still_the_row_label(make_evidence):
+    """A number is a perfectly good name for a row, and stays the name.
+
+    t5's Table 7 labels its rows by span length, and ``10`` is what one of them is
+    called. Letting the search past an empty cell also override a *filled* numeric
+    one cost bert 55 of its row labels and t5 that ``10``.
+    """
+    tex = (
+        "\\begin{tabular}{lcc}\n"
+        "Span length & EnFr & CNNDM \\\\\n"
+        "10 & 39.49 & 19.24 \\\\\n"
+        "\\end{tabular}\n"
+    )
+    cells = make_evidence({"paper/main.tex": tex}).latex.table_cells
+    assert [(c.row_label, c.column_label) for c in cells] == [("10", "EnFr"), ("10", "CNNDM")]
+
+
+def test_a_row_whose_values_start_immediately_takes_no_name_from_them(make_evidence):
+    """The search past an empty first cell stops at the first cell stating a number.
+
+    That cell is already extracted as the row's first value, so reading it as the
+    name as well would have one cell play both parts. An unnamed row is the honest
+    answer, not a row named after one of its own measurements.
+    """
+    tex = (
+        "\\begin{tabular}{lcc}\n"
+        "Model & Accuracy & F1 \\\\\n"
+        " & 91.4 & 84.2 \\\\\n"
+        "\\end{tabular}\n"
+    )
+    cells = make_evidence({"paper/main.tex": tex}).latex.table_cells
+    assert [(c.row_label, c.column_label, c.value) for c in cells] == [
+        ("", "Accuracy", 91.4),
+        ("", "F1", 84.2),
+    ]
+
+
+def test_an_escaped_ampersand_does_not_separate_two_columns(make_evidence):
+    r"""``$(\mathcal{J}$\&$\mathcal{F})_m$`` is one header, not two.
+
+    ``\&`` prints an ampersand and separates nothing. Split as a separator it made
+    DINO's DAVIS table seven headers over six columns, so every column after it was
+    named by the wrong header -- 18 cells reported under ``F)_m`` and ``J_m``, and
+    the header that should have carried them was never seen at all.
+    """
+    tex = (
+        "\\begin{tabular}{lccc}\n"
+        "Model & $ (\\mathcal{J}$\\&$\\mathcal{F})_m$ & $\\mathcal{J}_m$ & F1 \\\\\n"
+        "Ours & 69.9 & 66.6 & 84.2 \\\\\n"
+        "\\end{tabular}\n"
+    )
+    cells = make_evidence({"paper/main.tex": tex}).latex.table_cells
+    assert [(c.column_label, c.value) for c in cells] == [
+        ("(J&F)_m", 69.9),
+        ("J_m", 66.6),
+        ("F1", 84.2),
+    ]
+
+
+def test_a_thin_space_is_not_part_of_a_label(make_evidence):
+    r"""``\,`` is a thin space, and the generic cleanup cannot reach it.
+
+    That pattern requires a letter after the backslash, so ``\,`` survived --
+    ConvNeXt writes one ahead of every model name in a results table, 115 cells.
+    Resolved to a space rather than erased, because the metric vocabulary carries
+    ``\b`` anchors and gluing two words together defeats them.
+    """
+    tex = (
+        "\\begin{tabular}{lc}\n"
+        "Model & Accuracy \\\\\n"
+        "\\,Ours\\, & 91.4 \\\\\n"
+        "\\end{tabular}\n"
+    )
+    cells = make_evidence({"paper/main.tex": tex}).latex.table_cells
+    assert [c.row_label for c in cells] == ["Ours"]
+
+
+def test_a_label_written_across_source_lines_is_read_as_one_line(make_evidence):
+    """A header spanning two source lines kept its newline and its indentation.
+
+    A label is what the page shows, and the page shows one line. It is also read
+    by people, by the precision verdict key and by ``canonical_metric``, whose
+    whole-name lookup is a dictionary hit that no amount of vocabulary can satisfy
+    for a key carrying a stray newline.
+    """
+    tex = (
+        "\\begin{tabular}{lcc}\n"
+        "Model & \\multicolumn{2}{c}{Top-1\n"
+        "    Accuracy} \\\\\n"
+        "Ours & 91.4 & 88.1 \\\\\n"
+        "\\end{tabular}\n"
+    )
+    cells = make_evidence({"paper/main.tex": tex}).latex.table_cells
+    assert [c.column_label for c in cells] == ["Top-1 Accuracy", "Top-1 Accuracy"]
+
+
+def test_the_markup_residue_fixture_reads_as_eight_named_cells():
+    """The synthetic case is what makes the corpus byte-identity checks see this.
+
+    Asserted against the fixture itself rather than an inline copy, so the case
+    cannot drift away from the behaviour it is there to pin. Without the fixes it
+    yields six cells under three wrong column names; with them, eight cells whose
+    row and column labels are what the page prints.
+    """
+    case = Path(__file__).resolve().parent.parent / "corpus" / "synthetic" / "synthetic_markup_residue"
+    cells = collect_latex(scan_repository(case)).table_cells
+    assert [(c.row_label, c.column_label, c.value) for c in cells] == [
+        ("Swin-T", "Accuracy", 88.1),
+        ("Swin-T", "(J&F)_m", 61.8),
+        ("Swin-T", "J_m", 60.2),
+        ("Swin-T", "F1", 79.5),
+        ("Ours", "Accuracy", 91.4),
+        ("Ours", "(J&F)_m", 69.9),
+        ("Ours", "J_m", 66.6),
+        ("Ours", "F1", 84.2),
+    ]
+
+
+def test_the_reference_row_label_fixture_names_every_row_the_page_names():
+    """The second residue fixture, asserted against itself for the same reason.
+
+    Every guard it plants is load-bearing here, which is what makes the case worth
+    keeping: without the fixes the same eight cells read ``tab:baseline`` and
+    ``0.3 tab:scaling`` for their rows and ``1.0pt (a) Ablations restated 7.5pt1em
+    Accuracy`` for their columns. The last two rows are the controls -- a numeric
+    label that must survive, and a row whose values start immediately, which must
+    stay unnamed rather than be called after one of its own measurements.
+    """
+    case = (
+        Path(__file__).resolve().parent.parent
+        / "corpus"
+        / "synthetic"
+        / "synthetic_reference_row_label"
+    )
+    cells = collect_latex(scan_repository(case)).table_cells
+    assert [(c.row_label, c.column_label, c.value) for c in cells] == [
+        ("Baseline average", "(a) Ablations restated Accuracy", 88.1),
+        ("Baseline average", "(a) Ablations restated F1", 79.5),
+        ("Ours", "(a) Ablations restated Accuracy", 91.4),
+        ("Ours", "(a) Ablations restated F1", 84.2),
+        ("10", "(a) Ablations restated Accuracy", 89.3),
+        ("10", "(a) Ablations restated F1", 81.0),
+        ("", "(a) Ablations restated Accuracy", 90.0),
+        ("", "(a) Ablations restated F1", 82.0),
+    ]
+
+
+def test_an_at_sign_is_a_letter_in_a_command_name(make_evidence):
+    r"""``\makeatletter`` makes ``@`` a letter, and class code is written that way.
+
+    A name class of ``[a-zA-Z]+`` does not recognise
+    ``\def\@fs@pre{\hrule height.8pt depth0pt \kern2pt}`` as a definition at all,
+    so the body stays in the document and the prose scan reads ``depth0pt`` as a
+    layer count. Measured, MoCo and SimSiam each yielded a confident
+    ``num_layers = 0.0`` from that one line.
+    """
+    tex = (
+        "\\documentclass{article}\n"
+        "\\makeatletter\n"
+        "\\def\\@fs@pre{\\hrule height.8pt depth0pt \\kern2pt}\n"
+        "\\makeatother\n"
+        "\\begin{document}\n"
+        "Our model reaches an accuracy of 91.4 on the held-out split.\n"
+        "\\end{document}\n"
+    )
+    latex = make_evidence({"paper/main.tex": tex}).latex
+    assert latex.hyperparameters == []
+    assert [(m.name, m.value) for m in latex.metrics] == [("accuracy", 91.4)]
+
+
+def test_a_counter_is_not_a_measurement(make_evidence):
+    r"""``\setcounter{tocdepth}{2}`` sets how deep a contents list goes.
+
+    It prints nothing, so it states no number the paper reports -- but it puts a
+    keyword and a number two characters apart, which is the shape the keyword scan
+    reads as a value. Measured on DETR, ``depth}{2`` was reported as
+    ``num_layers = 2.0``. This is a *use* of a command rather than a definition of
+    one, so removing definitions cannot reach it.
+    """
+    tex = (
+        "\\documentclass{article}\n"
+        "\\setcounter{tocdepth}{2}\n"
+        "\\addtocounter{secnumdepth}{1}\n"
+        "\\newcounter{layers}\n"
+        "\\setcounter{layers}{4}\n"
+        "\\setlength{\\tabcolsep}{6pt}\n"
+        "\\begin{document}\n"
+        "Our model reaches an accuracy of 91.4 on the held-out split.\n"
+        "\\end{document}\n"
+    )
+    latex = make_evidence({"paper/main.tex": tex}).latex
+    assert latex.hyperparameters == []
+    assert [(m.name, m.value) for m in latex.metrics] == [("accuracy", 91.4)]
+
+
+#: One realistic call per command the state-command guard covers, each written so
+#: that a keyword falls within the keyword scan's window of a number. Every one of
+#: these was measured to yield a phantom hyperparameter without the guard --
+#: including the two that assign nothing, because it is the *name* argument that
+#: carries the keyword and removing the call is what stops the scan reaching a
+#: number in the prose that follows: ``\newlength{\headsep}`` ahead of a sentence
+#: mentioning 4 was read as ``num_heads = 4.0``.
+_STATE_COMMAND_PROBES = {
+    "setcounter": r"\setcounter{tocdepth}{2}",
+    "addtocounter": r"\addtocounter{secnumdepth}{1}",
+    "stepcounter": r"\stepcounter{layers}",
+    "refstepcounter": r"\refstepcounter{layers}",
+    "setlength": r"\setlength{\layersep}{4pt}",
+    "addtolength": r"\addtolength{\layersep}{2pt}",
+    "newcounter": r"\newcounter{layers}",
+    "newlength": r"\newlength{\headsep}",
+}
+
+
+def test_every_covered_state_command_has_a_probe():
+    """A command added to the guard without a probe would be an unexercised guard."""
+    assert set(_STATE_COMMAND_PROBES) == set(_STATE_COMMANDS)
+
+
+@pytest.mark.parametrize("command", sorted(_STATE_COMMAND_PROBES))
+def test_a_typesetting_assignment_states_no_hyperparameter(command, make_evidence):
+    """Each covered command, on its own, against a number close enough to be read."""
+    tex = (
+        "\\documentclass{article}\n"
+        "\\begin{document}\n"
+        + _STATE_COMMAND_PROBES[command]
+        + " We report 4 configurations.\n"
+        "Our model reaches an accuracy of 91.4 on the held-out split.\n"
+        "\\end{document}\n"
+    )
+    latex = make_evidence({"paper/main.tex": tex}).latex
+    assert latex.hyperparameters == []
+    assert [(m.name, m.value) for m in latex.metrics] == [("accuracy", 91.4)]
+
+
+def test_removing_a_counter_assignment_does_not_move_the_line_beneath_it(make_evidence):
+    """A locator is what sends a reader to a number, so the line count is kept."""
+    tex = (
+        "\\documentclass{article}\n"
+        "\\setlength{\\tabcolsep}{6pt}\n"
+        "\\setcounter{tocdepth}{2}\n"
+        "\\begin{document}\n"
+        "Our model reaches an accuracy of 91.4 on the held-out split.\n"
+        "\\end{document}\n"
+    )
+    latex = make_evidence({"paper/main.tex": tex}).latex
+    assert [(m.value, m.line) for m in latex.metrics] == [(91.4, 5)]
+
+
+def test_a_malformed_counter_assignment_is_left_alone():
+    r"""Every argument the command declares must be there for the call to go.
+
+    ``\setcounter`` takes two groups. One written with one is malformed, and
+    removing the name alone would leave its arguments standing as text -- which is
+    the failure the removal exists to prevent, not a lesser version of it.
+    """
+    text = "\\setcounter{tocdepth 2} and the depth is 4 layers\n"
+    assert _strip_state_commands(text) == text
+
+
+def test_a_counter_assignment_a_paper_prints_is_left_in_place():
+    """Inside a verbatim block the assignment is what the page displays."""
+    text = (
+        "\\setcounter{tocdepth}{2}\n"
+        "\\begin{verbatim}\n"
+        "\\setcounter{tocdepth}{2}\n"
+        "\\end{verbatim}\n"
+    )
+    assert _strip_state_commands(text) == (
+        "\n\\begin{verbatim}\n\\setcounter{tocdepth}{2}\n\\end{verbatim}\n"
+    )
 
 
 def _table(column: str, value: str) -> str:

@@ -1,0 +1,26 @@
+\documentclass{article}
+\usepackage{booktabs}
+\usepackage{makecell}
+
+\begin{document}
+\section{Results}
+
+Our model reaches an accuracy of 91.4 on the held-out split.
+
+\begin{table}
+\caption{Ablations, each row restating the table it first appeared in.}
+\begin{tabular}{llcc}
+\Xhline{1.0pt}
+\multicolumn{4}{c}{(a) Ablations restated} \\
+Table & Experiment & \fontsize{7.5pt}{1em}\selectfont Accuracy & F1 \\
+\midrule
+\ref{tab:baseline} & Baseline average & 88.1 & 79.5 \\
+\Xhline{0.3\arrayrulewidth}
+\autoref{tab:scaling} & Ours & 91.4 & 84.2 \\
+10 & Span length & 89.3 & 81.0 \\
+ & & 90.0 & 82.0 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\end{document}
