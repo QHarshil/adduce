@@ -8,7 +8,13 @@ has not written yet.
 
 from __future__ import annotations
 
-from .claims import CandidateSource, ClaimCluster, extract_claims, matching_results
+from .claims import (
+    CandidateSource,
+    ClaimCandidate,
+    ClaimCluster,
+    extract_claims,
+    matching_results,
+)
 from .evidence import Evidence
 from .manifest import (
     Claim,
@@ -22,17 +28,56 @@ from .manifest import (
 )
 
 
-def _claim_text(cluster: ClaimCluster) -> str:
-    """A one-line statement of the claim, in the artifact's own words.
+def _representative(cluster: ClaimCluster) -> ClaimCandidate:
+    """The member a drafted claim speaks for.
 
     A prose member already reads as a sentence, so it is preferred when one
-    exists. A table cell has to be assembled from its labels, which is why the
-    row label is kept alongside the column.
+    exists. Members are otherwise in a total order, so the first is a choice
+    rather than an accident of input order.
     """
     for member in cluster.members:
         if member.source is CandidateSource.LATEX_PROSE:
-            return member.text
-    member = cluster.members[0]
+            return member
+    return cluster.members[0]
+
+
+def _cell(cluster: ClaimCluster) -> tuple[str | None, str | None]:
+    """The row and column labels naming the cell a claim was read from.
+
+    Taken from the first member carrying either, which is not always the member
+    the text comes from: prose carries no labels, so a number stated both in a
+    sentence and in a table was left naming no cell at all. Both labels come
+    from that one member -- a row from one cell and a column from another name
+    no cell -- so where it carries only one the other stays ``None``.
+
+    **The labels and the claim's ``where`` can name different members, and that
+    is worth knowing rather than discovering.** ``where`` is composited by
+    ``min`` over every member's location, so the two fields are chosen by
+    different rules, and a cluster spanning a sentence and a table cell takes
+    one from each. Measured on bert: the claim for ``f1 93.2`` records ``where``
+    at ``abstract.tex:4``, which is the sentence, while its labels name the
+    ``BERT_ LARGE (Ens.+TriviaQA)`` / ``Test F1`` cell of the SQuAD table in
+    ``squad_tab.tex``. Both are true of the cluster -- the paper states that
+    number in both places -- and matching stays self-consistent because a
+    verdict transcribes locator and labels from the same extraction, so the pair
+    is compared against a pair produced the same way. Read the two fields as two
+    independent facts about the cluster, not as a location and the labels of
+    whatever is at it.
+    """
+    for member in cluster.members:
+        if member.row_label is not None or member.column_label is not None:
+            return (member.row_label, member.column_label)
+    return (None, None)
+
+
+def _claim_text(cluster: ClaimCluster, member: ClaimCandidate) -> str:
+    """A one-line statement of the claim, in the artifact's own words.
+
+    A table cell has to be assembled from its labels, which is why the row
+    label is kept alongside the column.
+    """
+    if member.source is CandidateSource.LATEX_PROSE:
+        return member.text
     if member.row_label and member.column_label:
         return f"{member.row_label}: {member.column_label} = {cluster.value:g}"
     return member.text
@@ -114,6 +159,15 @@ def _draft_claims(ev: Evidence) -> list[Claim]:
     under a header that names the metric and one recovered from prose by
     regular expression, and dropping it here left that distinction enforced at
     construction and then unavailable to everything downstream.
+
+    ``row_label`` and ``column_label`` come from the first member that names a
+    cell, which need not be the member the text is assembled from. Every cell of
+    one ``tabular`` records the line its environment opens on, so a locator
+    cannot separate two measurements a table states at one value under one
+    metric; the labels are what names which cell a claim came from, and a claim
+    a table states is worth naming whether or not a sentence restates it.
+    ``where`` is already composited the same way, by ``min`` over the members'
+    locations.
     """
     claims: list[Claim] = []
     command = _guess_command(ev)
@@ -125,10 +179,12 @@ def _draft_claims(ev: Evidence) -> list[Claim]:
             key=lambda location: (location.path, location.line),
         )
         logs = matching_results(cluster, ev.results.files)
+        representative = _representative(cluster)
+        row_label, column_label = _cell(cluster)
         claims.append(
             Claim(
                 id=f"C{index}",
-                text=_claim_text(cluster),
+                text=_claim_text(cluster, representative),
                 kind="metric",
                 where=str(primary),
                 metric=cluster.metric,
@@ -139,6 +195,8 @@ def _draft_claims(ev: Evidence) -> list[Claim]:
                 status="draft",
                 confidence=cluster.confidence,
                 resolution_method=cluster.method.value,
+                row_label=row_label,
+                column_label=column_label,
             )
         )
     if not claims and ev.docs.has_results_table:
