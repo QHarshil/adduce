@@ -217,12 +217,23 @@ It is no longer undefined. `compute_precision` reports `high_confidence_false_po
 adjudicated extractions that are not the paper's own result — excluding the two classes already
 outside the precision denominator — and that were extracted at confidence `1.0`. Confidence is
 not recorded in the verification file, so it is joined from the live extraction on
-`(metric, value, where)`, the same key staleness uses; a verdict that cannot be joined
-unambiguously is counted separately as `unjoined_false_positives` rather than guessed at.
-**Measured over the four adjudicated pairs the figure is 109 of 273 false positives, so the
-criterion is currently met by no pair.**
+`(metric, value, where, row_label, column_label)`, the same key staleness uses; a verdict that
+cannot be joined unambiguously is counted separately as `unjoined_false_positives` rather than
+guessed at.
+**Measured over the four adjudicated pairs: 96 of 310 false positives were extracted at
+confidence 1.0, so the criterion is met by no pair.** Precision is 441/751 = 58.7 % pooled —
+detr 104/138, convnext 186/297, bert 106/180, barlowtwins 45/136 — with `unclear` 0 across all
+four. Note `adjudicated` already excludes `unclear` and `in_repo_not_paper`, which is why bert's
+denominator is 180 against 186 verdicts.
 
-### The matching key is `(metric, value, where)`, with `where` normalised and optional
+The per-pair spread is the informative part, because it shows the reach of the baseline
+demotion rather than a difference in extraction quality: **bert carries 2 where it once carried
+25**, while barlowtwins holds 42 and convnext 47. Neither of those papers marks a quoted row
+with a citation or a full-width section header, so the signal the demotion reads is simply
+absent from them. Deciding whether a printed number is this artifact's own result is evidence-side
+work, and the residue is the measure of how much of it the markup cannot answer.
+
+### The matching key is `(metric, value, where, row_label, column_label)`
 
 An adjudication describes one extraction, so a verdict is matched to the extraction it
 adjudicates rather than counted against a key. `where` is load-bearing only because it is
@@ -242,13 +253,55 @@ sharing a key.
 moves with extractor changes that leave every number and every verdict untouched. A locator
 that reconciles with no live extraction therefore falls back to `(metric, value)` rather than
 dropping the match, and the fallbacks are counted and reported: `location_fallbacks` in the
-coverage block, and `[no locator: N]` beside the rate in `measure`'s output. Today that is
-convnext 12 and detr 2, barlowtwins and bert 0.
+coverage block, and `[no locator: N]` beside the rate in `measure`'s output. After the four
+pairs were re-adjudicated that is convnext 4 and detr 2, barlowtwins and bert 0.
 
 What the stronger key buys is that a repeated `(metric, value)` stays decidable. Extractions
 are unique on `(metric, value)` today only because `claims/cluster.py` de-duplicates globally
 on exactly that key; the moment that is repaired, a multiset difference over it stops naming
 *which* row is stale, and the four adjudicated pairs have no way back to correspondence.
+
+**The locator alone cannot separate two cells of one table.** Every cell of a `tabular`
+records the line the *environment* opens on, so all of a table's cells share one locator
+exactly. Two such collisions are verified and real: bert prints `88.5` as both R.M. Reader's
+test F1 and BERT-BASE's dev F1, and convnext ties `15.01` GFLOPs between the cited ResNet-200
+and its own enhanced recipe. Both were found while auditing whether the baseline demotion had
+demoted a real own result, and the audit had to be done by hand because the key could not
+distinguish the members. The row and column labels do distinguish them: when the
+key was strengthened the old key collided 18 times within bert's 186 extractions and 23 times
+within convnext's 302, and the key with the labels collided on neither. That counts extractions
+in excess of one per key; the same data gives 32 and 39 for extractions *involved* in a
+collision, and 14 and 16 for the number of colliding groups.
+
+`manifest.Claim` therefore carries `row_label` and `column_label`, and the matcher narrows on
+them **within** the group the locator selects. A verdict records them as `row_label` and
+`column_label` beside `where` in its `extraction` object. They are optional on the verdict
+side, and most verdicts do not record them: the four re-adjudicated files carry labels on
+**114 of 757** verdicts — barlowtwins 15, bert 26, convnext 61, detr 12 — because the rest
+predate the field. A verdict recording labels is matched only to an extraction agreeing on
+them, with case and runs of whitespace flattened and nothing else. A verdict recording one
+label is narrowed by that one, which is what a transposed table's verdict supplies. A verdict
+recording neither is matched exactly as it was before, counted as `label_fallbacks` in the
+coverage block and `[no labels: N]` beside the rate: barlowtwins 121, bert 160, convnext 236,
+detr 126.
+
+**A verdict whose labels match no extraction is matched on the locator alone rather than left
+stale, and the degradation is counted** as `label_degradations` and `[labels dropped: N]`.
+Today it is 0 on all four pairs.
+
+The narrowing is still part of the key rather than a hint, and two properties are what make
+degrading safe. Labels are dropped only *after* every verdict has been offered its narrowed
+pool, so a degraded verdict can never take a cell that some verdict names exactly. And the
+count is the reader's signal: where two free cells share a locator, a degraded verdict's
+assignment between them is arbitrary, and a non-zero `label_degradations` is how that becomes
+visible rather than silent.
+
+Refusing instead — leaving such a verdict stale — was the earlier rule, and it was rejected
+for the same reason the locator degrades rather than dropping. A label changes whenever the
+parse changes what it reads from a cell, and cleaning typesetting residue out of row labels
+moved hundreds of them in one pass. Under refusal every such cleanup would strand verdicts
+whose number and whose human judgement never changed, which would leave the labels making the
+instrument more brittle than it was before they existed.
 
 So each pair carries a second, independent artifact, `verifications/<id>.json`, recording one
 verdict per extraction: `real_own_result`, `baseline`, `hyperparameter`, `not_in_paper`,
@@ -267,3 +320,117 @@ Recall and precision therefore have independent availability: a pair may carry o
 other. A pair whose clone, paper, label file or verification file is absent is reported
 `unavailable` for the affected metric, with the reason. It is never skipped silently and never
 contributes a zero to an average.
+
+## Regression cover: the all-pair inventory
+
+Pooled recall is not a sufficient gate on an extractor change, and the reason is structural
+rather than a matter of degree. Recall is defined over the labelled pairs, and the roster holds
+**34** pairs against **20** label files — so 14 papers, 41 % of the roster, contribute nothing to
+it. A change can destroy one of those papers completely and every gate will pass.
+
+That is not hypothetical. A change that stripped LaTeX command definitions took
+**latent-diffusion from 624 table cells to 0** and **stylegan2-ada from 66 to 0**, deleting real
+reported numbers, because both papers wrap a whole float in a macro and invoke it in the body.
+Pooled recall did not move, no test failed, and it was caught by a human reading the diff after
+eight consecutive extractor changes had used recall as their safety criterion.
+
+`inventory` is the cheap gate that sees it. It records `table_cells`, `claims` and
+`numeric_claims` for **every** pair that has a paper, labelled or not, and `compare-inventory`
+reports every pair whose counts moved in either direction:
+
+```console
+python -B bench/dev/recall.py inventory --output before.json
+# make the extractor change
+python -B bench/dev/recall.py inventory --output after.json
+python -B bench/dev/recall.py compare-inventory --before before.json --after after.json
+```
+
+It exits non-zero when anything moved, so it works as a gate rather than only a report. Run
+against a tree with that defect reintroduced it prints
+`latent-diffusion table_cells 624 -> 0, claims 511 -> 0` and `32 unchanged, 2 moved`.
+
+A pair whose clone or paper is missing is reported unavailable with the reason, and its counts
+are absent rather than zero — the same discipline `measure` applies, and the distinction matters
+here more than anywhere, because a zero is exactly the signal the gate exists to catch.
+
+**One value a reviewer has to know: `hf-transformers` reads 0 table cells in a healthy tree**
+(with 4 claims). It is the one pair whose most sensitive signal is already floored, so 0 is its
+normal reading there and not the next `624 -> 0`.
+
+Two limits worth stating. The inventory counts cells and claims, so it cannot see a change that
+alters *which* number a cell yields without altering how many — for that the byte-identity
+harnesses below are the instrument. And extraction over the roster is minutes of subprocess
+work, which is why the two arms are separate artifacts rather than one run: the "before" for an
+extractor change is the working tree as it stood, which is not a second source tree that can be
+pointed at.
+
+## Regression cover: `manifest_identity.py`
+
+Recall and precision measure how good extraction is. Neither says whether a change *moved*
+anything, and the synthetic corpus is where that question is asked. `manifest_identity.py`
+answers it at the manifest level:
+
+```console
+python -B bench/dev/manifest_identity.py compare --before <tree>/src --after <tree>/src
+```
+
+For every case directory under `corpus/synthetic` it drafts that case's manifest with `--paper`
+at the case root, digests the bytes `adduce manifest` would write, and reports each case
+`identical` or `moved` plus a total. A moved case is named down to the claim fields
+that differ, so a confidence-only move is distinguishable from a changed extraction. Each arm
+reports the directory it imported `adduce` from, and the report says outright when the two
+agree — two arms that resolved one tree measure nothing however clean the result looks.
+
+**What it covers that the JSON-report check does not.** The default JSON report carries a
+claim's metric, value, location and trail and carries **neither its confidence nor its
+resolution method**, so it is blind to any change that moves only how confidently a number was
+read. That is not a small class: the baseline demotion moved 157 extractions on the dev set and
+every synthetic case's report was identical across it. Measured on two trees differing only in
+whether a cell attributed to prior work keeps full confidence — the source tree against a copy
+with that one condition removed — this harness reports **two cases moved**:
+`synthetic_markup_residue` on 2 of its 8 claims and `synthetic_quoted_baseline_rows` on 6 of its
+10, both on `confidence` and `resolution_method` alone, with every other case identical. The
+JSON-report check over the same two trees reports **no case moved at all**. The report check is
+not broken: with second-header composition suppressed it moves four cases. It cannot see this
+class at all, which is the whole reason this harness exists.
+
+Beyond those two fields the digest covers the whole drafted manifest — the claim set, each
+claim's metric, value, locator, text and cell labels, and the paper, environment, dataset,
+remote and smoke sections — so an extraction change is visible here too. What it does not do is
+say a confidence is *correct*. It reports movement, and the reader decides.
+
+**Its reach over claims is whatever the corpus drafts**, which makes it a property of the
+corpus rather than of the harness. A case that drafts no claim — the drift, seed, secret and
+dependency fixtures — can move here only through the paper, dataset, environment, remote or
+smoke sections, and is still measured for exactly that reason. The report counts cases and
+claims on every run, so read the live figures off it rather than off a fraction written down
+here, which goes stale the next time a case is added. Measured over the 29 case directories the
+corpus held when this was written: 18 draft at least one claim and 87 in total,
+`synthetic_quoted_baseline_rows` holding 10 and `synthetic_metric_vocabulary` and
+`synthetic_mixed_header_row` 9 each. Those are **manifest-level** counts, so they include the
+one claim `synthetic_hydra_authority` carries in its author-written manifest and extraction
+never produces; `extract_claims` alone accounts for 17 cases and 86 clusters.
+
+**Two cases carry the demotion signal, and one of them carries only half of it.**
+`synthetic_quoted_baseline_rows` has both halves — a citation in a row label and a prior-work
+section row — and its README records which cells each half accounts for.
+`synthetic_markup_residue` leads a row with `Swin-T~\cite{liu2021swin}` and carries the citation
+half alone: four of its cells are attributed to prior work, and two of its claims are demoted by
+that attribution, the other two being read at reduced confidence anyway because their column
+names no metric this build knows. No other case carries either half, so cover for this change
+class is thin rather than absent, and a demotion refinement reaching markup no case contains
+would still measure nothing moved.
+
+**It never dirties the repository.** `adduce manifest` writes `.adduce/manifest.yaml` under the
+path it is given and `corpus/synthetic` is tracked, so each case is copied out of the tree and
+drafted in a temporary directory. The one case that ships an author-written manifest is drafted
+the way `--refresh` does it, beside the author's file and never over it, and the branch each
+case took is reported. `tests/test_bench_dev_manifest_identity.py` asserts the corpus is
+byte-identical after a run rather than leaving that to inspection.
+
+**The digest does not embed the commit, and this was measured rather than assumed.** The JSON
+report records `/repository/commit`, so a naive re-run of the report check across a commit
+boundary reads as every case regressing on an unchanged tree. Nothing in the manifest scaffold
+reads git metadata: one case digests identically outside any repository, inside one, and inside
+that repository after its HEAD moved. Measuring a copy outside any work tree keeps it that way
+by construction.
