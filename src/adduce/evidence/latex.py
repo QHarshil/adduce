@@ -1214,6 +1214,26 @@ def _row_label(row: list[str]) -> str:
     numeric first cell be overridden cost bert 55 of its row labels and t5 the
     ``10`` its span-length rows are named by.
 
+    **A row whose leading cell holds only a citation therefore has no name at
+    all, and that is deliberate.** fairseq heads its comparison rows with
+    ``\citet{grave2016cache}``, which the citation dissolve empties, and the
+    search then reaches the row's first value and stops. Reading the
+    bibliography key instead -- which is what happened before the dissolve --
+    named the row ``grave2016cache``, and a key is not a name: nothing
+    downstream could tell it from part of a model's. What the page prints is
+    "Grave et al. (2016)", which this collector cannot render, so the honest
+    reading is no name rather than a wrong one, and ``prior_work`` already
+    carries what such a row is *for*.
+
+    Measured over the 34 pairs through ``collect_latex``, 193 of 16,704 cells
+    end with no row label: clip 106, albert 30, detr 19, fairseq 15, moco 12,
+    mae 7, barlowtwins 4. **It costs no clustering: zero of those pairs has a
+    ``(column, value)`` pair shared across tables by two unlabelled rows**, so
+    the empty name merges nothing that ought to stay apart. Most of the rest are
+    not citations at all -- DETR identifies ablation rows by a pattern of
+    checkmarks and CLIP continues a row with an empty leading cell, and neither
+    has a name to read.
+
     This exists because a table may spend its first column on something that is
     not the row's name. t5's Table 16 leads with a ``Table`` column of
     cross-references to the main-body table each row restates and an

@@ -27,9 +27,9 @@ Its reach over claims is whatever the corpus drafts, which is a property of the
 corpus and not of this harness: a case drafting no claim can move here only
 through those other sections. Read the live figures off the report, which counts
 cases and claims on every run, rather than off a number copied into prose that
-goes stale the next time a case is added. Measured over the 29 case directories
-the corpus held when this was written, 18 draft at least one claim and 87 in
-total, the largest being ``synthetic_quoted_baseline_rows`` at 10.
+goes stale the next time a case is added. Measured over the 32 case directories
+the corpus held when this was last checked, 20 draft at least one claim and 101
+in total, the largest being ``synthetic_quoted_baseline_rows`` at 10.
 
 Liveness for that class is measured, not argued. Against the source tree and a
 copy of it with the prior-work demotion removed -- a change that can move
