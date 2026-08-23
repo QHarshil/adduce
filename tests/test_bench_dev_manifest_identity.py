@@ -75,7 +75,7 @@ def test_discovery_finds_every_case_directory_and_nothing_else():
 
     ``corpus/synthetic`` also holds ``expectations.yaml``, whose entries
     ``tests/test_synthetic_corpus.py`` already pins against this same directory
-    set. Measured while this was last checked: 32 case directories.
+    set. Measured while this was last checked: 33 case directories.
     """
     discovered = manifest_identity.discover_cases(_CASES_ROOT)
     on_disk = {path for path in _CASES_ROOT.iterdir() if path.is_dir()}
