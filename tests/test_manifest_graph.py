@@ -8,10 +8,12 @@ from pathlib import Path
 import pytest
 import yaml
 
+from adduce.aeg.schema import ResolutionMethod
+from adduce.claims import CandidateSource, ClaimCandidate, ClaimCluster, ClaimLocation
 from adduce.engine import run_check
 from adduce.graph import TrailStatus
 from adduce.manifest import load_manifest, write_manifest
-from adduce.manifest_builder import scaffold_manifest
+from adduce.manifest_builder import _cell, scaffold_manifest
 from adduce.modes import badge_eligibility
 from adduce.report.json_report import render as render_json
 from tests.conftest import plain
@@ -99,6 +101,39 @@ def test_manifest_round_trip_carries_how_a_claim_was_resolved(tmp_path):
     assert mirror["claims"][0]["resolution_method"] == "lexical_match"
 
 
+def test_manifest_round_trip_carries_the_cell_a_claim_was_read_from(tmp_path):
+    """A claim's row and column labels survive write and reload, as plain strings.
+
+    Every cell of one ``tabular`` records the line its environment opens on, so
+    a locator cannot say which of a table's cells a number came from. The
+    labels can, and dropping them here left that unavailable to everything
+    downstream.
+    """
+    manifest_data = dict(_MANIFEST)
+    manifest_data["claims"] = [
+        dict(_MANIFEST["claims"][0], row_label="BERT-BASE (Single)", column_label="Dev F1")
+    ]
+    (tmp_path / ".adduce").mkdir()
+    (tmp_path / ".adduce" / "manifest.yaml").write_text(
+        yaml.safe_dump(manifest_data), encoding="utf-8"
+    )
+
+    manifest = load_manifest(tmp_path)
+    assert manifest.claims[0].row_label == "BERT-BASE (Single)"
+    assert manifest.claims[0].column_label == "Dev F1"
+
+    roundtrip = tmp_path / "roundtrip"
+    roundtrip.mkdir()
+    write_manifest(roundtrip, manifest)
+    reloaded = load_manifest(roundtrip)
+
+    assert reloaded.claims[0].row_label == "BERT-BASE (Single)"
+    assert reloaded.claims[0].column_label == "Dev F1"
+    mirror = json.loads((roundtrip / ".adduce" / "manifest.json").read_text(encoding="utf-8"))
+    assert mirror["claims"][0]["row_label"] == "BERT-BASE (Single)"
+    assert mirror["claims"][0]["column_label"] == "Dev F1"
+
+
 def test_a_manifest_stating_neither_field_stays_valid_and_writes_neither(tmp_path):
     """The migration is additive: every manifest written before this loads unchanged."""
     _write_manifest_file(tmp_path)
@@ -108,8 +143,12 @@ def test_a_manifest_stating_neither_field_stays_valid_and_writes_neither(tmp_pat
     assert manifest.error is None
     assert manifest.claims[0].confidence is None
     assert manifest.claims[0].resolution_method is None
+    assert manifest.claims[0].row_label is None
+    assert manifest.claims[0].column_label is None
     assert "confidence" not in manifest.to_dict()["claims"][0]
     assert "resolution_method" not in manifest.to_dict()["claims"][0]
+    assert "row_label" not in manifest.to_dict()["claims"][0]
+    assert "column_label" not in manifest.to_dict()["claims"][0]
 
 
 def test_malformed_manifest_is_recorded_as_an_error(tmp_path):
@@ -180,6 +219,14 @@ def test_check_rejects_malformed_manifest_structure(tmp_path):
         (
             "claims:\n  - id: C1\n    resolution_method: [direct_parse]\n",
             r"claims\[0\]\.resolution_method must be a string",
+        ),
+        (
+            "claims:\n  - id: C1\n    row_label: 3\n",
+            r"claims\[0\]\.row_label must be a string",
+        ),
+        (
+            "claims:\n  - id: C1\n    column_label: [Dev F1]\n",
+            r"claims\[0\]\.column_label must be a string",
         ),
         # Full confidence means the value was read, not inferred. A manifest
         # must not be a way around the rule ClaimCandidate enforces at
@@ -315,6 +362,115 @@ def test_a_drafted_claim_carries_how_its_number_was_read(tmp_path):
     assert by_value[92.1].confidence == 1.0
     assert by_value[88.5].resolution_method == "lexical_match"
     assert by_value[88.5].confidence == 0.5
+
+
+def test_a_drafted_claim_names_the_cell_its_number_came_from(tmp_path):
+    """The labels the claim text is assembled from are also carried as fields.
+
+    Two measurements a table states at one value under one metric share a
+    locator exactly -- every cell of one ``tabular`` records the line the
+    environment opens on -- so the labels are the only thing that tells them
+    apart. A number recovered from a sentence sits in no cell and carries
+    neither, which is a different state from a cell whose labels went missing.
+    """
+    _write(
+        tmp_path,
+        {
+            "README.md": "# Demo\n\n| Model | Accuracy |\n|---|---|\n| ours | 92.1 |\n",
+            "paper.tex": (
+                "\\documentclass{article}\n\\begin{document}\n"
+                "We reach an accuracy of 88.5 on the test split.\n\\end{document}\n"
+            ),
+            "train.py": "import torch\n",
+        },
+    )
+
+    claims = scaffold_manifest(run_check(tmp_path).evidence).claims
+    by_value = {claim.value: claim for claim in claims}
+
+    assert by_value[92.1].row_label == "ours"
+    assert by_value[92.1].column_label == "Accuracy"
+    assert by_value[92.1].text == "ours: Accuracy = 92.1"
+    assert by_value[88.5].row_label is None
+    assert by_value[88.5].column_label is None
+
+
+def test_a_number_stated_in_prose_and_in_a_table_still_names_the_cell(tmp_path):
+    """The sentence supplies the text; the cell it restates supplies the labels.
+
+    A prose member reads as a sentence and is the better representative for the
+    text, and it names no cell. Taking the labels from it too left a number
+    stated in both places naming no cell at all -- the one state the labels
+    exist to prevent, since a verdict recording them would then match nothing.
+    ``where`` is already composited from whichever member sits earliest, so a
+    claim assembled from more than one member is the existing shape here.
+    """
+    _write(
+        tmp_path,
+        {
+            "README.md": "# Demo\n\n| Model | Accuracy |\n|---|---|\n| ours | 92.1 |\n",
+            "paper.tex": (
+                "\\documentclass{article}\n\\begin{document}\n"
+                "We reach an accuracy of 92.1 on the test split.\n\\end{document}\n"
+            ),
+            "train.py": "import torch\n",
+        },
+    )
+
+    claims = scaffold_manifest(run_check(tmp_path).evidence).claims
+    stated = [claim for claim in claims if claim.value == 92.1]
+
+    assert len(stated) == 1
+    assert stated[0].text == "accuracy of 92.1"
+    assert stated[0].where == "README.md:5"
+    assert stated[0].row_label == "ours"
+    assert stated[0].column_label == "Accuracy"
+
+
+def test_a_claim_takes_both_cell_labels_from_one_member():
+    """Half a cell from one member and half from another names no cell at all.
+
+    So the first member carrying either supplies both, and where it carries only
+    one the other stays unstated rather than being filled in from elsewhere.
+    """
+    def candidate(row: str | None, column: str | None, line: int) -> ClaimCandidate:
+        return ClaimCandidate(
+            metric="accuracy",
+            value=92.1,
+            source=CandidateSource.LATEX_TABLE,
+            location=ClaimLocation(path="main.tex", line=line),
+            method=ResolutionMethod.DIRECT_PARSE,
+            confidence=1.0,
+            text="92.1",
+            row_label=row,
+            column_label=column,
+        )
+
+    prose = ClaimCandidate(
+        metric="accuracy",
+        value=92.1,
+        source=CandidateSource.LATEX_PROSE,
+        location=ClaimLocation(path="abstract.tex", line=4),
+        method=ResolutionMethod.LEXICAL_MATCH,
+        confidence=0.5,
+        text="accuracy of 92.1",
+    )
+
+    row_only = ClaimCluster(
+        metric="accuracy",
+        value=92.1,
+        members=[prose, candidate("ours", None, 20), candidate(None, "Top-1", 30)],
+    )
+    column_only = ClaimCluster(
+        metric="accuracy",
+        value=92.1,
+        members=[prose, candidate(None, "Top-1", 30), candidate("ours", None, 20)],
+    )
+    unlabelled = ClaimCluster(metric="accuracy", value=92.1, members=[prose])
+
+    assert _cell(row_only) == ("ours", None)
+    assert _cell(column_only) == (None, "Top-1")
+    assert _cell(unlabelled) == (None, None)
 
 
 def test_the_results_table_placeholder_claim_states_no_confidence(tmp_path):

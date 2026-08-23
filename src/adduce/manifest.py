@@ -94,6 +94,8 @@ class Claim:
     status: str | None = None
     confidence: float | None = None
     resolution_method: str | None = None  # a ResolutionMethod value, or nothing
+    row_label: str | None = None          # the table row this cell sat in, if any
+    column_label: str | None = None       # and the column heading above it
 
 
 @dataclass
@@ -171,6 +173,8 @@ class Manifest:
                     "status": c.status,
                     "confidence": c.confidence,
                     "resolution_method": c.resolution_method,
+                    "row_label": c.row_label,
+                    "column_label": c.column_label,
                 }
                 for c in self.claims
             ],
@@ -219,6 +223,8 @@ def _parse_claim(raw: dict[str, Any]) -> Claim:
         status=_as_str(raw.get("status")),
         confidence=float(confidence) if _is_finite_number(confidence) else None,
         resolution_method=_as_str(raw.get("resolution_method")),
+        row_label=_as_str(raw.get("row_label")),
+        column_label=_as_str(raw.get("column_label")),
     )
 
 
@@ -277,7 +283,16 @@ def _validate_manifest_data(data: dict[str, Any]) -> str | None:
             return f"claims[{index}].id is required"
         if error := validate_strings(
             claim,
-            ("text", "kind", "where", "metric", "status", "resolution_method"),
+            (
+                "text",
+                "kind",
+                "where",
+                "metric",
+                "status",
+                "resolution_method",
+                "row_label",
+                "column_label",
+            ),
             f"claims[{index}].",
         ):
             return error
