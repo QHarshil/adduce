@@ -131,12 +131,27 @@ for _group in _HYPERPARAM_GROUPS:
 
 
 def canonical_hyperparameter(name: str) -> str | None:
-    """Map a config key or paper phrase to its canonical hyperparameter, if known."""
+    """Map a config key or paper phrase to its canonical hyperparameter, if known.
+
+    The terminal segment is stripped as the whole name is. A separator followed
+    by a space is how a paper abbreviates rather than how a config nests, so
+    ``dec. depth`` -- MAE's own ablation column -- split to `` depth``, which
+    resolved to nothing where ``depth`` resolves to ``num_layers``: one word
+    named a hyperparameter or named none according to a character that is no
+    part of it, and a decoder depth a config stated outright was reported as
+    having no counterpart in code.
+
+    Measured over the twenty labelled dev pairs this changes nothing: 3,839
+    lookups over 1,090 distinct keys, from config files, materialised run
+    configs, command-line arguments and dataclass fields, and none of them
+    resolves differently. What exercises it is
+    ``corpus/synthetic/synthetic_spaced_config_key``.
+    """
     key = name.strip().lower()
     if key in HYPERPARAM_SYNONYMS:
         return HYPERPARAM_SYNONYMS[key]
     # Dotted config keys resolve on their terminal segment (optim.lr -> lr).
-    terminal = key.rsplit(".", 1)[-1].rsplit("/", 1)[-1]
+    terminal = key.rsplit(".", 1)[-1].rsplit("/", 1)[-1].strip()
     return HYPERPARAM_SYNONYMS.get(terminal)
 
 

@@ -247,6 +247,21 @@
     R-RES-002: partial
     R-RES-004: partial
 
+- case: synthetic_spaced_config_key
+  # The config states the decoder depth the paper states, under the key the paper
+  # heads its own ablation column with. Resolving a dotted key on an unstripped
+  # terminal segment left that key naming nothing, so the paper's depth was
+  # reported as having no counterpart in code: R-DRIFT-003 partial about a value
+  # the repository holds, and R-DRIFT-001 unknown because no statement could be
+  # matched at all. No repository in the dev set writes a key of this shape, so
+  # this case is the only place that path is exercised. See the README.
+  expect:
+    R-DRIFT-001: pass
+    R-DRIFT-003: pass
+  forbid:
+    R-DRIFT-001: unknown
+    R-DRIFT-003: partial
+
 - case: synthetic_markup_residue
   # A paper-side case, and what it can and cannot assert here is stated plainly.
   # The markup residue it plants lands in a table cell's row and column labels, and

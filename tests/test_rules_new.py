@@ -54,6 +54,31 @@ def test_hyperparameter_agreement_passes(make_evidence):
     assert HyperparameterDriftRule().evaluate(ev).status is Status.PASS
 
 
+def test_a_config_key_abbreviated_the_way_the_paper_writes_it_still_resolves(make_evidence):
+    """``dec. depth`` is a key, and the space after the dot is not part of it.
+
+    A dotted key resolves on its terminal segment, and the segment was taken
+    unstripped -- so ``depth`` named a hyperparameter and `` depth`` named
+    nothing, on a character that belongs to neither. MAE heads its own ablation
+    column ``dec. depth``, and a config recording that ablation writes the key
+    the same way; unresolved, the rule reports the paper's decoder depth as
+    having no counterpart in code, which the config states outright.
+    """
+    ev = make_evidence(
+        {
+            "paper/main.tex": (
+                "\\documentclass{article}\\begin{document}"
+                "We use a decoder depth of 8 blocks."
+                "\\end{document}"
+            ),
+            "configs/ablation.yaml": '"dec. depth": 8\n',
+            "train.py": "import yaml\n",
+        }
+    )
+    assert MissingHyperparameterRule().evaluate(ev).status is Status.PASS
+    assert HyperparameterDriftRule().evaluate(ev).status is Status.PASS
+
+
 def test_materialized_config_outranks_static(make_evidence):
     # Paper says 1e-4; static config disagrees, but the Hydra output (what
     # actually ran) agrees — the authoritative source wins, no drift.

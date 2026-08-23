@@ -22,9 +22,31 @@ from adduce.claims import (
 from adduce.claims.candidates import caption_metric
 from adduce.evidence.latex import PaperValue, TableCell
 from adduce.manifest_builder import _draft_claims
-from adduce.naming import METRIC_PATTERNS, canonical_metric
+from adduce.naming import METRIC_PATTERNS, canonical_hyperparameter, canonical_metric
 
 # --- the vocabulary move -------------------------------------------------
+
+
+def test_a_hyperparameter_name_resolves_on_its_stripped_terminal_segment():
+    """The terminal segment of a key is stripped exactly as the whole key is.
+
+    Left unstripped, a separator followed by a space decided whether a name
+    resolved at all: ``dec. depth`` is MAE's own column header and resolved to
+    nothing where ``depth`` resolves to ``num_layers``. Measured over the dev
+    set this changes no lookup at all -- 3,839 lookups over 1,090 distinct keys
+    from twenty repositories, none of which writes a key of this shape -- so
+    what pins it is this assertion and corpus/synthetic/synthetic_spaced_config_key.
+    """
+    assert canonical_hyperparameter("depth") == "num_layers"
+    assert canonical_hyperparameter("dec. depth") == "num_layers"
+    assert canonical_hyperparameter("model. learning rate") == "learning_rate"
+    assert canonical_hyperparameter("trainer/ lr") == "learning_rate"
+    # Unchanged: the shapes the split already resolved, and a key naming nothing.
+    assert canonical_hyperparameter("optim.lr") == "learning_rate"
+    assert canonical_hyperparameter("  batch_size  ") == "batch_size"
+    assert canonical_hyperparameter("encoder") is None
+    assert canonical_hyperparameter("dec. encoder") is None
+
 
 
 def test_latex_metric_vocabulary_is_unchanged_by_the_move_to_naming():
