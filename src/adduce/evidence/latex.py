@@ -61,10 +61,13 @@ _TABLE_RE = re.compile(
 #: ``1.0pt (a) Various frameworks ...`` and ConvNeXt labels 14 rows ``0.3 Swin-T``
 #: and ``0.3 Swin-B^`` -- the ``0.3`` of an ``\Xhline{0.3\arrayrulewidth}``, a
 #: rule three-tenths as thick as the default read as part of a model's name.
+#: The optional vertical skip a row break may carry, at the head of the row the
+#: split leaves it in front of.
+_ROW_SKIP_RE = re.compile(r"\A\s*\[[^\]\n]{0,40}\]")
 _ROW_MARKUP_RE = re.compile(
-    r"\\(?:hline|toprule|midrule|bottomrule|cline\{[^}]*\}"
+    r"\\(?:hline|(?:top|mid|bottom)rule(?:\[[^\]]*\])?|cline\{[^}]*\}"
     r"|Xhline\{[^}]*\}"
-    r"|cmidrule(?:\[[^\]]*\])?(?:\([a-zA-Z]*\))?\{[^}]*\}"
+    r"|cmidrule(?:\[[^\]]*\])?(?:\([^)]*\))?\{[^}]*\}"
     r"|morecmidrules|addlinespace(?:\[[^\]]*\])?"
     r"|(?:row|cell|column)color(?:\[[^\]]*\])?\{[^}]*\}"
     r"|begin\{(?:" + _ENVIRONMENTS_PATTERN + r")\}(?:\[[^\]]*\])?(?:\{[^}]*\})*"
@@ -114,6 +117,13 @@ _DISCARDED_TWO_ARGUMENT_RE = re.compile(r"\\fontsize\s*(?![a-zA-Z])")
 #: cannot dissolve them: it keeps every argument and concatenates them.
 _ROTATEBOX_RE = re.compile(r"\\rotatebox\s*(?:\[[^\]]*\])?\s*")
 _MULTICOLUMN_RE = re.compile(r"\\multicolumn\s*")
+#: Commands whose leading arguments are layout and whose last argument is the
+#: text they print, paired with how many arguments precede that text.
+_WRAPPED_TEXT_RE = (
+    (re.compile(r"\\multirow\s*\*?\s*"), 2),
+    (re.compile(r"\\(?:make|m)box\s*(?![a-zA-Z])"), 0),
+    (re.compile(r"\\(?:par|raise)box\s*(?![a-zA-Z])"), 1),
+)
 #: Wrappers nest (a ``\multicolumn`` holding a ``\rotatebox``), but not deeply;
 #: the bound keeps a malformed cell from looping.
 _MAX_MARKUP_NESTING = 8
@@ -578,6 +588,72 @@ def _dissolve_rotatebox(field: str) -> str:
     return field
 
 
+def _next_group(field: str, start: int) -> tuple[str, int] | None:
+    """The next brace group, stepping over whitespace and optional arguments."""
+    index = start
+    while index < len(field):
+        if field[index].isspace():
+            index += 1
+            continue
+        if field[index] == "[":
+            close = field.find("]", index)
+            if close == -1:
+                return None
+            index = close + 1
+            continue
+        break
+    return _brace_group(field, index)
+
+
+def _dissolve_wrapped_text(field: str) -> str:
+    r"""``\multirow{3}{*}{BERT}`` reads as ``BERT``.
+
+    The generic cleanup erases the command name and the braces and keeps
+    everything between them, so a row label spanning three rows arrives as
+    ``3*BERT`` -- the row count and the width argument glued to the model's
+    name. Unlike a citation key or a skip, the *last* argument is the text the
+    page prints, so this cannot be dissolved by removing the command with all
+    its arguments; the leading ones are dropped and the last is spliced in.
+
+    Measured over the 34 dev pairs this repairs **402** cells' row labels:
+    mmdetection 129 (``10*Mask R-CNN``), clip 88, llama 51, mt-bench 44, albert
+    30 (``3*BERT``, ``4*ALBERT``), swin 26, lora 22, deit 3, and none on any
+    adjudicated pair, so it owes no re-adjudication. A row label is the
+    clustering key and half the precision key, so ``3*BERT`` and ``4*ALBERT``
+    are not cosmetic: they name two rows nothing downstream can match to the
+    model the paper is comparing.
+
+    The span is *not* returned, unlike :func:`_dissolve_multicolumn`. A
+    ``\multirow`` spans rows rather than columns, and the rows it spans are
+    already separate rows of the parse -- repeating the label across them is
+    what the vertical span means, and is a separate question from reading it.
+
+    A malformed instance is left whole for the cleanup, as everywhere else here:
+    guessing where an unbalanced group ends would remove text the paper prints.
+    """
+    for pattern, leading in _WRAPPED_TEXT_RE:
+        parts: list[str] = []
+        position = 0
+        while (match := pattern.search(field, position)) is not None:
+            end = match.end()
+            for _ in range(leading):
+                group = _next_group(field, end)
+                if group is None:
+                    break
+                end = group[1]
+            else:
+                content = _next_group(field, end)
+                if content is not None:
+                    parts.append(field[position : match.start()])
+                    parts.append(content[0])
+                    position = content[1]
+                    continue
+            break  # malformed: leave this instance whole for the cleanup
+        parts.append(field[position:])
+        field = "".join(parts)
+    return field
+
+
 def _dissolve_multicolumn(field: str) -> tuple[str, int]:
     """``\\multicolumn{2}{c}{ImageNet}`` reads as ``ImageNet`` spanning 2 columns.
 
@@ -684,7 +760,9 @@ def _split_columns(row: str) -> list[tuple[str, int]]:
     """One tabular row as ``(cell text, column span)`` pairs."""
     columns: list[tuple[str, int]] = []
     for raw in _COLUMN_SEPARATOR_RE.split(row):
-        content, span = _dissolve_multicolumn(_dissolve_rotatebox(_dissolve_discarded(raw)))
+        content, span = _dissolve_multicolumn(
+            _dissolve_wrapped_text(_dissolve_rotatebox(_dissolve_discarded(raw)))
+        )
         columns.append((_clean_cell(content), span))
     return columns
 
@@ -1207,7 +1285,11 @@ def _parse_tables(text: str, file: str) -> list[TableCell]:
         rows: list[list[tuple[str, int]]] = []
         cited: list[bool] = []
         for raw_row in body.split("\\\\"):
-            columns = _split_columns(_ROW_MARKUP_RE.sub("", raw_row))
+            # A row break may carry extra vertical space, ``\\[0.7mm]``, and the
+            # split leaves that argument opening the row beneath it. It is the
+            # break's, not the row's: stylegan2-ada's figure labels read
+            # ``[0.7mm] Baseline convergence`` without this.
+            columns = _split_columns(_ROW_MARKUP_RE.sub("", _ROW_SKIP_RE.sub("", raw_row, count=1)))
             if any(cell for cell, _ in columns):
                 rows.append(columns)
                 # The label only, and before the cleanup: a citation beside a
