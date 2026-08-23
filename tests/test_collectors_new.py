@@ -283,6 +283,148 @@ def test_a_second_header_row_names_the_metric_its_columns_leave_unnamed(make_evi
     ]
 
 
+_THIRD_HEADER_TEX = r"""
+\begin{tabular}{lccc}
+ & \multicolumn{2}{c}{GLUE} & \multicolumn{1}{c}{SQuAD} \\
+ & CoLA & STS-B & v1.1 \\
+Model & MCC & SCC & F1 \\
+Ours & 53.8 & 87.1 & 88.5 \\
+\end{tabular}
+"""
+
+
+def test_a_third_header_row_names_the_metric_the_group_row_buries(make_evidence):
+    r"""A group row over a dataset row over a metric row composes all three.
+
+    t5's Table 16 is this shape and it is why that paper scored 0 of 15 with 13
+    of its values already extracted: the metric row states no number, so it
+    yielded no cell and vanished, and every column below kept the *group* name.
+    2,277 cells labelled ``GLUE``, ``SuperGLUE``, ``WMT`` or nothing -- coarser
+    than even the dataset names one row above.
+    """
+    cells = make_evidence({"paper/main.tex": _THIRD_HEADER_TEX}).latex.table_cells
+    assert [(c.column_label, c.value) for c in cells] == [
+        ("GLUE CoLA MCC", 53.8),
+        ("GLUE STS-B SCC", 87.1),
+        ("SQuAD v1.1 F1", 88.5),
+    ]
+
+
+def test_iterating_the_second_header_test_from_the_top_would_find_nothing(make_evidence):
+    r"""The group row names no metric, so the pairwise test fails at the first step.
+
+    This is why the search runs from the deepest end of the run rather than
+    composing forwards. Asked of the group row against the dataset row, neither
+    names a metric and the answer is False two rows above the metric row.
+    Measured over all 34 dev pairs, composing forwards claims a third row for no
+    table at all.
+    """
+    from adduce.evidence.latex import _compose_headers, _is_second_header
+
+    group = ["", "GLUE", "GLUE", "SQuAD"]
+    dataset = ["", "CoLA", "STS-B", "v1.1"]
+    metric = ["Model", "MCC", "SCC", "F1"]
+    assert not _is_second_header(group, dataset)
+    assert _is_second_header(dataset, metric)
+    assert _is_second_header(_compose_headers(group, dataset), metric)
+
+
+def test_a_row_whose_values_carry_uncertainty_is_still_data(make_evidence):
+    r"""``$83.1 \pm 0.4$`` is not a number, and absorbing it would rename a column.
+
+    This is the cost of the tempting phrasing -- absorb rows into the header
+    while they state no number. Measured over the 34 dev pairs it claims 136
+    tables against the correct rule's 5: gpt-neox's uncertainty cells, BERT's
+    ``(Acc)`` units row, and the hyperparameter tables of mae, lora and bit.
+    Requiring the last absorbed row to name a metric is what holds it to 5.
+    """
+    tex = r"""
+\begin{tabular}{lcc}
+Method & MNLI & QNLI \\
+Prior & $83.1 \pm 0.4$ & $90.4 \pm 0.3$ \\
+Ours & 84.2 & 91.0 \\
+\end{tabular}
+"""
+    cells = make_evidence({"paper/main.tex": tex}).latex.table_cells
+    assert [(c.row_label, c.column_label, c.value) for c in cells] == [
+        ("Ours", "MNLI", 84.2),
+        ("Ours", "QNLI", 91.0),
+    ]
+
+
+def test_a_header_deeper_than_three_rows_falls_back_to_the_group_row(make_evidence):
+    """The bound is a constant, and past it the columns keep the outermost name.
+
+    A four-row header is not partially composed -- the search finds no run
+    inside its bound, so the header is the first row alone and the three rows
+    beneath it are read as data that states no number and yields no cell. The
+    columns are then named ``Suite``, which is exactly the failure this change
+    fixes for three rows, one row deeper. That is the honest cost of the bound
+    and not a bug: no paper in the dev set writes a four-row header, and an
+    unbounded run is what turns a misread body row into the name of every
+    column beneath it.
+    """
+    tex = r"""
+\begin{tabular}{lcc}
+ & Suite & Suite \\
+ & Split & Split \\
+ & CoLA & STS-B \\
+Model & MCC & SCC \\
+Ours & 53.8 & 87.1 \\
+\end{tabular}
+"""
+    cells = make_evidence({"paper/main.tex": tex}).latex.table_cells
+    assert [(c.column_label, c.value) for c in cells] == [
+        ("Suite", 53.8),
+        ("Suite", 87.1),
+    ]
+
+
+def test_a_row_stating_numbers_is_never_swallowed_into_a_deeper_header(make_evidence):
+    """The run must state no number *between* its first row and its last.
+
+    Without that condition the search can reach across a body row: the row
+    beneath states metrics and names no number, so the pairwise test on the last
+    step says header, and the numeric row in the middle is absorbed with it and
+    its values are gone. Every other condition here only renames a column; this
+    is the one that can drop a value, which is why it is checked over the whole
+    run rather than over the last pair.
+    """
+    tex = r"""
+\begin{tabular}{lcc}
+ & Suite & Suite \\
+Ours & 53.8 & 87.1 \\
+Metric & MCC & SCC \\
+Prior & 51.2 & 85.9 \\
+\end{tabular}
+"""
+    cells = make_evidence({"paper/main.tex": tex}).latex.table_cells
+    assert [(c.row_label, c.value) for c in cells] == [
+        ("Ours", 53.8),
+        ("Ours", 87.1),
+        ("Prior", 51.2),
+        ("Prior", 85.9),
+    ]
+
+
+def test_the_third_header_row_fixture_names_every_column_the_page_names():
+    """The synthetic case carries both halves, and both are asserted here."""
+    from adduce.evidence.latex import _parse_tables
+
+    case = Path(__file__).resolve().parent.parent / "corpus" / "synthetic"
+    text = (case / "synthetic_third_header_row" / "paper" / "main.tex").read_text(
+        encoding="utf-8"
+    )
+    cells = _parse_tables(text, "main.tex")
+    assert [(c.row_label, c.column_label, c.value) for c in cells] == [
+        ("Ours", "GLUE CoLA MCC", 53.8),
+        ("Ours", "GLUE STS-B SCC", 87.1),
+        ("Ours", "SQuAD v1.1 F1", 88.5),
+        ("Ours", "MNLI", 84.2),
+        ("Ours", "QNLI", 91.0),
+    ]
+
+
 def test_a_second_row_stating_numbers_is_data_and_stays_data(make_evidence):
     """A results table's first body row must never be read as a header.
 

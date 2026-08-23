@@ -1,0 +1,25 @@
+\documentclass{article}
+\begin{document}
+\section{Results}
+
+\begin{table}
+\caption{Fine-tuning results on the standard suites.}
+\begin{tabular}{lccc}
+ & \multicolumn{2}{c}{GLUE} & \multicolumn{1}{c}{SQuAD} \\
+ & CoLA & STS-B & v1.1 \\
+Model & MCC & SCC & F1 \\
+\hline
+Ours & 53.8 & 87.1 & 88.5 \\
+\end{tabular}
+\end{table}
+
+\begin{table}
+\caption{Ablation with variance over three seeds.}
+\begin{tabular}{lcc}
+Method & MNLI & QNLI \\
+Prior & $83.1 \pm 0.4$ & $90.4 \pm 0.3$ \\
+Ours & 84.2 & 91.0 \\
+\end{tabular}
+\end{table}
+
+\end{document}
