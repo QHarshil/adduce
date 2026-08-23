@@ -351,6 +351,10 @@ _METRIC_GROUPS: tuple[tuple[str, ...], ...] = (
     # itself stays out for the reason CoLA does -- "GLUE" names what was
     # measured on, not what was measured.
     ("average_score", "average score", "avg score", "score average", "score avg"),
+    # Average recall over a proposal budget, which SAM reports beside its mask
+    # AP. The budget is part of the metric for the reason it is part of R@1 and
+    # R@10, so it is not flattened onto "recall".
+    ("mask_ar_at_1000", "mask ar@1000", "mask ar@1k", "mask average recall@1000"),
 )
 
 #: The names a dataset split goes by when a table header puts it in front of the
