@@ -1,0 +1,34 @@
+\documentclass{article}
+\begin{document}
+\section{Results}
+
+\begin{table}
+\caption{Data-to-text generation on the E2E NLG Challenge, scored with the
+official BLEU, MET, CIDEr and TER implementations.}
+\begin{tabular}{lcccc}
+Model & BLEU & MET & CIDEr & TER \\
+\hline
+Ours & 70.4 & 46.8 & 2.53 & 0.31 \\
+\end{tabular}
+\end{table}
+
+\begin{table}
+\begin{tabular}{lccc}
+Model & ROUGE-1 & ROUGE-2 & ROUGE-L \\
+\hline
+Ours & 43.52 & 21.55 & 40.69 \\
+\end{tabular}
+\caption{Abstractive summarisation on the CNN/DailyMail test split.}
+\end{table}
+
+\begin{table}
+\begin{tabular}{lcc}
+Model & SCC & MCC \\
+\hline
+Ours & 88.7 & 62.1 \\
+\end{tabular}
+\caption{Semantic textual similarity and linguistic acceptability, on the GLUE
+development sets.}
+\end{table}
+
+\end{document}
