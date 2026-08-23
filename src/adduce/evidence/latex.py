@@ -330,6 +330,9 @@ class PaperValue:
     raw: str           # the matched source text
     file: str
     line: int
+    #: How many digits the paper printed after the decimal point, or ``None``
+    #: where that is not a meaningful question -- see :func:`_printed_decimals`.
+    decimals: int | None = None
 
 
 @dataclass(frozen=True)
@@ -377,6 +380,35 @@ class LatexEvidence:
         for pv in self.hyperparameters:
             grouped.setdefault(pv.name, []).append(pv)
         return grouped
+
+
+_PRINTED_DECIMALS_RE = re.compile(r"\A\d+(?:\.(?P<fraction>\d+))?\Z")
+
+
+def _printed_decimals(literal: str) -> int | None:
+    """How many digits *literal* printed after the point, or ``None``.
+
+    A paper that prints ``28.0`` has said something a paper printing ``28`` has
+    not: that the value is 28 to a tenth. The comparison in
+    :func:`~adduce.rules.drift.values_match` allows the code's value to differ
+    by half of the last printed place, so the difference between those two is
+    the difference between a tolerance of 0.05 and one of 0.5 -- and until this
+    was carried from the parse, `28.0` was read as having no decimals at all,
+    because ``f"{28.0:.10f}".rstrip("0")`` is ``"28."``. A paper stating 28.0
+    against code producing 28.4 therefore read as agreement.
+
+    ``None`` where the question is not meaningful, and the caller then infers
+    what it always did. Scientific notation is the case: ``1e-4`` prints no
+    fractional digits at all, yet it states a value to a precision its decimal
+    expansion is what expresses, so counting its printed digits would claim a
+    tolerance of 0.5 on a number four orders of magnitude smaller. The same goes
+    for anything this cannot parse as a plain decimal.
+    """
+    match = _PRINTED_DECIMALS_RE.match(literal.strip().lstrip("+-"))
+    if match is None:
+        return None
+    fraction = match.group("fraction")
+    return len(fraction) if fraction else 0
 
 
 def _parse_number(match: re.Match) -> float | None:
@@ -488,8 +520,10 @@ def _extract_keyword_values(
                 plural = text[kw_match.end() : kw_match.end() + 1] == "s" and not kw_match.group(0).endswith("s")
                 head = text[max(0, kw_match.start() - 16) : kw_match.start()]
                 before = re.search(r"(?<![\w.-])(\d+(?:\.\d+)?)\s*$", head)
+                literal: str | None = None
                 if before and not plural:
                     value = float(before.group(1))
+                    literal = before.group(1)
                     raw = (before.group(1) + " " + kw_match.group(0)).strip()
                 if value is None:
                     # "learning rate of 1e-4": number shortly after the keyword.
@@ -511,6 +545,7 @@ def _extract_keyword_values(
                         preceding = tail[num_match.start() - 1 : num_match.start()]
                         if preceding == "" or not (preceding.isalpha() or preceding in "-_"):
                             value = _parse_number(num_match)
+                            literal = num_match.group(0)
                             raw = (kw_match.group(0) + tail[: num_match.end()]).strip()
                 if value is None:
                     continue
@@ -522,6 +557,7 @@ def _extract_keyword_values(
                         raw=raw[:120],
                         file=file,
                         line=_line_of(text, kw_match.start()),
+                        decimals=None if literal is None else _printed_decimals(literal),
                     )
                 )
     return values

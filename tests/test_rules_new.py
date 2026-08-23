@@ -5,6 +5,8 @@ from __future__ import annotations
 
 import json
 
+import pytest
+
 from adduce.rules.base import Status
 from adduce.rules.checkpoint import OptimizerStateRule, RngStateRule
 from adduce.rules.deps import GhostDependencyRule, NotebookOnlyImportRule
@@ -28,6 +30,59 @@ def test_values_match_rounding_awareness():
     assert values_match(1e-4, 0.0001)
     assert not values_match(0.814, 0.79)
     assert values_match(50, 50.0)
+
+
+def test_a_trailing_zero_the_paper_printed_narrows_the_tolerance():
+    """A float cannot remember a trailing zero, so the precision must be carried.
+
+    ``f"{28.0:.10f}".rstrip("0")`` is ``"28."``, whose fractional part is empty,
+    so a value the paper printed to a tenth was compared as though printed to a
+    unit and 28.4 fell inside its tolerance. This is the shipped form of the
+    defect: a drift rule reporting agreement between a paper and code that
+    disagree.
+    """
+    assert values_match(28.0, 28.4)
+    assert not values_match(28.0, 28.4, decimals=1)
+    assert values_match(28.0, 28.03, decimals=1)
+    # A paper that really did print `28` is agreed with by anything rounding to it.
+    assert values_match(28.0, 28.4, decimals=0)
+
+
+@pytest.mark.parametrize(
+    ("literal", "expected"),
+    [
+        ("28.0", 1),
+        ("28", 0),
+        ("0.30", 2),
+        ("-3.25", 2),
+        ("  7.100 ", 3),
+        # Scientific notation records no precision: counting its printed digits
+        # would claim a tolerance of 0.5 on a number orders of magnitude smaller.
+        ("1e-4", None),
+        ("1.5e-3", None),
+        ("10^{-3}", None),
+    ],
+)
+def test_printed_precision_is_read_from_the_source_text(literal, expected):
+    from adduce.evidence.latex import _printed_decimals
+
+    assert _printed_decimals(literal) == expected
+
+
+def test_a_statement_carries_the_precision_the_paper_printed(make_evidence):
+    """End to end: the parse records it and the rule is what uses it."""
+    ev = make_evidence(
+        {
+            "paper/main.tex": (
+                "\\documentclass{article}\\begin{document}"
+                "We train with a learning rate of 0.30 and a weight decay of 0.05."
+                "\\end{document}"
+            )
+        }
+    )
+    stated = {v.name: v.decimals for v in ev.latex.hyperparameters}
+    assert stated["learning_rate"] == 2
+    assert stated["weight_decay"] == 2
 
 
 def test_hyperparameter_drift_detected(make_evidence):
