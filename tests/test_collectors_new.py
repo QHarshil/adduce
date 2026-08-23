@@ -1303,6 +1303,124 @@ def test_a_definition_inside_a_verbatim_environment_is_left_in_place():
     assert stripped == "\n\\begin{verbatim}\n\\newcommand{\\ours}{TinyNet}\n\\end{verbatim}\n"
 
 
+@pytest.mark.parametrize(
+    ("cell", "expected"),
+    [
+        # ALBERT and mmdetection: a label spanning rows arrives with the row
+        # count and the width glued to the model's name.
+        (r"\multirow{3}{*}{BERT}", "BERT"),
+        (r"\multirow{2}[0pt]{*}{Mask R-CNN}", "Mask R-CNN"),
+        # CLIP's, in full: three wrappers deep, and every one of them prints
+        # nothing but the innermost text.
+        (r"\multirow{2}{0em}{\rotatebox[origin=c]{90}{\makebox[0em]{\hspace{-0.2em}BYOL}}}", "BYOL"),
+        (r"\parbox[b]{2cm}{Faster R-CNN}", "Faster R-CNN"),
+        (r"\raisebox{1pt}[0pt][0pt]{RetinaNet}", "RetinaNet"),
+    ],
+)
+def test_a_wrapped_row_label_is_read_as_the_text_it_prints(cell, expected, make_evidence):
+    r"""The last argument is the text; the ones before it are layout.
+
+    Unlike a citation key or a skip, this family cannot be removed with all its
+    arguments -- doing so deletes the label. Measured over the 34 dev pairs the
+    family repairs 401 cells' row labels, mmdetection 129 and clip 88 the
+    largest. A row label is the clustering key and half the precision key, so
+    ``3*BERT`` is not cosmetic: it names a row nothing downstream can match to
+    the model the paper is comparing.
+    """
+    tex = (
+        "\\begin{tabular}{lc}\nModel & Acc \\\\\n"
+        + cell
+        + " & 42.0 \\\\\n\\end{tabular}\n"
+    )
+    cells = make_evidence({"paper/main.tex": tex}).latex.table_cells
+    assert [(c.row_label, c.value) for c in cells] == [(expected, 42.0)]
+
+
+def test_a_row_spanning_label_does_not_also_span_columns(make_evidence):
+    r"""``\multirow`` spans rows, and the rows it spans are already separate rows.
+
+    ``_dissolve_multicolumn`` returns a span because a horizontal one leaves the
+    header short and every column after it misattributed. A vertical span has no
+    such consequence here, so repeating the cell across columns would invent
+    values the row does not state.
+    """
+    tex = r"""
+\begin{tabular}{lcc}
+Model & MNLI & QNLI \\
+\multirow{2}{*}{ALBERT} & 88.5 & 91.0 \\
+\end{tabular}
+"""
+    cells = make_evidence({"paper/main.tex": tex}).latex.table_cells
+    assert [(c.row_label, c.value) for c in cells] == [("ALBERT", 88.5), ("ALBERT", 91.0)]
+
+
+def test_a_malformed_wrapper_is_left_whole_for_the_cleanup(make_evidence):
+    """Guessing where an unbalanced group ends would remove text the paper prints."""
+    tex = (
+        "\\begin{tabular}{lc}\nModel & Acc \\\\\n"
+        "\\multirow{2}{*}{ALBERT & 88.5 \\\\\n\\end{tabular}\n"
+    )
+    cells = make_evidence({"paper/main.tex": tex}).latex.table_cells
+    assert [c.row_label for c in cells] == ["2*ALBERT"]
+
+
+@pytest.mark.parametrize(
+    ("rule", "label"),
+    [
+        # A booktabs rule may set its own width, and grounding-dino's does.
+        (r"\midrule[0.3pt]", "Swin-T"),
+        # BERT ends its masking table's header with three trim-specified
+        # cmidrules, and the trim carries brace groups of its own.
+        (r"\cmidrule(r{0.2cm}){1-3} \cmidrule(l{0.1cm}r{0.1cm}){4-4}", "Swin-T"),
+    ],
+)
+def test_a_rules_own_argument_is_not_the_row_label_beneath_it(rule, label, make_evidence):
+    """A rule prints a line, and none of what configures it is a row's name."""
+    tex = (
+        "\\begin{tabular}{lc}\nModel & Acc \\\\\nA & 1.0 \\\\\n"
+        + rule
+        + " Swin-T & 42.0 \\\\\n\\end{tabular}\n"
+    )
+    cells = make_evidence({"paper/main.tex": tex}).latex.table_cells
+    assert (cells[-1].row_label, cells[-1].value) == (label, 42.0)
+
+
+def test_a_row_breaks_extra_space_is_not_the_next_rows_name(make_evidence):
+    r"""``\\[0.7mm]`` leaves its argument opening the row the split puts beneath it."""
+    tex = (
+        "\\begin{tabular}{lc}\nModel & Acc \\\\\n"
+        "A & 1.0 \\\\[0.7mm]\nSwin-T & 42.0 \\\\\n\\end{tabular}\n"
+    )
+    cells = make_evidence({"paper/main.tex": tex}).latex.table_cells
+    assert [(c.row_label, c.value) for c in cells] == [("A", 1.0), ("Swin-T", 42.0)]
+
+
+def test_the_wrapped_row_label_fixture_names_every_row_the_page_names():
+    """The synthetic case carries every wrapper in one table, and its limitation.
+
+    The second row is named ``RetinaNet`` rather than ``Detectron``: a
+    ``\\multirow`` label reaches only the first of the rows it spans. That is
+    asserted rather than fixed, so that the day it changes this fixture says so.
+    """
+    from adduce.evidence.latex import _parse_tables
+
+    case = Path(__file__).resolve().parent.parent / "corpus" / "synthetic"
+    text = (case / "synthetic_wrapped_row_label" / "paper" / "main.tex").read_text(
+        encoding="utf-8"
+    )
+    cells = _parse_tables(text, "main.tex")
+    assert [(c.row_label, c.column_label, c.value) for c in cells] == [
+        ("Detectron", "AP^box", 37.8),
+        ("Detectron", "AP^mask", 34.2),
+        ("RetinaNet", "AP^box", 36.4),
+        ("RetinaNet", "AP^mask", 32.1),
+        ("SimpleDet", "AP^box", 37.1),
+        ("SimpleDet", "AP^mask", 33.7),
+        ("Ours", "AP^box", 38.9),
+        ("Ours", "AP^mask", 35.4),
+    ]
+
+
 def test_a_citation_key_is_not_part_of_a_row_label(make_evidence):
     r"""``Swin-T~\cite{Liu2021swin}`` labels a row ``Swin-T``.
 

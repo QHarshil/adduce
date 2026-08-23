@@ -111,6 +111,20 @@
   forbid:
     R-DRIFT-001: fail
 
+- case: synthetic_wrapped_row_label
+  # Same caveat as synthetic_wrapped_table_header, stated in full there: a row
+  # label reaches the claims package alone and no rule reads it, so what this
+  # file pins is that a paper whose cells reach no rule yields no verdict rather
+  # than a wrong one. The label reading itself is asserted by the --paper
+  # byte-identity comparison and by tests/test_collectors_new.py; see the README.
+  expect:
+    R-RES-001: not-applicable
+    R-RES-002: unknown
+  forbid:
+    R-RES-001: pass
+    R-RES-002: pass
+    R-DRIFT-001: fail
+
 - case: synthetic_wrapped_table_header
   # This fixture's real assertion is not here, and the reason is stated once
   # here for every paper-side case below. The LaTeX collector does run:

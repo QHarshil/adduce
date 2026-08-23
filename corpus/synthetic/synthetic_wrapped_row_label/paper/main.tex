@@ -1,0 +1,20 @@
+\documentclass{article}
+\begin{document}
+\section{Comparison}
+
+\begin{table}
+\caption{Detection results on the standard benchmark.}
+\begin{tabular}{llcc}
+\toprule
+Framework & Model & AP$^{box}$ & AP$^{mask}$ \\
+\cmidrule(r{0.2cm}){1-2} \cmidrule(l{0.1cm}r{0.1cm}){3-4}
+\multirow{2}{*}{Detectron} & Mask R-CNN & 37.8 & 34.2 \\
+ & RetinaNet & 36.4 & 32.1 \\[0.7mm]
+\midrule[0.3pt]
+\parbox[b]{2cm}{SimpleDet} & Mask R-CNN & 37.1 & 33.7 \\
+\multirow{2}{0em}{\rotatebox[origin=c]{90}{\makebox[0em]{\hspace{-0.2em}Ours}}} & Mask R-CNN & 38.9 & 35.4 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\end{document}
