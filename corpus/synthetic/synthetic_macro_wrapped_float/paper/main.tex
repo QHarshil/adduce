@@ -1,0 +1,27 @@
+\documentclass{article}
+
+\newcommand{\iouloss}[1]{{\cal L}_{\rm iou}(#1)}
+
+\newcommand{\segmentationtable}{
+\begin{table}
+\begin{tabular}{lcc}
+Model & IoU & Dice \\
+\hline
+Baseline & 74.1 & 85.6 \\
+Ours & 82.9 & 91.3 \\
+\end{tabular}
+\caption{Segmentation quality on the validation split. Ours reaches an IoU of
+82.9 and a Dice of 91.3.}
+\label{tab:segmentation}
+\end{table}
+}
+
+\begin{document}
+\section{Results}
+
+We train against \iouloss{b}. The complete comparison is in
+Tab.~\ref{tab:segmentation}.
+
+\segmentationtable
+
+\end{document}

@@ -209,3 +209,181 @@
     R-RES-001: pass
     R-RES-002: pass
     R-DRIFT-001: fail
+- case: synthetic_preamble_definition
+  # Unlike the paper-side cases above, this one is asserted here, because its
+  # planted faults reach rules rather than only the claims package. The case
+  # carries a results file, so the two reconciliation rules that read the paper's
+  # prose numbers have something to reconcile against -- and a number read out of
+  # a command definition is then not merely a spurious claim but a false
+  # contradiction: `iou = 1` and `dice = 1` against a log stating 82.9 and 91.3
+  # make R-RES-002 report that the paper materially differs from its own results,
+  # R-RES-004 report `auc` and `f1` as unlogged, and the arity of a definition
+  # `num_heads` make R-DRIFT-003 report a hyperparameter the paper never states.
+  # Five rules move; see the README for the measurement.
+  expect:
+    R-RES-002: pass
+    R-RES-004: pass
+    R-DRIFT-001: not-applicable
+    R-DRIFT-003: not-applicable
+  forbid:
+    R-RES-002: partial
+    R-RES-004: partial
+    R-DRIFT-001: unknown
+    R-DRIFT-003: partial
+
+- case: synthetic_metric_cutoff
+  # Asserted here for the same reason as the case above: the case carries a
+  # results file stating the recall its own sentence states, so reading the `1`
+  # of `recall@1` as the recall makes R-RES-002 report that the paper materially
+  # differs from its logs, and the `mrr`, `bleu` and `rouge` read out of the
+  # remaining cutoffs make R-RES-004 report three unlogged metrics. The claim-side
+  # facts -- that both routes to a cutoff are closed and that the number stated
+  # after one is still read -- are asserted in tests/test_collectors_new.py, and
+  # the corpus byte-identity comparisons see the whole claim set. See the README.
+  expect:
+    R-RES-002: pass
+    R-RES-004: pass
+  forbid:
+    R-RES-002: partial
+    R-RES-004: partial
+
+- case: synthetic_markup_residue
+  # A paper-side case, and what it can and cannot assert here is stated plainly.
+  # The markup residue it plants lands in a table cell's row and column labels, and
+  # table cells reach only the claims package, which no rule reads, so no verdict
+  # moves on it: all 28 findings this case yields are byte-identical against a
+  # source tree carrying the residue. That 28 counts findings, not cases. The
+  # LaTeX collector does run -- run_check() below finds paper/main.tex inside the
+  # case directory -- so the case is read; it is the absence of any rule over
+  # drafted claims that keeps the verdicts still. What this file pins is that a
+  # paper whose table the parser now reads correctly still yields no verdict about
+  # anything it did not measure: the prose accuracy reconciles with the results
+  # file and no phantom hyperparameter appears.
+  #
+  # The residue itself is asserted two ways. tests/test_collectors_new.py pins each
+  # planted shape on its own and this fixture's eight cells as a whole, and the two
+  # byte-identity comparisons see the whole claim set: without the fixes this case
+  # yields six cells instead of eight -- both `\hspace`-wrapped values are dropped,
+  # because a cell reading `-0.9em91.4-0.4em` states no number the parser can find
+  # -- and every column is named by the wrong header, because the escaped ampersand
+  # of `$ (\mathcal{J}$\&$\mathcal{F})_m$` was split as a column separator and left
+  # six headers over five columns. Measured at the 27 cases the corpus then held:
+  # the manifest harness reports two cases moved and the JSON report four. See the
+  # README.
+  expect:
+    R-RES-002: pass
+    R-RES-004: pass
+    R-DRIFT-001: not-applicable
+    R-DRIFT-003: not-applicable
+  forbid:
+    R-RES-002: partial
+    R-RES-004: partial
+    R-DRIFT-003: partial
+
+- case: synthetic_class_file_macro
+  # Asserted here, because the planted fault reaches rules. `@` is a letter in a
+  # command name wherever `\makeatletter` is in force, which is all of class and
+  # style code, so a name class of `[a-zA-Z]+` does not recognise
+  # `\def\@fs@pre{\hrule height.8pt depth0pt \kern2pt}` as a definition at all
+  # and leaves its body standing in the document, where the prose scan reads
+  # `depth0pt` as a layer count. The case carries a results file so the two
+  # reconciliation rules have something to reconcile, and the phantom is a
+  # hyperparameter, so three rules move: R-DRIFT-003 reports a `num_layers` the
+  # paper never states, R-DRIFT-001 reports that hyperparameters were extracted
+  # but none could be matched, and R-DRIFT-002 passes on an ambiguity question
+  # the paper raises nothing for. All three are not-applicable once the
+  # definition is recognised. See the README.
+  expect:
+    R-RES-002: pass
+    R-RES-004: pass
+    R-DRIFT-001: not-applicable
+    R-DRIFT-002: not-applicable
+    R-DRIFT-003: not-applicable
+  forbid:
+    R-DRIFT-001: unknown
+    R-DRIFT-002: pass
+    R-DRIFT-003: partial
+
+- case: synthetic_counter_assignment
+  # Asserted here for the same reason and through the same three rules as the case
+  # above, and kept separate from it deliberately: both faults surface as a
+  # phantom `num_layers`, so one case carrying both could not tell a regression of
+  # one from a regression of the other.
+  #
+  # A counter is not a measurement. Setting one puts a keyword and a number two
+  # characters apart -- `\setcounter{tocdepth}{2}` reads as `depth}{2` -- and this
+  # is a *use* of a command rather than a definition of one, so removing definitions
+  # cannot reach it. Three assignments here each yield a phantom:
+  # `\setcounter{tocdepth}{2}` and `\addtocounter{secnumdepth}{1}` give `num_layers`
+  # 2 and 1, and `\setlength{\headsep}{4pt}` gives `num_heads` 4, so the most common
+  # member of the family is load-bearing here rather than decorative.
+  # `\setlength{\tabcolsep}{6pt}` is the control: an assignment naming no
+  # hyperparameter, which must keep naming none. Per-command coverage of all eight
+  # commands the guard removes is in tests/test_collectors_new.py, which asserts its
+  # probe set equals the covered set. See the README.
+  expect:
+    R-RES-002: pass
+    R-RES-004: pass
+    R-DRIFT-001: not-applicable
+    R-DRIFT-002: not-applicable
+    R-DRIFT-003: not-applicable
+  forbid:
+    R-DRIFT-001: unknown
+    R-DRIFT-002: pass
+    R-DRIFT-003: partial
+
+- case: synthetic_reference_row_label
+  # A paper-side case of the same family as synthetic_markup_residue, and what it
+  # can and cannot assert here is stated just as plainly. The residue it plants
+  # lands in a table cell's row and column labels, and table cells reach only the
+  # claims package, which no rule reads, so no verdict moves on it. That was
+  # measured rather than assumed -- all 28 findings this case yields are
+  # byte-identical against a source tree carrying the residue, as are
+  # synthetic_markup_residue's. That 28 counts findings, not cases. The LaTeX
+  # collector does run (run_check() finds paper/main.tex inside the case
+  # directory), so the case is read; it is the
+  # absence of any rule over drafted claims that keeps the verdicts still. What
+  # this file pins is that a paper whose table the parser now reads correctly still
+  # yields no verdict about anything it did not measure: the prose accuracy
+  # reconciles with the results file and no phantom hyperparameter appears.
+  #
+  # The residue itself is asserted two ways. tests/test_collectors_new.py pins each
+  # planted shape on its own, both controls, and this fixture's eight cells as a
+  # whole; and both byte-identity instruments see this case and no other -- the
+  # manifest harness reports it moved on `column_label`, `row_label` and `text` on
+  # 8 of 8 claims, and the JSON report reports it too. Without the fixes the same
+  # eight cells read `tab:baseline` and `0.3 tab:scaling` for their rows and
+  # `1.0pt (a) Ablations restated 7.5pt1em Accuracy` for their columns. The last two
+  # rows of the table are the controls on the row-label search: a numeric label that
+  # must survive it, and a row whose values start immediately, which must stay
+  # unnamed rather than be named after one of its own measurements. See the README.
+  expect:
+    R-RES-002: pass
+    R-RES-004: pass
+    R-DRIFT-001: not-applicable
+    R-DRIFT-003: not-applicable
+  forbid:
+    R-RES-002: partial
+    R-RES-004: partial
+    R-DRIFT-003: partial
+
+- case: synthetic_macro_wrapped_float
+  # Asserted here, unusually for a paper-side case, because this one bites in both
+  # directions on one rule. The paper wraps a whole `table` float in a command and
+  # invokes it in the body, and it also defines DETR's `\iouloss`, which is only a
+  # name. `results/eval.csv` states the IoU and Dice the float's caption states, so
+  # the reconciliation rules have something to reconcile against. Remove the
+  # environment-bearing definition and the paper states nothing: R-RES-002 reads
+  # `unknown` and R-RES-004 `not-applicable`, which is measured, and is the state
+  # that took latent-diffusion from 624 table cells to 0 and stylegan2-ada from 66
+  # to 0. Remove no definition and `\iouloss` is read as an IoU of 1, so R-RES-002
+  # reads `partial` against a logged 82.9 -- the paper accused of contradicting its
+  # own results on a number it never prints. The four cells themselves reach only
+  # the claims package, which no rule reads, so they are asserted in
+  # tests/test_collectors_new.py; see the README.
+  expect:
+    R-RES-002: pass
+    R-RES-004: pass
+  forbid:
+    R-RES-002: unknown
+    R-RES-004: not-applicable
