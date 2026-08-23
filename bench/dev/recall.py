@@ -1117,11 +1117,19 @@ def _cmd_extract(arguments: argparse.Namespace) -> int:
     # null rather than as a zero -- a zero here is the very defect the
     # inventory exists to catch.
     cells = getattr(ev.latex, "table_cells", None)
+    # The two prose-value collections, for the reason the cell count is here: a
+    # change can delete every hyperparameter a paper states without moving a
+    # single claim, and until these were recorded no gate in this file could see
+    # it.
+    hyperparameters = getattr(ev.latex, "hyperparameters", None)
+    metrics = getattr(ev.latex, "metrics", None)
     json.dump(
         {
             "available": True,
             "adduce_loaded_from": loaded_from,
             "table_cells": None if cells is None else len(cells),
+            "hyperparameter_values": None if hyperparameters is None else len(hyperparameters),
+            "metric_values": None if metrics is None else len(metrics),
             # getattr, not attribute access: a tree reached through --src may
             # predate the manifest fields carrying how a claim was resolved,
             # and a retroactive measurement must still run against it.
@@ -1575,12 +1583,28 @@ def render_text(report: dict[str, Any]) -> str:
 # -- the inventory: every pair, labelled or not --------------------------------
 
 #: Every count the inventory records, in the order it reports them.
-_INVENTORY_COUNTS = ("table_cells", "claims", "numeric_claims")
+_INVENTORY_COUNTS = (
+    "table_cells",
+    "hyperparameter_values",
+    "metric_values",
+    "claims",
+    "numeric_claims",
+)
 
+
+#: Column headings for :func:`render_inventory_text`, short enough to keep the
+#: table one line wide.
+_INVENTORY_HEADINGS = {
+    "table_cells": "cells",
+    "hyperparameter_values": "hyper",
+    "metric_values": "prose",
+    "claims": "claims",
+    "numeric_claims": "numeric",
+}
 
 @dataclass(frozen=True)
 class PairInventory:
-    """One pair's extraction reduced to counts, whether or not it carries labels.
+    r"""One pair's extraction reduced to counts, whether or not it carries labels.
 
     ``table_cells`` is how many table cells the LaTeX collector read, which is
     the cheapest signal that a paper stopped being read at all. ``claims`` is
@@ -1590,6 +1614,23 @@ class PairInventory:
     number and appears only in the first. Both are recorded because a change
     that moves one and not the other has moved what is measurable, not only
     what is drafted.
+
+    ``hyperparameter_values`` and ``metric_values`` are the two prose-value
+    collections, and they are here because the three counts above **cannot see
+    a whole class of change**. A hyperparameter is not a claim and never becomes
+    one, and a prose metric value that clusters into an existing claim moves no
+    claim count either, so a change that deletes them is invisible to every
+    other reading in this file.
+
+    That is measured, not anticipated. The guard that stops a fraction's
+    denominator being read as a batch size was first written to search the whole
+    window rather than the gap, and deleted real values from six papers: BERT's
+    ``Batch size}: 16`` and ``Learning rate (Adam)}: 5e-5``, BiT's
+    ``learning rate:} 0.003`` and ``momentum:} 0.9``, convnext's and MAE's
+    ``beta_2{=}0.9``, simsiam's ``acc. (\%)} & 68.1``. **The inventory reported
+    ``32 unchanged, 2 moved`` and every other gate passed.** It was caught by
+    listing the refusals and reading them; with these two counts the gate sees
+    it.
 
     Every count is ``None`` when it was not measured -- an absent clone or
     paper, a worker that failed, or a ``--src`` tree predating the field -- and
@@ -1601,26 +1642,34 @@ class PairInventory:
     available: bool
     reason: str | None = None
     table_cells: int | None = None
+    hyperparameter_values: int | None = None
+    metric_values: int | None = None
     claims: int | None = None
     numeric_claims: int | None = None
     adduce_loaded_from: str | None = None
 
     @property
     def counts(self) -> dict[str, int | None]:
-        return {
-            "table_cells": self.table_cells,
-            "claims": self.claims,
-            "numeric_claims": self.numeric_claims,
-        }
+        return {name: getattr(self, name) for name in _INVENTORY_COUNTS}
+
+
+def _reported_count(value: Any) -> int | None:
+    """A count the worker reported, or ``None`` where it reported none.
+
+    A tree reached through ``--src`` may predate the field, and an absent count
+    is unmeasured rather than zero -- the distinction the whole record rests on.
+    """
+    return value if isinstance(value, int) and not isinstance(value, bool) else None
 
 
 def _inventory_from_extraction(pair_id: str, extraction: dict[str, Any]) -> PairInventory:
-    cells = extraction.get("table_cells")
     claims = _claims_of(extraction)
     return PairInventory(
         pair_id=pair_id,
         available=True,
-        table_cells=cells if isinstance(cells, int) and not isinstance(cells, bool) else None,
+        table_cells=_reported_count(extraction.get("table_cells")),
+        hyperparameter_values=_reported_count(extraction.get("hyperparameter_values")),
+        metric_values=_reported_count(extraction.get("metric_values")),
         claims=len(claims),
         numeric_claims=len(_numeric_claims(claims)),
         adduce_loaded_from=_optional_str(extraction.get("adduce_loaded_from")),
@@ -1890,23 +1939,22 @@ def build_inventory_comparison(
 
 def render_inventory_text(report: dict[str, Any]) -> str:
     lines = [*_render_measurement(report["measurement"]), ""]
-    lines.append(f"{'pair':30s} {'cells':>8s} {'claims':>8s} {'numeric':>8s}")
+    heading = " ".join(f"{_INVENTORY_HEADINGS[name]:>9s}" for name in _INVENTORY_COUNTS)
+    lines.append(f"{'pair':30s} {heading}")
     for entry in report["pairs"]:
         if not entry["available"]:
             lines.append(f"{entry['pair_id']:30s} unavailable: {entry['reason']}")
             continue
-        lines.append(
-            f"{entry['pair_id']:30s} "
-            f"{_format_count(entry['table_cells']):>8s} "
-            f"{_format_count(entry['claims']):>8s} "
-            f"{_format_count(entry['numeric_claims']):>8s}"
-        )
+        counts = " ".join(f"{_format_count(entry[name]):>9s}" for name in _INVENTORY_COUNTS)
+        lines.append(f"{entry['pair_id']:30s} {counts}")
     summary = report["summary"]
     totals = summary["totals"]
     lines.append(
         f"\n{summary['pairs']} pair(s): {summary['available']} available, "
         f"{summary['unavailable']} unavailable; totals "
         f"{_format_count(totals['table_cells'])} cells, "
+        f"{_format_count(totals['hyperparameter_values'])} hyperparameters, "
+        f"{_format_count(totals['metric_values'])} prose metrics, "
         f"{_format_count(totals['claims'])} claims, "
         f"{_format_count(totals['numeric_claims'])} numeric"
     )

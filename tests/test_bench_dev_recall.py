@@ -1948,7 +1948,7 @@ def test_the_measurement_block_reports_no_tree_when_nothing_was_extracted():
 
 
 def _inventory(pair_id: str, **counts: Any) -> recall.PairInventory:
-    defaults: dict[str, Any] = {"table_cells": 5, "claims": 5, "numeric_claims": 5}
+    defaults: dict[str, Any] = dict.fromkeys(recall._INVENTORY_COUNTS, 5)
     defaults.update(counts)
     return recall.PairInventory(pair_id=pair_id, available=True, **defaults)
 
@@ -2012,8 +2012,39 @@ def test_the_inventory_records_the_table_cells_the_claims_were_drafted_from(tmp_
 
     entry = recall.inventory_pair(spec)
 
-    assert entry.counts == {"table_cells": 5, "claims": 5, "numeric_claims": 5}
+    assert entry.counts == {
+        "table_cells": 5,
+        "hyperparameter_values": 0,
+        "metric_values": 2,
+        "claims": 5,
+        "numeric_claims": 5,
+    }
     assert entry.adduce_loaded_from == str(recall._DEFAULT_SRC / "adduce")
+
+
+def test_the_inventory_sees_a_change_that_deletes_only_hyperparameters(tmp_path):
+    r"""The counts a claim-only inventory is blind to, and why they are here.
+
+    A hyperparameter never becomes a claim, so a change that deletes every one
+    a paper states moves no cell count and no claim count. That is not
+    hypothetical: the guard refusing a fraction's denominator as a batch size
+    was first written to search the whole window rather than the gap, deleted
+    real values from six papers, and this gate reported ``32 unchanged``.
+    """
+    before = [
+        _inventory("p", table_cells=5, hyperparameter_values=7, metric_values=2,
+                   claims=5, numeric_claims=5)
+    ]
+    after = [
+        _inventory("p", table_cells=5, hyperparameter_values=1, metric_values=2,
+                   claims=5, numeric_claims=5)
+    ]
+
+    comparison, = recall.compare_inventories(before, after)
+
+    assert not comparison.unchanged
+    assert comparison.moved == (("hyperparameter_values", 7, 1),)
+    assert "hyperparameter_values 7 -> 1" in comparison.summary()
 
 
 def test_a_pair_whose_paper_is_missing_is_unavailable_with_its_reason_and_no_zero(tmp_path):
@@ -2027,7 +2058,7 @@ def test_a_pair_whose_paper_is_missing_is_unavailable_with_its_reason_and_no_zer
 
     assert entry.available is False
     assert "paper directory not found" in (entry.reason or "")
-    assert entry.counts == {"table_cells": None, "claims": None, "numeric_claims": None}
+    assert entry.counts == dict.fromkeys(recall._INVENTORY_COUNTS)
 
 
 def test_a_paper_that_stopped_being_read_is_a_mover_and_so_is_one_that_grew(tmp_path):
@@ -2077,8 +2108,19 @@ def test_a_count_the_second_run_did_not_measure_is_not_read_as_a_fall_to_zero():
     entry = recall._inventory_from_extraction("historical", payload)
 
     assert entry.table_cells is None
+    assert entry.hyperparameter_values is None
     comparison, = recall.compare_inventories(
-        [_inventory("historical", table_cells=624, claims=0, numeric_claims=0)], [entry]
+        [
+            _inventory(
+                "historical",
+                table_cells=624,
+                hyperparameter_values=None,
+                metric_values=None,
+                claims=0,
+                numeric_claims=0,
+            )
+        ],
+        [entry],
     )
     assert comparison.moved == (("table_cells", 624, None),)
     assert "table_cells 624 -> not measured" in comparison.summary()
@@ -2151,10 +2193,12 @@ def test_the_inventory_cli_gates_a_change_that_deletes_a_papers_tables(tmp_path,
     # A measured zero, not an absent count: the paper is still read, and that
     # is exactly the distinction the damaged pairs needed.
     assert json.loads(before.read_text(encoding="utf-8"))["summary"]["totals"] == {
-        "table_cells": 5, "claims": 5, "numeric_claims": 5
+        "table_cells": 5, "hyperparameter_values": 0, "metric_values": 2,
+        "claims": 5, "numeric_claims": 5
     }
     assert json.loads(after.read_text(encoding="utf-8"))["summary"]["totals"] == {
-        "table_cells": 0, "claims": 0, "numeric_claims": 0
+        "table_cells": 0, "hyperparameter_values": 0, "metric_values": 0,
+        "claims": 0, "numeric_claims": 0
     }
 
     exit_code = recall.main(["compare-inventory", "--before", str(before), "--after", str(after)])

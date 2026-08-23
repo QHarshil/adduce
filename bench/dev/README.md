@@ -334,9 +334,10 @@ reported numbers, because both papers wrap a whole float in a macro and invoke i
 Pooled recall did not move, no test failed, and it was caught by a human reading the diff after
 eight consecutive extractor changes had used recall as their safety criterion.
 
-`inventory` is the cheap gate that sees it. It records `table_cells`, `claims` and
-`numeric_claims` for **every** pair that has a paper, labelled or not, and `compare-inventory`
-reports every pair whose counts moved in either direction:
+`inventory` is the cheap gate that sees it. It records `table_cells`,
+`hyperparameter_values`, `metric_values`, `claims` and `numeric_claims` for **every** pair that
+has a paper, labelled or not, and `compare-inventory` reports every pair whose counts moved in
+either direction:
 
 ```console
 python -B bench/dev/recall.py inventory --output before.json
@@ -357,12 +358,31 @@ here more than anywhere, because a zero is exactly the signal the gate exists to
 (with 4 claims). It is the one pair whose most sensitive signal is already floored, so 0 is its
 normal reading there and not the next `624 -> 0`.
 
-Two limits worth stating. The inventory counts cells and claims, so it cannot see a change that
-alters *which* number a cell yields without altering how many — for that the byte-identity
-harnesses below are the instrument. And extraction over the roster is minutes of subprocess
-work, which is why the two arms are separate artifacts rather than one run: the "before" for an
-extractor change is the working tree as it stood, which is not a second source tree that can be
-pointed at.
+**The two prose-value counts were added after the gate missed a change, and the miss is worth
+reading before trusting any other count here.** A hyperparameter never becomes a claim, and a
+prose metric value that clusters into an existing claim moves no claim count either — so with
+cells and claims alone, a change that deletes every hyperparameter a paper states is completely
+invisible. That happened: the guard that stops a fraction's denominator being read as a batch
+size was first written to search the whole window rather than the gap between keyword and number,
+and it deleted real values from six papers — BERT's `Batch size}: 16` and `Learning rate (Adam)}:
+5e-5`, BiT's `learning rate:} 0.003` and `momentum:} 0.9`, convnext's and MAE's `beta_2{=}0.9`,
+simsiam's `acc. (\%)} & 68.1`. This gate read `32 unchanged, 2 moved`, the test suite passed,
+ruff and mypy passed, and pooled recall did not move. It was caught by listing every candidate
+the rule would refuse and reading them. **With `hyperparameter_values` and `metric_values`
+recorded, the gate sees it.**
+
+Current baseline over the 34 pairs: **19,135 cells, 1,307 hyperparameters, 326 prose metrics,
+16,582 claims**, 34 available and 0 unavailable.
+
+Two limits still stand. The inventory counts things, so it cannot see a change that alters
+*which* number a cell yields without altering how many — for that the byte-identity harnesses
+below are the instrument. And extraction over the roster is minutes of subprocess work, which is
+why the two arms are separate artifacts rather than one run: the "before" for an extractor change
+is the working tree as it stood, which is not a second source tree that can be pointed at.
+
+An artifact written before a count existed reports `null` for it rather than zero, and
+`compare-inventory` reads that as *not measured* rather than as a fall — the same discipline the
+whole record rests on.
 
 ## Regression cover: `manifest_identity.py`
 
