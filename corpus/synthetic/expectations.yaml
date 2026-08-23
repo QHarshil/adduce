@@ -192,6 +192,24 @@
     R-RES-002: pass
     R-DRIFT-001: fail
 
+- case: synthetic_metric_vocabulary
+  # Same shape as the cases above, and the same caveat stated at
+  # synthetic_wrapped_table_header: the real assertion is not here. This case's
+  # columns are headed by names only the extended metric vocabulary can read,
+  # and canonicalising a header reaches the claims package alone, which no rule
+  # reads. What this file pins is that a paper whose cells reach no rule yields
+  # no verdict rather than a wrong one. That each name resolves, and that the
+  # ROUGE variants and the two correlations stay distinct, is asserted by
+  # tests/test_claims_extraction.py; that the corpus can see the vocabulary at
+  # all is what this case is for, and is measured by the manifest byte-identity
+  # comparison in bench/dev/manifest_identity.py. See the README.
+  expect:
+    R-RES-001: not-applicable
+  forbid:
+    R-RES-001: pass
+    R-RES-002: pass
+    R-DRIFT-001: fail
+
 - case: synthetic_quoted_baseline_rows
   # Same shape as the cases above, and the same caveat, with one difference worth
   # knowing. This case's cited rows and its section headers decide how confidently
