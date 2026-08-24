@@ -220,18 +220,30 @@ not recorded in the verification file, so it is joined from the live extraction 
 `(metric, value, where, row_label, column_label)`, the same key staleness uses; a verdict that
 cannot be joined unambiguously is counted separately as `unjoined_false_positives` rather than
 guessed at.
-**Measured over the four adjudicated pairs: 96 of 310 false positives were extracted at
-confidence 1.0, so the criterion is met by no pair.** Precision is 441/751 = 58.7 % pooled —
-detr 104/138, convnext 186/297, bert 106/180, barlowtwins 45/136 — with `unclear` 0 across all
-four. Note `adjudicated` already excludes `unclear` and `in_repo_not_paper`, which is why bert's
-denominator is 180 against 186 verdicts.
+**Measured over the five adjudicated pairs: 96 of 335 false positives were extracted at
+confidence 1.0, and `bit` is the first pair to meet the criterion, at 0.** Precision is
+552/887 = 62.2 % pooled — bit 111/136, detr 104/138, convnext 186/297, bert 106/180,
+barlowtwins 45/136 — with `unclear` 0 across all five. Note `adjudicated` already excludes
+`unclear` and `in_repo_not_paper`, which is why bert's denominator is 180 against 186 verdicts
+and bit's is 136 against 138.
 
 The per-pair spread is the informative part, because it shows the reach of the baseline
 demotion rather than a difference in extraction quality: **bert carries 2 where it once carried
-25**, while barlowtwins holds 42 and convnext 47. Neither of those papers marks a quoted row
-with a citation or a full-width section header, so the signal the demotion reads is simply
-absent from them. Deciding whether a printed number is this artifact's own result is evidence-side
+25, and bit carries 0**, while barlowtwins holds 42 and convnext 47. Neither of those two papers
+marks a quoted row with a citation or a full-width section header, so the signal the demotion
+reads is simply absent from them. bit's one quoted detection row does print its citation, and
+the demotion reads it — which is why nine quoted cells there cost no high-confidence exposure at
+all. Deciding whether a printed number is this artifact's own result is evidence-side
 work, and the residue is the measure of how much of it the markup cannot answer.
+
+Ownership is not the only thing a false positive can be wrong about, and bit is where that became
+visible. Of its 25, nine are quoted baselines and **fifteen are one column of one table**: the
+`Dups` column of its deduplication table counts near-duplicate test images, and those counts are
+read as accuracies. Four of them — 82, 80, 58 and 0 — fall inside the accuracy range, so
+magnitude does not separate them; what does is that the column's siblings print decimals where it
+prints integers. Under a single column header that table holds two different kinds of quantity.
+Pooled, baselines are 264 of 335 false positives, so ownership stays the dominant class — but it
+is not the only one, and a pair can be dragged down by a number that is not a result at all.
 
 ### The matching key is `(metric, value, where, row_label, column_label)`
 
@@ -243,8 +255,9 @@ handled carefully in two ways.
 depth that varies within one pair: a verdict records `src/main.tex:449` for a paper measured
 here from `src` itself, while a repository README keeps `object_detection/README.md:12` on both
 sides. So the root is recovered per file — a path resolves to the single extraction path that
-is a `/`-boundary suffix of it, or that it is a suffix of. Measured over 674 verdicts on the
-four adjudicated pairs: the raw locator resolves 26, the basename 660 but collapsing convnext's
+is a `/`-boundary suffix of it, or that it is a suffix of. Measured over the 674 verdicts on the
+four pairs adjudicated when the normal form was chosen: the raw locator resolves 26, the
+basename 660 but collapsing convnext's
 `object_detection/README.md:18` and `semantic_segmentation/README.md:18` onto one key, dropping
 the first path component 601 with the same collapse, and this form 660 with no two locators
 sharing a key.
@@ -254,12 +267,12 @@ moves with extractor changes that leave every number and every verdict untouched
 that reconciles with no live extraction therefore falls back to `(metric, value)` rather than
 dropping the match, and the fallbacks are counted and reported: `location_fallbacks` in the
 coverage block, and `[no locator: N]` beside the rate in `measure`'s output. After the four
-pairs were re-adjudicated that is convnext 4 and detr 2, barlowtwins and bert 0.
+pairs were re-adjudicated that is convnext 4 and detr 2, barlowtwins and bert 0, and bit 0.
 
 What the stronger key buys is that a repeated `(metric, value)` stays decidable. Extractions
 are unique on `(metric, value)` today only because `claims/cluster.py` de-duplicates globally
 on exactly that key; the moment that is repaired, a multiset difference over it stops naming
-*which* row is stale, and the four adjudicated pairs have no way back to correspondence.
+*which* row is stale, and the adjudicated pairs have no way back to correspondence.
 
 **The locator alone cannot separate two cells of one table.** Every cell of a `tabular`
 records the line the *environment* opens on, so all of a table's cells share one locator
@@ -273,21 +286,30 @@ within convnext's 302, and the key with the labels collided on neither. That cou
 in excess of one per key; the same data gives 32 and 39 for extractions *involved* in a
 collision, and 14 and 16 for the number of colliding groups.
 
+bit is the hardest case measured so far and the key holds there too. Its ObjectNet table nests
+headers three deep — an accuracy group, a setting sub-group, then a model variant — and
+extraction keeps only the outermost, so `(where, row_label, column_label)` reaches **six printed
+cells** per group, the worst collision on any pair. The full key including the value is still
+injective across all 138 of its extractions. The margin is thin rather than structural: placing
+each value was decidable only because the six in each sextet happen to be pairwise distinct.
+
 `manifest.Claim` therefore carries `row_label` and `column_label`, and the matcher narrows on
 them **within** the group the locator selects. A verdict records them as `row_label` and
 `column_label` beside `where` in its `extraction` object. They are optional on the verdict
 side, and most verdicts do not record them: the four re-adjudicated files carry labels on
 **114 of 757** verdicts — barlowtwins 15, bert 26, convnext 61, detr 12 — because the rest
-predate the field. A verdict recording labels is matched only to an extraction agreeing on
+predate the field. bit was adjudicated after it and carries them on **135 of 138**, the three
+without being its prose claims, which name no cell. A verdict recording labels is matched only
+to an extraction agreeing on
 them, with case and runs of whitespace flattened and nothing else. A verdict recording one
 label is narrowed by that one, which is what a transposed table's verdict supplies. A verdict
 recording neither is matched exactly as it was before, counted as `label_fallbacks` in the
 coverage block and `[no labels: N]` beside the rate: barlowtwins 121, bert 160, convnext 236,
-detr 126.
+detr 126, bit 3.
 
 **A verdict whose labels match no extraction is matched on the locator alone rather than left
 stale, and the degradation is counted** as `label_degradations` and `[labels dropped: N]`.
-Today it is 0 on all four pairs.
+Today it is 0 on all five pairs.
 
 The narrowing is still part of the key rather than a hint, and two properties are what make
 degrading safe. Labels are dropped only *after* every verdict has been offered its narrowed
