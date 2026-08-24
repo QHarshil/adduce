@@ -1,0 +1,1663 @@
+{
+ "schema": "adduce-dev-verifications/1",
+ "pair_id": "bit",
+ "verified_from": "pdf",
+ "verifications": [
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 82.8,
+    "where": "README.md:211",
+    "text": "BiT-R50x1: ImageNet top-1 acc. (paper) = 82.8",
+    "row_label": "BiT-R50x1",
+    "column_label": "ImageNet top-1 acc. (paper)"
+   },
+   "verdict": "in_repo_not_paper",
+   "notes": "Repository README, '## Distilled models' section, the table with header '| Model | Download link | Resolution | ImageNet top-1 acc. (paper) |' (bench/dev/pairs/bit/code/README.md lines 209-212); this record is the Resolution 224 row, cell = 82.8. The section text says these are compressed models 'from our paper \"Knowledge distillation: A good teacher is patient and consistent\"' (arXiv 2106.05237) -- i.e. the '(paper)' in the column header is that distillation paper, NOT the BiT paper being audited. 82.8 appears nowhere in the BiT paper: no hit in paper/src/content.tex, main.tex or appendix.tex, and no hit in the 28-page rendered PDF text. So this is a number the repository states and the paper does not -- not a restatement of any printed BiT figure, and not a fabrication."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 80.5,
+    "where": "README.md:212",
+    "text": "BiT-R50x1: ImageNet top-1 acc. (paper) = 80.5",
+    "row_label": "BiT-R50x1",
+    "column_label": "ImageNet top-1 acc. (paper)"
+   },
+   "verdict": "in_repo_not_paper",
+   "notes": "Repository README, '## Distilled models' section, the table with header '| Model | Download link | Resolution | ImageNet top-1 acc. (paper) |' (bench/dev/pairs/bit/code/README.md lines 209-212); this record is the Resolution 160 row, cell = 80.5. The section text says these are compressed models 'from our paper \"Knowledge distillation: A good teacher is patient and consistent\"' (arXiv 2106.05237) -- i.e. the '(paper)' in the column header is that distillation paper, NOT the BiT paper being audited. 80.5 appears nowhere in the BiT paper: no hit in paper/src/content.tex, main.tex or appendix.tex, and no hit in the 28-page rendered PDF text. So this is a number the repository states and the paper does not -- not a restatement of any printed BiT figure, and not a fabrication."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 30.8,
+    "where": "src/appendix.tex:77",
+    "text": "R50x1: Top-1 accuracy = 30.8",
+    "row_label": "R50x1",
+    "column_label": "Top-1 accuracy"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6, printed page 21, caption 'Results (%) on the ObjectNet test set. We report numbers for both the standard setting, as well as for the setting where the ground-truth bounding box is used.' Cell: row R50x1 (the 'BiT-' stub column), top-level column group 'Top-1 accuracy', middle setting sub-group 'Resize & Crop', BiT-variant sub-column 'S' (BiT-S) = 30.8. Ownership: every row of this table is one of the authors' own BiT models (BiT-S/M/L, pre-trained on ILSVRC-2012 / ImageNet-21k / JFT-300M) evaluated by the authors on ObjectNet; the caption cites no prior work and the table has no baseline row or column. The prior-work numbers for ObjectNet (R152x1 [2], Inception-v4 [2], NASNet-A [2], PNASNet-5L [2], R152x1 [6]) appear only in Figure 10 on page 20, not in this table. The 'Resize & Crop' setting reuses bounding boxes provided by [6], but the accuracy itself is the authors' own evaluation of their own model."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 32.2,
+    "where": "src/appendix.tex:77",
+    "text": "R101x1: Top-1 accuracy = 32.2",
+    "row_label": "R101x1",
+    "column_label": "Top-1 accuracy"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6, printed page 21, caption 'Results (%) on the ObjectNet test set. We report numbers for both the standard setting, as well as for the setting where the ground-truth bounding box is used.' Cell: row R101x1 (the 'BiT-' stub column), top-level column group 'Top-1 accuracy', middle setting sub-group 'Resize & Crop', BiT-variant sub-column 'S' (BiT-S) = 32.2. Ownership: every row of this table is one of the authors' own BiT models (BiT-S/M/L, pre-trained on ILSVRC-2012 / ImageNet-21k / JFT-300M) evaluated by the authors on ObjectNet; the caption cites no prior work and the table has no baseline row or column. The prior-work numbers for ObjectNet (R152x1 [2], Inception-v4 [2], NASNet-A [2], PNASNet-5L [2], R152x1 [6]) appear only in Figure 10 on page 20, not in this table. The 'Resize & Crop' setting reuses bounding boxes provided by [6], but the accuracy itself is the authors' own evaluation of their own model."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 33.7,
+    "where": "src/appendix.tex:77",
+    "text": "R50x3: Top-1 accuracy = 33.7",
+    "row_label": "R50x3",
+    "column_label": "Top-1 accuracy"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6, printed page 21, caption 'Results (%) on the ObjectNet test set. We report numbers for both the standard setting, as well as for the setting where the ground-truth bounding box is used.' Cell: row R50x3 (the 'BiT-' stub column), top-level column group 'Top-1 accuracy', middle setting sub-group 'Resize & Crop', BiT-variant sub-column 'S' (BiT-S) = 33.7. Ownership: every row of this table is one of the authors' own BiT models (BiT-S/M/L, pre-trained on ILSVRC-2012 / ImageNet-21k / JFT-300M) evaluated by the authors on ObjectNet; the caption cites no prior work and the table has no baseline row or column. The prior-work numbers for ObjectNet (R152x1 [2], Inception-v4 [2], NASNet-A [2], PNASNet-5L [2], R152x1 [6]) appear only in Figure 10 on page 20, not in this table. The 'Resize & Crop' setting reuses bounding boxes provided by [6], but the accuracy itself is the authors' own evaluation of their own model."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 34.6,
+    "where": "src/appendix.tex:77",
+    "text": "R101x3: Top-1 accuracy = 34.6",
+    "row_label": "R101x3",
+    "column_label": "Top-1 accuracy"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6, printed page 21, caption 'Results (%) on the ObjectNet test set. We report numbers for both the standard setting, as well as for the setting where the ground-truth bounding box is used.' Cell: row R101x3 (the 'BiT-' stub column), top-level column group 'Top-1 accuracy', middle setting sub-group 'Resize & Crop', BiT-variant sub-column 'S' (BiT-S) = 34.6. Ownership: every row of this table is one of the authors' own BiT models (BiT-S/M/L, pre-trained on ILSVRC-2012 / ImageNet-21k / JFT-300M) evaluated by the authors on ObjectNet; the caption cites no prior work and the table has no baseline row or column. The prior-work numbers for ObjectNet (R152x1 [2], Inception-v4 [2], NASNet-A [2], PNASNet-5L [2], R152x1 [6]) appear only in Figure 10 on page 20, not in this table. The 'Resize & Crop' setting reuses bounding boxes provided by [6], but the accuracy itself is the authors' own evaluation of their own model."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 35.0,
+    "where": "src/appendix.tex:77",
+    "text": "R50x1: Top-1 accuracy = 35",
+    "row_label": "R50x1",
+    "column_label": "Top-1 accuracy"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6, printed page 21, caption 'Results (%) on the ObjectNet test set. We report numbers for both the standard setting, as well as for the setting where the ground-truth bounding box is used.' Cell: row R50x1 (the 'BiT-' stub column), top-level column group 'Top-1 accuracy', middle setting sub-group 'Resize & Crop', BiT-variant sub-column 'M' (BiT-M) = 35.0. Ownership: every row of this table is one of the authors' own BiT models (BiT-S/M/L, pre-trained on ILSVRC-2012 / ImageNet-21k / JFT-300M) evaluated by the authors on ObjectNet; the caption cites no prior work and the table has no baseline row or column. The prior-work numbers for ObjectNet (R152x1 [2], Inception-v4 [2], NASNet-A [2], PNASNet-5L [2], R152x1 [6]) appear only in Figure 10 on page 20, not in this table. The 'Resize & Crop' setting reuses bounding boxes provided by [6], but the accuracy itself is the authors' own evaluation of their own model."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 35.1,
+    "where": "src/appendix.tex:77",
+    "text": "R50x1: Top-1 accuracy = 35.1",
+    "row_label": "R50x1",
+    "column_label": "Top-1 accuracy"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6, printed page 21, caption 'Results (%) on the ObjectNet test set. We report numbers for both the standard setting, as well as for the setting where the ground-truth bounding box is used.' Cell: row R50x1 (the 'BiT-' stub column), top-level column group 'Top-1 accuracy', middle setting sub-group 'Bounding Box', BiT-variant sub-column 'S' (BiT-S) = 35.1. Ownership: every row of this table is one of the authors' own BiT models (BiT-S/M/L, pre-trained on ILSVRC-2012 / ImageNet-21k / JFT-300M) evaluated by the authors on ObjectNet; the caption cites no prior work and the table has no baseline row or column. The prior-work numbers for ObjectNet (R152x1 [2], Inception-v4 [2], NASNet-A [2], PNASNet-5L [2], R152x1 [6]) appear only in Figure 10 on page 20, not in this table. The 'Bounding Box' setting reuses bounding boxes provided by [6], but the accuracy itself is the authors' own evaluation of their own model."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 36.0,
+    "where": "src/appendix.tex:77",
+    "text": "R152x4: Top-1 accuracy = 36",
+    "row_label": "R152x4",
+    "column_label": "Top-1 accuracy"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6, printed page 21, caption 'Results (%) on the ObjectNet test set. We report numbers for both the standard setting, as well as for the setting where the ground-truth bounding box is used.' Cell: row R152x4 (the 'BiT-' stub column), top-level column group 'Top-1 accuracy', middle setting sub-group 'Resize & Crop', BiT-variant sub-column 'S' (BiT-S) = 36.0. Ownership: every row of this table is one of the authors' own BiT models (BiT-S/M/L, pre-trained on ILSVRC-2012 / ImageNet-21k / JFT-300M) evaluated by the authors on ObjectNet; the caption cites no prior work and the table has no baseline row or column. The prior-work numbers for ObjectNet (R152x1 [2], Inception-v4 [2], NASNet-A [2], PNASNet-5L [2], R152x1 [6]) appear only in Figure 10 on page 20, not in this table. The 'Resize & Crop' setting reuses bounding boxes provided by [6], but the accuracy itself is the authors' own evaluation of their own model."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 37.4,
+    "where": "src/appendix.tex:77",
+    "text": "R101x1: Top-1 accuracy = 37.4",
+    "row_label": "R101x1",
+    "column_label": "Top-1 accuracy"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6, printed page 21, caption 'Results (%) on the ObjectNet test set. We report numbers for both the standard setting, as well as for the setting where the ground-truth bounding box is used.' Cell: row R101x1 (the 'BiT-' stub column), top-level column group 'Top-1 accuracy', middle setting sub-group 'Bounding Box', BiT-variant sub-column 'S' (BiT-S) = 37.4. Ownership: every row of this table is one of the authors' own BiT models (BiT-S/M/L, pre-trained on ILSVRC-2012 / ImageNet-21k / JFT-300M) evaluated by the authors on ObjectNet; the caption cites no prior work and the table has no baseline row or column. The prior-work numbers for ObjectNet (R152x1 [2], Inception-v4 [2], NASNet-A [2], PNASNet-5L [2], R152x1 [6]) appear only in Figure 10 on page 20, not in this table. The 'Bounding Box' setting reuses bounding boxes provided by [6], but the accuracy itself is the authors' own evaluation of their own model."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 37.6,
+    "where": "src/appendix.tex:77",
+    "text": "R50x1: Top-1 accuracy = 37.6",
+    "row_label": "R50x1",
+    "column_label": "Top-1 accuracy"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6, printed page 21, caption 'Results (%) on the ObjectNet test set. We report numbers for both the standard setting, as well as for the setting where the ground-truth bounding box is used.' Cell: row R50x1 (the 'BiT-' stub column), top-level column group 'Top-1 accuracy', middle setting sub-group 'Resize & Crop', BiT-variant sub-column 'L' (BiT-L) = 37.6. Ownership: every row of this table is one of the authors' own BiT models (BiT-S/M/L, pre-trained on ILSVRC-2012 / ImageNet-21k / JFT-300M) evaluated by the authors on ObjectNet; the caption cites no prior work and the table has no baseline row or column. The prior-work numbers for ObjectNet (R152x1 [2], Inception-v4 [2], NASNet-A [2], PNASNet-5L [2], R152x1 [6]) appear only in Figure 10 on page 20, not in this table. The 'Resize & Crop' setting reuses bounding boxes provided by [6], but the accuracy itself is the authors' own evaluation of their own model."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 38.4,
+    "where": "src/appendix.tex:77",
+    "text": "R50x3: Top-1 accuracy = 38.4",
+    "row_label": "R50x3",
+    "column_label": "Top-1 accuracy"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6, printed page 21, caption 'Results (%) on the ObjectNet test set. We report numbers for both the standard setting, as well as for the setting where the ground-truth bounding box is used.' Cell: row R50x3 (the 'BiT-' stub column), top-level column group 'Top-1 accuracy', middle setting sub-group 'Bounding Box', BiT-variant sub-column 'S' (BiT-S) = 38.4. Ownership: every row of this table is one of the authors' own BiT models (BiT-S/M/L, pre-trained on ILSVRC-2012 / ImageNet-21k / JFT-300M) evaluated by the authors on ObjectNet; the caption cites no prior work and the table has no baseline row or column. The prior-work numbers for ObjectNet (R152x1 [2], Inception-v4 [2], NASNet-A [2], PNASNet-5L [2], R152x1 [6]) appear only in Figure 10 on page 20, not in this table. The 'Bounding Box' setting reuses bounding boxes provided by [6], but the accuracy itself is the authors' own evaluation of their own model."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 39.2,
+    "where": "src/appendix.tex:77",
+    "text": "R101x1: Top-1 accuracy = 39.2",
+    "row_label": "R101x1",
+    "column_label": "Top-1 accuracy"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6, printed page 21, caption 'Results (%) on the ObjectNet test set. We report numbers for both the standard setting, as well as for the setting where the ground-truth bounding box is used.' Cell: row R101x1 (the 'BiT-' stub column), top-level column group 'Top-1 accuracy', middle setting sub-group 'Resize & Crop', BiT-variant sub-column 'M' (BiT-M) = 39.2. Ownership: every row of this table is one of the authors' own BiT models (BiT-S/M/L, pre-trained on ILSVRC-2012 / ImageNet-21k / JFT-300M) evaluated by the authors on ObjectNet; the caption cites no prior work and the table has no baseline row or column. The prior-work numbers for ObjectNet (R152x1 [2], Inception-v4 [2], NASNet-A [2], PNASNet-5L [2], R152x1 [6]) appear only in Figure 10 on page 20, not in this table. The 'Resize & Crop' setting reuses bounding boxes provided by [6], but the accuracy itself is the authors' own evaluation of their own model."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 40.2,
+    "where": "src/appendix.tex:77",
+    "text": "R101x3: Top-1 accuracy = 40.2",
+    "row_label": "R101x3",
+    "column_label": "Top-1 accuracy"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6, printed page 21, caption 'Results (%) on the ObjectNet test set. We report numbers for both the standard setting, as well as for the setting where the ground-truth bounding box is used.' Cell: row R101x3 (the 'BiT-' stub column), top-level column group 'Top-1 accuracy', middle setting sub-group 'Bounding Box', BiT-variant sub-column 'S' (BiT-S) = 40.2. Ownership: every row of this table is one of the authors' own BiT models (BiT-S/M/L, pre-trained on ILSVRC-2012 / ImageNet-21k / JFT-300M) evaluated by the authors on ObjectNet; the caption cites no prior work and the table has no baseline row or column. The prior-work numbers for ObjectNet (R152x1 [2], Inception-v4 [2], NASNet-A [2], PNASNet-5L [2], R152x1 [6]) appear only in Figure 10 on page 20, not in this table. The 'Bounding Box' setting reuses bounding boxes provided by [6], but the accuracy itself is the authors' own evaluation of their own model."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 40.3,
+    "where": "src/appendix.tex:77",
+    "text": "R50x3: Top-1 accuracy = 40.3",
+    "row_label": "R50x3",
+    "column_label": "Top-1 accuracy"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6, printed page 21, caption 'Results (%) on the ObjectNet test set. We report numbers for both the standard setting, as well as for the setting where the ground-truth bounding box is used.' Cell: row R50x3 (the 'BiT-' stub column), top-level column group 'Top-1 accuracy', middle setting sub-group 'Resize & Crop', BiT-variant sub-column 'M' (BiT-M) = 40.3. Ownership: every row of this table is one of the authors' own BiT models (BiT-S/M/L, pre-trained on ILSVRC-2012 / ImageNet-21k / JFT-300M) evaluated by the authors on ObjectNet; the caption cites no prior work and the table has no baseline row or column. The prior-work numbers for ObjectNet (R152x1 [2], Inception-v4 [2], NASNet-A [2], PNASNet-5L [2], R152x1 [6]) appear only in Figure 10 on page 20, not in this table. The 'Resize & Crop' setting reuses bounding boxes provided by [6], but the accuracy itself is the authors' own evaluation of their own model."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 41.6,
+    "where": "src/appendix.tex:77",
+    "text": "R152x4: Top-1 accuracy = 41.6",
+    "row_label": "R152x4",
+    "column_label": "Top-1 accuracy"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6, printed page 21, caption 'Results (%) on the ObjectNet test set. We report numbers for both the standard setting, as well as for the setting where the ground-truth bounding box is used.' Cell: row R152x4 (the 'BiT-' stub column), top-level column group 'Top-1 accuracy', middle setting sub-group 'Bounding Box', BiT-variant sub-column 'S' (BiT-S) = 41.6. Ownership: every row of this table is one of the authors' own BiT models (BiT-S/M/L, pre-trained on ILSVRC-2012 / ImageNet-21k / JFT-300M) evaluated by the authors on ObjectNet; the caption cites no prior work and the table has no baseline row or column. The prior-work numbers for ObjectNet (R152x1 [2], Inception-v4 [2], NASNet-A [2], PNASNet-5L [2], R152x1 [6]) appear only in Figure 10 on page 20, not in this table. The 'Bounding Box' setting reuses bounding boxes provided by [6], but the accuracy itself is the authors' own evaluation of their own model. The value 41.6 is printed 2 times in Table 6; this placement is the only cell in row R152x4 under the Top-1 accuracy group carrying it, which is what the extraction's (row_label, column_label) pair pins down."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 41.6,
+    "where": "src/appendix.tex:77",
+    "text": "R50x1: Top-1 accuracy = 41.6",
+    "row_label": "R50x1",
+    "column_label": "Top-1 accuracy"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6, printed page 21, caption 'Results (%) on the ObjectNet test set. We report numbers for both the standard setting, as well as for the setting where the ground-truth bounding box is used.' Cell: row R50x1 (the 'BiT-' stub column), top-level column group 'Top-1 accuracy', middle setting sub-group 'Bounding Box', BiT-variant sub-column 'M' (BiT-M) = 41.6. Ownership: every row of this table is one of the authors' own BiT models (BiT-S/M/L, pre-trained on ILSVRC-2012 / ImageNet-21k / JFT-300M) evaluated by the authors on ObjectNet; the caption cites no prior work and the table has no baseline row or column. The prior-work numbers for ObjectNet (R152x1 [2], Inception-v4 [2], NASNet-A [2], PNASNet-5L [2], R152x1 [6]) appear only in Figure 10 on page 20, not in this table. The 'Bounding Box' setting reuses bounding boxes provided by [6], but the accuracy itself is the authors' own evaluation of their own model. The value 41.6 is printed 2 times in Table 6; this placement is the only cell in row R50x1 under the Top-1 accuracy group carrying it, which is what the extraction's (row_label, column_label) pair pins down."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 42.5,
+    "where": "src/appendix.tex:77",
+    "text": "R50x1: Top-1 accuracy = 42.5",
+    "row_label": "R50x1",
+    "column_label": "Top-1 accuracy"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6, printed page 21, caption 'Results (%) on the ObjectNet test set. We report numbers for both the standard setting, as well as for the setting where the ground-truth bounding box is used.' Cell: row R50x1 (the 'BiT-' stub column), top-level column group 'Top-1 accuracy', middle setting sub-group 'Bounding Box', BiT-variant sub-column 'L' (BiT-L) = 42.5. Ownership: every row of this table is one of the authors' own BiT models (BiT-S/M/L, pre-trained on ILSVRC-2012 / ImageNet-21k / JFT-300M) evaluated by the authors on ObjectNet; the caption cites no prior work and the table has no baseline row or column. The prior-work numbers for ObjectNet (R152x1 [2], Inception-v4 [2], NASNet-A [2], PNASNet-5L [2], R152x1 [6]) appear only in Figure 10 on page 20, not in this table. The 'Bounding Box' setting reuses bounding boxes provided by [6], but the accuracy itself is the authors' own evaluation of their own model."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 44.3,
+    "where": "src/appendix.tex:77",
+    "text": "R101x3: Top-1 accuracy = 44.3",
+    "row_label": "R101x3",
+    "column_label": "Top-1 accuracy"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6, printed page 21, caption 'Results (%) on the ObjectNet test set. We report numbers for both the standard setting, as well as for the setting where the ground-truth bounding box is used.' Cell: row R101x3 (the 'BiT-' stub column), top-level column group 'Top-1 accuracy', middle setting sub-group 'Resize & Crop', BiT-variant sub-column 'M' (BiT-M) = 44.3. Ownership: every row of this table is one of the authors' own BiT models (BiT-S/M/L, pre-trained on ILSVRC-2012 / ImageNet-21k / JFT-300M) evaluated by the authors on ObjectNet; the caption cites no prior work and the table has no baseline row or column. The prior-work numbers for ObjectNet (R152x1 [2], Inception-v4 [2], NASNet-A [2], PNASNet-5L [2], R152x1 [6]) appear only in Figure 10 on page 20, not in this table. The 'Resize & Crop' setting reuses bounding boxes provided by [6], but the accuracy itself is the authors' own evaluation of their own model."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 46.1,
+    "where": "src/appendix.tex:77",
+    "text": "R101x1: Top-1 accuracy = 46.1",
+    "row_label": "R101x1",
+    "column_label": "Top-1 accuracy"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6, printed page 21, caption 'Results (%) on the ObjectNet test set. We report numbers for both the standard setting, as well as for the setting where the ground-truth bounding box is used.' Cell: row R101x1 (the 'BiT-' stub column), top-level column group 'Top-1 accuracy', middle setting sub-group 'Bounding Box', BiT-variant sub-column 'M' (BiT-M) = 46.1. Ownership: every row of this table is one of the authors' own BiT models (BiT-S/M/L, pre-trained on ILSVRC-2012 / ImageNet-21k / JFT-300M) evaluated by the authors on ObjectNet; the caption cites no prior work and the table has no baseline row or column. The prior-work numbers for ObjectNet (R152x1 [2], Inception-v4 [2], NASNet-A [2], PNASNet-5L [2], R152x1 [6]) appear only in Figure 10 on page 20, not in this table. The 'Bounding Box' setting reuses bounding boxes provided by [6], but the accuracy itself is the authors' own evaluation of their own model."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 46.2,
+    "where": "src/appendix.tex:77",
+    "text": "R50x3: Top-1 accuracy = 46.2",
+    "row_label": "R50x3",
+    "column_label": "Top-1 accuracy"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6, printed page 21, caption 'Results (%) on the ObjectNet test set. We report numbers for both the standard setting, as well as for the setting where the ground-truth bounding box is used.' Cell: row R50x3 (the 'BiT-' stub column), top-level column group 'Top-1 accuracy', middle setting sub-group 'Bounding Box', BiT-variant sub-column 'M' (BiT-M) = 46.2. Ownership: every row of this table is one of the authors' own BiT models (BiT-S/M/L, pre-trained on ILSVRC-2012 / ImageNet-21k / JFT-300M) evaluated by the authors on ObjectNet; the caption cites no prior work and the table has no baseline row or column. The prior-work numbers for ObjectNet (R152x1 [2], Inception-v4 [2], NASNet-A [2], PNASNet-5L [2], R152x1 [6]) appear only in Figure 10 on page 20, not in this table. The 'Bounding Box' setting reuses bounding boxes provided by [6], but the accuracy itself is the authors' own evaluation of their own model."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 47.0,
+    "where": "src/appendix.tex:77",
+    "text": "R152x4: Top-1 accuracy = 47",
+    "row_label": "R152x4",
+    "column_label": "Top-1 accuracy"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6, printed page 21, caption 'Results (%) on the ObjectNet test set. We report numbers for both the standard setting, as well as for the setting where the ground-truth bounding box is used.' Cell: row R152x4 (the 'BiT-' stub column), top-level column group 'Top-1 accuracy', middle setting sub-group 'Resize & Crop', BiT-variant sub-column 'M' (BiT-M) = 47.0. Ownership: every row of this table is one of the authors' own BiT models (BiT-S/M/L, pre-trained on ILSVRC-2012 / ImageNet-21k / JFT-300M) evaluated by the authors on ObjectNet; the caption cites no prior work and the table has no baseline row or column. The prior-work numbers for ObjectNet (R152x1 [2], Inception-v4 [2], NASNet-A [2], PNASNet-5L [2], R152x1 [6]) appear only in Figure 10 on page 20, not in this table. The 'Resize & Crop' setting reuses bounding boxes provided by [6], but the accuracy itself is the authors' own evaluation of their own model."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 49.1,
+    "where": "src/appendix.tex:77",
+    "text": "R101x1: Top-1 accuracy = 49.1",
+    "row_label": "R101x1",
+    "column_label": "Top-1 accuracy"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6, printed page 21, caption 'Results (%) on the ObjectNet test set. We report numbers for both the standard setting, as well as for the setting where the ground-truth bounding box is used.' Cell: row R101x1 (the 'BiT-' stub column), top-level column group 'Top-1 accuracy', middle setting sub-group 'Bounding Box', BiT-variant sub-column 'L' (BiT-L) = 49.1. Ownership: every row of this table is one of the authors' own BiT models (BiT-S/M/L, pre-trained on ILSVRC-2012 / ImageNet-21k / JFT-300M) evaluated by the authors on ObjectNet; the caption cites no prior work and the table has no baseline row or column. The prior-work numbers for ObjectNet (R152x1 [2], Inception-v4 [2], NASNet-A [2], PNASNet-5L [2], R152x1 [6]) appear only in Figure 10 on page 20, not in this table. The 'Bounding Box' setting reuses bounding boxes provided by [6], but the accuracy itself is the authors' own evaluation of their own model. The value 49.1 is printed 2 times in Table 6; this placement is the only cell in row R101x1 under the Top-1 accuracy group carrying it, which is what the extraction's (row_label, column_label) pair pins down."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 49.1,
+    "where": "src/appendix.tex:77",
+    "text": "R50x3: Top-1 accuracy = 49.1",
+    "row_label": "R50x3",
+    "column_label": "Top-1 accuracy"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6, printed page 21, caption 'Results (%) on the ObjectNet test set. We report numbers for both the standard setting, as well as for the setting where the ground-truth bounding box is used.' Cell: row R50x3 (the 'BiT-' stub column), top-level column group 'Top-1 accuracy', middle setting sub-group 'Resize & Crop', BiT-variant sub-column 'L' (BiT-L) = 49.1. Ownership: every row of this table is one of the authors' own BiT models (BiT-S/M/L, pre-trained on ILSVRC-2012 / ImageNet-21k / JFT-300M) evaluated by the authors on ObjectNet; the caption cites no prior work and the table has no baseline row or column. The prior-work numbers for ObjectNet (R152x1 [2], Inception-v4 [2], NASNet-A [2], PNASNet-5L [2], R152x1 [6]) appear only in Figure 10 on page 20, not in this table. The 'Resize & Crop' setting reuses bounding boxes provided by [6], but the accuracy itself is the authors' own evaluation of their own model. The value 49.1 is printed 2 times in Table 6; this placement is the only cell in row R50x3 under the Top-1 accuracy group carrying it, which is what the extraction's (row_label, column_label) pair pins down."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 50.5,
+    "where": "src/appendix.tex:77",
+    "text": "R101x3: Top-1 accuracy = 50.5",
+    "row_label": "R101x3",
+    "column_label": "Top-1 accuracy"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6, printed page 21, caption 'Results (%) on the ObjectNet test set. We report numbers for both the standard setting, as well as for the setting where the ground-truth bounding box is used.' Cell: row R101x3 (the 'BiT-' stub column), top-level column group 'Top-1 accuracy', middle setting sub-group 'Bounding Box', BiT-variant sub-column 'M' (BiT-M) = 50.5. Ownership: every row of this table is one of the authors' own BiT models (BiT-S/M/L, pre-trained on ILSVRC-2012 / ImageNet-21k / JFT-300M) evaluated by the authors on ObjectNet; the caption cites no prior work and the table has no baseline row or column. The prior-work numbers for ObjectNet (R152x1 [2], Inception-v4 [2], NASNet-A [2], PNASNet-5L [2], R152x1 [6]) appear only in Figure 10 on page 20, not in this table. The 'Bounding Box' setting reuses bounding boxes provided by [6], but the accuracy itself is the authors' own evaluation of their own model."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 51.8,
+    "where": "src/appendix.tex:77",
+    "text": "R50x1: Top-5 accuracy = 51.8",
+    "row_label": "R50x1",
+    "column_label": "Top-5 accuracy"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6, printed page 21, caption 'Results (%) on the ObjectNet test set. We report numbers for both the standard setting, as well as for the setting where the ground-truth bounding box is used.' Cell: row R50x1 (the 'BiT-' stub column), top-level column group 'Top-5 accuracy', middle setting sub-group 'Resize & Crop', BiT-variant sub-column 'S' (BiT-S) = 51.8. Ownership: every row of this table is one of the authors' own BiT models (BiT-S/M/L, pre-trained on ILSVRC-2012 / ImageNet-21k / JFT-300M) evaluated by the authors on ObjectNet; the caption cites no prior work and the table has no baseline row or column. The prior-work numbers for ObjectNet (R152x1 [2], Inception-v4 [2], NASNet-A [2], PNASNet-5L [2], R152x1 [6]) appear only in Figure 10 on page 20, not in this table. The 'Resize & Crop' setting reuses bounding boxes provided by [6], but the accuracy itself is the authors' own evaluation of their own model."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 52.8,
+    "where": "src/appendix.tex:77",
+    "text": "R152x4: Top-1 accuracy = 52.8",
+    "row_label": "R152x4",
+    "column_label": "Top-1 accuracy"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6, printed page 21, caption 'Results (%) on the ObjectNet test set. We report numbers for both the standard setting, as well as for the setting where the ground-truth bounding box is used.' Cell: row R152x4 (the 'BiT-' stub column), top-level column group 'Top-1 accuracy', middle setting sub-group 'Bounding Box', BiT-variant sub-column 'M' (BiT-M) = 52.8. Ownership: every row of this table is one of the authors' own BiT models (BiT-S/M/L, pre-trained on ILSVRC-2012 / ImageNet-21k / JFT-300M) evaluated by the authors on ObjectNet; the caption cites no prior work and the table has no baseline row or column. The prior-work numbers for ObjectNet (R152x1 [2], Inception-v4 [2], NASNet-A [2], PNASNet-5L [2], R152x1 [6]) appear only in Figure 10 on page 20, not in this table. The 'Bounding Box' setting reuses bounding boxes provided by [6], but the accuracy itself is the authors' own evaluation of their own model."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 54.2,
+    "where": "src/appendix.tex:77",
+    "text": "R101x1: Top-5 accuracy = 54.2",
+    "row_label": "R101x1",
+    "column_label": "Top-5 accuracy"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6, printed page 21, caption 'Results (%) on the ObjectNet test set. We report numbers for both the standard setting, as well as for the setting where the ground-truth bounding box is used.' Cell: row R101x1 (the 'BiT-' stub column), top-level column group 'Top-5 accuracy', middle setting sub-group 'Resize & Crop', BiT-variant sub-column 'S' (BiT-S) = 54.2. Ownership: every row of this table is one of the authors' own BiT models (BiT-S/M/L, pre-trained on ILSVRC-2012 / ImageNet-21k / JFT-300M) evaluated by the authors on ObjectNet; the caption cites no prior work and the table has no baseline row or column. The prior-work numbers for ObjectNet (R152x1 [2], Inception-v4 [2], NASNet-A [2], PNASNet-5L [2], R152x1 [6]) appear only in Figure 10 on page 20, not in this table. The 'Resize & Crop' setting reuses bounding boxes provided by [6], but the accuracy itself is the authors' own evaluation of their own model."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 54.6,
+    "where": "src/appendix.tex:77",
+    "text": "R101x1: Top-1 accuracy = 54.6",
+    "row_label": "R101x1",
+    "column_label": "Top-1 accuracy"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6, printed page 21, caption 'Results (%) on the ObjectNet test set. We report numbers for both the standard setting, as well as for the setting where the ground-truth bounding box is used.' Cell: row R101x1 (the 'BiT-' stub column), top-level column group 'Top-1 accuracy', middle setting sub-group 'Resize & Crop', BiT-variant sub-column 'L' (BiT-L) = 54.6. Ownership: every row of this table is one of the authors' own BiT models (BiT-S/M/L, pre-trained on ILSVRC-2012 / ImageNet-21k / JFT-300M) evaluated by the authors on ObjectNet; the caption cites no prior work and the table has no baseline row or column. The prior-work numbers for ObjectNet (R152x1 [2], Inception-v4 [2], NASNet-A [2], PNASNet-5L [2], R152x1 [6]) appear only in Figure 10 on page 20, not in this table. The 'Resize & Crop' setting reuses bounding boxes provided by [6], but the accuracy itself is the authors' own evaluation of their own model. The value 54.6 is printed 2 times in Table 6; this placement is the only cell in row R101x1 under the Top-1 accuracy group carrying it, which is what the extraction's (row_label, column_label) pair pins down."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 54.6,
+    "where": "src/appendix.tex:77",
+    "text": "R101x3: Top-1 accuracy = 54.6",
+    "row_label": "R101x3",
+    "column_label": "Top-1 accuracy"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6, printed page 21, caption 'Results (%) on the ObjectNet test set. We report numbers for both the standard setting, as well as for the setting where the ground-truth bounding box is used.' Cell: row R101x3 (the 'BiT-' stub column), top-level column group 'Top-1 accuracy', middle setting sub-group 'Resize & Crop', BiT-variant sub-column 'L' (BiT-L) = 54.6. Ownership: every row of this table is one of the authors' own BiT models (BiT-S/M/L, pre-trained on ILSVRC-2012 / ImageNet-21k / JFT-300M) evaluated by the authors on ObjectNet; the caption cites no prior work and the table has no baseline row or column. The prior-work numbers for ObjectNet (R152x1 [2], Inception-v4 [2], NASNet-A [2], PNASNet-5L [2], R152x1 [6]) appear only in Figure 10 on page 20, not in this table. The 'Resize & Crop' setting reuses bounding boxes provided by [6], but the accuracy itself is the authors' own evaluation of their own model. The value 54.6 is printed 2 times in Table 6; this placement is the only cell in row R101x3 under the Top-1 accuracy group carrying it, which is what the extraction's (row_label, column_label) pair pins down."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 54.7,
+    "where": "src/appendix.tex:77",
+    "text": "R50x3: Top-1 accuracy = 54.7",
+    "row_label": "R50x3",
+    "column_label": "Top-1 accuracy"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6, printed page 21, caption 'Results (%) on the ObjectNet test set. We report numbers for both the standard setting, as well as for the setting where the ground-truth bounding box is used.' Cell: row R50x3 (the 'BiT-' stub column), top-level column group 'Top-1 accuracy', middle setting sub-group 'Bounding Box', BiT-variant sub-column 'L' (BiT-L) = 54.7. Ownership: every row of this table is one of the authors' own BiT models (BiT-S/M/L, pre-trained on ILSVRC-2012 / ImageNet-21k / JFT-300M) evaluated by the authors on ObjectNet; the caption cites no prior work and the table has no baseline row or column. The prior-work numbers for ObjectNet (R152x1 [2], Inception-v4 [2], NASNet-A [2], PNASNet-5L [2], R152x1 [6]) appear only in Figure 10 on page 20, not in this table. The 'Bounding Box' setting reuses bounding boxes provided by [6], but the accuracy itself is the authors' own evaluation of their own model. The value 54.7 is printed 2 times in Table 6; this placement is the only cell in row R50x3 under the Top-1 accuracy group carrying it, which is what the extraction's (row_label, column_label) pair pins down."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 54.7,
+    "where": "src/appendix.tex:77",
+    "text": "R50x3: Top-5 accuracy = 54.7",
+    "row_label": "R50x3",
+    "column_label": "Top-5 accuracy"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6, printed page 21, caption 'Results (%) on the ObjectNet test set. We report numbers for both the standard setting, as well as for the setting where the ground-truth bounding box is used.' Cell: row R50x3 (the 'BiT-' stub column), top-level column group 'Top-5 accuracy', middle setting sub-group 'Resize & Crop', BiT-variant sub-column 'S' (BiT-S) = 54.7. Ownership: every row of this table is one of the authors' own BiT models (BiT-S/M/L, pre-trained on ILSVRC-2012 / ImageNet-21k / JFT-300M) evaluated by the authors on ObjectNet; the caption cites no prior work and the table has no baseline row or column. The prior-work numbers for ObjectNet (R152x1 [2], Inception-v4 [2], NASNet-A [2], PNASNet-5L [2], R152x1 [6]) appear only in Figure 10 on page 20, not in this table. The 'Resize & Crop' setting reuses bounding boxes provided by [6], but the accuracy itself is the authors' own evaluation of their own model. The value 54.7 is printed 2 times in Table 6; this placement is the only cell in row R50x3 under the Top-5 accuracy group carrying it, which is what the extraction's (row_label, column_label) pair pins down."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 56.4,
+    "where": "src/appendix.tex:77",
+    "text": "R101x3: Top-5 accuracy = 56.4",
+    "row_label": "R101x3",
+    "column_label": "Top-5 accuracy"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6, printed page 21, caption 'Results (%) on the ObjectNet test set. We report numbers for both the standard setting, as well as for the setting where the ground-truth bounding box is used.' Cell: row R101x3 (the 'BiT-' stub column), top-level column group 'Top-5 accuracy', middle setting sub-group 'Resize & Crop', BiT-variant sub-column 'S' (BiT-S) = 56.4. Ownership: every row of this table is one of the authors' own BiT models (BiT-S/M/L, pre-trained on ILSVRC-2012 / ImageNet-21k / JFT-300M) evaluated by the authors on ObjectNet; the caption cites no prior work and the table has no baseline row or column. The prior-work numbers for ObjectNet (R152x1 [2], Inception-v4 [2], NASNet-A [2], PNASNet-5L [2], R152x1 [6]) appear only in Figure 10 on page 20, not in this table. The 'Resize & Crop' setting reuses bounding boxes provided by [6], but the accuracy itself is the authors' own evaluation of their own model. The value 56.4 is printed 2 times in Table 6; this placement is the only cell in row R101x3 under the Top-5 accuracy group carrying it, which is what the extraction's (row_label, column_label) pair pins down."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 56.4,
+    "where": "src/appendix.tex:77",
+    "text": "R50x1: Top-5 accuracy = 56.4",
+    "row_label": "R50x1",
+    "column_label": "Top-5 accuracy"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6, printed page 21, caption 'Results (%) on the ObjectNet test set. We report numbers for both the standard setting, as well as for the setting where the ground-truth bounding box is used.' Cell: row R50x1 (the 'BiT-' stub column), top-level column group 'Top-5 accuracy', middle setting sub-group 'Resize & Crop', BiT-variant sub-column 'M' (BiT-M) = 56.4. Ownership: every row of this table is one of the authors' own BiT models (BiT-S/M/L, pre-trained on ILSVRC-2012 / ImageNet-21k / JFT-300M) evaluated by the authors on ObjectNet; the caption cites no prior work and the table has no baseline row or column. The prior-work numbers for ObjectNet (R152x1 [2], Inception-v4 [2], NASNet-A [2], PNASNet-5L [2], R152x1 [6]) appear only in Figure 10 on page 20, not in this table. The 'Resize & Crop' setting reuses bounding boxes provided by [6], but the accuracy itself is the authors' own evaluation of their own model. The value 56.4 is printed 2 times in Table 6; this placement is the only cell in row R50x1 under the Top-5 accuracy group carrying it, which is what the extraction's (row_label, column_label) pair pins down."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 57.0,
+    "where": "src/appendix.tex:77",
+    "text": "R152x4: Top-5 accuracy = 57",
+    "row_label": "R152x4",
+    "column_label": "Top-5 accuracy"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6, printed page 21, caption 'Results (%) on the ObjectNet test set. We report numbers for both the standard setting, as well as for the setting where the ground-truth bounding box is used.' Cell: row R152x4 (the 'BiT-' stub column), top-level column group 'Top-5 accuracy', middle setting sub-group 'Resize & Crop', BiT-variant sub-column 'S' (BiT-S) = 57.0. Ownership: every row of this table is one of the authors' own BiT models (BiT-S/M/L, pre-trained on ILSVRC-2012 / ImageNet-21k / JFT-300M) evaluated by the authors on ObjectNet; the caption cites no prior work and the table has no baseline row or column. The prior-work numbers for ObjectNet (R152x1 [2], Inception-v4 [2], NASNet-A [2], PNASNet-5L [2], R152x1 [6]) appear only in Figure 10 on page 20, not in this table. The 'Resize & Crop' setting reuses bounding boxes provided by [6], but the accuracy itself is the authors' own evaluation of their own model."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 58.7,
+    "where": "src/appendix.tex:77",
+    "text": "R152x4: Top-1 accuracy = 58.7",
+    "row_label": "R152x4",
+    "column_label": "Top-1 accuracy"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6, printed page 21, caption 'Results (%) on the ObjectNet test set. We report numbers for both the standard setting, as well as for the setting where the ground-truth bounding box is used.' Cell: row R152x4 (the 'BiT-' stub column), top-level column group 'Top-1 accuracy', middle setting sub-group 'Resize & Crop', BiT-variant sub-column 'L' (BiT-L) = 58.7. This cell is set in bold (best in its sub-column). Ownership: every row of this table is one of the authors' own BiT models (BiT-S/M/L, pre-trained on ILSVRC-2012 / ImageNet-21k / JFT-300M) evaluated by the authors on ObjectNet; the caption cites no prior work and the table has no baseline row or column. The prior-work numbers for ObjectNet (R152x1 [2], Inception-v4 [2], NASNet-A [2], PNASNet-5L [2], R152x1 [6]) appear only in Figure 10 on page 20, not in this table. The 'Resize & Crop' setting reuses bounding boxes provided by [6], but the accuracy itself is the authors' own evaluation of their own model. The value 58.7 is printed 2 times in Table 6; this placement is the only cell in row R152x4 under the Top-1 accuracy group carrying it, which is what the extraction's (row_label, column_label) pair pins down."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 58.7,
+    "where": "src/appendix.tex:77",
+    "text": "R50x1: Top-5 accuracy = 58.7",
+    "row_label": "R50x1",
+    "column_label": "Top-5 accuracy"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6, printed page 21, caption 'Results (%) on the ObjectNet test set. We report numbers for both the standard setting, as well as for the setting where the ground-truth bounding box is used.' Cell: row R50x1 (the 'BiT-' stub column), top-level column group 'Top-5 accuracy', middle setting sub-group 'Bounding Box', BiT-variant sub-column 'S' (BiT-S) = 58.7. Ownership: every row of this table is one of the authors' own BiT models (BiT-S/M/L, pre-trained on ILSVRC-2012 / ImageNet-21k / JFT-300M) evaluated by the authors on ObjectNet; the caption cites no prior work and the table has no baseline row or column. The prior-work numbers for ObjectNet (R152x1 [2], Inception-v4 [2], NASNet-A [2], PNASNet-5L [2], R152x1 [6]) appear only in Figure 10 on page 20, not in this table. The 'Bounding Box' setting reuses bounding boxes provided by [6], but the accuracy itself is the authors' own evaluation of their own model. The value 58.7 is printed 2 times in Table 6; this placement is the only cell in row R50x1 under the Top-5 accuracy group carrying it, which is what the extraction's (row_label, column_label) pair pins down."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 59.5,
+    "where": "src/appendix.tex:77",
+    "text": "R50x1: Top-5 accuracy = 59.5",
+    "row_label": "R50x1",
+    "column_label": "Top-5 accuracy"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6, printed page 21, caption 'Results (%) on the ObjectNet test set. We report numbers for both the standard setting, as well as for the setting where the ground-truth bounding box is used.' Cell: row R50x1 (the 'BiT-' stub column), top-level column group 'Top-5 accuracy', middle setting sub-group 'Resize & Crop', BiT-variant sub-column 'L' (BiT-L) = 59.5. Ownership: every row of this table is one of the authors' own BiT models (BiT-S/M/L, pre-trained on ILSVRC-2012 / ImageNet-21k / JFT-300M) evaluated by the authors on ObjectNet; the caption cites no prior work and the table has no baseline row or column. The prior-work numbers for ObjectNet (R152x1 [2], Inception-v4 [2], NASNet-A [2], PNASNet-5L [2], R152x1 [6]) appear only in Figure 10 on page 20, not in this table. The 'Resize & Crop' setting reuses bounding boxes provided by [6], but the accuracy itself is the authors' own evaluation of their own model."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 60.4,
+    "where": "src/appendix.tex:77",
+    "text": "R101x3: Top-1 accuracy = 60.4",
+    "row_label": "R101x3",
+    "column_label": "Top-1 accuracy"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6, printed page 21, caption 'Results (%) on the ObjectNet test set. We report numbers for both the standard setting, as well as for the setting where the ground-truth bounding box is used.' Cell: row R101x3 (the 'BiT-' stub column), top-level column group 'Top-1 accuracy', middle setting sub-group 'Bounding Box', BiT-variant sub-column 'L' (BiT-L) = 60.4. Ownership: every row of this table is one of the authors' own BiT models (BiT-S/M/L, pre-trained on ILSVRC-2012 / ImageNet-21k / JFT-300M) evaluated by the authors on ObjectNet; the caption cites no prior work and the table has no baseline row or column. The prior-work numbers for ObjectNet (R152x1 [2], Inception-v4 [2], NASNet-A [2], PNASNet-5L [2], R152x1 [6]) appear only in Figure 10 on page 20, not in this table. The 'Bounding Box' setting reuses bounding boxes provided by [6], but the accuracy itself is the authors' own evaluation of their own model."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 61.1,
+    "where": "src/appendix.tex:77",
+    "text": "R101x1: Top-5 accuracy = 61.1",
+    "row_label": "R101x1",
+    "column_label": "Top-5 accuracy"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6, printed page 21, caption 'Results (%) on the ObjectNet test set. We report numbers for both the standard setting, as well as for the setting where the ground-truth bounding box is used.' Cell: row R101x1 (the 'BiT-' stub column), top-level column group 'Top-5 accuracy', middle setting sub-group 'Bounding Box', BiT-variant sub-column 'S' (BiT-S) = 61.1. Ownership: every row of this table is one of the authors' own BiT models (BiT-S/M/L, pre-trained on ILSVRC-2012 / ImageNet-21k / JFT-300M) evaluated by the authors on ObjectNet; the caption cites no prior work and the table has no baseline row or column. The prior-work numbers for ObjectNet (R152x1 [2], Inception-v4 [2], NASNet-A [2], PNASNet-5L [2], R152x1 [6]) appear only in Figure 10 on page 20, not in this table. The 'Bounding Box' setting reuses bounding boxes provided by [6], but the accuracy itself is the authors' own evaluation of their own model."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 61.3,
+    "where": "src/appendix.tex:77",
+    "text": "R101x1: Top-5 accuracy = 61.3",
+    "row_label": "R101x1",
+    "column_label": "Top-5 accuracy"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6, printed page 21, caption 'Results (%) on the ObjectNet test set. We report numbers for both the standard setting, as well as for the setting where the ground-truth bounding box is used.' Cell: row R101x1 (the 'BiT-' stub column), top-level column group 'Top-5 accuracy', middle setting sub-group 'Resize & Crop', BiT-variant sub-column 'M' (BiT-M) = 61.3. Ownership: every row of this table is one of the authors' own BiT models (BiT-S/M/L, pre-trained on ILSVRC-2012 / ImageNet-21k / JFT-300M) evaluated by the authors on ObjectNet; the caption cites no prior work and the table has no baseline row or column. The prior-work numbers for ObjectNet (R152x1 [2], Inception-v4 [2], NASNet-A [2], PNASNet-5L [2], R152x1 [6]) appear only in Figure 10 on page 20, not in this table. The 'Resize & Crop' setting reuses bounding boxes provided by [6], but the accuracy itself is the authors' own evaluation of their own model."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 61.5,
+    "where": "src/appendix.tex:77",
+    "text": "R50x3: Top-5 accuracy = 61.5",
+    "row_label": "R50x3",
+    "column_label": "Top-5 accuracy"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6, printed page 21, caption 'Results (%) on the ObjectNet test set. We report numbers for both the standard setting, as well as for the setting where the ground-truth bounding box is used.' Cell: row R50x3 (the 'BiT-' stub column), top-level column group 'Top-5 accuracy', middle setting sub-group 'Bounding Box', BiT-variant sub-column 'S' (BiT-S) = 61.5. Ownership: every row of this table is one of the authors' own BiT models (BiT-S/M/L, pre-trained on ILSVRC-2012 / ImageNet-21k / JFT-300M) evaluated by the authors on ObjectNet; the caption cites no prior work and the table has no baseline row or column. The prior-work numbers for ObjectNet (R152x1 [2], Inception-v4 [2], NASNet-A [2], PNASNet-5L [2], R152x1 [6]) appear only in Figure 10 on page 20, not in this table. The 'Bounding Box' setting reuses bounding boxes provided by [6], but the accuracy itself is the authors' own evaluation of their own model."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 62.4,
+    "where": "src/appendix.tex:77",
+    "text": "R50x3: Top-5 accuracy = 62.4",
+    "row_label": "R50x3",
+    "column_label": "Top-5 accuracy"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6, printed page 21, caption 'Results (%) on the ObjectNet test set. We report numbers for both the standard setting, as well as for the setting where the ground-truth bounding box is used.' Cell: row R50x3 (the 'BiT-' stub column), top-level column group 'Top-5 accuracy', middle setting sub-group 'Resize & Crop', BiT-variant sub-column 'M' (BiT-M) = 62.4. Ownership: every row of this table is one of the authors' own BiT models (BiT-S/M/L, pre-trained on ILSVRC-2012 / ImageNet-21k / JFT-300M) evaluated by the authors on ObjectNet; the caption cites no prior work and the table has no baseline row or column. The prior-work numbers for ObjectNet (R152x1 [2], Inception-v4 [2], NASNet-A [2], PNASNet-5L [2], R152x1 [6]) appear only in Figure 10 on page 20, not in this table. The 'Resize & Crop' setting reuses bounding boxes provided by [6], but the accuracy itself is the authors' own evaluation of their own model."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 63.4,
+    "where": "src/appendix.tex:77",
+    "text": "R101x3: Top-5 accuracy = 63.4",
+    "row_label": "R101x3",
+    "column_label": "Top-5 accuracy"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6, printed page 21, caption 'Results (%) on the ObjectNet test set. We report numbers for both the standard setting, as well as for the setting where the ground-truth bounding box is used.' Cell: row R101x3 (the 'BiT-' stub column), top-level column group 'Top-5 accuracy', middle setting sub-group 'Bounding Box', BiT-variant sub-column 'S' (BiT-S) = 63.4. Ownership: every row of this table is one of the authors' own BiT models (BiT-S/M/L, pre-trained on ILSVRC-2012 / ImageNet-21k / JFT-300M) evaluated by the authors on ObjectNet; the caption cites no prior work and the table has no baseline row or column. The prior-work numbers for ObjectNet (R152x1 [2], Inception-v4 [2], NASNet-A [2], PNASNet-5L [2], R152x1 [6]) appear only in Figure 10 on page 20, not in this table. The 'Bounding Box' setting reuses bounding boxes provided by [6], but the accuracy itself is the authors' own evaluation of their own model."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 63.8,
+    "where": "src/appendix.tex:77",
+    "text": "R152x4: Top-1 accuracy = 63.8",
+    "row_label": "R152x4",
+    "column_label": "Top-1 accuracy"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6, printed page 21, caption 'Results (%) on the ObjectNet test set. We report numbers for both the standard setting, as well as for the setting where the ground-truth bounding box is used.' Cell: row R152x4 (the 'BiT-' stub column), top-level column group 'Top-1 accuracy', middle setting sub-group 'Bounding Box', BiT-variant sub-column 'L' (BiT-L) = 63.8. This cell is set in bold (best in its sub-column). Ownership: every row of this table is one of the authors' own BiT models (BiT-S/M/L, pre-trained on ILSVRC-2012 / ImageNet-21k / JFT-300M) evaluated by the authors on ObjectNet; the caption cites no prior work and the table has no baseline row or column. The prior-work numbers for ObjectNet (R152x1 [2], Inception-v4 [2], NASNet-A [2], PNASNet-5L [2], R152x1 [6]) appear only in Figure 10 on page 20, not in this table. The 'Bounding Box' setting reuses bounding boxes provided by [6], but the accuracy itself is the authors' own evaluation of their own model."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 64.4,
+    "where": "src/appendix.tex:77",
+    "text": "R152x4: Top-5 accuracy = 64.4",
+    "row_label": "R152x4",
+    "column_label": "Top-5 accuracy"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6, printed page 21, caption 'Results (%) on the ObjectNet test set. We report numbers for both the standard setting, as well as for the setting where the ground-truth bounding box is used.' Cell: row R152x4 (the 'BiT-' stub column), top-level column group 'Top-5 accuracy', middle setting sub-group 'Bounding Box', BiT-variant sub-column 'S' (BiT-S) = 64.4. Ownership: every row of this table is one of the authors' own BiT models (BiT-S/M/L, pre-trained on ILSVRC-2012 / ImageNet-21k / JFT-300M) evaluated by the authors on ObjectNet; the caption cites no prior work and the table has no baseline row or column. The prior-work numbers for ObjectNet (R152x1 [2], Inception-v4 [2], NASNet-A [2], PNASNet-5L [2], R152x1 [6]) appear only in Figure 10 on page 20, not in this table. The 'Bounding Box' setting reuses bounding boxes provided by [6], but the accuracy itself is the authors' own evaluation of their own model."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 64.9,
+    "where": "src/appendix.tex:77",
+    "text": "R50x1: Top-5 accuracy = 64.9",
+    "row_label": "R50x1",
+    "column_label": "Top-5 accuracy"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6, printed page 21, caption 'Results (%) on the ObjectNet test set. We report numbers for both the standard setting, as well as for the setting where the ground-truth bounding box is used.' Cell: row R50x1 (the 'BiT-' stub column), top-level column group 'Top-5 accuracy', middle setting sub-group 'Bounding Box', BiT-variant sub-column 'M' (BiT-M) = 64.9. Ownership: every row of this table is one of the authors' own BiT models (BiT-S/M/L, pre-trained on ILSVRC-2012 / ImageNet-21k / JFT-300M) evaluated by the authors on ObjectNet; the caption cites no prior work and the table has no baseline row or column. The prior-work numbers for ObjectNet (R152x1 [2], Inception-v4 [2], NASNet-A [2], PNASNet-5L [2], R152x1 [6]) appear only in Figure 10 on page 20, not in this table. The 'Bounding Box' setting reuses bounding boxes provided by [6], but the accuracy itself is the authors' own evaluation of their own model."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 66.0,
+    "where": "src/appendix.tex:77",
+    "text": "R50x1: Top-5 accuracy = 66",
+    "row_label": "R50x1",
+    "column_label": "Top-5 accuracy"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6, printed page 21, caption 'Results (%) on the ObjectNet test set. We report numbers for both the standard setting, as well as for the setting where the ground-truth bounding box is used.' Cell: row R50x1 (the 'BiT-' stub column), top-level column group 'Top-5 accuracy', middle setting sub-group 'Bounding Box', BiT-variant sub-column 'L' (BiT-L) = 66.0. Ownership: every row of this table is one of the authors' own BiT models (BiT-S/M/L, pre-trained on ILSVRC-2012 / ImageNet-21k / JFT-300M) evaluated by the authors on ObjectNet; the caption cites no prior work and the table has no baseline row or column. The prior-work numbers for ObjectNet (R152x1 [2], Inception-v4 [2], NASNet-A [2], PNASNet-5L [2], R152x1 [6]) appear only in Figure 10 on page 20, not in this table. The 'Bounding Box' setting reuses bounding boxes provided by [6], but the accuracy itself is the authors' own evaluation of their own model."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 66.4,
+    "where": "src/appendix.tex:77",
+    "text": "R101x3: Top-5 accuracy = 66.4",
+    "row_label": "R101x3",
+    "column_label": "Top-5 accuracy"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6, printed page 21, caption 'Results (%) on the ObjectNet test set. We report numbers for both the standard setting, as well as for the setting where the ground-truth bounding box is used.' Cell: row R101x3 (the 'BiT-' stub column), top-level column group 'Top-5 accuracy', middle setting sub-group 'Resize & Crop', BiT-variant sub-column 'M' (BiT-M) = 66.4. Ownership: every row of this table is one of the authors' own BiT models (BiT-S/M/L, pre-trained on ILSVRC-2012 / ImageNet-21k / JFT-300M) evaluated by the authors on ObjectNet; the caption cites no prior work and the table has no baseline row or column. The prior-work numbers for ObjectNet (R152x1 [2], Inception-v4 [2], NASNet-A [2], PNASNet-5L [2], R152x1 [6]) appear only in Figure 10 on page 20, not in this table. The 'Resize & Crop' setting reuses bounding boxes provided by [6], but the accuracy itself is the authors' own evaluation of their own model."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 69.0,
+    "where": "src/appendix.tex:77",
+    "text": "R152x4: Top-5 accuracy = 69",
+    "row_label": "R152x4",
+    "column_label": "Top-5 accuracy"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6, printed page 21, caption 'Results (%) on the ObjectNet test set. We report numbers for both the standard setting, as well as for the setting where the ground-truth bounding box is used.' Cell: row R152x4 (the 'BiT-' stub column), top-level column group 'Top-5 accuracy', middle setting sub-group 'Resize & Crop', BiT-variant sub-column 'M' (BiT-M) = 69.0. Ownership: every row of this table is one of the authors' own BiT models (BiT-S/M/L, pre-trained on ILSVRC-2012 / ImageNet-21k / JFT-300M) evaluated by the authors on ObjectNet; the caption cites no prior work and the table has no baseline row or column. The prior-work numbers for ObjectNet (R152x1 [2], Inception-v4 [2], NASNet-A [2], PNASNet-5L [2], R152x1 [6]) appear only in Figure 10 on page 20, not in this table. The 'Resize & Crop' setting reuses bounding boxes provided by [6], but the accuracy itself is the authors' own evaluation of their own model."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 69.4,
+    "where": "src/appendix.tex:77",
+    "text": "R101x1: Top-5 accuracy = 69.4",
+    "row_label": "R101x1",
+    "column_label": "Top-5 accuracy"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6, printed page 21, caption 'Results (%) on the ObjectNet test set. We report numbers for both the standard setting, as well as for the setting where the ground-truth bounding box is used.' Cell: row R101x1 (the 'BiT-' stub column), top-level column group 'Top-5 accuracy', middle setting sub-group 'Bounding Box', BiT-variant sub-column 'M' (BiT-M) = 69.4. Ownership: every row of this table is one of the authors' own BiT models (BiT-S/M/L, pre-trained on ILSVRC-2012 / ImageNet-21k / JFT-300M) evaluated by the authors on ObjectNet; the caption cites no prior work and the table has no baseline row or column. The prior-work numbers for ObjectNet (R152x1 [2], Inception-v4 [2], NASNet-A [2], PNASNet-5L [2], R152x1 [6]) appear only in Figure 10 on page 20, not in this table. The 'Bounding Box' setting reuses bounding boxes provided by [6], but the accuracy itself is the authors' own evaluation of their own model."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 70.1,
+    "where": "src/appendix.tex:77",
+    "text": "R50x3: Top-5 accuracy = 70.1",
+    "row_label": "R50x3",
+    "column_label": "Top-5 accuracy"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6, printed page 21, caption 'Results (%) on the ObjectNet test set. We report numbers for both the standard setting, as well as for the setting where the ground-truth bounding box is used.' Cell: row R50x3 (the 'BiT-' stub column), top-level column group 'Top-5 accuracy', middle setting sub-group 'Bounding Box', BiT-variant sub-column 'M' (BiT-M) = 70.1. Ownership: every row of this table is one of the authors' own BiT models (BiT-S/M/L, pre-trained on ILSVRC-2012 / ImageNet-21k / JFT-300M) evaluated by the authors on ObjectNet; the caption cites no prior work and the table has no baseline row or column. The prior-work numbers for ObjectNet (R152x1 [2], Inception-v4 [2], NASNet-A [2], PNASNet-5L [2], R152x1 [6]) appear only in Figure 10 on page 20, not in this table. The 'Bounding Box' setting reuses bounding boxes provided by [6], but the accuracy itself is the authors' own evaluation of their own model."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 71.1,
+    "where": "src/appendix.tex:77",
+    "text": "R50x3: Top-5 accuracy = 71.1",
+    "row_label": "R50x3",
+    "column_label": "Top-5 accuracy"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6, printed page 21, caption 'Results (%) on the ObjectNet test set. We report numbers for both the standard setting, as well as for the setting where the ground-truth bounding box is used.' Cell: row R50x3 (the 'BiT-' stub column), top-level column group 'Top-5 accuracy', middle setting sub-group 'Resize & Crop', BiT-variant sub-column 'L' (BiT-L) = 71.1. Ownership: every row of this table is one of the authors' own BiT models (BiT-S/M/L, pre-trained on ILSVRC-2012 / ImageNet-21k / JFT-300M) evaluated by the authors on ObjectNet; the caption cites no prior work and the table has no baseline row or column. The prior-work numbers for ObjectNet (R152x1 [2], Inception-v4 [2], NASNet-A [2], PNASNet-5L [2], R152x1 [6]) appear only in Figure 10 on page 20, not in this table. The 'Resize & Crop' setting reuses bounding boxes provided by [6], but the accuracy itself is the authors' own evaluation of their own model."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 72.4,
+    "where": "src/appendix.tex:77",
+    "text": "R101x1: Top-5 accuracy = 72.4",
+    "row_label": "R101x1",
+    "column_label": "Top-5 accuracy"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6, printed page 21, caption 'Results (%) on the ObjectNet test set. We report numbers for both the standard setting, as well as for the setting where the ground-truth bounding box is used.' Cell: row R101x1 (the 'BiT-' stub column), top-level column group 'Top-5 accuracy', middle setting sub-group 'Bounding Box', BiT-variant sub-column 'L' (BiT-L) = 72.4. Ownership: every row of this table is one of the authors' own BiT models (BiT-S/M/L, pre-trained on ILSVRC-2012 / ImageNet-21k / JFT-300M) evaluated by the authors on ObjectNet; the caption cites no prior work and the table has no baseline row or column. The prior-work numbers for ObjectNet (R152x1 [2], Inception-v4 [2], NASNet-A [2], PNASNet-5L [2], R152x1 [6]) appear only in Figure 10 on page 20, not in this table. The 'Bounding Box' setting reuses bounding boxes provided by [6], but the accuracy itself is the authors' own evaluation of their own model."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 73.6,
+    "where": "src/appendix.tex:77",
+    "text": "R101x3: Top-5 accuracy = 73.6",
+    "row_label": "R101x3",
+    "column_label": "Top-5 accuracy"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6, printed page 21, caption 'Results (%) on the ObjectNet test set. We report numbers for both the standard setting, as well as for the setting where the ground-truth bounding box is used.' Cell: row R101x3 (the 'BiT-' stub column), top-level column group 'Top-5 accuracy', middle setting sub-group 'Bounding Box', BiT-variant sub-column 'M' (BiT-M) = 73.6. Ownership: every row of this table is one of the authors' own BiT models (BiT-S/M/L, pre-trained on ILSVRC-2012 / ImageNet-21k / JFT-300M) evaluated by the authors on ObjectNet; the caption cites no prior work and the table has no baseline row or column. The prior-work numbers for ObjectNet (R152x1 [2], Inception-v4 [2], NASNet-A [2], PNASNet-5L [2], R152x1 [6]) appear only in Figure 10 on page 20, not in this table. The 'Bounding Box' setting reuses bounding boxes provided by [6], but the accuracy itself is the authors' own evaluation of their own model."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 75.6,
+    "where": "src/appendix.tex:77",
+    "text": "R101x1: Top-5 accuracy = 75.6",
+    "row_label": "R101x1",
+    "column_label": "Top-5 accuracy"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6, printed page 21, caption 'Results (%) on the ObjectNet test set. We report numbers for both the standard setting, as well as for the setting where the ground-truth bounding box is used.' Cell: row R101x1 (the 'BiT-' stub column), top-level column group 'Top-5 accuracy', middle setting sub-group 'Resize & Crop', BiT-variant sub-column 'L' (BiT-L) = 75.6. Ownership: every row of this table is one of the authors' own BiT models (BiT-S/M/L, pre-trained on ILSVRC-2012 / ImageNet-21k / JFT-300M) evaluated by the authors on ObjectNet; the caption cites no prior work and the table has no baseline row or column. The prior-work numbers for ObjectNet (R152x1 [2], Inception-v4 [2], NASNet-A [2], PNASNet-5L [2], R152x1 [6]) appear only in Figure 10 on page 20, not in this table. The 'Resize & Crop' setting reuses bounding boxes provided by [6], but the accuracy itself is the authors' own evaluation of their own model. The value 75.6 is printed 2 times in Table 6; this placement is the only cell in row R101x1 under the Top-5 accuracy group carrying it, which is what the extraction's (row_label, column_label) pair pins down."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 75.6,
+    "where": "src/appendix.tex:77",
+    "text": "R101x3: Top-5 accuracy = 75.6",
+    "row_label": "R101x3",
+    "column_label": "Top-5 accuracy"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6, printed page 21, caption 'Results (%) on the ObjectNet test set. We report numbers for both the standard setting, as well as for the setting where the ground-truth bounding box is used.' Cell: row R101x3 (the 'BiT-' stub column), top-level column group 'Top-5 accuracy', middle setting sub-group 'Resize & Crop', BiT-variant sub-column 'L' (BiT-L) = 75.6. Ownership: every row of this table is one of the authors' own BiT models (BiT-S/M/L, pre-trained on ILSVRC-2012 / ImageNet-21k / JFT-300M) evaluated by the authors on ObjectNet; the caption cites no prior work and the table has no baseline row or column. The prior-work numbers for ObjectNet (R152x1 [2], Inception-v4 [2], NASNet-A [2], PNASNet-5L [2], R152x1 [6]) appear only in Figure 10 on page 20, not in this table. The 'Resize & Crop' setting reuses bounding boxes provided by [6], but the accuracy itself is the authors' own evaluation of their own model. The value 75.6 is printed 2 times in Table 6; this placement is the only cell in row R101x3 under the Top-5 accuracy group carrying it, which is what the extraction's (row_label, column_label) pair pins down."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 76.0,
+    "where": "src/appendix.tex:77",
+    "text": "R152x4: Top-5 accuracy = 76",
+    "row_label": "R152x4",
+    "column_label": "Top-5 accuracy"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6, printed page 21, caption 'Results (%) on the ObjectNet test set. We report numbers for both the standard setting, as well as for the setting where the ground-truth bounding box is used.' Cell: row R152x4 (the 'BiT-' stub column), top-level column group 'Top-5 accuracy', middle setting sub-group 'Bounding Box', BiT-variant sub-column 'M' (BiT-M) = 76.0. Ownership: every row of this table is one of the authors' own BiT models (BiT-S/M/L, pre-trained on ILSVRC-2012 / ImageNet-21k / JFT-300M) evaluated by the authors on ObjectNet; the caption cites no prior work and the table has no baseline row or column. The prior-work numbers for ObjectNet (R152x1 [2], Inception-v4 [2], NASNet-A [2], PNASNet-5L [2], R152x1 [6]) appear only in Figure 10 on page 20, not in this table. The 'Bounding Box' setting reuses bounding boxes provided by [6], but the accuracy itself is the authors' own evaluation of their own model."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 77.5,
+    "where": "src/appendix.tex:77",
+    "text": "R50x3: Top-5 accuracy = 77.5",
+    "row_label": "R50x3",
+    "column_label": "Top-5 accuracy"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6, printed page 21, caption 'Results (%) on the ObjectNet test set. We report numbers for both the standard setting, as well as for the setting where the ground-truth bounding box is used.' Cell: row R50x3 (the 'BiT-' stub column), top-level column group 'Top-5 accuracy', middle setting sub-group 'Bounding Box', BiT-variant sub-column 'L' (BiT-L) = 77.5. Ownership: every row of this table is one of the authors' own BiT models (BiT-S/M/L, pre-trained on ILSVRC-2012 / ImageNet-21k / JFT-300M) evaluated by the authors on ObjectNet; the caption cites no prior work and the table has no baseline row or column. The prior-work numbers for ObjectNet (R152x1 [2], Inception-v4 [2], NASNet-A [2], PNASNet-5L [2], R152x1 [6]) appear only in Figure 10 on page 20, not in this table. The 'Bounding Box' setting reuses bounding boxes provided by [6], but the accuracy itself is the authors' own evaluation of their own model."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 80.0,
+    "where": "src/appendix.tex:77",
+    "text": "accuracy of 80.0",
+    "row_label": "R152x4",
+    "column_label": "Top-5 accuracy"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6, printed page 21, caption 'Results (%) on the ObjectNet test set. We report numbers for both the standard setting, as well as for the setting where the ground-truth bounding box is used.' Cell: row R152x4 (the 'BiT-' stub column), top-level column group 'Top-5 accuracy', middle setting sub-group 'Resize & Crop', BiT-variant sub-column 'L' (BiT-L) = 80.0. This cell is set in bold (best in its sub-column). Ownership: every row of this table is one of the authors' own BiT models (BiT-S/M/L, pre-trained on ILSVRC-2012 / ImageNet-21k / JFT-300M) evaluated by the authors on ObjectNet; the caption cites no prior work and the table has no baseline row or column. The prior-work numbers for ObjectNet (R152x1 [2], Inception-v4 [2], NASNet-A [2], PNASNet-5L [2], R152x1 [6]) appear only in Figure 10 on page 20, not in this table. The 'Resize & Crop' setting reuses bounding boxes provided by [6], but the accuracy itself is the authors' own evaluation of their own model. Note on this record's text snippet: 80.0 is also stated in prose in the main body (Section 3.6, printed page 8: 'unprecedented top-5 accuracy of 80.0%, an almost 25% absolute improvement over the previous state-of-the-art'), which is the same measurement; the locator src/appendix.tex:77 is the Table 6 tabularx, so the cell placement above (R152x4 / Top-5 accuracy / Resize & Crop / L, bold) is the one adjudicated, and both surfaces are the authors' own result."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 82.5,
+    "where": "src/appendix.tex:77",
+    "text": "R101x3: Top-5 accuracy = 82.5",
+    "row_label": "R101x3",
+    "column_label": "Top-5 accuracy"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6, printed page 21, caption 'Results (%) on the ObjectNet test set. We report numbers for both the standard setting, as well as for the setting where the ground-truth bounding box is used.' Cell: row R101x3 (the 'BiT-' stub column), top-level column group 'Top-5 accuracy', middle setting sub-group 'Bounding Box', BiT-variant sub-column 'L' (BiT-L) = 82.5. Ownership: every row of this table is one of the authors' own BiT models (BiT-S/M/L, pre-trained on ILSVRC-2012 / ImageNet-21k / JFT-300M) evaluated by the authors on ObjectNet; the caption cites no prior work and the table has no baseline row or column. The prior-work numbers for ObjectNet (R152x1 [2], Inception-v4 [2], NASNet-A [2], PNASNet-5L [2], R152x1 [6]) appear only in Figure 10 on page 20, not in this table. The 'Bounding Box' setting reuses bounding boxes provided by [6], but the accuracy itself is the authors' own evaluation of their own model."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 85.1,
+    "where": "src/appendix.tex:77",
+    "text": "R152x4: Top-5 accuracy = 85.1",
+    "row_label": "R152x4",
+    "column_label": "Top-5 accuracy"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 6, printed page 21, caption 'Results (%) on the ObjectNet test set. We report numbers for both the standard setting, as well as for the setting where the ground-truth bounding box is used.' Cell: row R152x4 (the 'BiT-' stub column), top-level column group 'Top-5 accuracy', middle setting sub-group 'Bounding Box', BiT-variant sub-column 'L' (BiT-L) = 85.1. This cell is set in bold (best in its sub-column). Ownership: every row of this table is one of the authors' own BiT models (BiT-S/M/L, pre-trained on ILSVRC-2012 / ImageNet-21k / JFT-300M) evaluated by the authors on ObjectNet; the caption cites no prior work and the table has no baseline row or column. The prior-work numbers for ObjectNet (R152x1 [2], Inception-v4 [2], NASNet-A [2], PNASNet-5L [2], R152x1 [6]) appear only in Figure 10 on page 20, not in this table. The 'Bounding Box' setting reuses bounding boxes provided by [6], but the accuracy itself is the authors' own evaluation of their own model."
+  },
+  {
+   "extraction": {
+    "metric": "from ilsvrc-2012",
+    "value": 0.0,
+    "where": "src/appendix.tex:112",
+    "text": "Flowers: From ILSVRC-2012 = 0",
+    "row_label": "Flowers",
+    "column_label": "From ILSVRC-2012"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Cell: row Flowers, group From ILSVRC-2012, sub-column Dups of printed Table 7, p.22 (\"Performance of BiT-L on the original (\"Full\") and deduplicated (\"Dedup\") test data. The \"Dups\" column shows the total number of near-duplicates found.\"). This is the DUPS sub-column: the count of near-duplicate test images removed from that test set, not an accuracy. A count is not an outcome measurement."
+  },
+  {
+   "extraction": {
+    "metric": "from ilsvrc-2012",
+    "value": 58.0,
+    "where": "src/appendix.tex:112",
+    "text": "Pets: From ILSVRC-2012 = 58",
+    "row_label": "Pets",
+    "column_label": "From ILSVRC-2012"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Cell: row Pets, group From ILSVRC-2012, sub-column Dups of printed Table 7, p.22 (\"Performance of BiT-L on the original (\"Full\") and deduplicated (\"Dedup\") test data. The \"Dups\" column shows the total number of near-duplicates found.\"). This is the DUPS sub-column: the count of near-duplicate test images removed from that test set, not an accuracy. A count is not an outcome measurement."
+  },
+  {
+   "extraction": {
+    "metric": "from ilsvrc-2012",
+    "value": 80.3,
+    "where": "src/appendix.tex:112",
+    "text": "ILSVRC-2012: From ILSVRC-2012 = 80.3",
+    "row_label": "ILSVRC-2012",
+    "column_label": "From ILSVRC-2012"
+   },
+   "verdict": "real_own_result",
+   "notes": "Cell: row ILSVRC-2012, group From ILSVRC-2012, sub-column Full of printed Table 7, p.22 (\"Performance of BiT-L on the original (\"Full\") and deduplicated (\"Dedup\") test data. The \"Dups\" column shows the total number of near-duplicates found.\"). This is the Full sub-column: BiT-L accuracy on the original (with near-duplicates) test set, measured by this paper (BiT-L is the authors' own model; no prior work is credited for these numbers)."
+  },
+  {
+   "extraction": {
+    "metric": "from ilsvrc-2012",
+    "value": 81.3,
+    "where": "src/appendix.tex:112",
+    "text": "ILSVRC-2012: From ILSVRC-2012 = 81.3",
+    "row_label": "ILSVRC-2012",
+    "column_label": "From ILSVRC-2012"
+   },
+   "verdict": "real_own_result",
+   "notes": "Cell: row ILSVRC-2012, group From ILSVRC-2012, sub-column Dedup of printed Table 7, p.22 (\"Performance of BiT-L on the original (\"Full\") and deduplicated (\"Dedup\") test data. The \"Dups\" column shows the total number of near-duplicates found.\"). This is the Dedup sub-column: BiT-L accuracy on the deduplicated test set, measured by this paper (BiT-L is the authors' own model; no prior work is credited for these numbers)."
+  },
+  {
+   "extraction": {
+    "metric": "from ilsvrc-2012",
+    "value": 82.0,
+    "where": "src/appendix.tex:112",
+    "text": "CIFAR-10: From ILSVRC-2012 = 82",
+    "row_label": "CIFAR-10",
+    "column_label": "From ILSVRC-2012"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Cell: row CIFAR-10, group From ILSVRC-2012, sub-column Dups of printed Table 7, p.22 (\"Performance of BiT-L on the original (\"Full\") and deduplicated (\"Dedup\") test data. The \"Dups\" column shows the total number of near-duplicates found.\"). This is the DUPS sub-column: the count of near-duplicate test images removed from that test set, not an accuracy. A count is not an outcome measurement."
+  },
+  {
+   "extraction": {
+    "metric": "from ilsvrc-2012",
+    "value": 85.2,
+    "where": "src/appendix.tex:112",
+    "text": "CIFAR-100: From ILSVRC-2012 = 85.2",
+    "row_label": "CIFAR-100",
+    "column_label": "From ILSVRC-2012"
+   },
+   "verdict": "real_own_result",
+   "notes": "Cell: row CIFAR-100, group From ILSVRC-2012, sub-column Dedup of printed Table 7, p.22 (\"Performance of BiT-L on the original (\"Full\") and deduplicated (\"Dedup\") test data. The \"Dups\" column shows the total number of near-duplicates found.\"). This is the Dedup sub-column: BiT-L accuracy on the deduplicated test set, measured by this paper (BiT-L is the authors' own model; no prior work is credited for these numbers)."
+  },
+  {
+   "extraction": {
+    "metric": "from ilsvrc-2012",
+    "value": 85.3,
+    "where": "src/appendix.tex:112",
+    "text": "CIFAR-100: From ILSVRC-2012 = 85.3",
+    "row_label": "CIFAR-100",
+    "column_label": "From ILSVRC-2012"
+   },
+   "verdict": "real_own_result",
+   "notes": "Cell: row CIFAR-100, group From ILSVRC-2012, sub-column Full of printed Table 7, p.22 (\"Performance of BiT-L on the original (\"Full\") and deduplicated (\"Dedup\") test data. The \"Dups\" column shows the total number of near-duplicates found.\"). This is the Full sub-column: BiT-L accuracy on the original (with near-duplicates) test set, measured by this paper (BiT-L is the authors' own model; no prior work is credited for these numbers). This value also appears elsewhere in Table 7 (ILSVRC-2012 / From ImageNet21k / Dedup); the record's row_label and column_label pin it to the cell named above."
+  },
+  {
+   "extraction": {
+    "metric": "from ilsvrc-2012",
+    "value": 91.0,
+    "where": "src/appendix.tex:112",
+    "text": "Flowers: From ILSVRC-2012 = 91",
+    "row_label": "Flowers",
+    "column_label": "From ILSVRC-2012"
+   },
+   "verdict": "real_own_result",
+   "notes": "Cell: row Flowers, group From ILSVRC-2012, sub-column Full of printed Table 7, p.22 (\"Performance of BiT-L on the original (\"Full\") and deduplicated (\"Dedup\") test data. The \"Dups\" column shows the total number of near-duplicates found.\"). This is the Full sub-column: BiT-L accuracy on the original (with near-duplicates) test set, measured by this paper (BiT-L is the authors' own model; no prior work is credited for these numbers). The printed value 91.0 is identical in the Full and Dedup sub-columns of this row/group, so only one extraction exists for two printed cells; placed at Full, the defensible primary reading (Dedup is byte-identical)."
+  },
+  {
+   "extraction": {
+    "metric": "from ilsvrc-2012",
+    "value": 93.6,
+    "where": "src/appendix.tex:112",
+    "text": "Pets: From ILSVRC-2012 = 93.6",
+    "row_label": "Pets",
+    "column_label": "From ILSVRC-2012"
+   },
+   "verdict": "real_own_result",
+   "notes": "Cell: row Pets, group From ILSVRC-2012, sub-column Dedup of printed Table 7, p.22 (\"Performance of BiT-L on the original (\"Full\") and deduplicated (\"Dedup\") test data. The \"Dups\" column shows the total number of near-duplicates found.\"). This is the Dedup sub-column: BiT-L accuracy on the deduplicated test set, measured by this paper (BiT-L is the authors' own model; no prior work is credited for these numbers). This value also appears elsewhere in Table 7 (CIFAR-100 / From JFT / Full); the record's row_label and column_label pin it to the cell named above."
+  },
+  {
+   "extraction": {
+    "metric": "from ilsvrc-2012",
+    "value": 93.7,
+    "where": "src/appendix.tex:112",
+    "text": "Pets: From ILSVRC-2012 = 93.7",
+    "row_label": "Pets",
+    "column_label": "From ILSVRC-2012"
+   },
+   "verdict": "real_own_result",
+   "notes": "Cell: row Pets, group From ILSVRC-2012, sub-column Full of printed Table 7, p.22 (\"Performance of BiT-L on the original (\"Full\") and deduplicated (\"Dedup\") test data. The \"Dups\" column shows the total number of near-duplicates found.\"). This is the Full sub-column: BiT-L accuracy on the original (with near-duplicates) test set, measured by this paper (BiT-L is the authors' own model; no prior work is credited for these numbers)."
+  },
+  {
+   "extraction": {
+    "metric": "from ilsvrc-2012",
+    "value": 97.2,
+    "where": "src/appendix.tex:112",
+    "text": "CIFAR-10: From ILSVRC-2012 = 97.2",
+    "row_label": "CIFAR-10",
+    "column_label": "From ILSVRC-2012"
+   },
+   "verdict": "real_own_result",
+   "notes": "Cell: row CIFAR-10, group From ILSVRC-2012, sub-column Full of printed Table 7, p.22 (\"Performance of BiT-L on the original (\"Full\") and deduplicated (\"Dedup\") test data. The \"Dups\" column shows the total number of near-duplicates found.\"). This is the Full sub-column: BiT-L accuracy on the original (with near-duplicates) test set, measured by this paper (BiT-L is the authors' own model; no prior work is credited for these numbers). The printed value 97.2 is identical in the Full and Dedup sub-columns of this row/group, so only one extraction exists for two printed cells; placed at Full, the defensible primary reading (Dedup is byte-identical)."
+  },
+  {
+   "extraction": {
+    "metric": "from ilsvrc-2012",
+    "value": 136.0,
+    "where": "src/appendix.tex:112",
+    "text": "CIFAR-100: From ILSVRC-2012 = 136",
+    "row_label": "CIFAR-100",
+    "column_label": "From ILSVRC-2012"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Cell: row CIFAR-100, group From ILSVRC-2012, sub-column Dups of printed Table 7, p.22 (\"Performance of BiT-L on the original (\"Full\") and deduplicated (\"Dedup\") test data. The \"Dups\" column shows the total number of near-duplicates found.\"). This is the DUPS sub-column: the count of near-duplicate test images removed from that test set, not an accuracy. A count is not an outcome measurement."
+  },
+  {
+   "extraction": {
+    "metric": "from ilsvrc-2012",
+    "value": 879.0,
+    "where": "src/appendix.tex:112",
+    "text": "ILSVRC-2012: From ILSVRC-2012 = 879",
+    "row_label": "ILSVRC-2012",
+    "column_label": "From ILSVRC-2012"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Cell: row ILSVRC-2012, group From ILSVRC-2012, sub-column Dups of printed Table 7, p.22 (\"Performance of BiT-L on the original (\"Full\") and deduplicated (\"Dedup\") test data. The \"Dups\" column shows the total number of near-duplicates found.\"). This is the DUPS sub-column: the count of near-duplicate test images removed from that test set, not an accuracy. A count is not an outcome measurement."
+  },
+  {
+   "extraction": {
+    "metric": "from imagenet21k",
+    "value": 80.0,
+    "where": "src/appendix.tex:112",
+    "text": "Pets: From ImageNet21k = 80",
+    "row_label": "Pets",
+    "column_label": "From ImageNet21k"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Cell: row Pets, group From ImageNet21k, sub-column Dups of printed Table 7, p.22 (\"Performance of BiT-L on the original (\"Full\") and deduplicated (\"Dedup\") test data. The \"Dups\" column shows the total number of near-duplicates found.\"). This is the DUPS sub-column: the count of near-duplicate test images removed from that test set, not an accuracy. A count is not an outcome measurement."
+  },
+  {
+   "extraction": {
+    "metric": "from imagenet21k",
+    "value": 84.5,
+    "where": "src/appendix.tex:112",
+    "text": "ILSVRC-2012: From ImageNet21k = 84.5",
+    "row_label": "ILSVRC-2012",
+    "column_label": "From ImageNet21k"
+   },
+   "verdict": "real_own_result",
+   "notes": "Cell: row ILSVRC-2012, group From ImageNet21k, sub-column Full of printed Table 7, p.22 (\"Performance of BiT-L on the original (\"Full\") and deduplicated (\"Dedup\") test data. The \"Dups\" column shows the total number of near-duplicates found.\"). This is the Full sub-column: BiT-L accuracy on the original (with near-duplicates) test set, measured by this paper (BiT-L is the authors' own model; no prior work is credited for these numbers)."
+  },
+  {
+   "extraction": {
+    "metric": "from imagenet21k",
+    "value": 85.3,
+    "where": "src/appendix.tex:112",
+    "text": "ILSVRC-2012: From ImageNet21k = 85.3",
+    "row_label": "ILSVRC-2012",
+    "column_label": "From ImageNet21k"
+   },
+   "verdict": "real_own_result",
+   "notes": "Cell: row ILSVRC-2012, group From ImageNet21k, sub-column Dedup of printed Table 7, p.22 (\"Performance of BiT-L on the original (\"Full\") and deduplicated (\"Dedup\") test data. The \"Dups\" column shows the total number of near-duplicates found.\"). This is the Dedup sub-column: BiT-L accuracy on the deduplicated test set, measured by this paper (BiT-L is the authors' own model; no prior work is credited for these numbers). This value also appears elsewhere in Table 7 (CIFAR-100 / From ILSVRC-2012 / Full); the record's row_label and column_label pin it to the cell named above."
+  },
+  {
+   "extraction": {
+    "metric": "from imagenet21k",
+    "value": 90.7,
+    "where": "src/appendix.tex:112",
+    "text": "CIFAR-100: From ImageNet21k = 90.7",
+    "row_label": "CIFAR-100",
+    "column_label": "From ImageNet21k"
+   },
+   "verdict": "real_own_result",
+   "notes": "Cell: row CIFAR-100, group From ImageNet21k, sub-column Dedup of printed Table 7, p.22 (\"Performance of BiT-L on the original (\"Full\") and deduplicated (\"Dedup\") test data. The \"Dups\" column shows the total number of near-duplicates found.\"). This is the Dedup sub-column: BiT-L accuracy on the deduplicated test set, measured by this paper (BiT-L is the authors' own model; no prior work is credited for these numbers)."
+  },
+  {
+   "extraction": {
+    "metric": "from imagenet21k",
+    "value": 91.2,
+    "where": "src/appendix.tex:112",
+    "text": "CIFAR-100: From ImageNet21k = 91.2",
+    "row_label": "CIFAR-100",
+    "column_label": "From ImageNet21k"
+   },
+   "verdict": "real_own_result",
+   "notes": "Cell: row CIFAR-100, group From ImageNet21k, sub-column Full of printed Table 7, p.22 (\"Performance of BiT-L on the original (\"Full\") and deduplicated (\"Dedup\") test data. The \"Dups\" column shows the total number of near-duplicates found.\"). This is the Full sub-column: BiT-L accuracy on the original (with near-duplicates) test set, measured by this paper (BiT-L is the authors' own model; no prior work is credited for these numbers)."
+  },
+  {
+   "extraction": {
+    "metric": "from imagenet21k",
+    "value": 94.5,
+    "where": "src/appendix.tex:112",
+    "text": "Pets: From ImageNet21k = 94.5",
+    "row_label": "Pets",
+    "column_label": "From ImageNet21k"
+   },
+   "verdict": "real_own_result",
+   "notes": "Cell: row Pets, group From ImageNet21k, sub-column Dedup of printed Table 7, p.22 (\"Performance of BiT-L on the original (\"Full\") and deduplicated (\"Dedup\") test data. The \"Dups\" column shows the total number of near-duplicates found.\"). This is the Dedup sub-column: BiT-L accuracy on the deduplicated test set, measured by this paper (BiT-L is the authors' own model; no prior work is credited for these numbers)."
+  },
+  {
+   "extraction": {
+    "metric": "from imagenet21k",
+    "value": 94.6,
+    "where": "src/appendix.tex:112",
+    "text": "Pets: From ImageNet21k = 94.6",
+    "row_label": "Pets",
+    "column_label": "From ImageNet21k"
+   },
+   "verdict": "real_own_result",
+   "notes": "Cell: row Pets, group From ImageNet21k, sub-column Full of printed Table 7, p.22 (\"Performance of BiT-L on the original (\"Full\") and deduplicated (\"Dedup\") test data. The \"Dups\" column shows the total number of near-duplicates found.\"). This is the Full sub-column: BiT-L accuracy on the original (with near-duplicates) test set, measured by this paper (BiT-L is the authors' own model; no prior work is credited for these numbers)."
+  },
+  {
+   "extraction": {
+    "metric": "from imagenet21k",
+    "value": 98.4,
+    "where": "src/appendix.tex:112",
+    "text": "CIFAR-10: From ImageNet21k = 98.4",
+    "row_label": "CIFAR-10",
+    "column_label": "From ImageNet21k"
+   },
+   "verdict": "real_own_result",
+   "notes": "Cell: row CIFAR-10, group From ImageNet21k, sub-column Dedup of printed Table 7, p.22 (\"Performance of BiT-L on the original (\"Full\") and deduplicated (\"Dedup\") test data. The \"Dups\" column shows the total number of near-duplicates found.\"). This is the Dedup sub-column: BiT-L accuracy on the deduplicated test set, measured by this paper (BiT-L is the authors' own model; no prior work is credited for these numbers)."
+  },
+  {
+   "extraction": {
+    "metric": "from imagenet21k",
+    "value": 98.5,
+    "where": "src/appendix.tex:112",
+    "text": "CIFAR-10: From ImageNet21k = 98.5",
+    "row_label": "CIFAR-10",
+    "column_label": "From ImageNet21k"
+   },
+   "verdict": "real_own_result",
+   "notes": "Cell: row CIFAR-10, group From ImageNet21k, sub-column Full of printed Table 7, p.22 (\"Performance of BiT-L on the original (\"Full\") and deduplicated (\"Dedup\") test data. The \"Dups\" column shows the total number of near-duplicates found.\"). This is the Full sub-column: BiT-L accuracy on the original (with near-duplicates) test set, measured by this paper (BiT-L is the authors' own model; no prior work is credited for these numbers)."
+  },
+  {
+   "extraction": {
+    "metric": "from imagenet21k",
+    "value": 99.5,
+    "where": "src/appendix.tex:112",
+    "text": "Flowers: From ImageNet21k = 99.5",
+    "row_label": "Flowers",
+    "column_label": "From ImageNet21k"
+   },
+   "verdict": "real_own_result",
+   "notes": "Cell: row Flowers, group From ImageNet21k, sub-column Full of printed Table 7, p.22 (\"Performance of BiT-L on the original (\"Full\") and deduplicated (\"Dedup\") test data. The \"Dups\" column shows the total number of near-duplicates found.\"). This is the Full sub-column: BiT-L accuracy on the original (with near-duplicates) test set, measured by this paper (BiT-L is the authors' own model; no prior work is credited for these numbers). The printed value 99.5 is identical in the Full and Dedup sub-columns of this row/group, so only one extraction exists for two printed cells; placed at Full, the defensible primary reading (Dedup is byte-identical)."
+  },
+  {
+   "extraction": {
+    "metric": "from imagenet21k",
+    "value": 335.0,
+    "where": "src/appendix.tex:112",
+    "text": "Flowers: From ImageNet21k = 335",
+    "row_label": "Flowers",
+    "column_label": "From ImageNet21k"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Cell: row Flowers, group From ImageNet21k, sub-column Dups of printed Table 7, p.22 (\"Performance of BiT-L on the original (\"Full\") and deduplicated (\"Dedup\") test data. The \"Dups\" column shows the total number of near-duplicates found.\"). This is the DUPS sub-column: the count of near-duplicate test images removed from that test set, not an accuracy. A count is not an outcome measurement."
+  },
+  {
+   "extraction": {
+    "metric": "from imagenet21k",
+    "value": 687.0,
+    "where": "src/appendix.tex:112",
+    "text": "CIFAR-10: From ImageNet21k = 687",
+    "row_label": "CIFAR-10",
+    "column_label": "From ImageNet21k"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Cell: row CIFAR-10, group From ImageNet21k, sub-column Dups of printed Table 7, p.22 (\"Performance of BiT-L on the original (\"Full\") and deduplicated (\"Dedup\") test data. The \"Dups\" column shows the total number of near-duplicates found.\"). This is the DUPS sub-column: the count of near-duplicate test images removed from that test set, not an accuracy. A count is not an outcome measurement."
+  },
+  {
+   "extraction": {
+    "metric": "from imagenet21k",
+    "value": 890.0,
+    "where": "src/appendix.tex:112",
+    "text": "CIFAR-100: From ImageNet21k = 890",
+    "row_label": "CIFAR-100",
+    "column_label": "From ImageNet21k"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Cell: row CIFAR-100, group From ImageNet21k, sub-column Dups of printed Table 7, p.22 (\"Performance of BiT-L on the original (\"Full\") and deduplicated (\"Dedup\") test data. The \"Dups\" column shows the total number of near-duplicates found.\"). This is the DUPS sub-column: the count of near-duplicate test images removed from that test set, not an accuracy. A count is not an outcome measurement."
+  },
+  {
+   "extraction": {
+    "metric": "from imagenet21k",
+    "value": 3834.0,
+    "where": "src/appendix.tex:112",
+    "text": "ILSVRC-2012: From ImageNet21k = 3834",
+    "row_label": "ILSVRC-2012",
+    "column_label": "From ImageNet21k"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Cell: row ILSVRC-2012, group From ImageNet21k, sub-column Dups of printed Table 7, p.22 (\"Performance of BiT-L on the original (\"Full\") and deduplicated (\"Dedup\") test data. The \"Dups\" column shows the total number of near-duplicates found.\"). This is the DUPS sub-column: the count of near-duplicate test images removed from that test set, not an accuracy. A count is not an outcome measurement."
+  },
+  {
+   "extraction": {
+    "metric": "from jft",
+    "value": 87.8,
+    "where": "src/appendix.tex:112",
+    "text": "ILSVRC-2012: From JFT = 87.8",
+    "row_label": "ILSVRC-2012",
+    "column_label": "From JFT"
+   },
+   "verdict": "real_own_result",
+   "notes": "Cell: row ILSVRC-2012, group From JFT, sub-column Full of printed Table 7, p.22 (\"Performance of BiT-L on the original (\"Full\") and deduplicated (\"Dedup\") test data. The \"Dups\" column shows the total number of near-duplicates found.\"). This is the Full sub-column: BiT-L accuracy on the original (with near-duplicates) test set, measured by this paper (BiT-L is the authors' own model; no prior work is credited for these numbers)."
+  },
+  {
+   "extraction": {
+    "metric": "from jft",
+    "value": 87.9,
+    "where": "src/appendix.tex:112",
+    "text": "ILSVRC-2012: From JFT = 87.9",
+    "row_label": "ILSVRC-2012",
+    "column_label": "From JFT"
+   },
+   "verdict": "real_own_result",
+   "notes": "Cell: row ILSVRC-2012, group From JFT, sub-column Dedup of printed Table 7, p.22 (\"Performance of BiT-L on the original (\"Full\") and deduplicated (\"Dedup\") test data. The \"Dups\" column shows the total number of near-duplicates found.\"). This is the Dedup sub-column: BiT-L accuracy on the deduplicated test set, measured by this paper (BiT-L is the authors' own model; no prior work is credited for these numbers)."
+  },
+  {
+   "extraction": {
+    "metric": "from jft",
+    "value": 93.4,
+    "where": "src/appendix.tex:112",
+    "text": "CIFAR-100: From JFT = 93.4",
+    "row_label": "CIFAR-100",
+    "column_label": "From JFT"
+   },
+   "verdict": "real_own_result",
+   "notes": "Cell: row CIFAR-100, group From JFT, sub-column Dedup of printed Table 7, p.22 (\"Performance of BiT-L on the original (\"Full\") and deduplicated (\"Dedup\") test data. The \"Dups\" column shows the total number of near-duplicates found.\"). This is the Dedup sub-column: BiT-L accuracy on the deduplicated test set, measured by this paper (BiT-L is the authors' own model; no prior work is credited for these numbers)."
+  },
+  {
+   "extraction": {
+    "metric": "from jft",
+    "value": 93.6,
+    "where": "src/appendix.tex:112",
+    "text": "CIFAR-100: From JFT = 93.6",
+    "row_label": "CIFAR-100",
+    "column_label": "From JFT"
+   },
+   "verdict": "real_own_result",
+   "notes": "Cell: row CIFAR-100, group From JFT, sub-column Full of printed Table 7, p.22 (\"Performance of BiT-L on the original (\"Full\") and deduplicated (\"Dedup\") test data. The \"Dups\" column shows the total number of near-duplicates found.\"). This is the Full sub-column: BiT-L accuracy on the original (with near-duplicates) test set, measured by this paper (BiT-L is the authors' own model; no prior work is credited for these numbers). This value also appears elsewhere in Table 7 (Pets / From ILSVRC-2012 / Dedup); the record's row_label and column_label pin it to the cell named above."
+  },
+  {
+   "extraction": {
+    "metric": "from jft",
+    "value": 96.4,
+    "where": "src/appendix.tex:112",
+    "text": "Pets: From JFT = 96.4",
+    "row_label": "Pets",
+    "column_label": "From JFT"
+   },
+   "verdict": "real_own_result",
+   "notes": "Cell: row Pets, group From JFT, sub-column Dedup of printed Table 7, p.22 (\"Performance of BiT-L on the original (\"Full\") and deduplicated (\"Dedup\") test data. The \"Dups\" column shows the total number of near-duplicates found.\"). This is the Dedup sub-column: BiT-L accuracy on the deduplicated test set, measured by this paper (BiT-L is the authors' own model; no prior work is credited for these numbers)."
+  },
+  {
+   "extraction": {
+    "metric": "from jft",
+    "value": 96.8,
+    "where": "src/appendix.tex:112",
+    "text": "Pets: From JFT = 96.8",
+    "row_label": "Pets",
+    "column_label": "From JFT"
+   },
+   "verdict": "real_own_result",
+   "notes": "Cell: row Pets, group From JFT, sub-column Full of printed Table 7, p.22 (\"Performance of BiT-L on the original (\"Full\") and deduplicated (\"Dedup\") test data. The \"Dups\" column shows the total number of near-duplicates found.\"). This is the Full sub-column: BiT-L accuracy on the original (with near-duplicates) test set, measured by this paper (BiT-L is the authors' own model; no prior work is credited for these numbers)."
+  },
+  {
+   "extraction": {
+    "metric": "from jft",
+    "value": 99.3,
+    "where": "src/appendix.tex:112",
+    "text": "CIFAR-10: From JFT = 99.3",
+    "row_label": "CIFAR-10",
+    "column_label": "From JFT"
+   },
+   "verdict": "real_own_result",
+   "notes": "Cell: row CIFAR-10, group From JFT, sub-column Dedup of printed Table 7, p.22 (\"Performance of BiT-L on the original (\"Full\") and deduplicated (\"Dedup\") test data. The \"Dups\" column shows the total number of near-duplicates found.\"). This is the Dedup sub-column: BiT-L accuracy on the deduplicated test set, measured by this paper (BiT-L is the authors' own model; no prior work is credited for these numbers)."
+  },
+  {
+   "extraction": {
+    "metric": "from jft",
+    "value": 99.4,
+    "where": "src/appendix.tex:112",
+    "text": "CIFAR-10: From JFT = 99.4",
+    "row_label": "CIFAR-10",
+    "column_label": "From JFT"
+   },
+   "verdict": "real_own_result",
+   "notes": "Cell: row CIFAR-10, group From JFT, sub-column Full of printed Table 7, p.22 (\"Performance of BiT-L on the original (\"Full\") and deduplicated (\"Dedup\") test data. The \"Dups\" column shows the total number of near-duplicates found.\"). This is the Full sub-column: BiT-L accuracy on the original (with near-duplicates) test set, measured by this paper (BiT-L is the authors' own model; no prior work is credited for these numbers)."
+  },
+  {
+   "extraction": {
+    "metric": "from jft",
+    "value": 99.7,
+    "where": "src/appendix.tex:112",
+    "text": "Flowers: From JFT = 99.7",
+    "row_label": "Flowers",
+    "column_label": "From JFT"
+   },
+   "verdict": "real_own_result",
+   "notes": "Cell: row Flowers, group From JFT, sub-column Full of printed Table 7, p.22 (\"Performance of BiT-L on the original (\"Full\") and deduplicated (\"Dedup\") test data. The \"Dups\" column shows the total number of near-duplicates found.\"). This is the Full sub-column: BiT-L accuracy on the original (with near-duplicates) test set, measured by this paper (BiT-L is the authors' own model; no prior work is credited for these numbers). The printed value 99.7 is identical in the Full and Dedup sub-columns of this row/group, so only one extraction exists for two printed cells; placed at Full, the defensible primary reading (Dedup is byte-identical)."
+  },
+  {
+   "extraction": {
+    "metric": "from jft",
+    "value": 412.0,
+    "where": "src/appendix.tex:112",
+    "text": "Flowers: From JFT = 412",
+    "row_label": "Flowers",
+    "column_label": "From JFT"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Cell: row Flowers, group From JFT, sub-column Dups of printed Table 7, p.22 (\"Performance of BiT-L on the original (\"Full\") and deduplicated (\"Dedup\") test data. The \"Dups\" column shows the total number of near-duplicates found.\"). This is the DUPS sub-column: the count of near-duplicate test images removed from that test set, not an accuracy. A count is not an outcome measurement."
+  },
+  {
+   "extraction": {
+    "metric": "from jft",
+    "value": 435.0,
+    "where": "src/appendix.tex:112",
+    "text": "CIFAR-10: From JFT = 435",
+    "row_label": "CIFAR-10",
+    "column_label": "From JFT"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Cell: row CIFAR-10, group From JFT, sub-column Dups of printed Table 7, p.22 (\"Performance of BiT-L on the original (\"Full\") and deduplicated (\"Dedup\") test data. The \"Dups\" column shows the total number of near-duplicates found.\"). This is the DUPS sub-column: the count of near-duplicate test images removed from that test set, not an accuracy. A count is not an outcome measurement."
+  },
+  {
+   "extraction": {
+    "metric": "from jft",
+    "value": 491.0,
+    "where": "src/appendix.tex:112",
+    "text": "CIFAR-100: From JFT = 491",
+    "row_label": "CIFAR-100",
+    "column_label": "From JFT"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Cell: row CIFAR-100, group From JFT, sub-column Dups of printed Table 7, p.22 (\"Performance of BiT-L on the original (\"Full\") and deduplicated (\"Dedup\") test data. The \"Dups\" column shows the total number of near-duplicates found.\"). This is the DUPS sub-column: the count of near-duplicate test images removed from that test set, not an accuracy. A count is not an outcome measurement."
+  },
+  {
+   "extraction": {
+    "metric": "from jft",
+    "value": 600.0,
+    "where": "src/appendix.tex:112",
+    "text": "Pets: From JFT = 600",
+    "row_label": "Pets",
+    "column_label": "From JFT"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Cell: row Pets, group From JFT, sub-column Dups of printed Table 7, p.22 (\"Performance of BiT-L on the original (\"Full\") and deduplicated (\"Dedup\") test data. The \"Dups\" column shows the total number of near-duplicates found.\"). This is the DUPS sub-column: the count of near-duplicate test images removed from that test set, not an accuracy. A count is not an outcome measurement."
+  },
+  {
+   "extraction": {
+    "metric": "from jft",
+    "value": 6470.0,
+    "where": "src/appendix.tex:112",
+    "text": "ILSVRC-2012: From JFT = 6470",
+    "row_label": "ILSVRC-2012",
+    "column_label": "From JFT"
+   },
+   "verdict": "hyperparameter",
+   "notes": "Cell: row ILSVRC-2012, group From JFT, sub-column Dups of printed Table 7, p.22 (\"Performance of BiT-L on the original (\"Full\") and deduplicated (\"Dedup\") test data. The \"Dups\" column shows the total number of near-duplicates found.\"). This is the DUPS sub-column: the count of near-duplicate test images removed from that test set, not an accuracy. A count is not an outcome measurement."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 70.5,
+    "where": "src/content.tex:172",
+    "text": "VTAB (19 tasks): Generalist SOTA = 70.5",
+    "row_label": "VTAB (19 tasks)",
+    "column_label": "Generalist SOTA"
+   },
+   "verdict": "baseline",
+   "notes": "Table 1 (p.5, 'Top-1 accuracy for BiT-L on many datasets ... single hyperparameter setting per task (BiT-HyperRule)'), cell [row 'VTAB (19 tasks)' x column 'Generalist SOTA'] = 70.5. The printed cell carries a citation -- it reads '70.5 [58]' (VIVI, Tschannen et al.) -- and the whole column is a prior-work column ('Generalist SOTA'); the paper's own number for this row lives in the adjacent bold 'BiT-L' column. Attributed to prior work, so baseline."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 86.4,
+    "where": "src/content.tex:172",
+    "text": "ILSVRC-2012: Generalist SOTA = 86.4",
+    "row_label": "ILSVRC-2012",
+    "column_label": "Generalist SOTA"
+   },
+   "verdict": "baseline",
+   "notes": "Table 1 (p.5, 'Top-1 accuracy for BiT-L on many datasets ... single hyperparameter setting per task (BiT-HyperRule)'), cell [row 'ILSVRC-2012' x column 'Generalist SOTA'] = 86.4. The printed cell carries a citation -- it reads '86.4 [57]' (FixRes, Touvron et al.) -- and the whole column is a prior-work column ('Generalist SOTA'); the paper's own number for this row lives in the adjacent bold 'BiT-L' column. Attributed to prior work, so baseline."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 91.7,
+    "where": "src/content.tex:172",
+    "text": "CIFAR-100: Generalist SOTA = 91.7",
+    "row_label": "CIFAR-100",
+    "column_label": "Generalist SOTA"
+   },
+   "verdict": "baseline",
+   "notes": "Table 1 (p.5, 'Top-1 accuracy for BiT-L on many datasets ... single hyperparameter setting per task (BiT-HyperRule)'), cell [row 'CIFAR-100' x column 'Generalist SOTA'] = 91.7. The printed cell carries a citation -- it reads '91.7 [55]' (EfficientNet, Tan & Le) -- and the whole column is a prior-work column ('Generalist SOTA'); the paper's own number for this row lives in the adjacent bold 'BiT-L' column. Attributed to prior work, so baseline."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 95.9,
+    "where": "src/content.tex:172",
+    "text": "Pets: Generalist SOTA = 95.9",
+    "row_label": "Pets",
+    "column_label": "Generalist SOTA"
+   },
+   "verdict": "baseline",
+   "notes": "Table 1 (p.5, 'Top-1 accuracy for BiT-L on many datasets ... single hyperparameter setting per task (BiT-HyperRule)'), cell [row 'Pets' x column 'Generalist SOTA'] = 95.9. The printed cell carries a citation -- it reads '95.9 [19]' (GPipe, Huang et al.) -- and the whole column is a prior-work column ('Generalist SOTA'); the paper's own number for this row lives in the adjacent bold 'BiT-L' column. Attributed to prior work, so baseline."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 97.1,
+    "where": "src/content.tex:172",
+    "text": "Pets: Specialist SOTA = 97.1",
+    "row_label": "Pets",
+    "column_label": "Specialist SOTA"
+   },
+   "verdict": "baseline",
+   "notes": "Table 1 (p.5, 'Top-1 accuracy for BiT-L on many datasets ... single hyperparameter setting per task (BiT-HyperRule)'), cell [row 'Pets' x column 'Specialist SOTA'] = 97.1. The printed cell carries a citation -- it reads '97.1 [38]' (Domain Adaptive Transfer, Ngiam et al.) -- and the whole column is a prior-work column ('Specialist SOTA'); the paper's own number for this row lives in the adjacent bold 'BiT-L' column. Attributed to prior work, so baseline."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 97.7,
+    "where": "src/content.tex:172",
+    "text": "Flowers: Specialist SOTA = 97.7",
+    "row_label": "Flowers",
+    "column_label": "Specialist SOTA"
+   },
+   "verdict": "baseline",
+   "notes": "Table 1 (p.5, 'Top-1 accuracy for BiT-L on many datasets ... single hyperparameter setting per task (BiT-HyperRule)'), cell [row 'Flowers' x column 'Specialist SOTA'] = 97.7. The printed cell carries a citation -- it reads '97.7 [38]' (Domain Adaptive Transfer, Ngiam et al.) -- and the whole column is a prior-work column ('Specialist SOTA'); the paper's own number for this row lives in the adjacent bold 'BiT-L' column. Attributed to prior work, so baseline."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 98.8,
+    "where": "src/content.tex:172",
+    "text": "Flowers: Generalist SOTA = 98.8",
+    "row_label": "Flowers",
+    "column_label": "Generalist SOTA"
+   },
+   "verdict": "baseline",
+   "notes": "Table 1 (p.5, 'Top-1 accuracy for BiT-L on many datasets ... single hyperparameter setting per task (BiT-HyperRule)'), cell [row 'Flowers' x column 'Generalist SOTA'] = 98.8. The printed cell carries a citation -- it reads '98.8 [55]' (EfficientNet, Tan & Le) -- and the whole column is a prior-work column ('Generalist SOTA'); the paper's own number for this row lives in the adjacent bold 'BiT-L' column. Attributed to prior work, so baseline."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 99.0,
+    "where": "src/content.tex:172",
+    "text": "CIFAR-10: Generalist SOTA = 99",
+    "row_label": "CIFAR-10",
+    "column_label": "Generalist SOTA"
+   },
+   "verdict": "baseline",
+   "notes": "Table 1 (p.5, 'Top-1 accuracy for BiT-L on many datasets ... single hyperparameter setting per task (BiT-HyperRule)'), cell [row 'CIFAR-10' x column 'Generalist SOTA'] = 99.0. The printed cell carries a citation -- it reads '99.0 [19]' (GPipe, Huang et al.) -- and the whole column is a prior-work column ('Generalist SOTA'); the paper's own number for this row lives in the adjacent bold 'BiT-L' column. Attributed to prior work, so baseline. (Input value 99.0 matches the printed '99.0'; the extraction's text renders it as '99'.)"
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 66.87,
+    "where": "src/content.tex:236",
+    "text": "BiT-S (ILSVRC-2012): VTAB-1k (19 tasks) = 66.87",
+    "row_label": "BiT-S (ILSVRC-2012)",
+    "column_label": "VTAB-1k (19 tasks)"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 2 (p.6, 'Improvement in accuracy when pre-training on the public ImageNet-21k dataset over the \"standard\" ILSVRC-2012. Both models are ResNet152x4.'), cell [row 'BiT-S (ILSVRC-2012)' x column 'VTAB-1k (19 tasks)'] = printed 66.87. Both rows are the authors' own ResNet152x4 models pre-trained by them on ILSVRC-2012 (BiT-S) and ImageNet-21k (BiT-M) and evaluated by them; no citation anywhere in the table body. Own measurement."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 70.64,
+    "where": "src/content.tex:236",
+    "text": "BiT-M (ImageNet-21k): VTAB-1k (19 tasks) = 70.64",
+    "row_label": "BiT-M (ImageNet-21k)",
+    "column_label": "VTAB-1k (19 tasks)"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 2 (p.6, 'Improvement in accuracy when pre-training on the public ImageNet-21k dataset over the \"standard\" ILSVRC-2012. Both models are ResNet152x4.'), cell [row 'BiT-M (ImageNet-21k)' x column 'VTAB-1k (19 tasks)'] = printed 70.64. Both rows are the authors' own ResNet152x4 models pre-trained by them on ILSVRC-2012 (BiT-S) and ImageNet-21k (BiT-M) and evaluated by them; no citation anywhere in the table body. Own measurement."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 81.3,
+    "where": "src/content.tex:236",
+    "text": "BiT-S (ILSVRC-2012): ILSVRC-2012 = 81.3",
+    "row_label": "BiT-S (ILSVRC-2012)",
+    "column_label": "ILSVRC-2012"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 2 (p.6, 'Improvement in accuracy when pre-training on the public ImageNet-21k dataset over the \"standard\" ILSVRC-2012. Both models are ResNet152x4.'), cell [row 'BiT-S (ILSVRC-2012)' x column 'ILSVRC-2012'] = printed 81.30. Both rows are the authors' own ResNet152x4 models pre-trained by them on ILSVRC-2012 (BiT-S) and ImageNet-21k (BiT-M) and evaluated by them; no citation anywhere in the table body. Own measurement. Input value 81.3 is the same number at one fewer decimal."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 85.39,
+    "where": "src/content.tex:236",
+    "text": "BiT-M (ImageNet-21k): ILSVRC-2012 = 85.39",
+    "row_label": "BiT-M (ImageNet-21k)",
+    "column_label": "ILSVRC-2012"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 2 (p.6, 'Improvement in accuracy when pre-training on the public ImageNet-21k dataset over the \"standard\" ILSVRC-2012. Both models are ResNet152x4.'), cell [row 'BiT-M (ImageNet-21k)' x column 'ILSVRC-2012'] = printed 85.39. Both rows are the authors' own ResNet152x4 models pre-trained by them on ILSVRC-2012 (BiT-S) and ImageNet-21k (BiT-M) and evaluated by them; no citation anywhere in the table body. Own measurement."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 86.21,
+    "where": "src/content.tex:236",
+    "text": "BiT-S (ILSVRC-2012): CIFAR-100 = 86.21",
+    "row_label": "BiT-S (ILSVRC-2012)",
+    "column_label": "CIFAR-100"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 2 (p.6, 'Improvement in accuracy when pre-training on the public ImageNet-21k dataset over the \"standard\" ILSVRC-2012. Both models are ResNet152x4.'), cell [row 'BiT-S (ILSVRC-2012)' x column 'CIFAR-100'] = printed 86.21. Both rows are the authors' own ResNet152x4 models pre-trained by them on ILSVRC-2012 (BiT-S) and ImageNet-21k (BiT-M) and evaluated by them; no citation anywhere in the table body. Own measurement."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 89.89,
+    "where": "src/content.tex:236",
+    "text": "BiT-S (ILSVRC-2012): Flowers = 89.89",
+    "row_label": "BiT-S (ILSVRC-2012)",
+    "column_label": "Flowers"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 2 (p.6, 'Improvement in accuracy when pre-training on the public ImageNet-21k dataset over the \"standard\" ILSVRC-2012. Both models are ResNet152x4.'), cell [row 'BiT-S (ILSVRC-2012)' x column 'Flowers'] = printed 89.89. Both rows are the authors' own ResNet152x4 models pre-trained by them on ILSVRC-2012 (BiT-S) and ImageNet-21k (BiT-M) and evaluated by them; no citation anywhere in the table body. Own measurement."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 92.17,
+    "where": "src/content.tex:236",
+    "text": "BiT-M (ImageNet-21k): CIFAR-100 = 92.17",
+    "row_label": "BiT-M (ImageNet-21k)",
+    "column_label": "CIFAR-100"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 2 (p.6, 'Improvement in accuracy when pre-training on the public ImageNet-21k dataset over the \"standard\" ILSVRC-2012. Both models are ResNet152x4.'), cell [row 'BiT-M (ImageNet-21k)' x column 'CIFAR-100'] = printed 92.17. Both rows are the authors' own ResNet152x4 models pre-trained by them on ILSVRC-2012 (BiT-S) and ImageNet-21k (BiT-M) and evaluated by them; no citation anywhere in the table body. Own measurement."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 93.97,
+    "where": "src/content.tex:236",
+    "text": "BiT-S (ILSVRC-2012): Pets = 93.97",
+    "row_label": "BiT-S (ILSVRC-2012)",
+    "column_label": "Pets"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 2 (p.6, 'Improvement in accuracy when pre-training on the public ImageNet-21k dataset over the \"standard\" ILSVRC-2012. Both models are ResNet152x4.'), cell [row 'BiT-S (ILSVRC-2012)' x column 'Pets'] = printed 93.97. Both rows are the authors' own ResNet152x4 models pre-trained by them on ILSVRC-2012 (BiT-S) and ImageNet-21k (BiT-M) and evaluated by them; no citation anywhere in the table body. Own measurement."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 94.46,
+    "where": "src/content.tex:236",
+    "text": "BiT-M (ImageNet-21k): Pets = 94.46",
+    "row_label": "BiT-M (ImageNet-21k)",
+    "column_label": "Pets"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 2 (p.6, 'Improvement in accuracy when pre-training on the public ImageNet-21k dataset over the \"standard\" ILSVRC-2012. Both models are ResNet152x4.'), cell [row 'BiT-M (ImageNet-21k)' x column 'Pets'] = printed 94.46. Both rows are the authors' own ResNet152x4 models pre-trained by them on ILSVRC-2012 (BiT-S) and ImageNet-21k (BiT-M) and evaluated by them; no citation anywhere in the table body. Own measurement."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 97.51,
+    "where": "src/content.tex:236",
+    "text": "BiT-S (ILSVRC-2012): CIFAR-10 = 97.51",
+    "row_label": "BiT-S (ILSVRC-2012)",
+    "column_label": "CIFAR-10"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 2 (p.6, 'Improvement in accuracy when pre-training on the public ImageNet-21k dataset over the \"standard\" ILSVRC-2012. Both models are ResNet152x4.'), cell [row 'BiT-S (ILSVRC-2012)' x column 'CIFAR-10'] = printed 97.51. Both rows are the authors' own ResNet152x4 models pre-trained by them on ILSVRC-2012 (BiT-S) and ImageNet-21k (BiT-M) and evaluated by them; no citation anywhere in the table body. Own measurement."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 98.91,
+    "where": "src/content.tex:236",
+    "text": "BiT-M (ImageNet-21k): CIFAR-10 = 98.91",
+    "row_label": "BiT-M (ImageNet-21k)",
+    "column_label": "CIFAR-10"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 2 (p.6, 'Improvement in accuracy when pre-training on the public ImageNet-21k dataset over the \"standard\" ILSVRC-2012. Both models are ResNet152x4.'), cell [row 'BiT-M (ImageNet-21k)' x column 'CIFAR-10'] = printed 98.91. Both rows are the authors' own ResNet152x4 models pre-trained by them on ILSVRC-2012 (BiT-S) and ImageNet-21k (BiT-M) and evaluated by them; no citation anywhere in the table body. Own measurement."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 99.3,
+    "where": "src/content.tex:236",
+    "text": "BiT-M (ImageNet-21k): Flowers = 99.3",
+    "row_label": "BiT-M (ImageNet-21k)",
+    "column_label": "Flowers"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 2 (p.6, 'Improvement in accuracy when pre-training on the public ImageNet-21k dataset over the \"standard\" ILSVRC-2012. Both models are ResNet152x4.'), cell [row 'BiT-M (ImageNet-21k)' x column 'Flowers'] = printed 99.30. Both rows are the authors' own ResNet152x4 models pre-trained by them on ILSVRC-2012 (BiT-S) and ImageNet-21k (BiT-M) and evaluated by them; no citation anywhere in the table body. Own measurement. Input value 99.3 is the same number at one fewer decimal."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 72.0,
+    "where": "src/content.tex:294",
+    "text": "accuracy of 72.0",
+    "row_label": null,
+    "column_label": null
+   },
+   "verdict": "real_own_result",
+   "notes": "Prose value, not a table cell -- hence row_label/column_label null. Page 7, Section 3.5 'Tasks with Few Datapoints', sentence: 'In particular, with just 5 labeled samples per class it achieves top-1 accuracy of 72.0% on ILSVRC-2012 and with 100 samples the top-1 accuracy goes to 84.1%.' This record is the 72.0% (BiT-L, 5 labeled samples per class, ILSVRC-2012). The paper's own few-shot transfer measurement, the same runs plotted in Fig. 2 (left). Genuinely printed, so not not_in_paper."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 84.1,
+    "where": "src/content.tex:294",
+    "text": "accuracy goes to 84.1",
+    "row_label": null,
+    "column_label": null
+   },
+   "verdict": "real_own_result",
+   "notes": "Prose value, not a table cell -- hence row_label/column_label null. Page 7, Section 3.5 'Tasks with Few Datapoints', same sentence as the 72.0 record: '... and with 100 samples the top-1 accuracy goes to 84.1%.' This record is the 84.1% (BiT-L, 100 labeled samples per class, ILSVRC-2012). The paper's own few-shot transfer measurement, the same runs plotted in Fig. 2 (left). Genuinely printed, so not not_in_paper."
+  },
+  {
+   "extraction": {
+    "metric": "map",
+    "value": 40.8,
+    "where": "src/content.tex:346",
+    "text": "RetinaNet: AP = 40.8",
+    "row_label": "RetinaNet",
+    "column_label": "AP"
+   },
+   "verdict": "baseline",
+   "notes": "Table 3 (p.9, 'Object detection performance on COCO-2017 validation data of RetinaNet models with pre-trained BiT backbones and the literature baseline.'), cell [row 'RetinaNet [33]' x column 'AP'] = 40.8 (upstream data ILSVRC-2012). The row label itself carries the citation -- printed as 'RetinaNet [33]' (Lin et al., focal loss) -- and the caption names this row explicitly as 'the literature baseline'. The three rows below it, 'RetinaNet (BiT-S/M/L)', are the paper's own detectors. Ownership here is per row: this one cell is prior work, the rest of the AP column is not."
+  },
+  {
+   "extraction": {
+    "metric": "map",
+    "value": 41.7,
+    "where": "src/content.tex:346",
+    "text": "RetinaNet (BiT-S): AP = 41.7",
+    "row_label": "RetinaNet (BiT-S)",
+    "column_label": "AP"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 3 (p.9, 'Object detection performance on COCO-2017 validation data of RetinaNet models with pre-trained BiT backbones and the literature baseline.'), cell [row 'RetinaNet (BiT-S)' x column 'AP'] = 41.7 (upstream data ILSVRC-2012). No citation on the row; Section 3.7 says 'we ... train a top-performing object detector, RetinaNet, using pre-trained BiT models as backbones ... We fine-tune the detection models on the COCO-2017 train split and report results on the validation split'. The paper's own COCO-2017 val measurement. Distinct from the cited 40.8 row above it."
+  },
+  {
+   "extraction": {
+    "metric": "map",
+    "value": 43.2,
+    "where": "src/content.tex:346",
+    "text": "RetinaNet (BiT-M): AP = 43.2",
+    "row_label": "RetinaNet (BiT-M)",
+    "column_label": "AP"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 3 (p.9, 'Object detection performance on COCO-2017 validation data of RetinaNet models with pre-trained BiT backbones and the literature baseline.'), cell [row 'RetinaNet (BiT-M)' x column 'AP'] = 43.2 (upstream data ImageNet-21k). No citation on the row; the authors fine-tuned and evaluated this detector themselves (Section 3.7), and the surrounding prose reads the 41.7->43.2 step as their own '1.5 point improvement in Average Precision (AP)'."
+  },
+  {
+   "extraction": {
+    "metric": "map",
+    "value": 43.8,
+    "where": "src/content.tex:346",
+    "text": "RetinaNet (BiT-L): AP = 43.8",
+    "row_label": "RetinaNet (BiT-L)",
+    "column_label": "AP"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 3 (p.9, 'Object detection performance on COCO-2017 validation data of RetinaNet models with pre-trained BiT backbones and the literature baseline.'), cell [row 'RetinaNet (BiT-L)' x column 'AP'] = 43.8 (upstream data JFT-300M), printed in bold as the best AP in the table. No citation on the row; the authors' own COCO-2017 val measurement (Section 3.7), described in prose as JFT-300M pre-training 'further improves performance by 0.6 points' over 43.2."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 70.2,
+    "where": "src/content.tex:483",
+    "text": "Group Norm.: Plain Conv = 70.2",
+    "row_label": "Group Norm.",
+    "column_label": "Plain Conv"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 4 (p.12 left, 'Top-1 accuracy of ResNet-50 trained from scratch on ILSVRC-2012 with a batch-size of 4096.'), cell [row 'Group Norm.' x column 'Plain Conv'] = 70.2. This is the ILSVRC-2012-from-scratch table (Table 4) of the two same-shaped Batch Norm./Group Norm. x Plain Conv/Weight Std. tables that sit side by side on page 12 -- do not confuse it with the other one. Section 4.3 describes these as ablations the authors ran themselves ('We tested large batch training using 128 accelerator chips and a batch size of 4096'); GN and WS are prior *methods* but these accuracy numbers are the paper's own training runs, and no cell in either table carries a citation. Own measurement."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 75.6,
+    "where": "src/content.tex:483",
+    "text": "Batch Norm.: Plain Conv = 75.6",
+    "row_label": "Batch Norm.",
+    "column_label": "Plain Conv"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 4 (p.12 left, 'Top-1 accuracy of ResNet-50 trained from scratch on ILSVRC-2012 with a batch-size of 4096.'), cell [row 'Batch Norm.' x column 'Plain Conv'] = 75.6. This is the ILSVRC-2012-from-scratch table (Table 4) of the two same-shaped Batch Norm./Group Norm. x Plain Conv/Weight Std. tables that sit side by side on page 12 -- do not confuse it with the other one. Section 4.3 describes these as ablations the authors ran themselves ('We tested large batch training using 128 accelerator chips and a batch size of 4096'); GN and WS are prior *methods* but these accuracy numbers are the paper's own training runs, and no cell in either table carries a citation. Own measurement."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 75.8,
+    "where": "src/content.tex:483",
+    "text": "Batch Norm.: Weight Std. = 75.8",
+    "row_label": "Batch Norm.",
+    "column_label": "Weight Std."
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 4 (p.12 left, 'Top-1 accuracy of ResNet-50 trained from scratch on ILSVRC-2012 with a batch-size of 4096.'), cell [row 'Batch Norm.' x column 'Weight Std.'] = 75.8. This is the ILSVRC-2012-from-scratch table (Table 4) of the two same-shaped Batch Norm./Group Norm. x Plain Conv/Weight Std. tables that sit side by side on page 12 -- do not confuse it with the other one. Section 4.3 describes these as ablations the authors ran themselves ('We tested large batch training using 128 accelerator chips and a batch size of 4096'); GN and WS are prior *methods* but these accuracy numbers are the paper's own training runs, and no cell in either table carries a citation. Own measurement."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 76.0,
+    "where": "src/content.tex:483",
+    "text": "Group Norm.: Weight Std. = 76",
+    "row_label": "Group Norm.",
+    "column_label": "Weight Std."
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 4 (p.12 left, 'Top-1 accuracy of ResNet-50 trained from scratch on ILSVRC-2012 with a batch-size of 4096.'), cell [row 'Group Norm.' x column 'Weight Std.'] = 76.0. Printed in bold as the best cell in its table. This is the ILSVRC-2012-from-scratch table (Table 4) of the two same-shaped Batch Norm./Group Norm. x Plain Conv/Weight Std. tables that sit side by side on page 12 -- do not confuse it with the other one. Section 4.3 describes these as ablations the authors ran themselves ('We tested large batch training using 128 accelerator chips and a batch size of 4096'); GN and WS are prior *methods* but these accuracy numbers are the paper's own training runs, and no cell in either table carries a citation. Own measurement."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 66.78,
+    "where": "src/content.tex:495",
+    "text": "Batch Norm.: Weight Std. = 66.78",
+    "row_label": "Batch Norm.",
+    "column_label": "Weight Std."
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 5 (p.12 right, 'Transfer performance of the corresponding models from Table 4 fine-tuned to the 19 VTAB-1k tasks.'), cell [row 'Batch Norm.' x column 'Weight Std.'] = 66.78. This is the VTAB-1k transfer table (Table 5) of the two same-shaped Batch Norm./Group Norm. x Plain Conv/Weight Std. tables that sit side by side on page 12 -- do not confuse it with the other one. Section 4.3 describes these as ablations the authors ran themselves ('We tested large batch training using 128 accelerator chips and a batch size of 4096'); GN and WS are prior *methods* but these accuracy numbers are the paper's own training runs, and no cell in either table carries a citation. Own measurement."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 67.72,
+    "where": "src/content.tex:495",
+    "text": "Batch Norm.: Plain Conv = 67.72",
+    "row_label": "Batch Norm.",
+    "column_label": "Plain Conv"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 5 (p.12 right, 'Transfer performance of the corresponding models from Table 4 fine-tuned to the 19 VTAB-1k tasks.'), cell [row 'Batch Norm.' x column 'Plain Conv'] = 67.72. This is the VTAB-1k transfer table (Table 5) of the two same-shaped Batch Norm./Group Norm. x Plain Conv/Weight Std. tables that sit side by side on page 12 -- do not confuse it with the other one. Section 4.3 describes these as ablations the authors ran themselves ('We tested large batch training using 128 accelerator chips and a batch size of 4096'); GN and WS are prior *methods* but these accuracy numbers are the paper's own training runs, and no cell in either table carries a citation. Own measurement."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 68.77,
+    "where": "src/content.tex:495",
+    "text": "Group Norm.: Plain Conv = 68.77",
+    "row_label": "Group Norm.",
+    "column_label": "Plain Conv"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 5 (p.12 right, 'Transfer performance of the corresponding models from Table 4 fine-tuned to the 19 VTAB-1k tasks.'), cell [row 'Group Norm.' x column 'Plain Conv'] = 68.77. This is the VTAB-1k transfer table (Table 5) of the two same-shaped Batch Norm./Group Norm. x Plain Conv/Weight Std. tables that sit side by side on page 12 -- do not confuse it with the other one. Section 4.3 describes these as ablations the authors ran themselves ('We tested large batch training using 128 accelerator chips and a batch size of 4096'); GN and WS are prior *methods* but these accuracy numbers are the paper's own training runs, and no cell in either table carries a citation. Own measurement."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 70.39,
+    "where": "src/content.tex:495",
+    "text": "Group Norm.: Weight Std. = 70.39",
+    "row_label": "Group Norm.",
+    "column_label": "Weight Std."
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 5 (p.12 right, 'Transfer performance of the corresponding models from Table 4 fine-tuned to the 19 VTAB-1k tasks.'), cell [row 'Group Norm.' x column 'Weight Std.'] = 70.39. Printed in bold as the best cell in its table. This is the VTAB-1k transfer table (Table 5) of the two same-shaped Batch Norm./Group Norm. x Plain Conv/Weight Std. tables that sit side by side on page 12 -- do not confuse it with the other one. Section 4.3 describes these as ablations the authors ran themselves ('We tested large batch training using 128 accelerator chips and a batch size of 4096'); GN and WS are prior *methods* but these accuracy numbers are the paper's own training runs, and no cell in either table carries a citation. Own measurement."
+  },
+  {
+   "extraction": {
+    "metric": "accuracy",
+    "value": 0.0,
+    "where": "src/content.tex:552",
+    "text": "top-10",
+    "row_label": null,
+    "column_label": null
+   },
+   "verdict": "not_in_paper",
+   "notes": "Not a table cell and not a measurement -- row_label/column_label null. The locator points at the caption of Fig. 8 (p.14, 'Cases where BiT-L's predictions ... are counted as top-1 errors'), whose last clause reads 'Bottom group: The model's top-10 predictions are incorrect.' The extractor picked up the token 'top-10' and emitted metric=accuracy, value=0.0. The paper states no such number: '0.0' as an accuracy appears nowhere in the caption, on the page, or anywhere in the 28-page rendered text (checked). 'top-10' is a rank cutoff inside a qualitative description of hand-picked example images, not a reported figure, so this is not a hyperparameter either -- the asserted value 0.0 is simply absent from the paper."
+  }
+ ]
+}
