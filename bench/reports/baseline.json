@@ -1,18 +1,18 @@
 {
   "schema": "adduce-bench/1",
   "provenance": {
-    "generated_at": "2026-08-07T21:11:38+00:00",
+    "generated_at": "2026-08-24T21:34:47+00:00",
     "adduce_version": "0.1.2",
-    "git_commit": "01bc5cf3a3aa4ea505eae64eeede8f854807e5b6",
-    "git_dirty": true,
+    "git_commit": "97ffb9d7d54387ba66d004006e329fd63063c6fb",
+    "git_dirty": false,
     "python": "3.14.0",
     "platform": "darwin",
     "machine": "arm64",
     "load_average": {
       "available": true,
-      "one_minute": 6.78,
-      "five_minute": 7.44,
-      "fifteen_minute": 7.18,
+      "one_minute": 2.14,
+      "five_minute": 2.93,
+      "fifteen_minute": 3.3,
       "cpu_count": 14
     },
     "preregistration_digest": null
@@ -47,45 +47,45 @@
           "bytes": 579917
         },
         "performance": {
-          "cold_runtime_seconds": 0.1707,
-          "files_per_second": 152.3,
-          "python_loc_per_second": 7147.2,
+          "cold_runtime_seconds": 0.0782,
+          "files_per_second": 332.6,
+          "python_loc_per_second": 15604.8,
           "peak_rss": {
             "available": true,
-            "value": 35045376,
+            "value": 35504128,
             "unit": "bytes",
             "source": "resource.getrusage(RUSAGE_SELF)",
             "platform": "darwin"
           },
           "stage_milliseconds": {
-            "collect.config": 0.019,
-            "collect.data": 0.984,
-            "collect.dependencies": 0.348,
-            "collect.docs": 2.15,
-            "collect.environment": 0.073,
-            "collect.frameworks": 0.032,
-            "collect.git": 0.009,
-            "collect.latex": 0.018,
-            "collect.manifest": 0.224,
-            "collect.notebooks": 2.287,
-            "collect.precision": 0.152,
-            "collect.python": 0.441,
-            "collect.remote": 0.034,
-            "collect.results": 0.034,
-            "collect.run_history": 0.034,
-            "collect.shared_read": 61.837,
-            "graph": 0.092,
-            "reviewer_time": 0.016,
-            "rules.discover": 10.639,
-            "rules.evaluate": 0.83,
-            "scan": 88.353,
-            "score": 0.124,
-            "total": 170.562
+            "collect.config": 0.011,
+            "collect.data": 0.456,
+            "collect.dependencies": 0.177,
+            "collect.docs": 0.974,
+            "collect.environment": 0.043,
+            "collect.frameworks": 0.017,
+            "collect.git": 0.007,
+            "collect.latex": 0.01,
+            "collect.manifest": 0.124,
+            "collect.notebooks": 1.115,
+            "collect.precision": 0.087,
+            "collect.python": 0.168,
+            "collect.remote": 0.017,
+            "collect.results": 0.015,
+            "collect.run_history": 0.084,
+            "collect.shared_read": 27.677,
+            "graph": 0.324,
+            "reviewer_time": 0.011,
+            "rules.discover": 4.913,
+            "rules.evaluate": 0.364,
+            "scan": 40.858,
+            "score": 0.062,
+            "total": 78.124
           },
           "counters": {
             "files.inventoried": 26,
             "files.python": 15,
-            "files.read_cache_hits": 4,
+            "files.read_cache_hits": 8,
             "files.read_from_disk": 22,
             "files.shared_reads": 21,
             "parse.python.failed": 0,
@@ -95,11 +95,11 @@
           },
           "disk_reads_per_inventoried_file": 0.8462,
           "cold_runtime_samples": [
-            0.1722,
-            0.1707,
-            0.1671
+            0.0892,
+            0.0779,
+            0.0782
           ],
-          "cold_runtime_spread": 0.0299
+          "cold_runtime_spread": 0.1445
         },
         "outcome": {
           "score": 54.4475,
@@ -110,7 +110,7 @@
         "determinism": {
           "repeat_render_byte_identical": true,
           "comparison": "two run_check calls in one process, default JSON report",
-          "repeat_runtime_seconds": 0.161,
+          "repeat_runtime_seconds": 0.0755,
           "warm_path_exists": false
         }
       },
@@ -126,45 +126,45 @@
           "bytes": 579917
         },
         "performance": {
-          "cold_runtime_seconds": 0.1704,
-          "files_per_second": 152.6,
-          "python_loc_per_second": 7160.8,
+          "cold_runtime_seconds": 0.0661,
+          "files_per_second": 393.4,
+          "python_loc_per_second": 18459.4,
           "peak_rss": {
             "available": true,
-            "value": 34848768,
+            "value": 35569664,
             "unit": "bytes",
             "source": "resource.getrusage(RUSAGE_SELF)",
             "platform": "darwin"
           },
           "stage_milliseconds": {
-            "collect.config": 0.017,
-            "collect.data": 0.961,
-            "collect.dependencies": 0.345,
-            "collect.docs": 2.155,
-            "collect.environment": 0.074,
-            "collect.frameworks": 0.031,
+            "collect.config": 0.01,
+            "collect.data": 0.43,
+            "collect.dependencies": 0.173,
+            "collect.docs": 0.949,
+            "collect.environment": 0.036,
+            "collect.frameworks": 0.015,
             "collect.git": 0.007,
-            "collect.latex": 0.018,
-            "collect.manifest": 0.218,
-            "collect.notebooks": 2.196,
-            "collect.precision": 0.149,
-            "collect.python": 0.451,
-            "collect.remote": 0.035,
-            "collect.results": 0.035,
-            "collect.run_history": 0.041,
-            "collect.shared_read": 63.204,
-            "graph": 0.109,
-            "reviewer_time": 0.017,
-            "rules.discover": 10.902,
-            "rules.evaluate": 0.838,
-            "scan": 86.372,
-            "score": 0.126,
-            "total": 170.217
+            "collect.latex": 0.009,
+            "collect.manifest": 0.118,
+            "collect.notebooks": 0.97,
+            "collect.precision": 0.069,
+            "collect.python": 0.227,
+            "collect.remote": 0.016,
+            "collect.results": 0.014,
+            "collect.run_history": 0.066,
+            "collect.shared_read": 28.095,
+            "graph": 0.36,
+            "reviewer_time": 0.01,
+            "rules.discover": 5.43,
+            "rules.evaluate": 0.43,
+            "scan": 27.95,
+            "score": 0.066,
+            "total": 66.038
           },
           "counters": {
             "files.inventoried": 26,
             "files.python": 15,
-            "files.read_cache_hits": 4,
+            "files.read_cache_hits": 8,
             "files.read_from_disk": 22,
             "files.shared_reads": 21,
             "parse.python.failed": 0,
@@ -174,11 +174,11 @@
           },
           "disk_reads_per_inventoried_file": 0.8462,
           "cold_runtime_samples": [
-            0.1628,
-            0.1704,
-            0.1933
+            0.0651,
+            0.0661,
+            0.067
           ],
-          "cold_runtime_spread": 0.179
+          "cold_runtime_spread": 0.0287
         },
         "outcome": {
           "score": 54.4475,
@@ -189,7 +189,7 @@
         "determinism": {
           "repeat_render_byte_identical": true,
           "comparison": "two run_check calls in one process, default JSON report",
-          "repeat_runtime_seconds": 0.1293,
+          "repeat_runtime_seconds": 0.0622,
           "warm_path_exists": false
         }
       }
@@ -210,45 +210,45 @@
           "bytes": 1518718
         },
         "performance": {
-          "cold_runtime_seconds": 0.4742,
-          "files_per_second": 215.1,
-          "python_loc_per_second": 35525.7,
+          "cold_runtime_seconds": 0.2043,
+          "files_per_second": 499.2,
+          "python_loc_per_second": 82449.3,
           "peak_rss": {
             "available": true,
-            "value": 42156032,
+            "value": 42385408,
             "unit": "bytes",
             "source": "resource.getrusage(RUSAGE_SELF)",
             "platform": "darwin"
           },
           "stage_milliseconds": {
-            "collect.config": 0.293,
-            "collect.data": 0.756,
-            "collect.dependencies": 0.621,
-            "collect.docs": 2.317,
-            "collect.environment": 0.205,
-            "collect.frameworks": 0.072,
-            "collect.git": 0.012,
-            "collect.latex": 0.045,
-            "collect.manifest": 0.246,
-            "collect.notebooks": 0.037,
-            "collect.precision": 1.1,
-            "collect.python": 4.533,
-            "collect.remote": 0.059,
-            "collect.results": 0.145,
-            "collect.run_history": 0.093,
-            "collect.shared_read": 361.363,
-            "graph": 0.354,
-            "reviewer_time": 0.03,
-            "rules.discover": 11.087,
-            "rules.evaluate": 2.842,
-            "scan": 86.001,
-            "score": 0.137,
-            "total": 474.074
+            "collect.config": 0.121,
+            "collect.data": 0.349,
+            "collect.dependencies": 0.251,
+            "collect.docs": 1.087,
+            "collect.environment": 0.091,
+            "collect.frameworks": 0.032,
+            "collect.git": 0.005,
+            "collect.latex": 0.018,
+            "collect.manifest": 0.123,
+            "collect.notebooks": 0.015,
+            "collect.precision": 0.49,
+            "collect.python": 1.783,
+            "collect.remote": 0.021,
+            "collect.results": 0.054,
+            "collect.run_history": 0.112,
+            "collect.shared_read": 150.677,
+            "graph": 0.763,
+            "reviewer_time": 0.014,
+            "rules.discover": 5.279,
+            "rules.evaluate": 1.178,
+            "scan": 41.028,
+            "score": 0.071,
+            "total": 204.27
           },
           "counters": {
             "files.inventoried": 102,
             "files.python": 67,
-            "files.read_cache_hits": 17,
+            "files.read_cache_hits": 18,
             "files.read_from_disk": 99,
             "files.shared_reads": 99,
             "parse.python.failed": 0,
@@ -258,11 +258,11 @@
           },
           "disk_reads_per_inventoried_file": 0.9706,
           "cold_runtime_samples": [
-            0.4561,
-            0.4895,
-            0.4742
+            0.2126,
+            0.2043,
+            0.2035
           ],
-          "cold_runtime_spread": 0.0704
+          "cold_runtime_spread": 0.0445
         },
         "outcome": {
           "score": 39.8773,
@@ -273,7 +273,7 @@
         "determinism": {
           "repeat_render_byte_identical": true,
           "comparison": "two run_check calls in one process, default JSON report",
-          "repeat_runtime_seconds": 0.4673,
+          "repeat_runtime_seconds": 0.1839,
           "warm_path_exists": false
         }
       },
@@ -289,45 +289,45 @@
           "bytes": 1518718
         },
         "performance": {
-          "cold_runtime_seconds": 0.5305,
-          "files_per_second": 192.3,
-          "python_loc_per_second": 31760.8,
+          "cold_runtime_seconds": 0.174,
+          "files_per_second": 586.1,
+          "python_loc_per_second": 96807.0,
           "peak_rss": {
             "available": true,
-            "value": 42106880,
+            "value": 42352640,
             "unit": "bytes",
             "source": "resource.getrusage(RUSAGE_SELF)",
             "platform": "darwin"
           },
           "stage_milliseconds": {
-            "collect.config": 0.274,
-            "collect.data": 0.752,
-            "collect.dependencies": 0.581,
-            "collect.docs": 2.29,
-            "collect.environment": 0.206,
-            "collect.frameworks": 0.07,
-            "collect.git": 0.01,
-            "collect.latex": 0.052,
-            "collect.manifest": 0.246,
-            "collect.notebooks": 0.041,
-            "collect.precision": 1.07,
-            "collect.python": 4.362,
-            "collect.remote": 0.053,
-            "collect.results": 0.144,
-            "collect.run_history": 0.095,
-            "collect.shared_read": 404.572,
-            "graph": 0.345,
-            "reviewer_time": 0.031,
-            "rules.discover": 10.938,
-            "rules.evaluate": 2.802,
-            "scan": 99.68,
-            "score": 0.122,
-            "total": 530.313
+            "collect.config": 0.131,
+            "collect.data": 0.334,
+            "collect.dependencies": 0.247,
+            "collect.docs": 0.988,
+            "collect.environment": 0.086,
+            "collect.frameworks": 0.032,
+            "collect.git": 0.006,
+            "collect.latex": 0.018,
+            "collect.manifest": 0.122,
+            "collect.notebooks": 0.014,
+            "collect.precision": 0.454,
+            "collect.python": 1.736,
+            "collect.remote": 0.021,
+            "collect.results": 0.054,
+            "collect.run_history": 0.128,
+            "collect.shared_read": 139.418,
+            "graph": 0.689,
+            "reviewer_time": 0.014,
+            "rules.discover": 4.586,
+            "rules.evaluate": 1.106,
+            "scan": 23.137,
+            "score": 0.05,
+            "total": 173.973
           },
           "counters": {
             "files.inventoried": 102,
             "files.python": 67,
-            "files.read_cache_hits": 17,
+            "files.read_cache_hits": 18,
             "files.read_from_disk": 99,
             "files.shared_reads": 99,
             "parse.python.failed": 0,
@@ -337,11 +337,11 @@
           },
           "disk_reads_per_inventoried_file": 0.9706,
           "cold_runtime_samples": [
-            0.5471,
-            0.5305,
-            0.4242
+            0.1726,
+            0.174,
+            0.1764
           ],
-          "cold_runtime_spread": 0.2317
+          "cold_runtime_spread": 0.0218
         },
         "outcome": {
           "score": 39.8773,
@@ -352,7 +352,7 @@
         "determinism": {
           "repeat_render_byte_identical": true,
           "comparison": "two run_check calls in one process, default JSON report",
-          "repeat_runtime_seconds": 0.4585,
+          "repeat_runtime_seconds": 0.1761,
           "warm_path_exists": false
         }
       }
@@ -373,45 +373,45 @@
           "bytes": 12787035
         },
         "performance": {
-          "cold_runtime_seconds": 0.7441,
-          "files_per_second": 163.9,
-          "python_loc_per_second": 25241.3,
+          "cold_runtime_seconds": 0.3063,
+          "files_per_second": 398.3,
+          "python_loc_per_second": 61323.8,
           "peak_rss": {
             "available": true,
-            "value": 45744128,
+            "value": 45973504,
             "unit": "bytes",
             "source": "resource.getrusage(RUSAGE_SELF)",
             "platform": "darwin"
           },
           "stage_milliseconds": {
-            "collect.config": 0.098,
-            "collect.data": 11.882,
-            "collect.dependencies": 0.805,
-            "collect.docs": 27.214,
-            "collect.environment": 0.313,
-            "collect.frameworks": 0.078,
-            "collect.git": 0.021,
-            "collect.latex": 0.058,
-            "collect.manifest": 0.237,
-            "collect.notebooks": 5.557,
-            "collect.precision": 1.45,
-            "collect.python": 5.549,
-            "collect.remote": 0.033,
-            "collect.results": 0.112,
-            "collect.run_history": 0.111,
-            "collect.shared_read": 584.963,
-            "graph": 0.621,
-            "reviewer_time": 0.028,
-            "rules.discover": 11.331,
-            "rules.evaluate": 3.283,
-            "scan": 87.796,
-            "score": 0.156,
-            "total": 743.437
+            "collect.config": 0.031,
+            "collect.data": 3.232,
+            "collect.dependencies": 0.36,
+            "collect.docs": 8.237,
+            "collect.environment": 0.151,
+            "collect.frameworks": 0.041,
+            "collect.git": 0.007,
+            "collect.latex": 0.023,
+            "collect.manifest": 0.161,
+            "collect.notebooks": 2.308,
+            "collect.precision": 0.7,
+            "collect.python": 2.528,
+            "collect.remote": 0.015,
+            "collect.results": 0.053,
+            "collect.run_history": 0.192,
+            "collect.shared_read": 232.55,
+            "graph": 1.046,
+            "reviewer_time": 0.013,
+            "rules.discover": 5.434,
+            "rules.evaluate": 1.014,
+            "scan": 47.04,
+            "score": 0.069,
+            "total": 305.993
           },
           "counters": {
             "files.inventoried": 122,
             "files.python": 81,
-            "files.read_cache_hits": 5,
+            "files.read_cache_hits": 6,
             "files.read_from_disk": 84,
             "files.shared_reads": 84,
             "parse.python.failed": 0,
@@ -421,11 +421,11 @@
           },
           "disk_reads_per_inventoried_file": 0.6885,
           "cold_runtime_samples": [
-            0.673,
-            0.7441,
-            0.7465
+            0.3197,
+            0.3063,
+            0.3047
           ],
-          "cold_runtime_spread": 0.0988
+          "cold_runtime_spread": 0.049
         },
         "outcome": {
           "score": 38.9719,
@@ -436,7 +436,7 @@
         "determinism": {
           "repeat_render_byte_identical": true,
           "comparison": "two run_check calls in one process, default JSON report",
-          "repeat_runtime_seconds": 0.6948,
+          "repeat_runtime_seconds": 0.2997,
           "warm_path_exists": false
         }
       },
@@ -452,45 +452,45 @@
           "bytes": 12787035
         },
         "performance": {
-          "cold_runtime_seconds": 0.6454,
-          "files_per_second": 189.0,
-          "python_loc_per_second": 29101.9,
+          "cold_runtime_seconds": 0.2911,
+          "files_per_second": 419.0,
+          "python_loc_per_second": 64513.8,
           "peak_rss": {
             "available": true,
-            "value": 44990464,
+            "value": 45858816,
             "unit": "bytes",
             "source": "resource.getrusage(RUSAGE_SELF)",
             "platform": "darwin"
           },
           "stage_milliseconds": {
-            "collect.config": 0.057,
-            "collect.data": 6.813,
-            "collect.dependencies": 0.718,
-            "collect.docs": 17.469,
-            "collect.environment": 0.306,
-            "collect.frameworks": 0.072,
-            "collect.git": 0.011,
-            "collect.latex": 0.047,
-            "collect.manifest": 0.261,
-            "collect.notebooks": 4.746,
-            "collect.precision": 1.446,
-            "collect.python": 5.047,
-            "collect.remote": 0.029,
-            "collect.results": 0.111,
-            "collect.run_history": 0.113,
-            "collect.shared_read": 534.466,
-            "graph": 0.525,
-            "reviewer_time": 0.023,
-            "rules.discover": 10.693,
-            "rules.evaluate": 2.634,
-            "scan": 57.63,
-            "score": 0.137,
-            "total": 644.801
+            "collect.config": 0.033,
+            "collect.data": 3.216,
+            "collect.dependencies": 0.359,
+            "collect.docs": 8.137,
+            "collect.environment": 0.149,
+            "collect.frameworks": 0.039,
+            "collect.git": 0.01,
+            "collect.latex": 0.021,
+            "collect.manifest": 0.158,
+            "collect.notebooks": 2.299,
+            "collect.precision": 0.721,
+            "collect.python": 2.548,
+            "collect.remote": 0.013,
+            "collect.results": 0.053,
+            "collect.run_history": 0.193,
+            "collect.shared_read": 232.159,
+            "graph": 1.075,
+            "reviewer_time": 0.014,
+            "rules.discover": 5.331,
+            "rules.evaluate": 0.941,
+            "scan": 32.508,
+            "score": 0.066,
+            "total": 290.83
           },
           "counters": {
             "files.inventoried": 122,
             "files.python": 81,
-            "files.read_cache_hits": 5,
+            "files.read_cache_hits": 6,
             "files.read_from_disk": 84,
             "files.shared_reads": 84,
             "parse.python.failed": 0,
@@ -500,11 +500,11 @@
           },
           "disk_reads_per_inventoried_file": 0.6885,
           "cold_runtime_samples": [
-            0.6454,
-            0.6374,
-            0.6759
+            0.2911,
+            0.2904,
+            0.2927
           ],
-          "cold_runtime_spread": 0.0597
+          "cold_runtime_spread": 0.0079
         },
         "outcome": {
           "score": 38.9719,
@@ -515,7 +515,7 @@
         "determinism": {
           "repeat_render_byte_identical": true,
           "comparison": "two run_check calls in one process, default JSON report",
-          "repeat_runtime_seconds": 0.6174,
+          "repeat_runtime_seconds": 0.248,
           "warm_path_exists": false
         }
       }
@@ -536,59 +536,59 @@
           "bytes": 13441774
         },
         "performance": {
-          "cold_runtime_seconds": 3.4421,
-          "files_per_second": 241.1,
-          "python_loc_per_second": 29902.8,
+          "cold_runtime_seconds": 1.2755,
+          "files_per_second": 650.7,
+          "python_loc_per_second": 80697.1,
           "peak_rss": {
             "available": true,
-            "value": 69435392,
+            "value": 69320704,
             "unit": "bytes",
             "source": "resource.getrusage(RUSAGE_SELF)",
             "platform": "darwin"
           },
           "stage_milliseconds": {
-            "collect.config": 1001.184,
-            "collect.data": 3.346,
-            "collect.dependencies": 3.536,
-            "collect.docs": 4.401,
-            "collect.environment": 5.237,
-            "collect.frameworks": 0.383,
-            "collect.git": 0.01,
-            "collect.latex": 0.356,
-            "collect.manifest": 0.254,
-            "collect.notebooks": 0.282,
-            "collect.precision": 4.758,
-            "collect.python": 16.702,
-            "collect.remote": 0.078,
-            "collect.results": 0.854,
-            "collect.run_history": 1.789,
-            "collect.shared_read": 2213.908,
-            "graph": 1.523,
-            "reviewer_time": 0.137,
-            "rules.discover": 26.258,
-            "rules.evaluate": 11.406,
-            "scan": 136.333,
-            "score": 0.19,
-            "total": 3434.94
+            "collect.config": 344.211,
+            "collect.data": 1.58,
+            "collect.dependencies": 0.789,
+            "collect.docs": 1.843,
+            "collect.environment": 2.004,
+            "collect.frameworks": 0.149,
+            "collect.git": 0.004,
+            "collect.latex": 0.128,
+            "collect.manifest": 0.1,
+            "collect.notebooks": 0.108,
+            "collect.precision": 1.693,
+            "collect.python": 6.599,
+            "collect.remote": 0.024,
+            "collect.results": 0.294,
+            "collect.run_history": 0.921,
+            "collect.shared_read": 851.626,
+            "graph": 0.957,
+            "reviewer_time": 0.049,
+            "rules.discover": 4.545,
+            "rules.evaluate": 3.789,
+            "scan": 52.832,
+            "score": 0.074,
+            "total": 1275.083
           },
           "counters": {
             "files.inventoried": 830,
             "files.python": 498,
-            "files.read_cache_hits": 7,
-            "files.read_from_disk": 1013,
+            "files.read_cache_hits": 10,
+            "files.read_from_disk": 1016,
             "files.shared_reads": 793,
             "parse.python.failed": 0,
             "parse.python.modules": 498,
             "rules.evaluated": 69,
             "rules.skipped_inapplicable": 9
           },
-          "disk_reads_per_inventoried_file": 1.2205,
+          "disk_reads_per_inventoried_file": 1.2241,
           "cold_runtime_samples": [
-            3.4421,
-            3.5038,
-            3.3201
+            1.3116,
+            1.259,
+            1.2755
           ],
-          "cold_runtime_spread": 0.0534
+          "cold_runtime_spread": 0.0412
         },
         "outcome": {
           "score": 50.5503,
@@ -599,7 +599,7 @@
         "determinism": {
           "repeat_render_byte_identical": true,
           "comparison": "two run_check calls in one process, default JSON report",
-          "repeat_runtime_seconds": 3.4438,
+          "repeat_runtime_seconds": 1.2749,
           "warm_path_exists": false
         }
       },
@@ -615,59 +615,59 @@
           "bytes": 13441774
         },
         "performance": {
-          "cold_runtime_seconds": 3.3933,
-          "files_per_second": 244.6,
-          "python_loc_per_second": 30333.3,
+          "cold_runtime_seconds": 1.2671,
+          "files_per_second": 655.0,
+          "python_loc_per_second": 81234.1,
           "peak_rss": {
             "available": true,
-            "value": 66797568,
+            "value": 69287936,
             "unit": "bytes",
             "source": "resource.getrusage(RUSAGE_SELF)",
             "platform": "darwin"
           },
           "stage_milliseconds": {
-            "collect.config": 910.777,
-            "collect.data": 3.437,
-            "collect.dependencies": 2.118,
-            "collect.docs": 4.442,
-            "collect.environment": 5.28,
-            "collect.frameworks": 0.478,
-            "collect.git": 0.011,
-            "collect.latex": 0.403,
-            "collect.manifest": 0.263,
-            "collect.notebooks": 0.35,
-            "collect.precision": 4.74,
-            "collect.python": 16.074,
-            "collect.remote": 0.076,
-            "collect.results": 0.939,
-            "collect.run_history": 1.454,
-            "collect.shared_read": 2247.989,
-            "graph": 1.377,
-            "reviewer_time": 0.131,
-            "rules.discover": 12.08,
-            "rules.evaluate": 9.606,
-            "scan": 168.082,
-            "score": 0.18,
-            "total": 3392.269
+            "collect.config": 342.771,
+            "collect.data": 1.542,
+            "collect.dependencies": 0.802,
+            "collect.docs": 1.75,
+            "collect.environment": 1.895,
+            "collect.frameworks": 0.148,
+            "collect.git": 0.005,
+            "collect.latex": 0.135,
+            "collect.manifest": 0.106,
+            "collect.notebooks": 0.124,
+            "collect.precision": 1.693,
+            "collect.python": 6.364,
+            "collect.remote": 0.025,
+            "collect.results": 0.307,
+            "collect.run_history": 0.927,
+            "collect.shared_read": 854.751,
+            "graph": 1.006,
+            "reviewer_time": 0.048,
+            "rules.discover": 4.506,
+            "rules.evaluate": 3.809,
+            "scan": 43.05,
+            "score": 0.071,
+            "total": 1266.658
           },
           "counters": {
             "files.inventoried": 830,
             "files.python": 498,
-            "files.read_cache_hits": 7,
-            "files.read_from_disk": 1013,
+            "files.read_cache_hits": 10,
+            "files.read_from_disk": 1016,
             "files.shared_reads": 793,
             "parse.python.failed": 0,
             "parse.python.modules": 498,
             "rules.evaluated": 69,
             "rules.skipped_inapplicable": 9
           },
-          "disk_reads_per_inventoried_file": 1.2205,
+          "disk_reads_per_inventoried_file": 1.2241,
           "cold_runtime_samples": [
-            3.2597,
-            3.4716,
-            3.3933
+            1.2671,
+            1.2633,
+            1.2705
           ],
-          "cold_runtime_spread": 0.0624
+          "cold_runtime_spread": 0.0057
         },
         "outcome": {
           "score": 50.5503,
@@ -678,7 +678,7 @@
         "determinism": {
           "repeat_render_byte_identical": true,
           "comparison": "two run_check calls in one process, default JSON report",
-          "repeat_runtime_seconds": 3.5183,
+          "repeat_runtime_seconds": 1.2702,
           "warm_path_exists": false
         }
       }
@@ -699,59 +699,59 @@
           "bytes": 91893834
         },
         "performance": {
-          "cold_runtime_seconds": 39.5913,
-          "files_per_second": 158.7,
-          "python_loc_per_second": 42622.5,
+          "cold_runtime_seconds": 14.9605,
+          "files_per_second": 419.9,
+          "python_loc_per_second": 112795.9,
           "peak_rss": {
             "available": true,
-            "value": 354238464,
+            "value": 369704960,
             "unit": "bytes",
             "source": "resource.getrusage(RUSAGE_SELF)",
             "platform": "darwin"
           },
           "stage_milliseconds": {
-            "collect.config": 9.22,
-            "collect.data": 27.559,
-            "collect.dependencies": 17.44,
-            "collect.docs": 12.452,
-            "collect.environment": 44.754,
-            "collect.frameworks": 2.547,
-            "collect.git": 0.017,
-            "collect.latex": 3.598,
-            "collect.manifest": 0.304,
-            "collect.notebooks": 2.999,
-            "collect.precision": 93.352,
-            "collect.python": 448.123,
-            "collect.remote": 24.163,
-            "collect.results": 11.382,
-            "collect.run_history": 10.251,
-            "collect.shared_read": 37979.302,
-            "graph": 40.212,
-            "reviewer_time": 0.215,
-            "rules.discover": 18.254,
-            "rules.evaluate": 104.102,
-            "scan": 727.225,
-            "score": 1.173,
-            "total": 39585.439
+            "collect.config": 2.829,
+            "collect.data": 11.734,
+            "collect.dependencies": 6.897,
+            "collect.docs": 3.559,
+            "collect.environment": 19.713,
+            "collect.frameworks": 1.006,
+            "collect.git": 0.005,
+            "collect.latex": 0.912,
+            "collect.manifest": 0.699,
+            "collect.notebooks": 0.908,
+            "collect.precision": 37.473,
+            "collect.python": 137.003,
+            "collect.remote": 7.621,
+            "collect.results": 3.76,
+            "collect.run_history": 5.828,
+            "collect.shared_read": 14430.429,
+            "graph": 18.274,
+            "reviewer_time": 0.08,
+            "rules.discover": 5.078,
+            "rules.evaluate": 26.749,
+            "scan": 235.448,
+            "score": 0.362,
+            "total": 14958.982
           },
           "counters": {
             "files.inventoried": 6282,
             "files.python": 4643,
-            "files.read_cache_hits": 11,
-            "files.read_from_disk": 6347,
+            "files.read_cache_hits": 14,
+            "files.read_from_disk": 6374,
             "files.shared_reads": 6232,
             "parse.python.failed": 0,
             "parse.python.modules": 4643,
             "rules.evaluated": 70,
             "rules.skipped_inapplicable": 8
           },
-          "disk_reads_per_inventoried_file": 1.0103,
+          "disk_reads_per_inventoried_file": 1.0146,
           "cold_runtime_samples": [
-            39.5913,
-            40.5567,
-            38.1492
+            14.9316,
+            14.9605,
+            15.3729
           ],
-          "cold_runtime_spread": 0.0608
+          "cold_runtime_spread": 0.0295
         },
         "outcome": {
           "score": 57.3122,
@@ -762,7 +762,7 @@
         "determinism": {
           "repeat_render_byte_identical": true,
           "comparison": "two run_check calls in one process, default JSON report",
-          "repeat_runtime_seconds": 41.8736,
+          "repeat_runtime_seconds": 20.2695,
           "warm_path_exists": false
         }
       },
@@ -778,59 +778,59 @@
           "bytes": 91893834
         },
         "performance": {
-          "cold_runtime_seconds": 20.3408,
-          "files_per_second": 308.8,
-          "python_loc_per_second": 82960.5,
+          "cold_runtime_seconds": 18.4083,
+          "files_per_second": 341.3,
+          "python_loc_per_second": 91669.5,
           "peak_rss": {
             "available": true,
-            "value": 349077504,
+            "value": 362905600,
             "unit": "bytes",
             "source": "resource.getrusage(RUSAGE_SELF)",
             "platform": "darwin"
           },
           "stage_milliseconds": {
-            "collect.config": 3.995,
-            "collect.data": 14.565,
-            "collect.dependencies": 8.72,
-            "collect.docs": 5.068,
-            "collect.environment": 26.715,
-            "collect.frameworks": 1.426,
-            "collect.git": 0.005,
-            "collect.latex": 1.262,
-            "collect.manifest": 0.13,
-            "collect.notebooks": 1.249,
-            "collect.precision": 51.565,
-            "collect.python": 260.197,
-            "collect.remote": 10.024,
-            "collect.results": 5.09,
-            "collect.run_history": 3.652,
-            "collect.shared_read": 19608.257,
-            "graph": 18.847,
-            "reviewer_time": 0.113,
-            "rules.discover": 6.798,
-            "rules.evaluate": 39.055,
-            "scan": 268.189,
-            "score": 0.454,
-            "total": 20338.6
+            "collect.config": 3.281,
+            "collect.data": 12.558,
+            "collect.dependencies": 6.926,
+            "collect.docs": 4.05,
+            "collect.environment": 20.948,
+            "collect.frameworks": 1.2,
+            "collect.git": 0.006,
+            "collect.latex": 1.003,
+            "collect.manifest": 0.162,
+            "collect.notebooks": 0.973,
+            "collect.precision": 40.02,
+            "collect.python": 167.767,
+            "collect.remote": 8.668,
+            "collect.results": 4.084,
+            "collect.run_history": 6.26,
+            "collect.shared_read": 17822.617,
+            "graph": 21.083,
+            "reviewer_time": 0.105,
+            "rules.discover": 9.041,
+            "rules.evaluate": 29.786,
+            "scan": 242.482,
+            "score": 0.506,
+            "total": 18406.586
           },
           "counters": {
             "files.inventoried": 6282,
             "files.python": 4643,
-            "files.read_cache_hits": 11,
-            "files.read_from_disk": 6347,
+            "files.read_cache_hits": 14,
+            "files.read_from_disk": 6374,
             "files.shared_reads": 6232,
             "parse.python.failed": 0,
             "parse.python.modules": 4643,
             "rules.evaluated": 70,
             "rules.skipped_inapplicable": 8
           },
-          "disk_reads_per_inventoried_file": 1.0103,
+          "disk_reads_per_inventoried_file": 1.0146,
           "cold_runtime_samples": [
-            31.8734,
-            20.3408,
-            20.1848
+            18.7969,
+            18.4083,
+            17.965
           ],
-          "cold_runtime_spread": 0.5746
+          "cold_runtime_spread": 0.0452
         },
         "outcome": {
           "score": 57.3122,
@@ -841,7 +841,7 @@
         "determinism": {
           "repeat_render_byte_identical": true,
           "comparison": "two run_check calls in one process, default JSON report",
-          "repeat_runtime_seconds": 23.1077,
+          "repeat_runtime_seconds": 16.1821,
           "warm_path_exists": false
         }
       }
@@ -856,68 +856,68 @@
         "adduce_version": "0.1.2",
         "honor_gitignore": true,
         "inputs": {
-          "files": 347,
-          "python_files": 161,
-          "python_loc": 55229,
-          "bytes": 2783541
+          "files": 455,
+          "python_files": 186,
+          "python_loc": 70211,
+          "bytes": 4681056
         },
         "performance": {
-          "cold_runtime_seconds": 1.3183,
-          "files_per_second": 263.2,
-          "python_loc_per_second": 41894.3,
+          "cold_runtime_seconds": 1.9095,
+          "files_per_second": 238.3,
+          "python_loc_per_second": 36768.6,
           "peak_rss": {
             "available": true,
-            "value": 67764224,
+            "value": 129286144,
             "unit": "bytes",
             "source": "resource.getrusage(RUSAGE_SELF)",
             "platform": "darwin"
           },
           "stage_milliseconds": {
-            "collect.config": 0.766,
-            "collect.data": 1.338,
-            "collect.dependencies": 0.742,
-            "collect.docs": 1.275,
-            "collect.environment": 1.622,
-            "collect.frameworks": 0.092,
-            "collect.git": 0.005,
-            "collect.latex": 3.649,
-            "collect.manifest": 0.114,
-            "collect.notebooks": 0.073,
-            "collect.precision": 2.013,
-            "collect.python": 10.892,
-            "collect.remote": 0.017,
-            "collect.results": 0.309,
-            "collect.run_history": 0.329,
-            "collect.shared_read": 646.03,
-            "graph": 0.691,
-            "reviewer_time": 0.018,
-            "rules.discover": 6.347,
-            "rules.evaluate": 6.211,
-            "scan": 634.06,
-            "score": 0.079,
-            "total": 1317.699
+            "collect.config": 0.855,
+            "collect.data": 1.139,
+            "collect.dependencies": 0.608,
+            "collect.docs": 0.928,
+            "collect.environment": 1.217,
+            "collect.frameworks": 0.09,
+            "collect.git": 0.004,
+            "collect.latex": 10.779,
+            "collect.manifest": 0.098,
+            "collect.notebooks": 0.069,
+            "collect.precision": 1.695,
+            "collect.python": 6.693,
+            "collect.remote": 0.01,
+            "collect.results": 0.62,
+            "collect.run_history": 0.525,
+            "collect.shared_read": 638.217,
+            "graph": 4.645,
+            "reviewer_time": 0.016,
+            "rules.discover": 4.783,
+            "rules.evaluate": 4.7,
+            "scan": 1230.561,
+            "score": 0.059,
+            "total": 1909.094
           },
           "counters": {
-            "files.inventoried": 347,
-            "files.python": 161,
-            "files.read_cache_hits": 26,
-            "files.read_from_disk": 337,
-            "files.shared_reads": 333,
+            "files.inventoried": 455,
+            "files.python": 186,
+            "files.read_cache_hits": 87,
+            "files.read_from_disk": 444,
+            "files.shared_reads": 427,
             "parse.python.failed": 0,
-            "parse.python.modules": 161,
+            "parse.python.modules": 186,
             "rules.evaluated": 69,
             "rules.skipped_inapplicable": 9
           },
-          "disk_reads_per_inventoried_file": 0.9712,
+          "disk_reads_per_inventoried_file": 0.9758,
           "cold_runtime_samples": [
-            1.4618,
-            1.3183,
-            1.3092
+            2.2662,
+            1.9095,
+            1.9025
           ],
-          "cold_runtime_spread": 0.1158
+          "cold_runtime_spread": 0.1905
         },
         "outcome": {
-          "score": 50.1718,
+          "score": 52.5649,
           "tier": "Bronze",
           "findings": 69,
           "parser_failures": 0
@@ -925,7 +925,7 @@
         "determinism": {
           "repeat_render_byte_identical": true,
           "comparison": "two run_check calls in one process, default JSON report",
-          "repeat_runtime_seconds": 1.3022,
+          "repeat_runtime_seconds": 1.9659,
           "warm_path_exists": false
         }
       },
@@ -935,75 +935,75 @@
         "adduce_version": "0.1.2",
         "honor_gitignore": false,
         "inputs": {
-          "files": 8847,
-          "python_files": 6017,
-          "python_loc": 2058513,
-          "bytes": 214600062
+          "files": 32247,
+          "python_files": 18326,
+          "python_loc": 5608422,
+          "bytes": 1966231128
         },
         "performance": {
-          "cold_runtime_seconds": 27.1279,
-          "files_per_second": 326.1,
-          "python_loc_per_second": 75881.6,
+          "cold_runtime_seconds": 213.4467,
+          "files_per_second": 151.1,
+          "python_loc_per_second": 26275.5,
           "peak_rss": {
             "available": true,
-            "value": 441106432,
+            "value": 1364426752,
             "unit": "bytes",
             "source": "resource.getrusage(RUSAGE_SELF)",
             "platform": "darwin"
           },
           "stage_milliseconds": {
-            "collect.config": 507.313,
-            "collect.data": 20.18,
-            "collect.dependencies": 6.775,
-            "collect.docs": 5.134,
-            "collect.environment": 14.031,
-            "collect.frameworks": 1.958,
-            "collect.git": 0.007,
-            "collect.latex": 5.806,
-            "collect.manifest": 0.114,
-            "collect.notebooks": 20.576,
-            "collect.precision": 67.154,
-            "collect.python": 346.265,
-            "collect.remote": 9.194,
-            "collect.results": 40.895,
-            "collect.run_history": 7.702,
-            "collect.shared_read": 25306.0,
-            "graph": 27.778,
-            "reviewer_time": 0.242,
-            "rules.discover": 6.605,
-            "rules.evaluate": 76.06,
-            "scan": 650.716,
-            "score": 0.531,
-            "total": 27125.024
+            "collect.config": 2203.299,
+            "collect.data": 67.438,
+            "collect.dependencies": 18.546,
+            "collect.docs": 20.761,
+            "collect.environment": 79.987,
+            "collect.frameworks": 7.654,
+            "collect.git": 0.036,
+            "collect.latex": 2487.277,
+            "collect.manifest": 0.113,
+            "collect.notebooks": 156.66,
+            "collect.precision": 153.987,
+            "collect.python": 901.805,
+            "collect.remote": 522.821,
+            "collect.results": 440.331,
+            "collect.run_history": 81.149,
+            "collect.shared_read": 73807.85,
+            "graph": 129259.687,
+            "reviewer_time": 0.322,
+            "rules.discover": 11.13,
+            "rules.evaluate": 1825.036,
+            "scan": 1382.9,
+            "score": 1.402,
+            "total": 213439.652
           },
           "counters": {
-            "files.inventoried": 8847,
-            "files.python": 6017,
-            "files.read_cache_hits": 48,
-            "files.read_from_disk": 9124,
-            "files.shared_reads": 8516,
-            "parse.python.failed": 0,
-            "parse.python.modules": 6017,
+            "files.inventoried": 32247,
+            "files.python": 18326,
+            "files.read_cache_hits": 4,
+            "files.read_from_disk": 30652,
+            "files.shared_reads": 27156,
+            "parse.python.failed": 29,
+            "parse.python.modules": 18326,
             "rules.evaluated": 78
           },
-          "disk_reads_per_inventoried_file": 1.0313,
+          "disk_reads_per_inventoried_file": 0.9505,
           "cold_runtime_samples": [
-            27.3949,
-            27.1169,
-            27.1279
+            213.4467,
+            201.3028,
+            221.9256
           ],
-          "cold_runtime_spread": 0.0102
+          "cold_runtime_spread": 0.0966
         },
         "outcome": {
-          "score": 60.5027,
+          "score": 66.6317,
           "tier": "Bronze",
           "findings": 78,
-          "parser_failures": 0
+          "parser_failures": 29
         },
         "determinism": {
           "repeat_render_byte_identical": true,
           "comparison": "two run_check calls in one process, default JSON report",
-          "repeat_runtime_seconds": 45.2886,
+          "repeat_runtime_seconds": 246.5976,
           "warm_path_exists": false
         }
       }
@@ -1024,45 +1024,45 @@
           "bytes": 376
         },
         "performance": {
-          "cold_runtime_seconds": 0.1049,
-          "files_per_second": 19.1,
-          "python_loc_per_second": 57.2,
+          "cold_runtime_seconds": 0.0353,
+          "files_per_second": 56.7,
+          "python_loc_per_second": 170.2,
           "peak_rss": {
             "available": true,
-            "value": 33406976,
+            "value": 33701888,
             "unit": "bytes",
             "source": "resource.getrusage(RUSAGE_SELF)",
             "platform": "darwin"
           },
           "stage_milliseconds": {
-            "collect.config": 0.009,
-            "collect.data": 0.073,
-            "collect.dependencies": 0.387,
-            "collect.docs": 0.151,
-            "collect.environment": 0.029,
-            "collect.frameworks": 0.017,
-            "collect.git": 0.011,
-            "collect.latex": 0.012,
-            "collect.manifest": 0.243,
-            "collect.notebooks": 0.008,
-            "collect.precision": 0.019,
-            "collect.python": 0.015,
-            "collect.remote": 0.013,
-            "collect.results": 0.016,
-            "collect.run_history": 0.014,
-            "collect.shared_read": 0.961,
-            "graph": 0.032,
-            "reviewer_time": 0.02,
-            "rules.discover": 11.782,
-            "rules.evaluate": 0.327,
-            "scan": 89.092,
-            "score": 0.087,
-            "total": 104.769
+            "collect.config": 0.005,
+            "collect.data": 0.027,
+            "collect.dependencies": 0.114,
+            "collect.docs": 0.057,
+            "collect.environment": 0.013,
+            "collect.frameworks": 0.003,
+            "collect.git": 0.006,
+            "collect.latex": 0.004,
+            "collect.manifest": 0.075,
+            "collect.notebooks": 0.002,
+            "collect.precision": 0.006,
+            "collect.python": 0.006,
+            "collect.remote": 0.003,
+            "collect.results": 0.003,
+            "collect.run_history": 0.037,
+            "collect.shared_read": 0.302,
+            "graph": 0.024,
+            "reviewer_time": 0.009,
+            "rules.discover": 4.719,
+            "rules.evaluate": 0.138,
+            "scan": 29.02,
+            "score": 0.036,
+            "total": 35.21
           },
           "counters": {
             "files.inventoried": 2,
             "files.python": 1,
-            "files.read_cache_hits": 2,
+            "files.read_cache_hits": 3,
             "files.read_from_disk": 2,
             "files.shared_reads": 2,
             "parse.python.failed": 0,
@@ -1072,11 +1072,11 @@
           },
           "disk_reads_per_inventoried_file": 1.0,
           "cold_runtime_samples": [
-            0.0936,
-            0.1105,
-            0.1049
+            0.0531,
+            0.0353,
+            0.0341
           ],
-          "cold_runtime_spread": 0.1611
+          "cold_runtime_spread": 0.5382
         },
         "outcome": {
           "score": 41.9604,
@@ -1087,7 +1087,7 @@
         "determinism": {
           "repeat_render_byte_identical": true,
           "comparison": "two run_check calls in one process, default JSON report",
-          "repeat_runtime_seconds": 0.0792,
+          "repeat_runtime_seconds": 0.0293,
           "warm_path_exists": false
         }
       },
@@ -1109,45 +1109,45 @@
           "bytes": 389
         },
         "performance": {
-          "cold_runtime_seconds": 0.0929,
-          "files_per_second": 32.3,
-          "python_loc_per_second": 107.7,
+          "cold_runtime_seconds": 0.0355,
+          "files_per_second": 84.5,
+          "python_loc_per_second": 281.7,
           "peak_rss": {
             "available": true,
-            "value": 33308672,
+            "value": 33980416,
             "unit": "bytes",
             "source": "resource.getrusage(RUSAGE_SELF)",
             "platform": "darwin"
           },
           "stage_milliseconds": {
-            "collect.config": 0.005,
-            "collect.data": 0.051,
-            "collect.dependencies": 0.293,
-            "collect.docs": 0.095,
-            "collect.environment": 0.03,
-            "collect.frameworks": 0.022,
-            "collect.git": 0.007,
-            "collect.latex": 0.008,
-            "collect.manifest": 0.179,
-            "collect.notebooks": 0.006,
-            "collect.precision": 0.014,
-            "collect.python": 0.022,
-            "collect.remote": 0.009,
-            "collect.results": 0.013,
-            "collect.run_history": 0.011,
-            "collect.shared_read": 0.966,
-            "graph": 0.031,
-            "reviewer_time": 0.021,
-            "rules.discover": 10.923,
-            "rules.evaluate": 0.433,
-            "scan": 78.041,
-            "score": 0.09,
-            "total": 92.754
+            "collect.config": 0.006,
+            "collect.data": 0.022,
+            "collect.dependencies": 0.14,
+            "collect.docs": 0.039,
+            "collect.environment": 0.013,
+            "collect.frameworks": 0.007,
+            "collect.git": 0.005,
+            "collect.latex": 0.006,
+            "collect.manifest": 0.075,
+            "collect.notebooks": 0.002,
+            "collect.precision": 0.007,
+            "collect.python": 0.009,
+            "collect.remote": 0.004,
+            "collect.results": 0.004,
+            "collect.run_history": 0.04,
+            "collect.shared_read": 0.402,
+            "graph": 0.025,
+            "reviewer_time": 0.009,
+            "rules.discover": 4.535,
+            "rules.evaluate": 0.181,
+            "scan": 29.305,
+            "score": 0.043,
+            "total": 35.456
           },
           "counters": {
             "files.inventoried": 3,
             "files.python": 1,
-            "files.read_cache_hits": 3,
+            "files.read_cache_hits": 4,
             "files.read_from_disk": 3,
             "files.shared_reads": 3,
             "parse.python.failed": 0,
@@ -1157,11 +1157,11 @@
           },
           "disk_reads_per_inventoried_file": 1.0,
           "cold_runtime_samples": [
-            0.0969,
-            0.0929,
-            0.0915
+            0.0358,
+            0.0355,
+            0.0343
           ],
-          "cold_runtime_spread": 0.0581
+          "cold_runtime_spread": 0.0423
         },
         "outcome": {
           "score": 42.9272,
@@ -1172,7 +1172,7 @@
         "determinism": {
           "repeat_render_byte_identical": true,
           "comparison": "two run_check calls in one process, default JSON report",
-          "repeat_runtime_seconds": 0.0877,
+          "repeat_runtime_seconds": 0.0289,
           "warm_path_exists": false
         }
       },
@@ -1194,9 +1194,9 @@
           "bytes": 729
         },
         "performance": {
-          "cold_runtime_seconds": 0.112,
-          "files_per_second": 53.6,
-          "python_loc_per_second": 53.6,
+          "cold_runtime_seconds": 0.0368,
+          "files_per_second": 162.9,
+          "python_loc_per_second": 162.9,
           "peak_rss": {
             "available": true,
             "value": 33538048,
@@ -1205,29 +1205,29 @@
             "platform": "darwin"
           },
           "stage_milliseconds": {
-            "collect.config": 0.427,
-            "collect.data": 0.088,
-            "collect.dependencies": 0.3,
-            "collect.docs": 0.151,
-            "collect.environment": 0.041,
-            "collect.frameworks": 0.017,
-            "collect.git": 0.016,
-            "collect.latex": 3.562,
-            "collect.manifest": 0.98,
-            "collect.notebooks": 0.015,
-            "collect.precision": 0.019,
-            "collect.python": 0.013,
-            "collect.remote": 0.018,
-            "collect.results": 0.022,
-            "collect.run_history": 0.281,
-            "collect.shared_read": 1.184,
-            "graph": 0.022,
-            "reviewer_time": 0.029,
-            "rules.discover": 12.582,
-            "rules.evaluate": 0.616,
-            "scan": 89.757,
-            "score": 0.103,
-            "total": 111.815
+            "collect.config": 0.185,
+            "collect.data": 0.032,
+            "collect.dependencies": 0.13,
+            "collect.docs": 0.053,
+            "collect.environment": 0.018,
+            "collect.frameworks": 0.005,
+            "collect.git": 0.007,
+            "collect.latex": 1.247,
+            "collect.manifest": 0.338,
+            "collect.notebooks": 0.003,
+            "collect.precision": 0.005,
+            "collect.python": 0.006,
+            "collect.remote": 0.003,
+            "collect.results": 0.008,
+            "collect.run_history": 0.116,
+            "collect.shared_read": 0.45,
+            "graph": 0.008,
+            "reviewer_time": 0.011,
+            "rules.discover": 4.775,
+            "rules.evaluate": 0.188,
+            "scan": 28.588,
+            "score": 0.039,
+            "total": 36.793
           },
           "counters": {
             "files.inventoried": 6,
@@ -1242,11 +1242,11 @@
           },
           "disk_reads_per_inventoried_file": 1.0,
           "cold_runtime_samples": [
-            0.119,
-            0.112,
-            0.103
+            0.038,
+            0.0368,
+            0.0362
           ],
-          "cold_runtime_spread": 0.1429
+          "cold_runtime_spread": 0.0489
         },
         "outcome": {
           "score": 51.8291,
@@ -1257,7 +1257,7 @@
         "determinism": {
           "repeat_render_byte_identical": true,
           "comparison": "two run_check calls in one process, default JSON report",
-          "repeat_runtime_seconds": 0.0821,
+          "repeat_runtime_seconds": 0.0308,
           "warm_path_exists": false
         }
       },
@@ -1279,45 +1279,45 @@
           "bytes": 300
         },
         "performance": {
-          "cold_runtime_seconds": 0.0987,
-          "files_per_second": 30.4,
+          "cold_runtime_seconds": 0.036,
+          "files_per_second": 83.4,
           "python_loc_per_second": null,
           "peak_rss": {
             "available": true,
-            "value": 33538048,
+            "value": 33816576,
             "unit": "bytes",
             "source": "resource.getrusage(RUSAGE_SELF)",
             "platform": "darwin"
           },
           "stage_milliseconds": {
-            "collect.config": 0.414,
-            "collect.data": 0.056,
-            "collect.dependencies": 0.315,
-            "collect.docs": 0.106,
-            "collect.environment": 0.031,
-            "collect.frameworks": 0.011,
-            "collect.git": 0.013,
-            "collect.latex": 3.297,
-            "collect.manifest": 0.285,
-            "collect.notebooks": 0.012,
-            "collect.precision": 0.022,
-            "collect.python": 0.007,
-            "collect.remote": 0.019,
-            "collect.results": 0.02,
-            "collect.run_history": 0.019,
-            "collect.shared_read": 0.48,
-            "graph": 0.043,
-            "reviewer_time": 0.03,
-            "rules.discover": 13.199,
-            "rules.evaluate": 0.455,
-            "scan": 78.218,
-            "score": 0.086,
-            "total": 98.572
+            "collect.config": 0.182,
+            "collect.data": 0.024,
+            "collect.dependencies": 0.13,
+            "collect.docs": 0.047,
+            "collect.environment": 0.017,
+            "collect.frameworks": 0.005,
+            "collect.git": 0.006,
+            "collect.latex": 1.247,
+            "collect.manifest": 0.083,
+            "collect.notebooks": 0.003,
+            "collect.precision": 0.006,
+            "collect.python": 0.003,
+            "collect.remote": 0.006,
+            "collect.results": 0.005,
+            "collect.run_history": 0.045,
+            "collect.shared_read": 0.209,
+            "graph": 0.025,
+            "reviewer_time": 0.011,
+            "rules.discover": 4.698,
+            "rules.evaluate": 0.142,
+            "scan": 28.417,
+            "score": 0.033,
+            "total": 35.93
           },
           "counters": {
             "files.inventoried": 3,
             "files.python": 0,
-            "files.read_cache_hits": 4,
+            "files.read_cache_hits": 5,
             "files.read_from_disk": 3,
             "files.shared_reads": 3,
             "parse.python.failed": 0,
@@ -1327,11 +1327,11 @@
           },
           "disk_reads_per_inventoried_file": 1.0,
           "cold_runtime_samples": [
-            0.0918,
-            0.1126,
-            0.0987
+            0.0367,
+            0.0355,
+            0.036
           ],
-          "cold_runtime_spread": 0.2107
+          "cold_runtime_spread": 0.0333
         },
         "outcome": {
           "score": 69.8168,
@@ -1342,7 +1342,7 @@
         "determinism": {
           "repeat_render_byte_identical": true,
           "comparison": "two run_check calls in one process, default JSON report",
-          "repeat_runtime_seconds": 0.1141,
+          "repeat_runtime_seconds": 0.0297,
           "warm_path_exists": false
         }
       },
@@ -1364,45 +1364,45 @@
           "bytes": 288
         },
         "performance": {
-          "cold_runtime_seconds": 0.1217,
-          "files_per_second": 24.7,
+          "cold_runtime_seconds": 0.0358,
+          "files_per_second": 83.9,
           "python_loc_per_second": null,
           "peak_rss": {
             "available": true,
-            "value": 33259520,
+            "value": 33751040,
             "unit": "bytes",
             "source": "resource.getrusage(RUSAGE_SELF)",
             "platform": "darwin"
           },
           "stage_milliseconds": {
-            "collect.config": 0.385,
-            "collect.data": 0.05,
-            "collect.dependencies": 0.316,
-            "collect.docs": 0.102,
-            "collect.environment": 0.03,
-            "collect.frameworks": 0.011,
-            "collect.git": 0.013,
-            "collect.latex": 3.268,
-            "collect.manifest": 0.21,
-            "collect.notebooks": 0.01,
-            "collect.precision": 0.017,
-            "collect.python": 0.009,
-            "collect.remote": 0.014,
-            "collect.results": 0.017,
-            "collect.run_history": 0.014,
-            "collect.shared_read": 0.461,
-            "graph": 0.034,
-            "reviewer_time": 0.022,
-            "rules.discover": 12.658,
-            "rules.evaluate": 0.347,
-            "scan": 101.751,
-            "score": 0.074,
-            "total": 121.549
+            "collect.config": 0.168,
+            "collect.data": 0.023,
+            "collect.dependencies": 0.121,
+            "collect.docs": 0.041,
+            "collect.environment": 0.016,
+            "collect.frameworks": 0.004,
+            "collect.git": 0.006,
+            "collect.latex": 1.244,
+            "collect.manifest": 0.074,
+            "collect.notebooks": 0.003,
+            "collect.precision": 0.005,
+            "collect.python": 0.006,
+            "collect.remote": 0.005,
+            "collect.results": 0.005,
+            "collect.run_history": 0.039,
+            "collect.shared_read": 0.173,
+            "graph": 0.023,
+            "reviewer_time": 0.01,
+            "rules.discover": 4.6,
+            "rules.evaluate": 0.142,
+            "scan": 28.372,
+            "score": 0.03,
+            "total": 35.733
           },
           "counters": {
             "files.inventoried": 3,
             "files.python": 0,
-            "files.read_cache_hits": 4,
+            "files.read_cache_hits": 5,
             "files.read_from_disk": 3,
             "files.shared_reads": 3,
             "parse.python.failed": 0,
@@ -1412,11 +1412,11 @@
           },
           "disk_reads_per_inventoried_file": 1.0,
           "cold_runtime_samples": [
-            0.1269,
-            0.1217,
-            0.0913
+            0.0371,
+            0.0347,
+            0.0358
           ],
-          "cold_runtime_spread": 0.2925
+          "cold_runtime_spread": 0.067
         },
         "outcome": {
           "score": 58.7057,
@@ -1427,7 +1427,7 @@
         "determinism": {
           "repeat_render_byte_identical": true,
           "comparison": "two run_check calls in one process, default JSON report",
-          "repeat_runtime_seconds": 0.0806,
+          "repeat_runtime_seconds": 0.0289,
           "warm_path_exists": false
         }
       },
@@ -1449,45 +1449,45 @@
           "bytes": 301
         },
         "performance": {
-          "cold_runtime_seconds": 0.1059,
-          "files_per_second": 28.3,
+          "cold_runtime_seconds": 0.0354,
+          "files_per_second": 84.9,
           "python_loc_per_second": null,
           "peak_rss": {
             "available": true,
-            "value": 33652736,
+            "value": 33701888,
             "unit": "bytes",
             "source": "resource.getrusage(RUSAGE_SELF)",
             "platform": "darwin"
           },
           "stage_milliseconds": {
-            "collect.config": 0.007,
-            "collect.data": 0.055,
-            "collect.dependencies": 0.303,
-            "collect.docs": 0.106,
-            "collect.environment": 0.027,
-            "collect.frameworks": 0.014,
-            "collect.git": 0.01,
-            "collect.latex": 3.024,
-            "collect.manifest": 0.183,
-            "collect.notebooks": 0.007,
-            "collect.precision": 0.014,
-            "collect.python": 0.01,
-            "collect.remote": 0.016,
-            "collect.results": 0.163,
-            "collect.run_history": 0.014,
-            "collect.shared_read": 0.454,
-            "graph": 0.075,
-            "reviewer_time": 0.022,
-            "rules.discover": 11.038,
-            "rules.evaluate": 0.402,
-            "scan": 88.305,
-            "score": 0.073,
-            "total": 105.756
+            "collect.config": 0.006,
+            "collect.data": 0.025,
+            "collect.dependencies": 0.122,
+            "collect.docs": 0.048,
+            "collect.environment": 0.015,
+            "collect.frameworks": 0.004,
+            "collect.git": 0.008,
+            "collect.latex": 1.216,
+            "collect.manifest": 0.079,
+            "collect.notebooks": 0.003,
+            "collect.precision": 0.005,
+            "collect.python": 0.003,
+            "collect.remote": 0.006,
+            "collect.results": 0.054,
+            "collect.run_history": 0.044,
+            "collect.shared_read": 0.168,
+            "graph": 0.092,
+            "reviewer_time": 0.01,
+            "rules.discover": 4.688,
+            "rules.evaluate": 0.166,
+            "scan": 27.941,
+            "score": 0.03,
+            "total": 35.313
           },
           "counters": {
             "files.inventoried": 3,
             "files.python": 0,
-            "files.read_cache_hits": 3,
+            "files.read_cache_hits": 4,
             "files.read_from_disk": 3,
             "files.shared_reads": 2,
             "parse.python.failed": 0,
@@ -1497,11 +1497,11 @@
           },
           "disk_reads_per_inventoried_file": 1.0,
           "cold_runtime_samples": [
-            0.1046,
-            0.1059,
-            0.1615
+            0.0368,
+            0.0354,
+            0.0352
           ],
-          "cold_runtime_spread": 0.5373
+          "cold_runtime_spread": 0.0452
         },
         "outcome": {
           "score": 53.9496,
@@ -1512,7 +1512,7 @@
         "determinism": {
           "repeat_render_byte_identical": true,
           "comparison": "two run_check calls in one process, default JSON report",
-          "repeat_runtime_seconds": 0.0995,
+          "repeat_runtime_seconds": 0.0297,
           "warm_path_exists": false
         }
       },
@@ -1534,45 +1534,45 @@
           "bytes": 462
         },
         "performance": {
-          "cold_runtime_seconds": 0.0924,
-          "files_per_second": 21.6,
+          "cold_runtime_seconds": 0.0359,
+          "files_per_second": 55.7,
           "python_loc_per_second": null,
           "peak_rss": {
             "available": true,
-            "value": 33423360,
+            "value": 33718272,
             "unit": "bytes",
             "source": "resource.getrusage(RUSAGE_SELF)",
             "platform": "darwin"
           },
           "stage_milliseconds": {
-            "collect.config": 0.009,
-            "collect.data": 0.063,
-            "collect.dependencies": 0.291,
-            "collect.docs": 0.121,
-            "collect.environment": 0.027,
-            "collect.frameworks": 0.01,
-            "collect.git": 0.01,
-            "collect.latex": 3.457,
-            "collect.manifest": 0.205,
-            "collect.notebooks": 0.007,
-            "collect.precision": 0.014,
-            "collect.python": 0.008,
-            "collect.remote": 0.015,
-            "collect.results": 0.014,
-            "collect.run_history": 0.013,
-            "collect.shared_read": 0.437,
-            "graph": 0.04,
-            "reviewer_time": 0.026,
-            "rules.discover": 10.956,
-            "rules.evaluate": 0.309,
-            "scan": 74.472,
-            "score": 0.079,
-            "total": 92.275
+            "collect.config": 0.005,
+            "collect.data": 0.026,
+            "collect.dependencies": 0.133,
+            "collect.docs": 0.052,
+            "collect.environment": 0.014,
+            "collect.frameworks": 0.003,
+            "collect.git": 0.005,
+            "collect.latex": 1.344,
+            "collect.manifest": 0.095,
+            "collect.notebooks": 0.003,
+            "collect.precision": 0.005,
+            "collect.python": 0.003,
+            "collect.remote": 0.005,
+            "collect.results": 0.005,
+            "collect.run_history": 0.054,
+            "collect.shared_read": 0.168,
+            "graph": 0.137,
+            "reviewer_time": 0.011,
+            "rules.discover": 4.694,
+            "rules.evaluate": 0.116,
+            "scan": 28.361,
+            "score": 0.032,
+            "total": 35.873
           },
           "counters": {
             "files.inventoried": 2,
             "files.python": 0,
-            "files.read_cache_hits": 3,
+            "files.read_cache_hits": 4,
             "files.read_from_disk": 2,
             "files.shared_reads": 2,
             "parse.python.failed": 0,
@@ -1582,11 +1582,11 @@
           },
           "disk_reads_per_inventoried_file": 1.0,
           "cold_runtime_samples": [
-            0.0924,
-            0.0918,
-            0.1
+            0.0366,
+            0.0354,
+            0.0359
           ],
-          "cold_runtime_spread": 0.0887
+          "cold_runtime_spread": 0.0334
         },
         "outcome": {
           "score": 50.2041,
@@ -1597,7 +1597,7 @@
         "determinism": {
           "repeat_render_byte_identical": true,
           "comparison": "two run_check calls in one process, default JSON report",
-          "repeat_runtime_seconds": 0.0804,
+          "repeat_runtime_seconds": 0.0294,
           "warm_path_exists": false
         }
       },
@@ -1619,45 +1619,45 @@
           "bytes": 313
         },
         "performance": {
-          "cold_runtime_seconds": 0.1129,
-          "files_per_second": 26.6,
+          "cold_runtime_seconds": 0.0351,
+          "files_per_second": 85.5,
           "python_loc_per_second": null,
           "peak_rss": {
             "available": true,
-            "value": 33325056,
+            "value": 33767424,
             "unit": "bytes",
             "source": "resource.getrusage(RUSAGE_SELF)",
             "platform": "darwin"
           },
           "stage_milliseconds": {
-            "collect.config": 0.007,
-            "collect.data": 0.063,
-            "collect.dependencies": 0.295,
-            "collect.docs": 0.118,
-            "collect.environment": 0.03,
-            "collect.frameworks": 0.012,
-            "collect.git": 0.012,
-            "collect.latex": 3.004,
-            "collect.manifest": 0.188,
-            "collect.notebooks": 0.007,
-            "collect.precision": 0.014,
-            "collect.python": 0.007,
-            "collect.remote": 0.015,
-            "collect.results": 0.157,
-            "collect.run_history": 0.015,
-            "collect.shared_read": 0.435,
-            "graph": 0.068,
-            "reviewer_time": 0.021,
-            "rules.discover": 11.028,
-            "rules.evaluate": 0.369,
-            "scan": 95.047,
-            "score": 0.073,
-            "total": 112.747
+            "collect.config": 0.004,
+            "collect.data": 0.024,
+            "collect.dependencies": 0.118,
+            "collect.docs": 0.054,
+            "collect.environment": 0.014,
+            "collect.frameworks": 0.004,
+            "collect.git": 0.005,
+            "collect.latex": 1.253,
+            "collect.manifest": 0.072,
+            "collect.notebooks": 0.003,
+            "collect.precision": 0.005,
+            "collect.python": 0.003,
+            "collect.remote": 0.005,
+            "collect.results": 0.057,
+            "collect.run_history": 0.042,
+            "collect.shared_read": 0.161,
+            "graph": 0.098,
+            "reviewer_time": 0.011,
+            "rules.discover": 4.763,
+            "rules.evaluate": 0.162,
+            "scan": 27.584,
+            "score": 0.03,
+            "total": 35.038
           },
           "counters": {
             "files.inventoried": 3,
             "files.python": 0,
-            "files.read_cache_hits": 3,
+            "files.read_cache_hits": 4,
             "files.read_from_disk": 3,
             "files.shared_reads": 2,
             "parse.python.failed": 0,
@@ -1667,11 +1667,11 @@
           },
           "disk_reads_per_inventoried_file": 1.0,
           "cold_runtime_samples": [
-            0.1129,
-            0.0988,
-            0.1519
+            0.0363,
+            0.0344,
+            0.0351
           ],
-          "cold_runtime_spread": 0.4703
+          "cold_runtime_spread": 0.0541
         },
         "outcome": {
           "score": 58.9916,
@@ -1682,7 +1682,7 @@
         "determinism": {
           "repeat_render_byte_identical": true,
           "comparison": "two run_check calls in one process, default JSON report",
-          "repeat_runtime_seconds": 0.1085,
+          "repeat_runtime_seconds": 0.0295,
           "warm_path_exists": false
         }
       },
@@ -1704,45 +1704,45 @@
           "bytes": 413
         },
         "performance": {
-          "cold_runtime_seconds": 0.0896,
-          "files_per_second": 33.5,
-          "python_loc_per_second": 67.0,
+          "cold_runtime_seconds": 0.034,
+          "files_per_second": 88.2,
+          "python_loc_per_second": 176.4,
           "peak_rss": {
             "available": true,
-            "value": 33144832,
+            "value": 33570816,
             "unit": "bytes",
             "source": "resource.getrusage(RUSAGE_SELF)",
             "platform": "darwin"
           },
           "stage_milliseconds": {
-            "collect.config": 0.474,
-            "collect.data": 0.054,
-            "collect.dependencies": 0.277,
-            "collect.docs": 0.106,
-            "collect.environment": 0.029,
-            "collect.frameworks": 0.01,
-            "collect.git": 0.01,
-            "collect.latex": 0.01,
-            "collect.manifest": 0.17,
-            "collect.notebooks": 0.005,
-            "collect.precision": 0.016,
-            "collect.python": 0.012,
-            "collect.remote": 0.011,
-            "collect.results": 0.014,
-            "collect.run_history": 0.014,
-            "collect.shared_read": 0.756,
-            "graph": 0.037,
-            "reviewer_time": 0.024,
-            "rules.discover": 11.321,
-            "rules.evaluate": 0.351,
-            "scan": 74.203,
-            "score": 0.09,
-            "total": 89.466
+            "collect.config": 0.202,
+            "collect.data": 0.023,
+            "collect.dependencies": 0.124,
+            "collect.docs": 0.045,
+            "collect.environment": 0.015,
+            "collect.frameworks": 0.004,
+            "collect.git": 0.005,
+            "collect.latex": 0.005,
+            "collect.manifest": 0.071,
+            "collect.notebooks": 0.002,
+            "collect.precision": 0.006,
+            "collect.python": 0.006,
+            "collect.remote": 0.004,
+            "collect.results": 0.005,
+            "collect.run_history": 0.043,
+            "collect.shared_read": 0.328,
+            "graph": 0.025,
+            "reviewer_time": 0.011,
+            "rules.discover": 4.591,
+            "rules.evaluate": 0.147,
+            "scan": 27.685,
+            "score": 0.039,
+            "total": 33.966
           },
           "counters": {
             "files.inventoried": 3,
             "files.python": 1,
-            "files.read_cache_hits": 3,
+            "files.read_cache_hits": 4,
             "files.read_from_disk": 3,
             "files.shared_reads": 3,
             "parse.python.failed": 0,
@@ -1752,11 +1752,11 @@
           },
           "disk_reads_per_inventoried_file": 1.0,
           "cold_runtime_samples": [
-            0.0897,
-            0.0894,
-            0.0896
+            0.0361,
+            0.034,
+            0.034
           ],
-          "cold_runtime_spread": 0.0033
+          "cold_runtime_spread": 0.0618
         },
         "outcome": {
           "score": 42.4681,
@@ -1767,7 +1767,7 @@
         "determinism": {
           "repeat_render_byte_identical": true,
           "comparison": "two run_check calls in one process, default JSON report",
-          "repeat_runtime_seconds": 0.0808,
+          "repeat_runtime_seconds": 0.0297,
           "warm_path_exists": false
         }
       },
@@ -1789,45 +1789,45 @@
           "bytes": 844
         },
         "performance": {
-          "cold_runtime_seconds": 0.0947,
-          "files_per_second": 63.4,
-          "python_loc_per_second": 158.4,
+          "cold_runtime_seconds": 0.0367,
+          "files_per_second": 163.3,
+          "python_loc_per_second": 408.3,
           "peak_rss": {
             "available": true,
-            "value": 33243136,
+            "value": 33669120,
             "unit": "bytes",
             "source": "resource.getrusage(RUSAGE_SELF)",
             "platform": "darwin"
           },
           "stage_milliseconds": {
-            "collect.config": 0.349,
-            "collect.data": 0.062,
-            "collect.dependencies": 0.295,
-            "collect.docs": 0.106,
-            "collect.environment": 0.893,
-            "collect.frameworks": 0.016,
-            "collect.git": 0.008,
-            "collect.latex": 2.972,
-            "collect.manifest": 0.158,
-            "collect.notebooks": 0.008,
-            "collect.precision": 0.015,
-            "collect.python": 0.023,
-            "collect.remote": 0.01,
-            "collect.results": 0.015,
-            "collect.run_history": 0.07,
-            "collect.shared_read": 1.115,
-            "graph": 0.028,
-            "reviewer_time": 0.02,
-            "rules.discover": 10.341,
-            "rules.evaluate": 0.561,
-            "scan": 76.06,
-            "score": 0.113,
-            "total": 94.587
+            "collect.config": 0.175,
+            "collect.data": 0.027,
+            "collect.dependencies": 0.137,
+            "collect.docs": 0.043,
+            "collect.environment": 0.358,
+            "collect.frameworks": 0.008,
+            "collect.git": 0.004,
+            "collect.latex": 1.185,
+            "collect.manifest": 0.073,
+            "collect.notebooks": 0.004,
+            "collect.precision": 0.007,
+            "collect.python": 0.011,
+            "collect.remote": 0.003,
+            "collect.results": 0.006,
+            "collect.run_history": 0.066,
+            "collect.shared_read": 0.514,
+            "graph": 0.022,
+            "reviewer_time": 0.008,
+            "rules.discover": 4.59,
+            "rules.evaluate": 0.219,
+            "scan": 28.626,
+            "score": 0.044,
+            "total": 36.697
           },
           "counters": {
             "files.inventoried": 6,
             "files.python": 1,
-            "files.read_cache_hits": 7,
+            "files.read_cache_hits": 8,
             "files.read_from_disk": 6,
             "files.shared_reads": 6,
             "parse.python.failed": 0,
@@ -1837,11 +1837,11 @@
           },
           "disk_reads_per_inventoried_file": 1.0,
           "cold_runtime_samples": [
-            0.0934,
-            0.1013,
-            0.0947
+            0.0382,
+            0.0361,
+            0.0367
           ],
-          "cold_runtime_spread": 0.0834
+          "cold_runtime_spread": 0.0572
         },
         "outcome": {
           "score": 53.4991,
@@ -1852,7 +1852,7 @@
         "determinism": {
           "repeat_render_byte_identical": true,
           "comparison": "two run_check calls in one process, default JSON report",
-          "repeat_runtime_seconds": 0.0659,
+          "repeat_runtime_seconds": 0.0305,
           "warm_path_exists": false
         }
       },
@@ -1874,45 +1874,45 @@
           "bytes": 433
         },
         "performance": {
-          "cold_runtime_seconds": 0.0938,
-          "files_per_second": 42.7,
-          "python_loc_per_second": 74.6,
+          "cold_runtime_seconds": 0.0361,
+          "files_per_second": 110.8,
+          "python_loc_per_second": 194.0,
           "peak_rss": {
             "available": true,
-            "value": 33112064,
+            "value": 33751040,
             "unit": "bytes",
             "source": "resource.getrusage(RUSAGE_SELF)",
             "platform": "darwin"
           },
           "stage_milliseconds": {
-            "collect.config": 0.007,
-            "collect.data": 0.056,
-            "collect.dependencies": 0.307,
-            "collect.docs": 0.101,
-            "collect.environment": 0.031,
-            "collect.frameworks": 0.017,
-            "collect.git": 0.008,
-            "collect.latex": 2.971,
-            "collect.manifest": 0.197,
-            "collect.notebooks": 0.01,
-            "collect.precision": 0.015,
-            "collect.python": 0.015,
-            "collect.remote": 0.012,
-            "collect.results": 0.016,
-            "collect.run_history": 0.015,
-            "collect.shared_read": 0.845,
-            "graph": 0.033,
-            "reviewer_time": 0.02,
-            "rules.discover": 10.916,
-            "rules.evaluate": 0.557,
-            "scan": 75.993,
-            "score": 0.112,
-            "total": 93.666
+            "collect.config": 0.005,
+            "collect.data": 0.026,
+            "collect.dependencies": 0.14,
+            "collect.docs": 0.043,
+            "collect.environment": 0.015,
+            "collect.frameworks": 0.006,
+            "collect.git": 0.006,
+            "collect.latex": 1.213,
+            "collect.manifest": 0.09,
+            "collect.notebooks": 0.004,
+            "collect.precision": 0.006,
+            "collect.python": 0.009,
+            "collect.remote": 0.003,
+            "collect.results": 0.005,
+            "collect.run_history": 0.046,
+            "collect.shared_read": 0.439,
+            "graph": 0.025,
+            "reviewer_time": 0.009,
+            "rules.discover": 4.758,
+            "rules.evaluate": 0.245,
+            "scan": 28.287,
+            "score": 0.052,
+            "total": 36.046
           },
           "counters": {
             "files.inventoried": 4,
             "files.python": 1,
-            "files.read_cache_hits": 4,
+            "files.read_cache_hits": 5,
             "files.read_from_disk": 4,
             "files.shared_reads": 4,
             "parse.python.failed": 0,
@@ -1922,11 +1922,11 @@
           },
           "disk_reads_per_inventoried_file": 1.0,
           "cold_runtime_samples": [
-            0.0938,
-            0.0958,
-            0.0925
+            0.0397,
+            0.0358,
+            0.0361
           ],
-          "cold_runtime_spread": 0.0352
+          "cold_runtime_spread": 0.108
         },
         "outcome": {
           "score": 31.6972,
@@ -1937,7 +1937,7 @@
         "determinism": {
           "repeat_render_byte_identical": true,
           "comparison": "two run_check calls in one process, default JSON report",
-          "repeat_runtime_seconds": 0.1401,
+          "repeat_runtime_seconds": 0.0299,
           "warm_path_exists": false
         }
       },
@@ -1959,45 +1959,45 @@
           "bytes": 264
         },
         "performance": {
-          "cold_runtime_seconds": 0.1121,
-          "files_per_second": 26.8,
-          "python_loc_per_second": 35.7,
+          "cold_runtime_seconds": 0.0341,
+          "files_per_second": 88.1,
+          "python_loc_per_second": 117.5,
           "peak_rss": {
             "available": true,
-            "value": 33505280,
+            "value": 33701888,
             "unit": "bytes",
             "source": "resource.getrusage(RUSAGE_SELF)",
             "platform": "darwin"
           },
           "stage_milliseconds": {
-            "collect.config": 0.008,
-            "collect.data": 0.115,
-            "collect.dependencies": 0.397,
-            "collect.docs": 0.101,
-            "collect.environment": 0.03,
-            "collect.frameworks": 0.015,
-            "collect.git": 0.012,
-            "collect.latex": 0.01,
-            "collect.manifest": 0.199,
-            "collect.notebooks": 0.007,
-            "collect.precision": 0.021,
-            "collect.python": 0.013,
-            "collect.remote": 0.011,
-            "collect.results": 0.017,
-            "collect.run_history": 0.015,
-            "collect.shared_read": 0.784,
-            "graph": 0.032,
-            "reviewer_time": 0.02,
-            "rules.discover": 11.764,
-            "rules.evaluate": 0.497,
-            "scan": 96.286,
-            "score": 0.109,
-            "total": 111.952
+            "collect.config": 0.005,
+            "collect.data": 0.023,
+            "collect.dependencies": 0.133,
+            "collect.docs": 0.047,
+            "collect.environment": 0.016,
+            "collect.frameworks": 0.006,
+            "collect.git": 0.005,
+            "collect.latex": 0.003,
+            "collect.manifest": 0.08,
+            "collect.notebooks": 0.002,
+            "collect.precision": 0.009,
+            "collect.python": 0.007,
+            "collect.remote": 0.003,
+            "collect.results": 0.005,
+            "collect.run_history": 0.044,
+            "collect.shared_read": 0.338,
+            "graph": 0.026,
+            "reviewer_time": 0.008,
+            "rules.discover": 4.561,
+            "rules.evaluate": 0.228,
+            "scan": 27.839,
+            "score": 0.044,
+            "total": 34.016
           },
           "counters": {
             "files.inventoried": 3,
             "files.python": 1,
-            "files.read_cache_hits": 3,
+            "files.read_cache_hits": 4,
             "files.read_from_disk": 3,
             "files.shared_reads": 3,
             "parse.python.failed": 0,
@@ -2007,11 +2007,11 @@
           },
           "disk_reads_per_inventoried_file": 1.0,
           "cold_runtime_samples": [
-            0.1056,
-            0.1164,
-            0.1121
+            0.0358,
+            0.0341,
+            0.0339
           ],
-          "cold_runtime_spread": 0.0963
+          "cold_runtime_spread": 0.0557
         },
         "outcome": {
           "score": 32.9497,
@@ -2022,7 +2022,7 @@
         "determinism": {
           "repeat_render_byte_identical": true,
           "comparison": "two run_check calls in one process, default JSON report",
-          "repeat_runtime_seconds": 0.0823,
+          "repeat_runtime_seconds": 0.0309,
           "warm_path_exists": false
         }
       },
@@ -2044,45 +2044,45 @@
           "bytes": 250
         },
         "performance": {
-          "cold_runtime_seconds": 0.09,
-          "files_per_second": 33.3,
-          "python_loc_per_second": 33.3,
+          "cold_runtime_seconds": 0.0337,
+          "files_per_second": 89.0,
+          "python_loc_per_second": 89.0,
           "peak_rss": {
             "available": true,
-            "value": 33341440,
+            "value": 33767424,
             "unit": "bytes",
             "source": "resource.getrusage(RUSAGE_SELF)",
             "platform": "darwin"
           },
           "stage_milliseconds": {
             "collect.config": 0.006,
-            "collect.data": 0.049,
-            "collect.dependencies": 0.302,
-            "collect.docs": 0.091,
-            "collect.environment": 0.027,
-            "collect.frameworks": 0.019,
-            "collect.git": 0.008,
-            "collect.latex": 0.009,
-            "collect.manifest": 0.174,
-            "collect.notebooks": 0.006,
-            "collect.precision": 0.014,
-            "collect.python": 0.014,
-            "collect.remote": 0.021,
-            "collect.results": 0.015,
-            "collect.run_history": 0.014,
-            "collect.shared_read": 0.729,
-            "graph": 0.046,
-            "reviewer_time": 0.025,
-            "rules.discover": 12.2,
-            "rules.evaluate": 0.599,
-            "scan": 73.954,
-            "score": 0.113,
-            "total": 89.902
+            "collect.data": 0.022,
+            "collect.dependencies": 0.132,
+            "collect.docs": 0.039,
+            "collect.environment": 0.016,
+            "collect.frameworks": 0.006,
+            "collect.git": 0.007,
+            "collect.latex": 0.005,
+            "collect.manifest": 0.101,
+            "collect.notebooks": 0.002,
+            "collect.precision": 0.007,
+            "collect.python": 0.007,
+            "collect.remote": 0.009,
+            "collect.results": 0.004,
+            "collect.run_history": 0.047,
+            "collect.shared_read": 0.305,
+            "graph": 0.024,
+            "reviewer_time": 0.008,
+            "rules.discover": 4.542,
+            "rules.evaluate": 0.19,
+            "scan": 27.579,
+            "score": 0.04,
+            "total": 33.678
           },
           "counters": {
             "files.inventoried": 3,
             "files.python": 1,
-            "files.read_cache_hits": 3,
+            "files.read_cache_hits": 4,
             "files.read_from_disk": 3,
             "files.shared_reads": 3,
             "parse.python.failed": 0,
@@ -2092,11 +2092,11 @@
           },
           "disk_reads_per_inventoried_file": 1.0,
           "cold_runtime_samples": [
-            0.0924,
-            0.0898,
-            0.09
+            0.036,
+            0.0337,
+            0.0334
           ],
-          "cold_runtime_spread": 0.0289
+          "cold_runtime_spread": 0.0772
         },
         "outcome": {
           "score": 26.3139,
@@ -2107,7 +2107,7 @@
         "determinism": {
           "repeat_render_byte_identical": true,
           "comparison": "two run_check calls in one process, default JSON report",
-          "repeat_runtime_seconds": 0.0828,
+          "repeat_runtime_seconds": 0.0288,
           "warm_path_exists": false
         }
       },
@@ -2129,45 +2129,45 @@
           "bytes": 354
         },
         "performance": {
-          "cold_runtime_seconds": 0.0967,
-          "files_per_second": 31.0,
+          "cold_runtime_seconds": 0.0352,
+          "files_per_second": 85.2,
           "python_loc_per_second": null,
           "peak_rss": {
             "available": true,
-            "value": 33636352,
+            "value": 33816576,
             "unit": "bytes",
             "source": "resource.getrusage(RUSAGE_SELF)",
             "platform": "darwin"
           },
           "stage_milliseconds": {
-            "collect.config": 0.447,
-            "collect.data": 0.071,
-            "collect.dependencies": 0.33,
-            "collect.docs": 0.119,
-            "collect.environment": 0.038,
-            "collect.frameworks": 0.011,
-            "collect.git": 0.014,
-            "collect.latex": 2.994,
-            "collect.manifest": 0.281,
-            "collect.notebooks": 0.015,
-            "collect.precision": 0.021,
-            "collect.python": 0.012,
-            "collect.remote": 0.02,
-            "collect.results": 0.02,
-            "collect.run_history": 0.019,
-            "collect.shared_read": 0.585,
-            "graph": 0.042,
-            "reviewer_time": 0.026,
-            "rules.discover": 11.612,
-            "rules.evaluate": 0.298,
-            "scan": 77.998,
-            "score": 0.079,
-            "total": 96.539
+            "collect.config": 0.179,
+            "collect.data": 0.027,
+            "collect.dependencies": 0.13,
+            "collect.docs": 0.049,
+            "collect.environment": 0.016,
+            "collect.frameworks": 0.004,
+            "collect.git": 0.007,
+            "collect.latex": 1.143,
+            "collect.manifest": 0.076,
+            "collect.notebooks": 0.003,
+            "collect.precision": 0.005,
+            "collect.python": 0.004,
+            "collect.remote": 0.006,
+            "collect.results": 0.005,
+            "collect.run_history": 0.044,
+            "collect.shared_read": 0.198,
+            "graph": 0.026,
+            "reviewer_time": 0.011,
+            "rules.discover": 4.536,
+            "rules.evaluate": 0.124,
+            "scan": 27.97,
+            "score": 0.03,
+            "total": 35.175
           },
           "counters": {
             "files.inventoried": 3,
             "files.python": 0,
-            "files.read_cache_hits": 4,
+            "files.read_cache_hits": 5,
             "files.read_from_disk": 3,
             "files.shared_reads": 3,
             "parse.python.failed": 0,
@@ -2177,11 +2177,11 @@
           },
           "disk_reads_per_inventoried_file": 1.0,
           "cold_runtime_samples": [
-            0.0967,
-            0.0967,
-            0.0982
+            0.0377,
+            0.0351,
+            0.0352
           ],
-          "cold_runtime_spread": 0.0155
+          "cold_runtime_spread": 0.0739
         },
         "outcome": {
           "score": 61.1931,
@@ -2192,7 +2192,7 @@
         "determinism": {
           "repeat_render_byte_identical": true,
           "comparison": "two run_check calls in one process, default JSON report",
-          "repeat_runtime_seconds": 0.0809,
+          "repeat_runtime_seconds": 0.0293,
           "warm_path_exists": false
         }
       },
