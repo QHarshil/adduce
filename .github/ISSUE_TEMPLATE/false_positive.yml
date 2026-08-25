@@ -1,0 +1,60 @@
+name: False positive
+description: adduce reported a finding that is wrong for the repository it ran on.
+title: "[false positive] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        False positives are bugs, and these reports are the most valuable input
+        the project gets. A minimal layout that still produces the wrong finding
+        is worth more than a full repository.
+  - type: input
+    id: rule-id
+    attributes:
+      label: Rule ID
+      description: The `R-<CAT>-<NNN>` identifier. `adduce rules` lists every registered rule.
+      placeholder: R-ENV-001
+    validations:
+      required: true
+  - type: textarea
+    id: finding
+    attributes:
+      label: Finding text
+      description: Status, confidence and message, exactly as adduce printed them.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: layout
+    attributes:
+      label: Minimal repository layout
+      description: >-
+        File paths plus the snippets the rule reads. Trim to the smallest tree
+        that still produces the finding. Redact anything unpublished.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: expected-verdict
+    attributes:
+      label: What the correct verdict is, and why
+      description: >-
+        A different status, a lower confidence, or no finding at all because
+        `applies_to` should have excluded this repository.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: adduce version
+      description: Output of `adduce --version`.
+    validations:
+      required: true
+  - type: textarea
+    id: invocation
+    attributes:
+      label: How it was run
+      description: The exact command, plus any `adduce.toml`, profile or disabled rules in effect.
+      render: shell
+    validations:
+      required: true

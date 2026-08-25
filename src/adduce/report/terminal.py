@@ -124,11 +124,28 @@ def _render_categories(result: CheckResult, console: Console) -> None:
         joined = "; ".join(notes)
         if len(joined) > 180:
             joined = joined[:177].rsplit(" ", 1)[0] + " …"
-        table.add_row(
-            cat.category.value,
-            Text(f"{cat.earned:.0f}/{cat.possible:.0f}", style=_score_color(cat.percentage)),
-            joined if notes else Text("all detected checks satisfied", style="dim"),
+        # `notes` collects only PARTIAL and FAIL, so a category holding PASS and
+        # UNKNOWN together produces none and would otherwise claim everything was
+        # satisfied. Count what went unanswered and say so instead.
+        unknown = sum(1 for finding in cat.findings if finding.status is Status.UNKNOWN)
+        if notes:
+            note: str | Text = joined
+        elif cat.possible == 0:
+            # Nothing in this category reached an assessment at all.
+            note = Text(f"{unknown} check(s) applied; none could be assessed", style="dim")
+        elif unknown:
+            note = Text(
+                f"detected checks satisfied; {unknown} could not be assessed",
+                style="dim",
+            )
+        else:
+            note = Text("all detected checks satisfied", style="dim")
+        score_cell = (
+            Text("—", style="dim")
+            if cat.possible == 0
+            else Text(f"{cat.earned:.0f}/{cat.possible:.0f}", style=_score_color(cat.percentage))
         )
+        table.add_row(cat.category.value, score_cell, note)
     console.print(table)
     console.print()
 

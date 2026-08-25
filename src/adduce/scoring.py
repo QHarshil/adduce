@@ -15,7 +15,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from .profiles import Profile
-from .rules.base import Category, Finding
+from .rules.base import Category, Finding, Status
 
 
 @dataclass
@@ -154,7 +154,25 @@ def score(
             earned += value * finding.weight
             possible += finding.weight
         if possible == 0:
-            continue  # nothing applicable in this category; exclude and renormalise
+            # Nothing here reached an assessment, which is wider than nothing
+            # applying. A category that is entirely not-applicable is correctly
+            # omitted. One that is applicable and unanswered is not: dropping it
+            # removes the question instead of reporting it. Keep it visible with
+            # an empty score, and fall through to the `continue` below so its
+            # weight still stays out of the renormalisation — admitting it would
+            # let a category adduce could not assess drag the total down as
+            # though it had failed. Reporters read possible == 0 as "nothing
+            # assessed here".
+            if any(finding.status is Status.UNKNOWN for finding in cat_findings):
+                categories.append(
+                    CategoryScore(
+                        category=category,
+                        earned=0.0,
+                        possible=0.0,
+                        findings=cat_findings,
+                    )
+                )
+            continue
         categories.append(
             CategoryScore(
                 category=category,
