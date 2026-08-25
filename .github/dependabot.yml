@@ -1,0 +1,40 @@
+# Dependency updates are opened here and merged by hand. Auto-merge is not
+# enabled and must not be: the validation corpus preregisters a SHA-256 over the
+# analyzer's exact dependency versions (`adduce.dependency_versions_sha256` in
+# corpus/preregistration.schema.json), so an unattended bump would silently void
+# every lock registered against the old set. Each of these pull requests needs a
+# person to decide whether the corpus has to be re-preregistered.
+version: 2
+updates:
+  - package-ecosystem: pip
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    # Non-major updates arrive as one pull request so the review cost tracks the
+    # decision, not the dependency count. Majors stay separate: they are the ones
+    # that can change analyzer output.
+    groups:
+      non-major:
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    # Every external action in the workflows is SHA-pinned with a version comment;
+    # Dependabot rewrites both together, so pinning survives these updates.
+    groups:
+      non-major:
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
+    open-pull-requests-limit: 3
