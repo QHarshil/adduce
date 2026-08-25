@@ -101,3 +101,78 @@ def test_repository_exports_strip_remote_credentials(tmp_path):
     assert "https://github.com/example/project.git" in heritage_note
     assert secret not in heritage_note
     assert "also-secret" not in heritage_note
+
+
+def _terminal_text(result, findings):
+    """Render the terminal report over a constructed score card."""
+    from rich.console import Console
+
+    from adduce.profiles import load_profile
+    from adduce.report import terminal
+    from adduce.scoring import score
+
+    result.card = score(findings, load_profile("default"))
+    console = Console(width=200, record=True, force_terminal=False, legacy_windows=False)
+    terminal.render(result, console)
+    return console.export_text()
+
+
+def _category_finding(rule_id, category, status, weight=3):
+    from adduce.rules.base import Finding
+
+    return Finding(
+        rule_id=rule_id,
+        category=category,
+        title=rule_id,
+        status=status,
+        confidence=0.8,
+        message=f"{rule_id} message",
+        remediation="",
+        weight=weight,
+    )
+
+
+def test_a_category_holding_pass_and_unknown_does_not_claim_everything_is_satisfied(tmp_path):
+    from adduce.rules.base import Category, Status
+
+    _write(tmp_path, WELL_FORMED)
+    result = run_check(tmp_path)
+    text = _terminal_text(
+        result,
+        [
+            _category_finding("A", Category.CODE_EXECUTION, Status.PASS),
+            _category_finding("B", Category.CODE_EXECUTION, Status.UNKNOWN),
+        ],
+    )
+    assert "all detected checks satisfied" not in text
+    assert "could not be assessed" in text
+
+
+def test_a_category_with_nothing_unknown_still_reads_as_satisfied(tmp_path):
+    from adduce.rules.base import Category, Status
+
+    _write(tmp_path, WELL_FORMED)
+    result = run_check(tmp_path)
+    text = _terminal_text(
+        result,
+        [_category_finding("A", Category.CODE_EXECUTION, Status.PASS)],
+    )
+    assert "all detected checks satisfied" in text
+
+
+def test_an_all_unknown_category_is_visible_and_shows_no_score(tmp_path):
+    from adduce.rules.base import Category, Status
+
+    _write(tmp_path, WELL_FORMED)
+    result = run_check(tmp_path)
+    text = _terminal_text(
+        result,
+        [
+            _category_finding("A", Category.CODE_EXECUTION, Status.PASS),
+            _category_finding("B", Category.NOTEBOOK, Status.UNKNOWN),
+            _category_finding("C", Category.NOTEBOOK, Status.UNKNOWN),
+        ],
+    )
+    assert Category.NOTEBOOK.value in text
+    assert "none could be assessed" in text
+    assert "0/0" not in text

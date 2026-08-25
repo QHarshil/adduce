@@ -76,10 +76,13 @@ against this repository returns 69 findings and skips a further 9 rules this way
 A rule that does run returns exactly one `Finding` carrying one of five
 statuses. `UNKNOWN` and `NOT_APPLICABLE` do not mean the same thing — `UNKNOWN`
 means the check applied and reached no assessment, `NOT_APPLICABLE` means it did
-not apply — but one line of scoring code excludes both. What follows from that,
-and the applicability-aware coverage proposed in
-[ADR 0001](adr/0001-status-applicability-and-assessment-coverage.md), is in
-[scoring.md](scoring.md).
+not apply — but the same `score_value is None` test excludes both from the
+scoring arithmetic. Where the difference is already honoured, a category left
+applicable and wholly unanswered is kept on the score card rather than dropped.
+Where it is not yet honoured, coverage still counts every returned finding in
+its denominator; the applicability-aware coverage proposed in
+[ADR 0001](adr/0001-status-applicability-and-assessment-coverage.md) is not
+implemented. Both are in [scoring.md](scoring.md).
 
 Rule purity is a convention, not an enforced boundary. No built-in rule module
 imports or calls a filesystem, subprocess or network API — but `Evidence.repo`
