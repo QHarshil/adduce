@@ -226,6 +226,12 @@ jobs:
       # Derived from pyproject rather than committed separately, so raising a
       # floor cannot leave a stale pin behind. A dependency with no lower bound
       # fails the step instead of being dropped from the constraints.
+      # Bootstrap only. This job runs on 3.10, which has no stdlib tomllib, and
+      # the constraints have to exist before the project is installed, so the
+      # parser cannot come from the project's own dependencies. The constrained
+      # install below pins tomli back down to its declared floor.
+      - name: Install a TOML parser for the constraints step
+        run: python -m pip install tomli
       - name: Pin every direct dependency to its declared floor
         run: |
           python scripts/lowest_direct_constraints.py --output "${RUNNER_TEMP}/lowest-direct.txt"

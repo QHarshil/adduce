@@ -90,6 +90,13 @@ include = [
     "scripts",
     "bench",
     ".github/workflows/release.yml",
+    # CONTRIBUTING.md links to each of these. The archive is checked for broken
+    # links separately from the checkout, so a contributor file that ships
+    # without its targets fails the build rather than shipping dead links.
+    ".github/CODEOWNERS",
+    ".github/dependabot.yml",
+    ".github/pull_request_template.md",
+    ".github/ISSUE_TEMPLATE",
     "action.yml",
     # Anchored: a bare "README.md" is gitignore-style and therefore matches at
     # any depth, which silently shipped nested READMEs whose relative links
