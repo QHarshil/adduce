@@ -220,21 +220,27 @@ not recorded in the verification file, so it is joined from the live extraction 
 `(metric, value, where, row_label, column_label)`, the same key staleness uses; a verdict that
 cannot be joined unambiguously is counted separately as `unjoined_false_positives` rather than
 guessed at.
-**Measured over the five adjudicated pairs: 96 of 335 false positives were extracted at
-confidence 1.0, and `bit` is the first pair to meet the criterion, at 0.** Precision is
-552/887 = 62.2 % pooled — bit 111/136, detr 104/138, convnext 186/297, bert 106/180,
-barlowtwins 45/136 — with `unclear` 0 across all five. Note `adjudicated` already excludes
-`unclear` and `in_repo_not_paper`, which is why bert's denominator is 180 against 186 verdicts
-and bit's is 136 against 138.
+**Measured over the six adjudicated pairs: 122 of 456 false positives were extracted at
+confidence 1.0, and `bit` is still the only pair to meet the criterion, at 0.** Precision is
+700/1156 = 60.6 % pooled — bit 111/136 = 81.6 %, detr 104/138 = 75.4 %, convnext
+186/297 = 62.6 %, bert 106/180 = 58.9 %, blip 148/269 = 55.0 %, barlowtwins 45/136 = 33.1 % —
+with `unclear` 0 across all six. Note `adjudicated` already excludes `unclear` and
+`in_repo_not_paper`, which is why bert's denominator is 180 against 186 verdicts and bit's is
+136 against 138, while blip records neither verdict and its denominator is its verdict count.
+Pooled, the six files hold 700 `real_own_result`, 380 `baseline`, 70 `hyperparameter`, 6
+`not_in_paper` and 8 `in_repo_not_paper`, so 1,164 verdicts carry a precision denominator of
+1,156.
 
-The per-pair spread is the informative part, because it shows the reach of the baseline
-demotion rather than a difference in extraction quality: **bert carries 2 where it once carried
-25, and bit carries 0**, while barlowtwins holds 42 and convnext 47. Neither of those two papers
-marks a quoted row with a citation or a full-width section header, so the signal the demotion
-reads is simply absent from them. bit's one quoted detection row does print its citation, and
-the demotion reads it — which is why nine quoted cells there cost no high-confidence exposure at
-all. Deciding whether a printed number is this artifact's own result is evidence-side
-work, and the residue is the measure of how much of it the markup cannot answer.
+The per-pair spread is the informative part, because it shows the reach of the baseline demotion
+rather than a difference in extraction quality: **bert carries 2 where it once carried 25, and
+bit carries 0**, while barlowtwins holds 42, convnext 47 and blip 26. Neither barlowtwins nor
+convnext marks a quoted row with a citation or a full-width section header, so the signal the
+demotion reads is simply absent from them. bit's one quoted detection row does print its
+citation, and the demotion reads it — which is why nine quoted cells there cost no
+high-confidence exposure at all. blip's 26 are one kind throughout: every one is a `baseline`,
+and every one was read at confidence 1.0 by `direct_parse`. Deciding whether a printed number is
+this artifact's own result is evidence-side work, and the residue is the measure of how much of
+it the markup cannot answer.
 
 Ownership is not the only thing a false positive can be wrong about, and bit is where that became
 visible. Of its 25, nine are quoted baselines and **fifteen are one column of one table**: the
@@ -242,8 +248,22 @@ visible. Of its 25, nine are quoted baselines and **fifteen are one column of on
 read as accuracies. Four of them — 82, 80, 58 and 0 — fall inside the accuracy range, so
 magnitude does not separate them; what does is that the column's siblings print decimals where it
 prints integers. Under a single column header that table holds two different kinds of quantity.
-Pooled, baselines are 264 of 335 false positives, so ownership stays the dominant class — but it
-is not the only one, and a pair can be dragged down by a number that is not a result at all.
+Pooled, baselines are 380 of 456 false positives = 83.3 %, up from 264 of 335 = 78.8 % over the
+five pairs before blip, so ownership stays the dominant class — but it is not the only one, and
+a pair can be dragged down by a number that is not a result at all.
+
+**blip is the heavily-quoting pair the first five lacked.** It is a multimodal retrieval and
+captioning paper, so its metric vocabulary — R@1/R@5/R@10, CIDEr, BLEU, SPICE — is one no
+earlier pair carries, and it quotes competitors on 116 of 269 = 43.1 % of its adjudicated
+extractions against bit's 6.6 %. That spread is what it was chosen for.
+
+**Precision and quote rate are near-complementary by construction, so the relation between them
+is not a finding.** Precision is `1 - quoted - (hyperparameter + not_in_paper) / adjudicated`,
+and across the six pairs that residual term runs only 1.4 % to 11.8 %. Precision falling as the
+quote rate rises is therefore close to an identity, and must not be reported as a discovery
+about table convention: the six pairs are a spread of quote rates, not evidence about how tables
+are written. What they do support is the claim the paragraph above already makes — ownership
+attribution dominates precision, now at 83.3 % of pooled false positives.
 
 ### The matching key is `(metric, value, where, row_label, column_label)`
 
@@ -274,6 +294,21 @@ are unique on `(metric, value)` today only because `claims/cluster.py` de-duplic
 on exactly that key; the moment that is repaired, a multiset difference over it stops naming
 *which* row is stale, and the adjudicated pairs have no way back to correspondence.
 
+**blip is where the cost of that global de-duplication was measured, and the cost is recall-side
+rather than precision-side.** Seven printed cells are not extracted at all: `retrieval_zs.tex`
+prints 42 cells and 37 were extracted, `retrieval.tex` prints 102 and 101 were extracted,
+`appendix_longer.tex` prints 24 and 23 were extracted. Six of the seven are the paper's own
+results. Every lost value has a surviving copy elsewhere in the extraction, so the losses are
+consistent with duplicate-value collapse, and they cluster on tied ceiling values — 100.0 three
+times, 99.9 twice.
+
+Two of the seven merge genuinely different measurements. `retrieval_zs.tex` reports BLIP's
+**zero-shot** Flickr TR R@5 as 99.9 and `retrieval.tex` reports the same model's **fine-tuned**
+Flickr TR R@5 as 99.9; the zero-shot cells were dropped and the fine-tuned ones kept. Those are
+different experiments that happen to print the same number, and the de-duplication key is
+table-blind, so this is the first measured case of the collapse merging two distinct
+measurements rather than a genuine restatement.
+
 **The locator alone cannot separate two cells of one table.** Every cell of a `tabular`
 records the line the *environment* opens on, so all of a table's cells share one locator
 exactly. Two such collisions are verified and real: bert prints `88.5` as both R.M. Reader's
@@ -293,6 +328,14 @@ cells** per group, the worst collision on any pair. The full key including the v
 injective across all 138 of its extractions. The margin is thin rather than structural: placing
 each value was decidable only because the six in each sextet happen to be pairwise distinct.
 
+**In three of blip's tables, `row_label` does not identify a row at all.** `retrieval.tex`
+prints two rows both labelled BLIP, separated only by a `Pre-train # Images` column the
+extractor does not extract; `retrieval_zs.tex` does the same; `appendix_longer.tex` prints two
+rows both labelled `No`, separated only by a `#Texts` column. In `retrieval.tex` this cost a
+cell outright: both BLIP rows print 100.0 at Flickr TR R@10 and only one extraction survives.
+The key narrows on the labels, and where two rows carry one label there is nothing left to
+narrow with.
+
 `manifest.Claim` therefore carries `row_label` and `column_label`, and the matcher narrows on
 them **within** the group the locator selects. A verdict records them as `row_label` and
 `column_label` beside `where` in its `extraction` object. They are optional on the verdict
@@ -305,11 +348,12 @@ them, with case and runs of whitespace flattened and nothing else. A verdict rec
 label is narrowed by that one, which is what a transposed table's verdict supplies. A verdict
 recording neither is matched exactly as it was before, counted as `label_fallbacks` in the
 coverage block and `[no labels: N]` beside the rate: barlowtwins 121, bert 160, convnext 236,
-detr 126, bit 3.
+detr 126, bit 3, blip 0. blip is the first pair to carry both cell labels on every verdict,
+269 of 269.
 
 **A verdict whose labels match no extraction is matched on the locator alone rather than left
 stale, and the degradation is counted** as `label_degradations` and `[labels dropped: N]`.
-Today it is 0 on all five pairs.
+Today it is 0 on all six pairs.
 
 The narrowing is still part of the key rather than a hint, and two properties are what make
 degrading safe. Labels are dropped only *after* every verdict has been offered its narrowed
