@@ -294,13 +294,12 @@ are unique on `(metric, value)` today only because `claims/cluster.py` de-duplic
 on exactly that key; the moment that is repaired, a multiset difference over it stops naming
 *which* row is stale, and the adjudicated pairs have no way back to correspondence.
 
-**blip is where the cost of that global de-duplication was measured, and the cost is recall-side
-rather than precision-side.** Seven printed cells are not extracted at all: `retrieval_zs.tex`
-prints 42 cells and 37 were extracted, `retrieval.tex` prints 102 and 101 were extracted,
-`appendix_longer.tex` prints 24 and 23 were extracted. Six of the seven are the paper's own
-results. Every lost value has a surviving copy elsewhere in the extraction, so the losses are
-consistent with duplicate-value collapse, and they cluster on tied ceiling values — 100.0 three
-times, 99.9 twice.
+**Seven of blip's printed cells are not extracted at all, and the loss is recall-side rather
+than precision-side.** `retrieval_zs.tex` prints 42 cells and 37 were extracted, `retrieval.tex`
+prints 102 and 101 were extracted, `appendix_longer.tex` prints 24 and 23 were extracted. Six of
+the seven are the paper's own results. Every lost value has a surviving copy elsewhere in the
+extraction, so the losses are consistent with duplicate-value collapse, and they cluster on tied
+ceiling values — 100.0 three times, 99.9 twice.
 
 Two of the seven merge genuinely different measurements. `retrieval_zs.tex` reports BLIP's
 **zero-shot** Flickr TR R@5 as 99.9 and `retrieval.tex` reports the same model's **fine-tuned**
