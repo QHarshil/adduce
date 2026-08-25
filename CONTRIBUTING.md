@@ -115,9 +115,8 @@ CI infrastructure; and the delivered half of claim extraction, meaning LaTeX and
 Markdown candidate extraction, normalisation, duplicate clustering, and partial
 metric reconciliation.
 
-Moving to 0.3: the remaining claim-resolution stages named in
-[`docs/claims.md`](docs/claims.md), the effectiveness acceptance criteria, and
-the preregistered validation report.
+Moving to 0.3: the remaining claim-resolution stages, the effectiveness
+acceptance criteria, and the preregistered validation report.
 
 0.2 therefore ships with no preregistration lock. That is deliberate: 0.2 makes
 no final effectiveness claim, and the first gate in

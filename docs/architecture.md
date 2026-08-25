@@ -140,24 +140,21 @@ graph. `UNTRUSTED_METHODS` has a definition, a re-export and no consumers.
 
 ## Claim extraction
 
-There is no `adduce claims` command. Extraction is reached through
-`adduce manifest`, which drafts claims into `.adduce/manifest.yaml` via
-`manifest_builder.py`. Delivered: candidate extraction from LaTeX prose and
-tables and from Markdown tables (`claims/candidates.py`), normalisation and
-duplicate clustering (`claims/cluster.py`), and partial metric reconciliation
-(`claims/reconcile.py`), behind `claims.extract_claims`.
+There is no `adduce claims` command. Claim drafting is reached through
+`adduce manifest`, which writes `.adduce/manifest.yaml` via
+`manifest_builder.py` from the LaTeX and Markdown evidence the collectors
+gathered.
 
-Not delivered: author confirmation of extracted candidates, lexical retrieval,
-symbol and config-graph retrieval, semantic rerank, four-way link
-classification, calibrated abstention, and source-located explanation.
+The dedicated candidate-extraction, normalisation and duplicate-clustering layer
+is in development and is not part of this line. Also undelivered: author
+confirmation of extracted candidates, lexical retrieval, symbol and config-graph
+retrieval, semantic rerank, four-way link classification, calibrated abstention,
+and source-located explanation.
 
-Measured on the 20-pair labelled dev set, pooled recall is **141/296 = 47.6 %**.
-Measured precision over the **5 of 34** adjudicated pairs is
-**552/887 = 62.2 %**, with **96** high-confidence false positives pooled;
-exactly one pair (`bit`, 111/136 = 81.6 %) reaches zero high-confidence false
-positives. **29 of 34 pairs are unadjudicated.** The
-zero-high-confidence-false-positive acceptance criterion is **not met**. Drafted
-claims are scaffolding, not claim discovery — see [claims.md](claims.md).
+Its effectiveness is measured against a labelled development set, and that
+measurement is not complete: the zero-high-confidence-false-positive acceptance
+criterion is **not met**, and no effectiveness figure is stated as a result.
+Drafted claims are scaffolding, not claim discovery.
 
 ## Extension surfaces
 
@@ -194,7 +191,7 @@ you trust.
 | Claim graph | `IMPLEMENTED` | `graph.py`, built on the check path |
 | Artifact Evidence Graph | `PARTIALLY IMPLEMENTED` | diagnostic only; 10 of 19 node types |
 | AEG producer plugins | `PROPOSED` | no `plugin:*` owner is ever constructed |
-| Claim candidate extraction and clustering | `PARTIALLY IMPLEMENTED` | figures above; acceptance criterion not met |
+| Claim drafting into the manifest | `PARTIALLY IMPLEMENTED` | dedicated extraction and clustering layer not on this line |
 | Claim–artifact retrieval, rerank, link classification, abstention | `DEFERRED TO 0.3` | open-ended research, out of scope for 0.2 |
 | Reviewer-time estimate | `IMPLEMENTED` | `reviewer_time.py` |
 | Online resolution, `pin-remotes`, `reproduce` | `IMPLEMENTED` | opt-in and fenced; [security-model.md](security-model.md) |
