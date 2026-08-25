@@ -194,3 +194,79 @@ def test_profiles_load_and_differ():
     acm = load_profile("acm")
     assert default.weights != acm.weights
     assert sum(default.weights.values()) == 100
+
+def test_an_all_unknown_category_is_kept_with_nothing_assessed():
+    """Applicable and unanswered is not the same as inapplicable.
+
+    The category stays on the card so a reader can see the question was asked
+    and not answered, but it contributes no weight, so the total is unmoved.
+    """
+    findings = [
+        _finding("A", Category.CODE_EXECUTION, Status.PASS, 3),
+        _finding("B", Category.CODE_EXECUTION, Status.FAIL, 3),
+        _finding("C", Category.NOTEBOOK, Status.UNKNOWN, 3),
+        _finding("D", Category.NOTEBOOK, Status.UNKNOWN, 3),
+    ]
+    card = score(findings, load_profile("default"))
+
+    kept = [c for c in card.categories if c.category is Category.NOTEBOOK]
+    assert len(kept) == 1
+    assert kept[0].possible == 0
+    assert kept[0].earned == 0
+    assert kept[0].percentage == 0.0
+    assert [f.rule_id for f in kept[0].findings] == ["C", "D"]
+
+
+def test_keeping_an_unassessed_category_moves_no_number():
+    """The retained category must not reach the weight accumulation."""
+    scored = [
+        _finding("A", Category.CODE_EXECUTION, Status.PASS, 3),
+        _finding("B", Category.CODE_EXECUTION, Status.FAIL, 3),
+    ]
+    with_unknown = scored + [
+        _finding("C", Category.NOTEBOOK, Status.UNKNOWN, 3),
+        _finding("D", Category.NOTEBOOK, Status.UNKNOWN, 3),
+    ]
+    profile = load_profile("default")
+    base = score(scored, profile)
+    card = score(with_unknown, profile)
+
+    assert card.total == base.total
+    assert card.tier == base.tier
+    # Coverage keeps today's returned-findings denominator; PR 1 changes it.
+    assert card.evaluated_rules == 2
+    assert card.considered_rules == 4
+    assert card.coverage == 50.0
+
+
+def test_an_all_not_applicable_category_is_still_dropped():
+    """The control: this fix must not impose the applicability semantics early."""
+    findings = [
+        _finding("A", Category.CODE_EXECUTION, Status.PASS, 3),
+        _finding("B", Category.CHECKPOINT, Status.NOT_APPLICABLE, 3),
+        _finding("C", Category.CHECKPOINT, Status.NOT_APPLICABLE, 3),
+    ]
+    card = score(findings, load_profile("default"))
+    assert all(c.category is not Category.CHECKPOINT for c in card.categories)
+
+
+def test_a_mixed_unknown_and_not_applicable_category_is_kept():
+    """One unanswered check is enough to make the category worth showing."""
+    findings = [
+        _finding("A", Category.CODE_EXECUTION, Status.PASS, 3),
+        _finding("B", Category.NOTEBOOK, Status.NOT_APPLICABLE, 3),
+        _finding("C", Category.NOTEBOOK, Status.UNKNOWN, 3),
+    ]
+    card = score(findings, load_profile("default"))
+    kept = [c for c in card.categories if c.category is Category.NOTEBOOK]
+    assert len(kept) == 1
+    assert kept[0].possible == 0
+
+
+def test_top_fixes_ignores_a_retained_unassessed_category():
+    findings = [
+        _finding("A", Category.CODE_EXECUTION, Status.FAIL, 3),
+        _finding("B", Category.NOTEBOOK, Status.UNKNOWN, 8),
+    ]
+    card = score(findings, load_profile("default"))
+    assert [f.rule_id for f in top_fixes(card)] == ["A"]

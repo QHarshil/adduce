@@ -11,11 +11,24 @@ cd adduce
 python -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev,release]"
 pytest --cov=adduce --cov-report=term-missing --cov-fail-under=85
-ruff check src tests scripts corpus/scripts
-mypy src/adduce scripts corpus/scripts
+ruff check src tests scripts corpus/scripts bench
+mypy src/adduce scripts corpus/scripts bench
 python -m build
 twine check --strict dist/*
 ```
+
+## Where things are written down
+
+| Question | Document |
+| --- | --- |
+| How does a check run, end to end? | [`docs/architecture.md`](docs/architecture.md) |
+| What may an out-of-tree package depend on? | [`docs/plugin-api.md`](docs/plugin-api.md) |
+| How does a repository become a number? | [`docs/scoring.md`](docs/scoring.md) |
+| Why is it built this way? | [`docs/adr/0000-index.md`](docs/adr/0000-index.md) |
+
+[`docs/extending.md`](docs/extending.md) is the worked plugin example;
+`docs/plugin-api.md` is the contract it is written against. The full index is
+[`docs/index.md`](docs/index.md).
 
 ## Design constraints
 
@@ -49,11 +62,23 @@ These are load-bearing; pull requests that violate them will be asked to change.
 External rule packs do not need any of this: publish a package exposing a
 `RULES` iterable under the `adduce.rules` entry-point group.
 
+## Architecture decision records
+
+A record states one decision, the context that forced it, and the consequences
+accepted. Open one when a change alters the public extension API or the scoring
+or report contract. Ordinary implementation choices do not need one.
+
+A record is not edited to match later reality. If a decision changes, add a new
+record that supersedes it and names the one it replaces. The index is
+[`docs/adr/0000-index.md`](docs/adr/0000-index.md); add your record to its table
+in the same pull request.
+
 ## Reporting false positives
 
 Open an issue with a minimal repository layout (file paths plus the relevant
-snippets) and the finding you believe is wrong. These reports are the most
-valuable input the project gets.
+snippets) and the finding you believe is wrong. The
+[false-positive form](.github/ISSUE_TEMPLATE/false_positive.yml) asks for those
+fields directly. These reports are the most valuable input the project gets.
 
 ## Pull requests
 
@@ -61,6 +86,68 @@ valuable input the project gets.
 - The coverage, Ruff, mypy, build, and Twine checks from the development setup
   must pass.
 - New behaviour needs tests; changed behaviour needs updated tests.
+- Complete the [pull request template](.github/pull_request_template.md).
+
+Issues use forms: [bug report](.github/ISSUE_TEMPLATE/bug_report.yml),
+[false positive](.github/ISSUE_TEMPLATE/false_positive.yml), and
+[API change](.github/ISSUE_TEMPLATE/api_change.yml) for anything touching either
+entry-point group or an output contract. Reviewers per area are listed in
+[`.github/CODEOWNERS`](.github/CODEOWNERS).
+
+## Dependency updates
+
+Dependency updates arrive as Dependabot pull requests
+([`.github/dependabot.yml`](.github/dependabot.yml)). They are merged by hand,
+never automatically. The validation corpus preregistration records a
+`dependency_versions_sha256` over the exact installed dependency set, so a
+dependency change is a change to the analyzer under measurement. Review it, and
+settle what it costs the corpus, before merging.
+
+## Release scope: 0.2 and 0.3
+
+The split axis is maturity, not subject matter. Productized, validated work
+ships in 0.2; open-ended research milestones move to 0.3. 0.2 is not an
+API-only release.
+
+In 0.2: the public extension API and its stability policy; scoring and report
+correctness; the architecture, plugin and scoring documentation; contributor and
+CI infrastructure; and the delivered half of claim extraction, meaning LaTeX and
+Markdown candidate extraction, normalisation, duplicate clustering, and partial
+metric reconciliation.
+
+Moving to 0.3: the remaining claim-resolution stages, the effectiveness
+acceptance criteria, and the preregistered validation report.
+
+0.2 therefore ships with no preregistration lock. That is deliberate: 0.2 makes
+no final effectiveness claim, and the first gate in
+[`docs/releasing.md`](docs/releasing.md#release-gates) already permits a release
+to "document explicitly which validation remains developmental" in place of
+completing the corpus and human-review gates.
+
+Claim extraction's current figures are developmental status, not results.
+Pooled recall is 141/296 = 47.6% over the 20 labelled pairs. Precision is
+552/887 = 62.2% over the 5 of 34 pairs adjudicated so far, with 96
+high-confidence false positives pooled and exactly one pair at zero. The
+zero-high-confidence-false-positive acceptance criterion is not met, and no
+project document, release note or README line should describe it as met.
+
+## Reserved work and release gates
+
+Some work is reserved by agreement for an outside contributor who has offered to
+implement it. Reserved work is not pre-implemented by maintainers, so nobody is
+asked to rebase onto a competing implementation of what they took on. If you are
+planning something substantial, say so on the issue first; it will be marked
+reserved or left open.
+
+A reservation never becomes a release gate. Gates are capability-based, not
+contributor-identity-based: "a pull request was submitted" is not a gate. The
+gate is that the capability exists, is tested, and is correct. If reserved work
+is still unsubmitted once every other gate for the release is met, ownership is
+reassessed and maintainers may implement it. The trigger is that condition, not
+a date.
+
+No reservation covers a correctness defect. Maintainers fix defects in shipped
+behaviour without waiting on reserved feature work.
 
 Maintainer release gates and the Trusted Publishing boundary are documented in
 [`docs/releasing.md`](docs/releasing.md). A release tag is not part of the

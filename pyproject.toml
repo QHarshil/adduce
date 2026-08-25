@@ -38,7 +38,12 @@ classifiers = [
     "Topic :: Scientific/Engineering",
 ]
 dependencies = [
-    "typer>=0.12",
+    # 0.16.0, not 0.12: the CLI annotates options as `str | None`, which typer
+    # could not translate before 0.13, and typer through 0.15.3 calls click's
+    # make_metavar() with an arity current click rejects. Measured on 3.10 at
+    # every other dependency's declared floor: 0.12.0 fails 109 tests, 0.15.4
+    # fails 2, 0.16.0 passes the suite.
+    "typer>=0.16.0",
     "rich>=13.0",
     "jinja2>=3.1",
     "pyyaml>=6.0",
@@ -90,6 +95,13 @@ include = [
     "scripts",
     "bench",
     ".github/workflows/release.yml",
+    # CONTRIBUTING.md links to each of these. The archive is checked for broken
+    # links separately from the checkout, so a contributor file that ships
+    # without its targets fails the build rather than shipping dead links.
+    ".github/CODEOWNERS",
+    ".github/dependabot.yml",
+    ".github/pull_request_template.md",
+    ".github/ISSUE_TEMPLATE",
     "action.yml",
     # Anchored: a bare "README.md" is gitignore-style and therefore matches at
     # any depth, which silently shipped nested READMEs whose relative links

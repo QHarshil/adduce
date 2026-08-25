@@ -29,6 +29,18 @@ the new `evidence_base` block instead. Both changes are recorded against the
 digests the lock still carries, and the record asserts that exactly those two
 files moved.
 
+This release makes **no final effectiveness claim**, and deliberately ships with
+no preregistration lock. That is not an exception: `docs/releasing.md`'s first
+gate is satisfied by completing the version's corpus and human-review gates *or*
+by documenting explicitly which validation remains developmental, and this is the
+second path. The claim-extraction figures are developmental status rather than
+results. Pooled recall is **141/296 = 47.6%** over the 20 labelled pairs.
+Precision is **552/887 = 62.2%** over the **5 of 34** pairs adjudicated so far,
+with **96** high-confidence false positives pooled and exactly one pair reaching
+zero. **The zero-high-confidence-false-positive acceptance criterion is not met.**
+The remaining claim-resolution stages, the effectiveness acceptance criteria, and
+the preregistered validation report belong to the following release.
+
 ### Added
 
 - Added per-stage timing and work counters to the check pipeline, reported by
@@ -56,7 +68,66 @@ files moved.
   applying, became not-applicable, dropped, or improved. It exists so the
   behaviour change below is reproducible rather than asserted.
 
+- **Three reference documents describing the analyzer as it is, not as designed.**
+  `docs/architecture.md` walks the pipeline stage by stage and closes with a
+  20-row subsystem table; `docs/plugin-api.md` states the contract for both public
+  entry-point groups; `docs/scoring.md` covers how a repository becomes a number.
+  Every subsystem carries one of `IMPLEMENTED`, `PARTIALLY IMPLEMENTED`,
+  `PROPOSED`, `DEFERRED TO 0.3` or `REJECTED BY MEASUREMENT`, so a reader cannot
+  mistake a design for shipped behaviour. Several long-standing overstatements are
+  corrected in the process: collection is not single-pass — 3 of the 14 collectors
+  share one read pass and the other 11 read through a 512-entry LRU measured at a
+  0.3% hit rate — the evidence graph is diagnostic and `engine.py` holds no
+  reference to it, and third-party plugins are not sandboxed.
+- **Contributor infrastructure.** Issue forms for bug reports, false positives and
+  API or schema changes; a pull request template; `CODEOWNERS` assigning review by
+  subsystem; and a Dependabot configuration. Auto-merge is deliberately not
+  enabled: the validation corpus preregistration binds a SHA-256 over the
+  analyzer's exact dependency versions, so an unattended bump would silently void
+  every lock registered against the old set.
+- **A contract test that audits the plugin surface through a real installed
+  distribution.** `tests/fixtures/external_plugin` is a separately installable
+  package registering both public groups, discovered through `importlib.metadata`
+  exactly as any third-party pack would be — nothing monkeypatches entry points or
+  constructs one by hand. It also registers a reporter named `json`, which must
+  lose, so built-in format shadowing is verified rather than assumed. The CI job
+  sets `ADDUCE_REQUIRE_EXTERNAL_PLUGIN=1`, which turns "plugin not installed" from
+  a skip into a failure; without it a broken install step would leave the job green
+  over five tests that never ran.
+- **A lowest-direct-dependency CI job.** The compatibility matrix installs whatever
+  the resolver picks, which is the newest release of everything, so it tests the
+  ceiling and never the floor. This job installs the oldest combination the project
+  claims to support, on the lowest supported Python. Its constraints are derived
+  from `pyproject.toml` at job time rather than committed separately, so raising a
+  floor cannot leave a stale pin behind, and a dependency declared with no lower
+  bound fails the step instead of being dropped from the constraints and silently
+  untested. It found a real defect on its first run — see Changed.
+- **An aggregate CI check.** One required status for a pull request, covering every
+  job except `pypi-smoke`, which is dispatch- and schedule-only and skips on pull
+  requests. It treats skipped and cancelled as failure, because a skipped required
+  check reads as "not failed" on branch protection.
+
 ### Changed
+
+- **The declared minimum `typer` is now 0.16.0, not 0.12.** The old bound was not a
+  true floor and nothing caught it, because every environment that ever ran
+  installed a much newer typer. Measured on Python 3.10 with every other dependency
+  at its declared floor: **typer 0.12.0 fails 109 tests**, 0.15.4 fails 2, and
+  0.16.0 passes the suite at 1,574 passed. Two separate causes — typer could not
+  translate a `str | None` annotation before 0.13, and through 0.15.3 it called
+  click's `make_metavar()` with an arity current click rejects. This raises a
+  declared minimum to a true one; it does not change what a normal install
+  resolves. No other floor moved: `rich` 13.0, `jinja2` 3.1, `pyyaml` 6.0 and
+  `libcst` 1.1 were each verified to work at the floor.
+- **The source distribution now carries the contributor files `CONTRIBUTING.md`
+  links to** — the issue forms, the pull request template, `CODEOWNERS` and the
+  Dependabot configuration. They resolved in a checkout and dangled in the archive,
+  which the extracted-sdist link check exists to catch and did.
+- Superseded pull-request CI runs are now cancelled. Pushes to `main` and `dev` and
+  the weekly schedule still run to completion, because their results are read after
+  the fact rather than watched. Every checkout sets `persist-credentials: false`,
+  and pip downloads are cached against `pyproject.toml`.
+
 
 - **Each source file is now read and decoded once per run, not three times.**
   The AST analysis, the portability scan, and the remote-reference scan each
@@ -127,6 +198,26 @@ files moved.
   and checks the scored population exactly instead.
 
 ### Fixed
+
+- **A category adduce could not assess disappeared from the report entirely.**
+  `scoring.py` treated "nothing assessed" as "nothing applicable": one line kept
+  the category's weight out of the renormalisation, which is correct, and also
+  removed the category from the score card, which is not. Because the drop happened
+  before any reporter ran, terminal, Markdown, LaTeX and JSON lost it identically.
+  A category whose findings are all `NOT_APPLICABLE` never applied and is still
+  omitted; one holding an `UNKNOWN` applied and went unanswered, and is now kept
+  with an empty score and its full findings list. Measured across the 33-case
+  synthetic corpus: **13 categories in 10 cases** were being dropped this way and
+  are now reported. `total`, `tier`, `coverage`, `evaluated_rules` and
+  `considered_rules` are unmoved — the weight accumulation is never reached — and a
+  before-and-after comparison over 34 repositories found **no change to any finding,
+  status, or score**.
+- **Terminal output claimed "all detected checks satisfied" for a category holding
+  an unassessed check.** The note was built from `PARTIAL` and `FAIL` findings only,
+  so a category holding `PASS` and `UNKNOWN` produced an empty note and fell through
+  to that wording, which was false. It now reports how many checks could not be
+  assessed, and a category with nothing assessed shows no score rather than `0/0`.
+
 
 - **A repository with almost nothing in it could earn a respectable tier.** Most
   rules are assertions about code: given none, the ones that look for a problem
