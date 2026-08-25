@@ -115,8 +115,14 @@ Terminal output shows such a category with no score rather than `0/0`.
 
 On adduce's own repository 15 category rows render and one is dropped —
 `Checkpoint & Experiment State`, whose 5 findings are all `NOT_APPLICABLE`. That
-is the legitimate omission. No category on this repository is wholly `UNKNOWN`,
-so the retention path is reachable by construction rather than exhibited here.
+is the legitimate omission; no category on this repository is wholly unassessed,
+so the retention path is not exercised here.
+
+It is exercised elsewhere. Across the 33-case synthetic corpus, **13 categories
+in 10 cases** hold at least one `UNKNOWN` and nothing assessed — most of them
+`Paper & Artifact Consistency` or `Result Reconciliation` carrying a handful of
+`NOT_APPLICABLE` findings and one unanswered check. Every one of those was
+previously dropped from the score card, and every one is now reported.
 
 ## Tiers, and when no tier is given
 
