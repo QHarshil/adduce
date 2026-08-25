@@ -1,0 +1,60 @@
+name: API or schema change
+description: A proposed change to the public extension API, a report schema, or the claims manifest.
+title: "[api] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Read the entry-point contracts in
+        [docs/extending.md](https://github.com/QHarshil/adduce/blob/main/docs/extending.md)
+        and the decisions of record in
+        [docs/adr/0000-index.md](https://github.com/QHarshil/adduce/blob/main/docs/adr/0000-index.md)
+        first — the stability policy for these surfaces is ADR 0003.
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Which surface
+      options:
+        - "`adduce.rules` entry point"
+        - "`adduce.reporters` entry point"
+        - JSON report
+        - "Claims manifest (`.adduce/manifest.yaml`)"
+        - CLI
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem this solves for an out-of-tree consumer
+      description: >-
+        What a rule pack, reporter or downstream tool cannot do today, and what
+        it currently does instead.
+    validations:
+      required: true
+  - type: textarea
+    id: shape
+    attributes:
+      label: Proposed shape
+      description: Signatures, keys or fields. Concrete beats general.
+    validations:
+      required: true
+  - type: textarea
+    id: compatibility
+    attributes:
+      label: Backward-compatibility impact
+      description: >-
+        Whether existing consumers keep working unchanged, what breaks if not,
+        and whether the change can be made additive instead.
+    validations:
+      required: true
+  - type: dropdown
+    id: adr
+    attributes:
+      label: Does this need an ADR?
+      description: A change to a stability guarantee needs one. An additive field usually does not.
+      options:
+        - "Yes"
+        - "No"
+        - Not sure
+    validations:
+      required: true
