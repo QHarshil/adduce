@@ -92,27 +92,31 @@ nothing from its absence either.
 
 ## Categories that drop out
 
-One line does this (`scoring.py:156-157`):
+A category contributing no assessed weight reaches `if possible == 0`, and what
+happens next depends on why it got there. `possible == 0` means *nothing
+assessed*, which is wider than nothing applicable, so the two cases are
+separated:
 
-```python
-if possible == 0:
-    continue  # nothing applicable in this category; exclude and renormalise
-```
+- Every finding is `NOT_APPLICABLE`. The category never applied; it is dropped
+  from `ScoreCard.categories` and omitted from every report. This is correct.
+- At least one finding is `UNKNOWN`. The category applied and went unanswered.
+  It is **kept** on the card, carrying its full `findings` list with
+  `earned == 0.0` and `possible == 0.0`. Dropping it would remove the question
+  instead of reporting it.
 
-It has two effects: the category is absent from `ScoreCard.categories`, so
-terminal, Markdown, LaTeX and JSON output lose it identically; and its weight
-stays out of `weighted_possible`. The second effect is correct.
+In both cases the category's weight stays out of `weighted_possible`. A retained
+unassessed category therefore moves no number: `total`, `tier`, `coverage`,
+`evaluated_rules` and `considered_rules` are identical whether it is there or
+not. Admitting its weight would let a category adduce could not assess drag the
+total down as though it had failed.
 
-The test it performs is *nothing assessed*, which is wider than nothing
-applicable. A category whose findings are all `NOT_APPLICABLE` is legitimately
-omitted. A category whose findings are all `UNKNOWN` is applicable and
-unanswered, and the same line drops it — removing the question rather than
-reporting it.
+`possible == 0` is the signal a reporter reads for "nothing assessed here".
+Terminal output shows such a category with no score rather than `0/0`.
 
-That second case is latent: reachable by construction, and not exhibited by
-adduce's own repository. There, 15 category rows render and one category is
-dropped — `Checkpoint & Experiment State`, whose 5 findings are all
-`NOT_APPLICABLE`. That omission is the legitimate one.
+On adduce's own repository 15 category rows render and one is dropped —
+`Checkpoint & Experiment State`, whose 5 findings are all `NOT_APPLICABLE`. That
+is the legitimate omission. No category on this repository is wholly `UNKNOWN`,
+so the retention path is reachable by construction rather than exhibited here.
 
 ## Tiers, and when no tier is given
 
@@ -179,11 +183,14 @@ everything and most answers were bad news. See
 | --- | --- |
 | Coverage denominator becomes applicable findings rather than returned findings | `PROPOSED` |
 | Pre-evaluation skip count reported alongside the outcome counts | `PROPOSED` |
-| An applicable but wholly unassessed category is preserved rather than dropped, without admitting its weight to the quality denominator | `PROPOSED` |
 
-All three are recorded in
-[ADR 0001](adr/0001-status-applicability-and-assessment-coverage.md). None is
-implemented; the sections above describe current behaviour.
+Both are recorded in
+[ADR 0001](adr/0001-status-applicability-and-assessment-coverage.md), and
+neither is implemented; the sections above describe current behaviour. The third
+change that record calls for — preserving an applicable but wholly unassessed
+category, and not claiming everything is satisfied when a category holds an
+unassessed check — is `IMPLEMENTED` and is described above as current
+behaviour.
 
 Under the proposed denominator, coverage on adduce's own repository moves:
 
