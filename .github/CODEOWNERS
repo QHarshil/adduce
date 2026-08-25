@@ -1,0 +1,28 @@
+# Review ownership by subsystem. A path is listed when it carries an invariant
+# that is expensive to restore once broken, not because it changes often.
+
+*                       @QHarshil
+
+# Rules are pure functions over typed evidence, and a misfire is a bug.
+/src/adduce/rules/      @QHarshil
+
+# New signal enters here, never through a filesystem read inside a rule.
+/src/adduce/evidence/   @QHarshil
+
+# Reporter output is a public surface: schemas and wording are contracts.
+/src/adduce/report/     @QHarshil
+
+# Weighting, coverage and tier thresholds decide what a score means.
+/src/adduce/scoring.py  @QHarshil
+
+# Validation evidence: preregistrations, labels and recorded runs.
+/corpus/                @QHarshil
+
+# The regression baseline the benchmark gate compares against.
+/bench/                 @QHarshil
+
+# Decisions of record. A record is superseded, never rewritten.
+/docs/adr/              @QHarshil
+
+# CI and release automation, including the publishing boundary.
+/.github/workflows/     @QHarshil
