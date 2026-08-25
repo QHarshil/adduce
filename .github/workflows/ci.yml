@@ -8,6 +8,13 @@ on:
   schedule:
     - cron: "17 6 * * 1"
 
+# Only pull-request runs are cancelled when superseded. Pushes to main and dev
+# and the weekly schedule run to completion, because their results are read
+# after the fact rather than watched.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 permissions:
   contents: read
 
@@ -18,8 +25,12 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
+          cache: pip
+          cache-dependency-path: pyproject.toml
           python-version: "3.12"
       - name: Install
         run: python -m pip install -e ".[dev]"
@@ -55,8 +66,12 @@ jobs:
             python-version: "3.12"
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
+          cache: pip
+          cache-dependency-path: pyproject.toml
           python-version: ${{ matrix.python-version }}
       - name: Install
         run: python -m pip install -e ".[dev]"
@@ -69,8 +84,12 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
+          cache: pip
+          cache-dependency-path: pyproject.toml
           python-version: "3.12"
       - name: Install package validation tools
         run: python -m pip install ".[release]"
@@ -97,8 +116,12 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
+          cache: pip
+          cache-dependency-path: pyproject.toml
           python-version: "3.12"
       - name: Install the current source package
         run: python -m pip install -e .
@@ -146,8 +169,12 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
+          cache: pip
+          cache-dependency-path: pyproject.toml
           python-version: "3.12"
       - name: Install
         run: python -m pip install -e .
@@ -166,13 +193,49 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
+          cache: pip
+          cache-dependency-path: pyproject.toml
           python-version: "3.12"
       - name: Install
         run: python -m pip install -e .
       - name: Run adduce on itself
         run: adduce check . --verbose
+
+  lowest-direct:
+    # The compatibility matrix installs whatever the resolver picks, which is
+    # the newest release of everything, so it tests the ceiling and never the
+    # floor. This installs the oldest combination pyproject.toml claims to
+    # support. It runs on the lowest supported Python because that is where the
+    # floor's wheels exist; the floors predate the newest interpreters.
+    name: Lowest direct dependencies (Python 3.10)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          cache: pip
+          cache-dependency-path: pyproject.toml
+          python-version: "3.10"
+      # Derived from pyproject rather than committed separately, so raising a
+      # floor cannot leave a stale pin behind. A dependency with no lower bound
+      # fails the step instead of being dropped from the constraints.
+      - name: Pin every direct dependency to its declared floor
+        run: |
+          python scripts/lowest_direct_constraints.py --output "${RUNNER_TEMP}/lowest-direct.txt"
+          cat "${RUNNER_TEMP}/lowest-direct.txt"
+      - name: Install at the floor
+        run: python -m pip install -c "${RUNNER_TEMP}/lowest-direct.txt" -e ".[dev]"
+      - name: Record what actually resolved
+        run: python -m pip list
+      - name: Test
+        run: pytest
 
   pypi-smoke:
     # Verifies the published package (data files, templates, entry points),
@@ -182,8 +245,49 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
+          cache: pip
+          cache-dependency-path: pyproject.toml
           python-version: "3.12"
       - name: Smoke-test the PyPI release
         run: bash scripts/smoke_install.sh
+
+  ci-ok:
+    # The one check to mark required on a pull request. It deliberately does not
+    # depend on pypi-smoke: that job is dispatch- and schedule-only and skips on
+    # every pull request, so requiring it would block every merge.
+    #
+    # `if: always()` is what makes this meaningful — without it the job would be
+    # skipped when a dependency failed, and a skipped required check reads as
+    # "not failed" on the branch protection UI.
+    name: CI
+    if: always()
+    needs:
+      - quality
+      - compatibility
+      - package
+      - action-integration
+      - benchmark
+      - self-check
+      - lowest-direct
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Fail unless every required job succeeded
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+        run: |
+          python3 - <<'PY'
+          import json, os, sys
+          needs = json.loads(os.environ["NEEDS"])
+          for name, data in sorted(needs.items()):
+              print(f"{data['result']:>9}  {name}")
+          failed = sorted(n for n, d in needs.items() if d["result"] != "success")
+          if failed:
+              print("\nrequired jobs that did not succeed: " + ", ".join(failed))
+              sys.exit(1)
+          print("\nall required jobs succeeded")
+          PY
