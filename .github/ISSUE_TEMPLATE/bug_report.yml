@@ -1,0 +1,63 @@
+name: Bug report
+description: adduce crashed, or did something other than what it says it does.
+title: "[bug] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        For a finding that is wrong about a repository, use the false positive
+        form instead — it asks for the layout needed to reproduce the misfire.
+  - type: textarea
+    id: command
+    attributes:
+      label: Command run
+      description: The full invocation, plus any `adduce.toml` or profile in effect.
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected result
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual result
+      description: Output and, for a crash, the whole traceback.
+      render: text
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: adduce version
+      description: Output of `adduce --version`.
+    validations:
+      required: true
+  - type: input
+    id: python-version
+    attributes:
+      label: Python version
+      description: Output of `python --version`.
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - Linux
+        - macOS
+        - Windows
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: os-detail
+    attributes:
+      label: Operating system detail
+      description: Distribution or release, if it is likely to matter.
+    validations:
+      required: false
