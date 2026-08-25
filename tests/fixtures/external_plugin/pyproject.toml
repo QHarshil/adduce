@@ -1,0 +1,23 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "adduce-contract-plugin"
+version = "0.1.0"
+description = "Out-of-tree rule and reporter pack used to exercise adduce's entry-point contract."
+requires-python = ">=3.10"
+
+# Installed alongside the adduce build under test, never resolved from an index:
+# a dependency on adduce here would let a job satisfy it from PyPI and audit a
+# different build than the one it meant to test.
+
+[project.entry-points."adduce.rules"]
+contract-plugin = "adduce_contract_plugin.rules"
+
+[project.entry-points."adduce.reporters"]
+contract-plugin = "adduce_contract_plugin.reporter:render"
+json = "adduce_contract_plugin.reporter:render_shadow"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/adduce_contract_plugin"]
