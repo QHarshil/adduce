@@ -12,6 +12,7 @@ from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from enum import Enum
 from math import isfinite
+from types import MappingProxyType
 
 from ..evidence import Evidence
 from ..model import Repo
@@ -149,6 +150,28 @@ class FindingItem:
             raise ValueError(f"{label} message is not a string, got {type(self.message).__name__}")
         _validate_confidence(self.confidence, f"{label} confidence")
         _validate_attributes(self.attributes, label)
+        # Defensive copies: a caller-owned dict or list mutated after construction
+        # must never change an already-validated, frozen item.
+        object.__setattr__(self, "attributes", MappingProxyType(dict(self.attributes)))
+        object.__setattr__(self, "locations", tuple(self.locations))
+
+    def __reduce__(self) -> tuple:
+        # The read-only attributes view cannot be copied by the default
+        # protocol, which would otherwise cost this public type copy support it
+        # had before. Rebuilding through __init__ re-validates and re-wraps.
+        return (
+            self.__class__,
+            (
+                self.id,
+                self.status,
+                self.message,
+                self.confidence,
+                self.locations,
+                self.remediation,
+                self.kind,
+                dict(self.attributes),
+            ),
+        )
 
     def to_dict(self) -> dict:
         return {
@@ -198,6 +221,10 @@ class Finding:
     items: tuple[FindingItem, ...] = ()
 
     def __post_init__(self) -> None:
+        # Materialise before validating: an iterator would be consumed by the
+        # duplicate check and leave nothing to serialise, and a caller's list
+        # would stay aliased and admit ids this check never saw.
+        self.items = tuple(self.items)
         seen: set[str] = set()
         for item in self.items:
             if item.id in seen:

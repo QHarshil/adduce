@@ -2,10 +2,14 @@
 
 from __future__ import annotations
 
+import copy
+import dataclasses
 import json
+import pickle
 
 import pytest
 
+import adduce.rules as rules_package
 from adduce.profiles import load_profile
 from adduce.rules.base import (
     Category,
@@ -214,6 +218,146 @@ def test_ten_thousand_items_construct_and_summarise():
     }
 
 
+def test_a_generator_of_items_yields_every_item_in_to_dict():
+    """A generator must not be consumed before it is materialised.
+
+    Storing ``items`` exactly as passed once let the duplicate-id loop drain
+    an iterator, leaving nothing behind for ``to_dict`` to serialise.
+    """
+    items = (_item(f"assertion:{n}") for n in range(50))
+    finding = _parent(items=items)
+    assert len(finding.items) == 50
+    assert len(finding.to_dict()["items"]) == 50
+
+
+def test_a_duplicate_id_from_a_generator_is_still_rejected():
+    def source():
+        yield _item("dup")
+        yield _item("dup", Status.FAIL)
+
+    with pytest.raises(ValueError, match="duplicate finding item id 'dup'"):
+        _parent(items=source())
+
+
+def test_mutating_a_source_list_after_construction_does_not_reach_the_finding():
+    """A caller's list must be copied, not aliased, or a later append bypasses validation."""
+    source = [_item("a"), _item("b")]
+    finding = _parent(items=source)
+
+    source.append(_item("c"))
+    source.clear()
+
+    assert [item.id for item in finding.items] == ["a", "b"]
+    assert len(finding.to_dict()["items"]) == 2
+
+
+def test_mutating_the_source_attributes_after_construction_does_not_reach_the_item():
+    attrs = {"doi": "10.1234/a"}
+    item = _item("x", attributes=attrs)
+
+    attrs["doi"] = "10.1234/mutated"
+    attrs["blob"] = b"\x00"  # never validated if it leaked through
+
+    assert item.attributes == {"doi": "10.1234/a"}
+    assert item.to_dict()["attributes"] == {"doi": "10.1234/a"}
+    assert json.loads(json.dumps(item.to_dict())) == item.to_dict()
+
+
+def test_the_aliasing_loop_yields_distinct_attributes_per_item():
+    """The realistic failure: one dict hoisted out of a loop and reused."""
+    attrs: dict = {}
+    items = []
+    for doi in ("10.1/a", "10.1/b", "10.1/c"):
+        attrs["doi"] = doi
+        items.append(_item(f"citation:{doi}", attributes=attrs))
+
+    assert [item.attributes["doi"] for item in items] == ["10.1/a", "10.1/b", "10.1/c"]
+
+
+def test_item_attributes_cannot_be_mutated_directly():
+    item = _item("x", attributes={"doi": "10.1234/a"})
+    with pytest.raises(TypeError):
+        item.attributes["doi"] = "10.1234/mutated"  # type: ignore[index]
+
+
+def test_a_list_of_locations_is_coerced_to_a_tuple_and_decoupled_from_its_source():
+    source = [Location("paper.tex", 1)]
+    item = _item("x", locations=source)  # type: ignore[arg-type]
+
+    assert isinstance(item.locations, tuple)
+    source.append(Location("refs.bib"))
+    assert item.locations == (Location("paper.tex", 1),)
+
+
+def test_deepcopy_preserves_every_field_and_stays_read_only():
+    original = _item(
+        "citation:10.1234/a",
+        Status.FAIL,
+        confidence=0.4,
+        locations=(Location("paper.tex", 3), Location("refs.bib")),
+        remediation="add the reference",
+        kind="citation",
+        attributes={"doi": "10.1234/a", "page": 4},
+    )
+
+    duplicate = copy.deepcopy(original)
+
+    assert duplicate == original
+    assert duplicate.id == original.id
+    assert duplicate.status is original.status
+    assert duplicate.message == original.message
+    assert duplicate.attributes == original.attributes
+    assert duplicate.locations == original.locations
+    assert duplicate.attributes is not original.attributes
+    with pytest.raises(TypeError):
+        duplicate.attributes["doi"] = "mutated"  # type: ignore[index]
+
+
+def test_deepcopy_is_decoupled_from_the_original_source_mapping():
+    attrs = {"doi": "10.1234/a"}
+    original = _item("x", attributes=attrs)
+    duplicate = copy.deepcopy(original)
+
+    attrs["doi"] = "10.1234/mutated"
+
+    assert duplicate.attributes == {"doi": "10.1234/a"}
+    assert original.attributes == {"doi": "10.1234/a"}
+
+
+def test_pickle_round_trip_preserves_every_field_and_stays_read_only():
+    original = _item(
+        "citation:10.1234/a",
+        Status.PARTIAL,
+        locations=(Location("paper.tex", 3),),
+        attributes={"doi": "10.1234/a"},
+    )
+
+    restored = pickle.loads(pickle.dumps(original))
+
+    assert restored == original
+    assert restored.status is original.status
+    assert restored.attributes == original.attributes
+    assert restored.locations == original.locations
+    with pytest.raises(TypeError):
+        restored.attributes["doi"] = "mutated"  # type: ignore[index]
+
+
+def test_reduce_rebuilds_through_init_so_a_bad_field_revalidates_on_the_way_back():
+    item = _item("x")
+    cls, args = item.__reduce__()
+    assert cls is FindingItem
+    with pytest.raises(ValueError, match="id is empty"):
+        cls(*(("",) + args[1:]))
+
+
+def test_asdict_still_raises_type_error_to_dict_is_the_supported_serialisation_route():
+    """Known limitation: ``asdict`` deep-copies fields directly and bypasses ``__reduce__``."""
+    item = _item("x", attributes={"doi": "10.1234/a"})
+    with pytest.raises(TypeError):
+        dataclasses.asdict(item)
+    assert item.to_dict()["attributes"] == {"doi": "10.1234/a"}
+
+
 def test_item_status_never_moves_the_parent_status_score_or_weight():
     items = tuple(_item(f"a{n}", Status.FAIL) for n in range(6))
     with_items = _parent(Status.PASS, items=items)
@@ -224,3 +368,25 @@ def test_item_status_never_moves_the_parent_status_score_or_weight():
 
     profile = load_profile("default")
     assert score([with_items], profile).total == score([without], profile).total == 100.0
+
+
+def test_rules_package_all_pins_the_exact_covered_surface():
+    """`docs/plugin-api.md` names every covered symbol as importable from here.
+
+    Pinned explicitly so adding or removing a covered name is a deliberate,
+    reviewed edit rather than a silent drop that leaves the docs wrong.
+    """
+    assert rules_package.__all__ == [
+        "Category",
+        "Finding",
+        "FindingItem",
+        "JsonValue",
+        "Location",
+        "Rule",
+        "Status",
+        "summarize_items",
+        "BUILTIN_RULES",
+        "discover_rules",
+    ]
+    for name in rules_package.__all__:
+        assert hasattr(rules_package, name), name
