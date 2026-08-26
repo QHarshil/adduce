@@ -103,7 +103,7 @@ def test_repository_exports_strip_remote_credentials(tmp_path):
     assert "also-secret" not in heritage_note
 
 
-def _terminal_text(result, findings):
+def _terminal_text(result, findings, analysable_lines=None):
     """Render the terminal report over a constructed score card."""
     from rich.console import Console
 
@@ -111,10 +111,15 @@ def _terminal_text(result, findings):
     from adduce.report import terminal
     from adduce.scoring import score
 
-    result.card = score(findings, load_profile("default"))
+    result.card = score(findings, load_profile("default"), analysable_lines=analysable_lines)
     console = Console(width=200, record=True, force_terminal=False, legacy_windows=False)
     terminal.render(result, console)
     return console.export_text()
+
+
+def _terminal_prose(result, findings, analysable_lines=None):
+    """The rendered report with wrapping collapsed, so sentences can be matched."""
+    return " ".join(_terminal_text(result, findings, analysable_lines).split())
 
 
 def _category_finding(rule_id, category, status, weight=3):
@@ -186,6 +191,59 @@ def test_reporters_render_a_card_with_no_score_without_printing_a_number(tmp_pat
     assert badge_payload["color"] == "lightgrey"
     for rendered in (terminal_text, markdown_text, svg):
         assert "0/100" not in rendered
+
+
+#: The clause that explains a missing tier by thin source. Correct for a card
+#: that has a score; a lie about a card on which nothing was assessed.
+_THIN_SOURCE_CAUSE = "answered by absence rather than evidence"
+
+
+def test_the_no_tier_note_names_the_missing_assessment_and_not_thin_source(tmp_path):
+    """The note has to name the cause the tier names, including when both hold."""
+    from adduce.rules.base import Category, Status
+    from adduce.scoring import UNASSESSED_TIER
+
+    _write(tmp_path, WELL_FORMED)
+    result = run_check(tmp_path)
+    nothing_applied = [_category_finding("A", Category.DATA, Status.NOT_APPLICABLE)]
+
+    thin = _terminal_prose(result, nothing_applied, analysable_lines=10)
+    ample = _terminal_prose(result, nothing_applied, analysable_lines=1000)
+
+    for prose in (thin, ample):
+        assert UNASSESSED_TIER in prose
+        assert "No tier assigned: no check reached an assessment" in prose
+        assert _THIN_SOURCE_CAUSE not in prose
+        assert "0 of 0" not in prose
+    # On a card that is also unrated the parsed source is reported as a second
+    # fact, and only there.
+    assert "parsed 10 lines of source" in thin
+    assert "lines of source" not in ample
+
+
+def test_the_no_tier_note_still_names_thin_source_for_a_card_with_a_score(tmp_path):
+    """The regression guard: the scored branch of the note is unchanged."""
+    from adduce.rules.base import Category, Status
+    from adduce.scoring import UNRATED_TIER
+
+    _write(tmp_path, WELL_FORMED)
+    result = run_check(tmp_path)
+    prose = _terminal_prose(
+        result,
+        [
+            _category_finding("A", Category.CODE_EXECUTION, Status.PASS),
+            _category_finding("B", Category.DATA, Status.FAIL),
+        ],
+        analysable_lines=10,
+    )
+
+    assert UNRATED_TIER in prose
+    assert result.card.total is not None
+    assert (
+        "No tier assigned: only 10 lines of source were parsed, and 2 of 2 "
+        "applicable checks reached a verdict."
+    ) in prose
+    assert _THIN_SOURCE_CAUSE in prose
 
 
 def test_an_all_unknown_category_is_visible_and_shows_no_score(tmp_path):

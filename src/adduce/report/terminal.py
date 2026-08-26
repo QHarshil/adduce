@@ -64,7 +64,21 @@ def _render_summary(result: CheckResult, console: Console) -> None:
         (f"   ·   profile: {card.profile_name}", "dim"),
     )
     console.print(Panel(summary, title=header, title_align="left", border_style="dim"))
-    if not card.rated:
+    if card.total is None:
+        # The tier reports nothing assessed, so the note has to as well: thin
+        # source is a second fact here, never the stated cause.
+        note = (
+            "No tier assigned: no check reached an assessment, so there is nothing "
+            "to score. Every check either did not apply to this repository or could "
+            "not be answered from the evidence collected."
+        )
+        if not card.rated:
+            note += (
+                f" The analyzer parsed {card.analysable_lines} lines of source, "
+                "itself below the floor for a rating."
+            )
+        console.print(Text(note, style="yellow"))
+    elif not card.rated:
         # The score above is real; what it is a score *of* is the problem. Say
         # so next to it rather than letting a tier imply a judgement the
         # evidence does not support.
