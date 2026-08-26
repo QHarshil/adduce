@@ -85,6 +85,20 @@ def test_fail_under_exit_code(tmp_path):
     assert result.exit_code == 1
 
 
+def test_fail_under_cannot_pass_when_nothing_was_assessed(tmp_path):
+    """A gate with no score to compare must not report success."""
+    _write(tmp_path, BARE)
+
+    result = runner.invoke(
+        app, ["check", str(tmp_path), "--skip", "R-", "--fail-under", "1"]
+    )
+
+    assert result.exit_code == 1
+    output = plain(result.output)
+    assert "could not be evaluated" in output
+    assert "no check reached an assessment" in output
+
+
 @pytest.mark.parametrize("threshold", ["nan", "inf", "-1", "101"])
 def test_fail_under_rejects_non_finite_or_out_of_range_values(tmp_path, threshold):
     _write(tmp_path, BARE)
