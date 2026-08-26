@@ -156,10 +156,10 @@ symbol and config-graph retrieval, semantic rerank, four-way link
 classification, calibrated abstention, and source-located explanation.
 
 Measured on the 20-pair labelled dev set, pooled recall is **141/296 = 47.6 %**.
-Measured precision over the **5 of 34** adjudicated pairs is
-**552/887 = 62.2 %**, with **96** high-confidence false positives pooled;
+Measured precision over the **6 of 34** adjudicated pairs is
+**700/1156 = 60.6 %**, with **122** high-confidence false positives pooled;
 exactly one pair (`bit`, 111/136 = 81.6 %) reaches zero high-confidence false
-positives. **29 of 34 pairs are unadjudicated.** The
+positives. **28 of 34 pairs are unadjudicated.** The
 zero-high-confidence-false-positive acceptance criterion is **not met**. Drafted
 claims are scaffolding, not claim discovery — see [claims.md](claims.md).
 
