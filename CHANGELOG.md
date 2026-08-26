@@ -18,7 +18,7 @@ frozen claim truth `9a26d06c…`. A successor lock will be registered under a da
 protocol amendment against the finished analyzer, and no effectiveness,
 calibration, or false-positive figure is stated in the meantime.
 
-Two analysis-plan files changed. `corpus/scripts/check_builtin.py` permits the
+Three analysis-plan files changed. `corpus/scripts/check_builtin.py` permits the
 two read-only git queries that honouring `.gitignore` requires; its offline
 enforcement is otherwise unchanged, and the queries are measured to be a no-op on
 the pilot corpus — all fifteen pinned clones report zero ignored paths, so no
@@ -30,9 +30,14 @@ instead. It then had to follow the score card's public shape again when that
 shape gained the applicability keys and a nullable total: the contract asserts an
 exact key set and reconstructs the total and the tier, so both the key set it
 accepts and that reconstruction had to take in `applicable_rules`, the nested
-`rules` block, and a `total` that may be absent. Every one of those changes is
+`rules` block, and a `total` that may be absent. `corpus/scripts/run_validation.py`
+stops writing `0.0` into the combined CSV for a category nothing could assess,
+which read as a category assessed at zero. It now uses the empty-cell absence
+convention the CSV already carries, which is what the run contract requires; a
+payload of that shape was rejected outright until the retained-category change
+made an unassessed category representable at all. Every one of those changes is
 recorded against the digests the lock still carries, and the record asserts that
-exactly those two files moved.
+exactly those three files moved.
 
 This release makes **no final effectiveness claim**, and deliberately ships with
 no preregistration lock. That is not an exception: `docs/releasing.md`'s first
