@@ -126,7 +126,7 @@ completing the corpus and human-review gates.
 
 Claim extraction's current figures are developmental status, not results.
 Pooled recall is 141/296 = 47.6% over the 20 labelled pairs. Precision is
-552/887 = 62.2% over the 5 of 34 pairs adjudicated so far, with 96
+700/1156 = 60.6% over the 6 of 34 pairs adjudicated so far, with 122
 high-confidence false positives pooled and exactly one pair at zero. The
 zero-high-confidence-false-positive acceptance criterion is not met, and no
 project document, release note or README line should describe it as met.

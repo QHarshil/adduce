@@ -35,8 +35,8 @@ gate is satisfied by completing the version's corpus and human-review gates *or*
 by documenting explicitly which validation remains developmental, and this is the
 second path. The claim-extraction figures are developmental status rather than
 results. Pooled recall is **141/296 = 47.6%** over the 20 labelled pairs.
-Precision is **552/887 = 62.2%** over the **5 of 34** pairs adjudicated so far,
-with **96** high-confidence false positives pooled and exactly one pair reaching
+Precision is **700/1156 = 60.6%** over the **6 of 34** pairs adjudicated so far,
+with **122** high-confidence false positives pooled and exactly one pair reaching
 zero. **The zero-high-confidence-false-positive acceptance criterion is not met.**
 The remaining claim-resolution stages, the effectiveness acceptance criteria, and
 the preregistered validation report belong to the following release.
