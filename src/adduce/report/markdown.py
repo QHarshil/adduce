@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from ..engine import CheckResult
-from ..rules.base import Status
+from ..rules.base import Finding, Status, summarize_items
 from ..scoring import top_fixes
 
 _STATUS_LABEL = {
@@ -13,6 +13,22 @@ _STATUS_LABEL = {
     Status.NOT_APPLICABLE: "n/a",
     Status.UNKNOWN: "unknown",
 }
+
+
+def _item_census(finding: Finding) -> str:
+    """The complete child count and its per-status split, or nothing.
+
+    A human report summarises rather than listing thousands of children, so it
+    states how many there are: no child is listed here, so nothing can be read
+    as the full set. The machine-readable formats carry them in full.
+    """
+    if not finding.items:
+        return ""
+    counts = summarize_items(finding.items)
+    split = ", ".join(
+        f"{count} {_STATUS_LABEL[status]}" for status, count in counts.items() if count
+    )
+    return f"{len(finding.items)} item(s) not listed here: {split}"
 
 
 def render(result: CheckResult) -> str:
@@ -69,6 +85,9 @@ def render(result: CheckResult) -> str:
         detail = finding.message.replace("|", "\\|")
         if finding.locations:
             detail += " — " + ", ".join(f"`{loc}`" for loc in finding.locations[:3])
+        census = _item_census(finding)
+        if census:
+            detail += f" — {census}"
         lines.append(f"| {finding.rule_id} | {status} | {finding.confidence:.0%} | {detail} |")
     lines.append("")
     lines.append(

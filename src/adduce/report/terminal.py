@@ -15,7 +15,7 @@ from rich.text import Text
 from ..engine import CheckResult
 from ..graph import TrailStatus
 from ..modes import Mode, badge_eligibility, blocking_issues, unverifiable_findings
-from ..rules.base import Finding, Status
+from ..rules.base import Finding, Status, summarize_items
 from ..scoring import top_fixes
 
 _STATUS_STYLE = {
@@ -39,6 +39,21 @@ def _score_color(percentage: float) -> str:
     if percentage >= 60:
         return "yellow"
     return "red"
+
+
+def _item_census(finding: Finding) -> str:
+    """The complete child count and its per-status split, or nothing.
+
+    Summarised rather than listed: none of the children appear here, so the
+    line cannot be mistaken for the whole set. `json` and `sarif` carry them.
+    """
+    if not finding.items:
+        return ""
+    counts = summarize_items(finding.items)
+    split = ", ".join(
+        f"{count} {_STATUS_STYLE[status][1]}" for status, count in counts.items() if count
+    )
+    return f"{len(finding.items)} item(s) not listed here: {split}"
 
 
 def _status_text(finding: Finding) -> Text:
@@ -261,11 +276,13 @@ def _render_findings_table(result: CheckResult, console: Console) -> None:
         location_note = (
             "\n  at " + ", ".join(str(loc) for loc in finding.locations[:3]) if finding.locations else ""
         )
+        census = _item_census(finding)
+        item_note = f"\n  {census}" if census else ""
         detail.add_row(
             finding.rule_id,
             _status_text(finding),
             f"{finding.confidence:.0%}",
-            finding.message + location_note,
+            finding.message + location_note + item_note,
         )
     console.print(detail)
     console.print()
