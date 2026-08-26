@@ -1027,12 +1027,13 @@ def validate_raw_payload(
         applicable[finding["category"]] = (earned + value * weight, possible + weight)
     # A category whose rules all applied and none of which answered is reported
     # with an empty score rather than dropped, so the unanswered question stays
-    # visible. It carries no weight either way, so the total is unaffected.
+    # visible. It carries no weight either way, so the total is unaffected, and
+    # it has no percentage to report: null here, an empty cell in the CSV.
     unassessed_categories = {
         finding["category"] for finding in findings if finding["status"] == "unknown"
     } - set(applicable)
 
-    category_percentages: dict[str, float] = {}
+    category_percentages: dict[str, float | None] = {}
     observed_categories: set[str] = set()
     weighted_earned = 0.0
     weighted_possible = 0.0
@@ -1067,7 +1068,7 @@ def validate_raw_payload(
                     f"raw JSON empty category score is not supported by its findings for {repo_id}"
                 )
             observed_categories.add(category_name)
-            category_percentages[key] = percentage
+            category_percentages[key] = None
             continue
         if category_name not in applicable:
             raise RunContractError(
@@ -1964,12 +1965,24 @@ def _validate_combined_rows(
                 raise RunContractError(f"combined {field} disagrees with raw JSON for {repo_id}")
         expected_categories = expected["categories"]
         observed_category_columns.update(expected_categories)
+        # A category that applied but that nothing could assess carries a null
+        # percentage, and the CSV has no companion column to tell that apart
+        # from a scored zero. Absence is that distinction, and it is exact in
+        # both directions: required for an unassessed category, forbidden for
+        # one with a score.
         for field in category_fields:
             value = row[field]
             if field in expected_categories:
-                if (
-                    _parse_nonnegative_number(value, f"{field} for {repo_id}")
-                    != expected_categories[field]
+                expected_category = expected_categories[field]
+                if expected_category is None:
+                    if value != "":
+                        raise RunContractError(
+                            f"combined category disagrees with raw JSON for {repo_id}"
+                        )
+                elif (
+                    value == ""
+                    or _parse_nonnegative_number(value, f"{field} for {repo_id}")
+                    != expected_category
                 ):
                     raise RunContractError(
                         f"combined category disagrees with raw JSON for {repo_id}"

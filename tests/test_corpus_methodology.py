@@ -2234,6 +2234,14 @@ def _load_checked_in_preregistration() -> dict[str, Any]:
 #: exactly and reconstructs both the total and the tier, so its key set had to
 #: admit the new counts and its two reconstructions had to learn that an absent
 #: total is not a failing zero and carries a tier of its own.
+#:
+#: ``run_validation.py`` recorded a category that applied but that no check
+#: could assess as a zero in the combined CSV, where it reads exactly like a
+#: category that was assessed and earned nothing. Until a retained unassessed
+#: category became representable the contract rejected those payloads outright,
+#: so the conflation could not reach an accepted artifact; it now can. The CSV
+#: leaves that cell empty, as it already does for a category the score card
+#: drops, and the contract requires the empty cell in both directions.
 _R6_VOID: dict[str, Any] = {
     "protocol_id": "pilot-0.1.2-r6",
     "analyzer_source_tree_sha256": (
@@ -2245,6 +2253,9 @@ _R6_VOID: dict[str, Any] = {
         ),
         "scripts/run_contract.py": (
             "d618362baee6d13c68f6eb5725d20842b5e62cacd42d6085dfa8bb100edd732d"
+        ),
+        "scripts/run_validation.py": (
+            "b142ed944f12887ccd6ac9effaa5b322381afa55a1f71265d4ac522c10769637"
         ),
     },
     "reason": "analyzer rebuilt under the approved evidence-engine plan",
@@ -2458,8 +2469,9 @@ def test_preregistration_lock_matches_live_source_tree_and_analysis_plan() -> No
         }
     )
     # Two frozen inputs no longer match, both on purpose and both recorded: the
-    # analyzer digest, and one analysis-plan file. See _R6_VOID for the reason
-    # and the expiry condition. Every other frozen input is asserted equal.
+    # analyzer digest, and the analysis-plan files _R6_VOID names. See it for
+    # the reason and the expiry condition. Every other frozen input is asserted
+    # equal.
     _assert_analyzer_lock_is_void(checked_in_preregistration)
     _assert_analysis_plan_lock_is_void(checked_in_preregistration, live_analysis_plan)
     assert checked_in_preregistration["adduce"]["builtin_rule_ids_sha256"] == (
