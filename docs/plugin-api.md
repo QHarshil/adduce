@@ -43,8 +43,8 @@ covered by the ordinary convention for that attribute.
 
 Covered members: `Rule.id`, `.category`, `.title`, `.rationale`, `.weight`,
 `.severity`, `.fix_command`, `.effective_severity`, `.applies_to(repo)`,
-`.evaluate(ev)` and `.finding(...)`; `Finding.to_dict()`; `Status.score_value`;
-the attribute names on `Evidence`.
+`.evaluate(ev)` and `.finding(...)`; `Finding.to_dict()`; `Status.score_value`,
+`.is_applicable` and `.is_assessed`; the attribute names on `Evidence`.
 
 `Status` has five members. `NOT_APPLICABLE` and `UNKNOWN` both have
 `score_value is None` and are both excluded from scoring, but they do not mean
@@ -52,6 +52,13 @@ the same thing: `NOT_APPLICABLE` says the check does not apply to this
 repository, `UNKNOWN` says the evidence needed to decide was not found. Returning
 `False` from `applies_to` is different again — the rule produces no `Finding` at
 all and is invisible to every reporter.
+
+`is_applicable` and `is_assessed` are the covered way to tell those states
+apart. They are covered rather than internal because the alternative is not:
+`score_value is None` holds for `NOT_APPLICABLE` and `UNKNOWN` alike, so a pack
+that needs the distinction has nothing else to read. `is_applicable` is true for
+every member except `NOT_APPLICABLE`; `is_assessed` is true for `PASS`,
+`PARTIAL` and `FAIL`.
 
 ## Not covered
 
@@ -166,9 +173,13 @@ See [ADR 0003](adr/0003-public-extension-api-stability.md).
 
 **A JSON report schema version — `PROPOSED`.** The report carries no schema or
 format-version key. `tool.version` records the adduce release that produced the
-file; it does not identify the report's shape. The version key is held back to
-land with the report's next structural change, so the contract is stated once
-rather than stated now and broken when structured findings settle.
+file; it does not identify the report's shape. The shape changes twice in 0.2.
+The first has landed: the `evidence_base` block gained `applicable_rules` and a
+nested `rules` block, and `total` became nullable. The second, the `FindingItem`
+serialisation shape, has not. The version key is held back to land with the
+second, so a single key stamps the finished 0.2 shape rather than one stated now
+and contradicted when structured findings settle. Until it lands, `tool.version`
+and the release notes are what identify the shape a file carries.
 
 **Structured child findings — `PROPOSED`.** A non-recursive list of per-item
 results carried on the parent `Finding`, so a rule checking many individual
