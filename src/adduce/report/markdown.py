@@ -22,7 +22,8 @@ def render(result: CheckResult) -> str:
     lines: list[str] = []
     lines.append(f"# Reproducibility report — {repo_name}")
     lines.append("")
-    subtitle = f"Score **{card.total:.0f}/100** ({card.tier}) · profile `{card.profile_name}`"
+    headline = "**not assessed**" if card.total is None else f"**{card.total:.0f}/100**"
+    subtitle = f"Score {headline} ({card.tier}) · profile `{card.profile_name}`"
     if commit:
         subtitle += f" · commit `{commit}`"
     lines.append(subtitle)

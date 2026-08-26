@@ -52,10 +52,14 @@ def _render_summary(result: CheckResult, console: Console) -> None:
     card = result.card
     commit = (result.repo.git.head_commit or "")[:7]
     header = f"[bold]adduce[/bold]  ·  {result.repo.root.name}" + (f"  ·  commit {commit}" if commit else "")
-    color = _score_color(card.total)
+    score_cell = (
+        ("no score", "bold dim")
+        if card.total is None
+        else (f"{card.total:.0f}/100", f"bold {_score_color(card.total)}")
+    )
     summary = Text.assemble(
         ("Reproducibility  ", "bold"),
-        (f"{card.total:.0f}/100", f"bold {color}"),
+        score_cell,
         (f"   {card.tier}", "bold"),
         (f"   ·   profile: {card.profile_name}", "dim"),
     )
@@ -67,9 +71,10 @@ def _render_summary(result: CheckResult, console: Console) -> None:
         console.print(
             Text(
                 f"No tier assigned: only {card.analysable_lines} lines of source were "
-                f"parsed, and {card.evaluated_rules} of {card.considered_rules} checks "
-                "reached a verdict. Most checks are statements about code, so with "
-                "this little of it they are answered by absence rather than evidence.",
+                f"parsed, and {card.evaluated_rules} of {card.applicable_rules} "
+                "applicable checks reached a verdict. Most checks are statements "
+                "about code, so with this little of it they are answered by "
+                "absence rather than evidence.",
                 style="yellow",
             )
         )

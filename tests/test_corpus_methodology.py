@@ -2227,6 +2227,13 @@ def _load_checked_in_preregistration() -> dict[str, Any]:
 #: little source for one to mean anything, so that invariant no longer holds and
 #: the contract would have rejected a correct artifact. This is not hypothetical
 #: for the pilot: ``md-ml`` carries no Python at all and comes back unrated.
+#:
+#: It moved a second time, for a separate reason. The score card's public shape
+#: gained applicability-aware coverage keys and a total that is null when no
+#: check reached an assessment at all. The contract validates payload keys
+#: exactly and reconstructs both the total and the tier, so its key set had to
+#: admit the new counts and its two reconstructions had to learn that an absent
+#: total is not a failing zero and carries a tier of its own.
 _R6_VOID: dict[str, Any] = {
     "protocol_id": "pilot-0.1.2-r6",
     "analyzer_source_tree_sha256": (
