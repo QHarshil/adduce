@@ -41,6 +41,7 @@ from corpus.scripts.run_contract import (
 
 ROOT = Path(__file__).resolve().parent.parent
 RUNNER = ROOT / "corpus" / "scripts" / "run_validation.py"
+SUMMARIZE = ROOT / "corpus" / "scripts" / "summarize.py"
 
 
 def _git(*args: str, cwd: Path) -> str:
@@ -913,7 +914,8 @@ def _write_unassessed_run(path: Path) -> None:
 
     Nothing reached an assessment, so the raw JSON carries a null total and the
     tier that says so, its one category is reported with an empty score, and the
-    combined row leaves the score cell empty rather than writing a zero.
+    combined row leaves both the score and that category empty rather than
+    writing a zero.
     """
     _write_minimal_valid_run(path)
     raw_path = path / "raw_json" / "repo.json"
@@ -931,13 +933,13 @@ def _write_unassessed_run(path: Path) -> None:
     )
     write_json(raw_path, payload)
     combined = path / "combined.csv"
-    combined.write_text(
-        combined.read_text(encoding="utf-8").replace(
-            ",0.0,Needs work,1-2 minutes,1,0,",
-            ",,Unrated (nothing assessed),1-2 minutes,0,0,",
-        ),
-        encoding="utf-8",
+    text = combined.read_text(encoding="utf-8")
+    text = text.replace(
+        ",0.0,Needs work,1-2 minutes,1,0,",
+        ",,Unrated (nothing assessed),1-2 minutes,0,0,",
     )
+    text = text.replace("unavailable,unavailable,,0.0\n", "unavailable,unavailable,,\n")
+    combined.write_text(text, encoding="utf-8")
     _rehash_completed_run(path, "raw_json/repo.json")
     _rehash_completed_run(path, "combined.csv")
 
@@ -947,7 +949,8 @@ def _write_partly_unassessed_run(path: Path) -> None:
 
     The unassessed category is reported with an empty score rather than dropped,
     so the unanswered question survives into the artifact. Its weight stays out
-    of the total, which is therefore unmoved.
+    of the total, which is therefore unmoved, and its combined cell is empty
+    beside a scored category that genuinely earned zero.
     """
     _write_minimal_valid_run(path)
     raw_path = path / "raw_json" / "repo.json"
@@ -975,7 +978,7 @@ def _write_partly_unassessed_run(path: Path) -> None:
     text = text.replace(
         "error,cat_documentation\n", "error,cat_determinism_seeds,cat_documentation\n"
     )
-    text = text.replace("unavailable,unavailable,,0.0\n", "unavailable,unavailable,,0.0,0.0\n")
+    text = text.replace("unavailable,unavailable,,0.0\n", "unavailable,unavailable,,,0.0\n")
     combined.write_text(text, encoding="utf-8")
     metadata_path = path / "run_meta.json"
     metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
@@ -1072,6 +1075,40 @@ def test_a_category_with_nothing_assessed_is_reported_rather_than_dropped(tmp_pa
     _write_partly_unassessed_run(run)
 
     validate_run(run)
+
+    with (run / "combined.csv").open(newline="", encoding="utf-8") as handle:
+        row = next(csv.DictReader(handle))
+    assert row["cat_determinism_seeds"] == ""
+    assert row["cat_documentation"] == "0.0"
+
+
+def test_combined_cannot_report_a_zero_for_an_unassessed_category(tmp_path: Path) -> None:
+    run = tmp_path / "run"
+    _write_partly_unassessed_run(run)
+    combined = run / "combined.csv"
+    combined.write_text(
+        combined.read_text(encoding="utf-8").replace("unavailable,,,0.0\n", "unavailable,,0.0,0.0\n"),
+        encoding="utf-8",
+    )
+    _rehash_completed_run(run, "combined.csv")
+
+    with pytest.raises(RunContractError, match="category disagrees"):
+        validate_run(run)
+
+
+def test_combined_cannot_omit_a_category_the_raw_json_scored(tmp_path: Path) -> None:
+    """The absence convention cannot be met by leaving every category cell empty."""
+    run = tmp_path / "run"
+    _write_partly_unassessed_run(run)
+    combined = run / "combined.csv"
+    combined.write_text(
+        combined.read_text(encoding="utf-8").replace("unavailable,,,0.0\n", "unavailable,,,\n"),
+        encoding="utf-8",
+    )
+    _rehash_completed_run(run, "combined.csv")
+
+    with pytest.raises(RunContractError, match="category disagrees"):
+        validate_run(run)
 
 
 def test_an_empty_category_score_must_be_backed_by_an_unanswered_rule(tmp_path: Path) -> None:
@@ -1393,6 +1430,180 @@ def test_runner_records_clone_tool_digest_and_live_agreement(tmp_path: Path) -> 
     manifest = json.loads((clones / "clones_manifest.json").read_bytes())
     assert metadata["clone_tool_sha256"] == manifest["clone_tool_sha256"]
     assert metadata["clone_tool_sha256_matches_live"] is True
+
+
+def _make_reconciliation_repo(path: Path, url: str, *, runnable: bool) -> str:
+    """A repository whose result-reconciliation rules apply, and may go unanswered.
+
+    The framework import makes the category applicable. With no paper, manifest
+    or run script nothing in it reaches an assessment, so the score card retains
+    the category carrying no score; a run script gives the seed-coverage rule
+    something to judge, and the same category is scored instead.
+    """
+    path.mkdir(parents=True)
+    _write(path / "README.md", "# Fixture\n")
+    _write(path / "train.py", "import torch\n\nprint('fixture')\n")
+    if runnable:
+        _write(path / "run.sh", "python train.py --lr 0.1\n")
+    _git("init", "-q", cwd=path)
+    _git("config", "user.name", "Corpus Test", cwd=path)
+    _git("config", "user.email", "corpus@example.invalid", cwd=path)
+    _git("add", ".", cwd=path)
+    _git("commit", "-qm", "fixture", cwd=path)
+    _git("remote", "add", "origin", url, cwd=path)
+    return _git("rev-parse", "HEAD", cwd=path)
+
+
+def _write_reconciliation_cohorts(tmp_path: Path) -> tuple[Path, Path, Path]:
+    """One unvetted and one badged repository, differing only in what was assessed."""
+    clones = tmp_path / "clones"
+    repos = tmp_path / "repos.csv"
+    provenance = tmp_path / "badged-provenance.csv"
+    cohorts = {"fixture": "unvetted", "badged": "badged_functional"}
+    urls = {repo_id: f"https://example.invalid/{repo_id}" for repo_id in cohorts}
+    commits = {
+        repo_id: _make_reconciliation_repo(
+            clones / repo_id, urls[repo_id], runnable=repo_id == "badged"
+        )
+        for repo_id in cohorts
+    }
+    with repos.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(
+            handle, fieldnames=["id", "cohort", "repo_url", "commit_sha", "badge_type"]
+        )
+        writer.writeheader()
+        for repo_id, cohort in cohorts.items():
+            writer.writerow(
+                {
+                    "id": repo_id,
+                    "cohort": cohort,
+                    "repo_url": urls[repo_id],
+                    "commit_sha": commits[repo_id],
+                    "badge_type": "available+functional" if repo_id == "badged" else "",
+                }
+            )
+    with provenance.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=list(BADGED_PROVENANCE_FIELDS))
+        writer.writeheader()
+        writer.writerow(
+            {
+                "id": "badged",
+                "commit_sha": commits["badged"],
+                "paper_title": "Fixture artifact",
+                "artifact_result_id": "fixture-result",
+                "badge_set": "available+functional",
+                "evaluation_results_url": "https://example.invalid/evaluation",
+                "artifact_snapshot_url": f"{urls['badged']}/archive",
+                "artifact_appendix_url": "https://example.invalid/appendix",
+                "artifact_ref_kind": "commit",
+                "artifact_ref": commits["badged"],
+                "artifact_ref_url": f"{urls['badged']}/commit/{commits['badged']}",
+                "resolved_commit_sha": commits["badged"],
+                "resolved_commit_url": f"{urls['badged']}/commit/{commits['badged']}",
+                "retrieved_at_utc": "2026-01-01T00:00:00Z",
+                "mapping_basis": "fixture mapping",
+            }
+        )
+    write_json(
+        clones / "clones_manifest.json",
+        {
+            "clone_schema_version": CLONE_SCHEMA_VERSION,
+            "created_at": "2026-01-01T00:00:00+00:00",
+            "repos_file": str(repos),
+            "repos_file_sha256": sha256_file(repos),
+            "clone_tool_sha256": sha256_file(ROOT / "corpus" / "scripts" / "clone_repos.py"),
+            "records": [
+                {
+                    "id": repo_id,
+                    "cohort": cohort,
+                    "repo_url": urls[repo_id],
+                    "requested_sha": commits[repo_id],
+                    "resolved_sha": commits[repo_id],
+                    "status": "cloned",
+                    "error": None,
+                    "origin_url": urls[repo_id],
+                    "dirty": False,
+                    "git_tree_sha": _git("rev-parse", "HEAD^{tree}", cwd=clones / repo_id),
+                    "worktree_sha256": repository_tree_sha256(clones / repo_id),
+                    "submodule_status": [],
+                    "submodule_state": "not_configured",
+                    "git_lfs_state": "no_pointers",
+                    "git_lfs_pointer_count": 0,
+                    "git_lfs_paths_sample": [],
+                    "acquisition_status": "complete",
+                }
+                for repo_id, cohort in cohorts.items()
+            ],
+        },
+    )
+    return repos, clones, provenance
+
+
+def _run_reconciliation_cohorts(tmp_path: Path) -> Path:
+    repos, clones, provenance = _write_reconciliation_cohorts(tmp_path)
+    run = tmp_path / "run"
+    completed = subprocess.run(
+        [
+            sys.executable,
+            str(RUNNER),
+            "--repos",
+            str(repos),
+            "--clones",
+            str(clones),
+            "--badged-provenance",
+            str(provenance),
+            "--out",
+            str(run),
+            "--timeout",
+            "30",
+            "--operational-only",
+        ],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    validate_run(run)
+    return run
+
+
+def test_runner_records_an_unassessed_category_as_an_absent_combined_value(
+    tmp_path: Path,
+) -> None:
+    """The raw JSON keeps its zero beside a zero ``possible``; the CSV cannot."""
+    run = _run_reconciliation_cohorts(tmp_path)
+
+    payload = json.loads((run / "raw_json" / "fixture.json").read_text(encoding="utf-8"))
+    unassessed = [category for category in payload["categories"] if category["possible"] == 0]
+    assert [category["category"] for category in unassessed] == ["Result Reconciliation"]
+    assert unassessed[0]["percentage"] == 0.0
+    with (run / "combined.csv").open(newline="", encoding="utf-8") as handle:
+        rows = {row["id"]: row for row in csv.DictReader(handle)}
+    assert rows["fixture"]["cat_result_reconciliation"] == ""
+    assert rows["badged"]["cat_result_reconciliation"] == "50.0"
+    assert rows["fixture"]["cat_documentation"] == "0.0"
+
+
+def test_summary_excludes_an_unassessed_category_from_its_per_category_gaps(
+    tmp_path: Path,
+) -> None:
+    """The gap that reads a zero for an unassessed category is the one this prevents."""
+    run = _run_reconciliation_cohorts(tmp_path)
+    summary = tmp_path / "summary.md"
+
+    completed = subprocess.run(
+        [sys.executable, str(SUMMARIZE), "--run", str(run), "--out", str(summary)],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    text = summary.read_text(encoding="utf-8")
+    assert "## Per-category median gaps" in text
+    assert "\n- documentation: +0.0\n" in text
+    assert "result_reconciliation" not in text
 
 
 def test_effectiveness_runner_requires_claim_review_before_creating_output(
