@@ -68,21 +68,23 @@ evaluation:
 2. `not rule.applies_to(repo)` → counted as `rules.skipped_inapplicable` (`engine.py:127`), skipped.
 
 **A rule skipped by either branch produces no `Finding` at all.** It is absent
-from the result set, from both scoring denominators, and from every report.
-`rules.skipped_inapplicable` is counted but surfaced in no reporter, so the
-number of rules that never ran does not appear in output today. `adduce check .`
-against this repository returns 69 findings and skips a further 9 rules this way.
+from the result set, from both scoring denominators, and from every finding list
+a report renders. `rules.skipped_inapplicable` also reaches the score card, as
+`evidence_base.rules.skipped_inapplicable` in the JSON report, so the number of
+rules that never ran is now recoverable from output; `rules.skipped_disabled`
+remains telemetry only. `adduce check .` against this repository returns 69
+findings and skips a further 9 rules this way.
 
 A rule that does run returns exactly one `Finding` carrying one of five
 statuses. `UNKNOWN` and `NOT_APPLICABLE` do not mean the same thing — `UNKNOWN`
 means the check applied and reached no assessment, `NOT_APPLICABLE` means it did
-not apply — but the same `score_value is None` test excludes both from the
-scoring arithmetic. Where the difference is already honoured, a category left
-applicable and wholly unanswered is kept on the score card rather than dropped.
-Where it is not yet honoured, coverage still counts every returned finding in
-its denominator; the applicability-aware coverage proposed in
-[ADR 0001](adr/0001-status-applicability-and-assessment-coverage.md) is not
-implemented. Both are in [scoring.md](scoring.md).
+not apply — and scoring now separates them with the `Status.is_applicable` and
+`Status.is_assessed` predicates rather than with a `score_value is None` test,
+which cannot tell the two apart. A category left applicable and wholly
+unanswered is kept on the score card rather than dropped, and coverage divides
+assessed findings by applicable ones rather than by every finding returned. Both
+follow [ADR 0001](adr/0001-status-applicability-and-assessment-coverage.md), and
+both are in [scoring.md](scoring.md).
 
 Rule purity is a convention, not an enforced boundary. No built-in rule module
 imports or calls a filesystem, subprocess or network API — but `Evidence.repo`
@@ -115,8 +117,10 @@ Any `CheckResult -> str` callable registered under the `adduce.reporters` group
 joins `RENDERERS` as a further `--format` value named after its entry point.
 Every reporter reads the finished `CheckResult`; none can change a verdict. The JSON report carries no schema key and no version key of any kind;
 adding one is proposed in
-[ADR 0003](adr/0003-public-extension-api-stability.md), to land with that
-report's next structural change.
+[ADR 0003](adr/0003-public-extension-api-stability.md). The report's shape
+changes twice in 0.2 — the `evidence_base` keys, already landed, and the
+`FindingItem` serialisation shape still to come — and the version key lands with
+the second, so one key stamps the finished 0.2 shape.
 
 ## The Artifact Evidence Graph
 
@@ -182,7 +186,7 @@ you trust.
 | Content cache as the whole-repository read fix | `REJECTED BY MEASUREMENT` | 0.3 % hit rate; the cache remains for the other 11 collectors |
 | Rule discovery and evaluation | `IMPLEMENTED` | 78 rules, 17 categories, plus plugins |
 | Rule purity contract | `PARTIALLY IMPLEMENTED` | held by every built-in rule, enforced by nothing |
-| Applicability-aware coverage | `PROPOSED` | [ADR 0001](adr/0001-status-applicability-and-assessment-coverage.md) |
+| Applicability-aware coverage | `IMPLEMENTED` | [ADR 0001](adr/0001-status-applicability-and-assessment-coverage.md); coverage is assessed over applicable findings |
 | Hierarchical findings (`FindingItem`) | `PROPOSED` | [ADR 0002](adr/0002-hierarchical-findings.md); absent from `src/adduce/` |
 | Scoring | `IMPLEMENTED` | [scoring.md](scoring.md) |
 | Reporters | `IMPLEMENTED` | 13 modules: 5 in `RENDERERS`, terminal direct, 7 own-command surfaces |
