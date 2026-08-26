@@ -9,7 +9,7 @@ import sys
 import pytest
 
 from adduce.engine import baseline_snapshot, regressions_against, run_check
-from adduce.rules.base import Status
+from adduce.rules.base import Category, Rule, Status
 
 WELL_FORMED = {
     "README.md": (
@@ -171,11 +171,58 @@ def test_baseline_regression_detection(tmp_path):
     assert "R-DET-001" in regressed_ids
 
 
+def _card_with_nothing_assessed(root):
+    """A real card whose every rule was skipped, so nothing reached a verdict."""
+    return run_check(root, rules=[]).card
+
+
+def test_a_baseline_of_a_card_with_no_score_records_no_score(tmp_path):
+    _write(tmp_path, WELL_FORMED)
+    card = _card_with_nothing_assessed(tmp_path)
+
+    snapshot = baseline_snapshot(card)
+
+    assert card.total is None
+    assert snapshot["total"] is None
+    assert snapshot["rules"] == {}
+    assert regressions_against(card, snapshot) == []
+
+
 def test_new_rules_are_not_regressions(tmp_path):
     _write(tmp_path, WELL_FORMED)
     result = run_check(tmp_path)
     empty_baseline = {"version": 1, "rules": {}}
     assert regressions_against(result.card, empty_baseline) == []
+
+
+class _AlwaysRule(Rule):
+    id = "R-TEST-001"
+    category = Category.DOCUMENTATION
+    title = "Applies"
+    weight = 1
+
+    def evaluate(self, ev):
+        return self.finding(Status.PASS, 1.0, "detected")
+
+
+class _NeverRule(_AlwaysRule):
+    id = "R-TEST-002"
+    title = "Does not apply"
+
+    def applies_to(self, repo):
+        return False
+
+
+def test_rules_skipped_before_evaluation_are_counted_outside_both_denominators(tmp_path):
+    _write(tmp_path, WELL_FORMED)
+
+    card = run_check(tmp_path, rules=[_AlwaysRule(), _NeverRule(), _NeverRule()]).card
+
+    assert card.skipped_inapplicable == 2
+    assert [f.rule_id for f in card.findings] == ["R-TEST-001"]
+    assert card.considered_rules == 1
+    assert card.applicable_rules == 1
+    assert card.coverage == 100.0
 
 
 def test_git_metadata_collected(tmp_path):

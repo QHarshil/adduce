@@ -264,6 +264,31 @@ def _write_accepted_claim_review(
     return source_paths
 
 
+def _evidence_base(**overrides: object) -> dict[str, object]:
+    """The minimal fixture's evidence base, with individual fields replaced.
+
+    Rated with a numeric total, so the contract still recomputes the tier from
+    the score. ``considered_rules`` must equal the number of findings in the
+    payload, and the rule census must partition it exactly.
+    """
+    base: dict[str, object] = {
+        "rated": True,
+        "evaluated_rules": 1,
+        "considered_rules": 1,
+        "applicable_rules": 1,
+        "coverage_percent": 100.0,
+        "analysable_lines": 500,
+        "rules": {
+            "assessed": 1,
+            "unknown": 0,
+            "not_applicable": 0,
+            "skipped_inapplicable": 0,
+        },
+    }
+    base.update(overrides)
+    return base
+
+
 def _write_minimal_valid_run(path: Path, *, run_id: str = "test-run") -> None:
     ensure_new_output_directory(path)
     (path / "raw_json").mkdir()
@@ -297,15 +322,7 @@ def _write_minimal_valid_run(path: Path, *, run_id: str = "test-run") -> None:
         "total": 0.0,
         "tier": "Needs work",
         "profile": "default",
-        "evidence_base": {
-            # Rated, so the contract still recomputes the tier from the score.
-            # considered_rules must equal the number of findings below.
-            "rated": True,
-            "evaluated_rules": 1,
-            "considered_rules": 1,
-            "coverage_percent": 100.0,
-            "analysable_lines": 500,
-        },
+        "evidence_base": _evidence_base(),
         "categories": [
             {
                 "category": "Documentation",
@@ -888,6 +905,289 @@ def test_raw_score_must_be_recomputable_from_findings(tmp_path: Path) -> None:
     _rehash_completed_run(run, "raw_json/repo.json")
 
     with pytest.raises(RunContractError, match="total score is not supported"):
+        validate_run(run)
+
+
+def _write_unassessed_run(path: Path) -> None:
+    """A valid run whose only rule applied and returned no answer.
+
+    Nothing reached an assessment, so the raw JSON carries a null total and the
+    tier that says so, its one category is reported with an empty score, and the
+    combined row leaves the score cell empty rather than writing a zero.
+    """
+    _write_minimal_valid_run(path)
+    raw_path = path / "raw_json" / "repo.json"
+    payload = json.loads(raw_path.read_text(encoding="utf-8"))
+    payload["total"] = None
+    payload["tier"] = "Unrated (nothing assessed)"
+    payload["findings"][0]["status"] = "unknown"
+    payload["categories"] = [
+        {"category": "Documentation", "earned": 0.0, "possible": 0.0, "percentage": 0.0}
+    ]
+    payload["evidence_base"] = _evidence_base(
+        evaluated_rules=0,
+        coverage_percent=0.0,
+        rules={"assessed": 0, "unknown": 1, "not_applicable": 0, "skipped_inapplicable": 0},
+    )
+    write_json(raw_path, payload)
+    combined = path / "combined.csv"
+    combined.write_text(
+        combined.read_text(encoding="utf-8").replace(
+            ",0.0,Needs work,1-2 minutes,1,0,",
+            ",,Unrated (nothing assessed),1-2 minutes,0,0,",
+        ),
+        encoding="utf-8",
+    )
+    _rehash_completed_run(path, "raw_json/repo.json")
+    _rehash_completed_run(path, "combined.csv")
+
+
+def _write_partly_unassessed_run(path: Path) -> None:
+    """A valid run that scored one category and could not assess another.
+
+    The unassessed category is reported with an empty score rather than dropped,
+    so the unanswered question survives into the artifact. Its weight stays out
+    of the total, which is therefore unmoved.
+    """
+    _write_minimal_valid_run(path)
+    raw_path = path / "raw_json" / "repo.json"
+    payload = json.loads(raw_path.read_text(encoding="utf-8"))
+    payload["findings"].append(
+        {
+            **payload["findings"][0],
+            "rule_id": "R-TEST-002",
+            "category": "Determinism & Seeds",
+            "status": "unknown",
+        }
+    )
+    payload["categories"].append(
+        {"category": "Determinism & Seeds", "earned": 0.0, "possible": 0.0, "percentage": 0.0}
+    )
+    payload["evidence_base"] = _evidence_base(
+        considered_rules=2,
+        applicable_rules=2,
+        coverage_percent=50.0,
+        rules={"assessed": 1, "unknown": 1, "not_applicable": 0, "skipped_inapplicable": 0},
+    )
+    write_json(raw_path, payload)
+    combined = path / "combined.csv"
+    text = combined.read_text(encoding="utf-8")
+    text = text.replace(
+        "error,cat_documentation\n", "error,cat_determinism_seeds,cat_documentation\n"
+    )
+    text = text.replace("unavailable,unavailable,,0.0\n", "unavailable,unavailable,,0.0,0.0\n")
+    combined.write_text(text, encoding="utf-8")
+    metadata_path = path / "run_meta.json"
+    metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+    metadata["builtin_rule_ids"] = ["R-TEST-001", "R-TEST-002"]
+    metadata["builtin_rule_count"] = 2
+    write_json(metadata_path, metadata)
+    _rehash_completed_run(path, "raw_json/repo.json")
+    _rehash_completed_run(path, "combined.csv")
+
+
+def test_unassessed_run_records_a_null_score_that_is_not_a_zero(tmp_path: Path) -> None:
+    run = tmp_path / "run"
+    _write_unassessed_run(run)
+
+    validate_run(run)
+
+    with (run / "combined.csv").open(newline="", encoding="utf-8") as handle:
+        row = next(csv.DictReader(handle))
+    assert row["score"] == ""
+    assert row["tier"] == "Unrated (nothing assessed)"
+
+
+def test_unassessed_tier_outranks_the_unrated_one(tmp_path: Path) -> None:
+    """Nothing assessed is reported ahead of too little source, as the analyzer does."""
+    run = tmp_path / "run"
+    _write_unassessed_run(run)
+    raw_path = run / "raw_json" / "repo.json"
+    payload = json.loads(raw_path.read_text(encoding="utf-8"))
+    payload["evidence_base"]["rated"] = False
+    payload["evidence_base"]["analysable_lines"] = 1
+    write_json(raw_path, payload)
+    _rehash_completed_run(run, "raw_json/repo.json")
+
+    validate_run(run)
+
+
+@pytest.mark.parametrize(
+    ("total", "tier", "match"),
+    [
+        (0.0, "Unrated (nothing assessed)", "total score is not supported"),
+        (0.0, "Needs work", "total score is not supported"),
+        (None, "Needs work", "tier is inconsistent with its score"),
+    ],
+)
+def test_raw_null_total_and_its_tier_must_agree_with_the_findings(
+    tmp_path: Path,
+    total: float | None,
+    tier: str,
+    match: str,
+) -> None:
+    run = tmp_path / "run"
+    _write_unassessed_run(run)
+    raw_path = run / "raw_json" / "repo.json"
+    payload = json.loads(raw_path.read_text(encoding="utf-8"))
+    payload["total"] = total
+    payload["tier"] = tier
+    write_json(raw_path, payload)
+    _rehash_completed_run(run, "raw_json/repo.json")
+
+    with pytest.raises(RunContractError, match=match):
+        validate_run(run)
+
+
+def test_combined_cannot_report_a_zero_for_a_null_score(tmp_path: Path) -> None:
+    run = tmp_path / "run"
+    _write_unassessed_run(run)
+    combined = run / "combined.csv"
+    combined.write_text(
+        combined.read_text(encoding="utf-8").replace(",,Unrated", ",0.0,Unrated"),
+        encoding="utf-8",
+    )
+    _rehash_completed_run(run, "combined.csv")
+
+    with pytest.raises(RunContractError, match="score disagrees"):
+        validate_run(run)
+
+
+def test_combined_cannot_omit_a_score_the_raw_json_reports(tmp_path: Path) -> None:
+    run = tmp_path / "run"
+    _write_minimal_valid_run(run)
+    combined = run / "combined.csv"
+    combined.write_text(
+        combined.read_text(encoding="utf-8").replace(",0.0,Needs work,", ",,Needs work,"),
+        encoding="utf-8",
+    )
+    _rehash_completed_run(run, "combined.csv")
+
+    with pytest.raises(RunContractError, match="score disagrees"):
+        validate_run(run)
+
+
+def test_a_category_with_nothing_assessed_is_reported_rather_than_dropped(tmp_path: Path) -> None:
+    run = tmp_path / "run"
+    _write_partly_unassessed_run(run)
+
+    validate_run(run)
+
+
+def test_an_empty_category_score_must_be_backed_by_an_unanswered_rule(tmp_path: Path) -> None:
+    run = tmp_path / "run"
+    _write_partly_unassessed_run(run)
+    raw_path = run / "raw_json" / "repo.json"
+    payload = json.loads(raw_path.read_text(encoding="utf-8"))
+    payload["findings"][1]["status"] = "not-applicable"
+    payload["evidence_base"] = _evidence_base(
+        considered_rules=2,
+        rules={"assessed": 1, "unknown": 0, "not_applicable": 1, "skipped_inapplicable": 0},
+    )
+    write_json(raw_path, payload)
+    _rehash_completed_run(run, "raw_json/repo.json")
+
+    with pytest.raises(RunContractError, match="empty category score is not supported"):
+        validate_run(run)
+
+
+@pytest.mark.parametrize(
+    ("evidence_base", "match"),
+    [
+        (
+            {
+                "rated": True,
+                "evaluated_rules": 1,
+                "considered_rules": 1,
+                "applicable_rules": 1,
+                "coverage_percent": 100.0,
+                "analysable_lines": 500,
+            },
+            r"evidence base for \w+ fields are invalid",
+        ),
+        (
+            _evidence_base(
+                rules={
+                    "assessed": 1,
+                    "unknown": 0,
+                    "not_applicable": 0,
+                    "skipped_inapplicable": 0,
+                    "retired": 0,
+                }
+            ),
+            r"rule census for \w+ fields are invalid",
+        ),
+        (
+            _evidence_base(applicable_rules=True),
+            "applicable-rule count is invalid",
+        ),
+        (
+            _evidence_base(
+                rules={
+                    "assessed": True,
+                    "unknown": 0,
+                    "not_applicable": 0,
+                    "skipped_inapplicable": 0,
+                }
+            ),
+            "assessed-rule census is invalid",
+        ),
+        (
+            _evidence_base(
+                rules={"assessed": 1, "unknown": 0, "not_applicable": 0, "skipped_inapplicable": -1}
+            ),
+            "skipped_inapplicable-rule census is invalid",
+        ),
+        (
+            _evidence_base(applicable_rules=0),
+            "evaluated rules exceed those applicable",
+        ),
+        (
+            _evidence_base(applicable_rules=2),
+            "applicable rules exceed those considered",
+        ),
+        (
+            _evidence_base(
+                rules={"assessed": 0, "unknown": 1, "not_applicable": 0, "skipped_inapplicable": 0}
+            ),
+            "assessed-rule census disagrees with its evaluated count",
+        ),
+        (
+            _evidence_base(
+                rules={"assessed": 1, "unknown": 1, "not_applicable": 0, "skipped_inapplicable": 0}
+            ),
+            "does not partition the applicable rules",
+        ),
+        (
+            _evidence_base(
+                rules={"assessed": 1, "unknown": 0, "not_applicable": 1, "skipped_inapplicable": 0}
+            ),
+            "does not partition the considered rules",
+        ),
+        (
+            _evidence_base(coverage_percent=73.9),
+            "coverage is not supported",
+        ),
+        (
+            _evidence_base(coverage_percent="100.0"),
+            "coverage .* must be numeric",
+        ),
+    ],
+)
+def test_raw_evidence_base_must_partition_the_rules_it_counts(
+    tmp_path: Path,
+    evidence_base: dict[str, object],
+    match: str,
+) -> None:
+    run = tmp_path / "run"
+    _write_minimal_valid_run(run)
+    raw_path = run / "raw_json" / "repo.json"
+    payload = json.loads(raw_path.read_text(encoding="utf-8"))
+    payload["evidence_base"] = evidence_base
+    write_json(raw_path, payload)
+    _rehash_completed_run(run, "raw_json/repo.json")
+
+    with pytest.raises(RunContractError, match=match):
         validate_run(run)
 
 

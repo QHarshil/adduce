@@ -160,6 +160,34 @@ def test_a_category_with_nothing_unknown_still_reads_as_satisfied(tmp_path):
     assert "all detected checks satisfied" in text
 
 
+def test_reporters_render_a_card_with_no_score_without_printing_a_number(tmp_path):
+    """`None` is the absence of a score, so no reporter may render it as zero."""
+    from adduce.report import badge
+    from adduce.rules.base import Category, Status
+
+    _write(tmp_path, WELL_FORMED)
+    result = run_check(tmp_path)
+    terminal_text = _terminal_text(
+        result,
+        [
+            _category_finding("A", Category.NOTEBOOK, Status.UNKNOWN),
+            _category_finding("B", Category.DATA, Status.NOT_APPLICABLE),
+        ],
+    )
+    assert result.card.total is None
+
+    markdown_text = RENDERERS["markdown"](result)
+    badge_payload = json.loads(RENDERERS["badge"](result))
+    svg = badge.render_svg(result)
+
+    assert "no score" in terminal_text
+    assert "not assessed" in markdown_text
+    assert badge_payload["message"] == "not assessed"
+    assert badge_payload["color"] == "lightgrey"
+    for rendered in (terminal_text, markdown_text, svg):
+        assert "0/100" not in rendered
+
+
 def test_an_all_unknown_category_is_visible_and_shows_no_score(tmp_path):
     from adduce.rules.base import Category, Status
 
