@@ -129,21 +129,26 @@ Reproducibility  72/100   Unrated (insufficient evidence)
 The score is still shown, because it is a real measurement of the checks that
 ran. What it is a score *of* is what the tier cannot vouch for.
 
-`--format json` carries the same information in an `evidence_base` block:
+`--format json` carries the same information in an `evidence_base` block. This
+one is measured on a fixture in this repository, so you can reproduce it:
+
+```console
+adduce check corpus/synthetic/synthetic_tf32 --format json
+```
 
 ```json
 "evidence_base": {
   "rated": false,
-  "evaluated_rules": 34,
-  "considered_rules": 76,
-  "applicable_rules": 68,
-  "coverage_percent": 50.0,
-  "analysable_lines": 10,
+  "evaluated_rules": 37,
+  "considered_rules": 69,
+  "applicable_rules": 38,
+  "coverage_percent": 97.4,
+  "analysable_lines": 4,
   "rules": {
-    "assessed": 34,
-    "unknown": 34,
-    "not_applicable": 8,
-    "skipped_inapplicable": 2
+    "assessed": 37,
+    "unknown": 1,
+    "not_applicable": 31,
+    "skipped_inapplicable": 9
   }
 }
 ```
@@ -151,10 +156,12 @@ ran. What it is a score *of* is what the tier cannot vouch for.
 `coverage_percent` is `evaluated_rules / applicable_rules`, not
 `evaluated_rules / considered_rules`: a check that does not apply to the
 repository never had an answer to reach, so counting it against coverage would
-understate what was assessed. The `rules` block separates the four outcomes a
-registered rule can reach, so the two rules skipped before evaluation here stay
-visible without entering that fraction. [Scoring](scoring.md#coverage) sets out
-the arithmetic.
+understate what was assessed. The difference is large here, not cosmetic —
+37/38 reads 97.4 %, and 37 over the 69 rules considered would read 53.6 % of a
+repository that left only one question open. The `rules` block separates the
+four outcomes a registered rule can reach, so the nine rules skipped before
+evaluation here stay visible without entering that fraction.
+[Scoring](scoring.md#coverage) sets out the arithmetic.
 
 Two limits, both deliberate:
 
