@@ -118,12 +118,14 @@ def run_check(
             )
 
         findings: list[Finding] = []
+        skipped_inapplicable = 0
         with telemetry.stage("rules.evaluate"):
             for rule in discovered:
                 if rule.id in profile.disabled_rules:
                     telemetry.count("rules.skipped_disabled")
                     continue
                 if not rule.applies_to(repo):
+                    skipped_inapplicable += 1
                     telemetry.count("rules.skipped_inapplicable")
                     continue
                 finding = rule.evaluate(evidence)
@@ -136,6 +138,7 @@ def run_check(
                 findings,
                 profile,
                 analysable_lines=sum(module.line_count for module in evidence.py.modules),
+                skipped_inapplicable=skipped_inapplicable,
             )
         with telemetry.stage("graph"):
             graph = build_graph(evidence)
@@ -187,12 +190,12 @@ _BASELINE_STATUSES = frozenset(status.value for status in _STATUS_ORDER)
 def baseline_snapshot(card: ScoreCard) -> dict:
     return {
         "version": 1,
-        "total": round(card.total, 1),
+        "total": round(card.total, 1) if card.total is not None else None,
         "profile": card.profile_name,
         "rules": {
             f.rule_id: f.status.value
             for f in card.findings
-            if f.status.score_value is not None
+            if f.status.is_assessed
         },
     }
 
@@ -220,7 +223,7 @@ def regressions_against(card: ScoreCard, baseline: dict[str, object]) -> list[Fi
     }
     regressed: list[Finding] = []
     for finding in card.findings:
-        if finding.suppressed or finding.status.score_value is None:
+        if finding.suppressed or not finding.status.is_assessed:
             continue
         previous = recorded.get(finding.rule_id)
         if previous is None:

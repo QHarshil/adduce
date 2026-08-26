@@ -133,8 +133,9 @@ def _measure_performance(
     file_count = len(result.repo.files)
     python_loc = _python_loc(result.repo.root, python_paths)
 
+    total = result.card.total
     outcome: dict[str, Any] = {
-        "score": round(result.card.total, 4),
+        "score": round(total, 4) if total is not None else None,
         "tier": result.card.tier,
         "findings": len(result.card.findings),
         "parser_failures": telemetry["counters"].get("parse.python.failed", 0),

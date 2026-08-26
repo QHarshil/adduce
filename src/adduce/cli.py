@@ -388,9 +388,18 @@ def check(
 
     exit_code = 0
     threshold = fail_under if fail_under is not None else result.config.fail_under
-    if threshold is not None and result.card.total < threshold:
-        err_console.print(f"[red]score {result.card.total:.0f} is below --fail-under {threshold:.0f}[/red]")
-        exit_code = 1
+    if threshold is not None:
+        if result.card.total is None:
+            err_console.print(
+                f"[red]--fail-under {threshold:.0f} could not be evaluated: no check "
+                "reached an assessment, so there is no score to compare[/red]"
+            )
+            exit_code = 1
+        elif result.card.total < threshold:
+            err_console.print(
+                f"[red]score {result.card.total:.0f} is below --fail-under {threshold:.0f}[/red]"
+            )
+            exit_code = 1
     if fail_on_regression:
         baseline_path = path / BASELINE_FILENAME
         try:
@@ -1491,8 +1500,10 @@ def baseline(
         )
     except SafeWriteError as exc:
         _generation_write_error(exc)
+    total = result.card.total
+    scored = f"score {total:.0f}/100" if total is not None else "no score: nothing assessed"
     console.print(
-        f"baseline written to {target} (score {result.card.total:.0f}/100, {len(snapshot['rules'])} rules recorded)"
+        f"baseline written to {target} ({scored}, {len(snapshot['rules'])} rules recorded)"
     )
     console.print("commit this file, then gate CI with: adduce check --fail-on-regression")
 
