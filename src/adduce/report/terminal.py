@@ -45,7 +45,9 @@ def _item_census(finding: Finding) -> str:
     """The complete child count and its per-status split, or nothing.
 
     Summarised rather than listed: none of the children appear here, so the
-    line cannot be mistaken for the whole set. `json` and `sarif` carry them.
+    line cannot be mistaken for the whole set. `json` carries every item of
+    every finding; `sarif` carries every item of every finding it reports, and
+    it reports only actionable (fail/partial) findings.
     """
     if not finding.items:
         return ""
