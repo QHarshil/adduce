@@ -8,11 +8,19 @@ confidence — static analysis detects signals, it does not certify outcomes.
 
 from __future__ import annotations
 
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from enum import Enum
+from math import isfinite
 
 from ..evidence import Evidence
 from ..model import Repo
+
+#: What a finding item's ``attributes`` may hold: JSON scalars only. Integrations
+#: read these instead of parsing prose, so nested containers and binary blobs are
+#: refused at construction. Widening this stays backward compatible; narrowing it
+#: would not.
+JsonValue = str | int | float | bool | None
 
 
 class Status(Enum):
@@ -79,6 +87,96 @@ class Location:
         return f"{self.path}:{self.line}" if self.line else self.path
 
 
+def _validate_confidence(value: float, label: str) -> None:
+    if not isinstance(value, (int, float)) or isinstance(value, bool):
+        raise ValueError(f"{label} is not a number, got {type(value).__name__}")
+    if not isfinite(value):
+        raise ValueError(f"{label} is not finite, got {value!r}")
+    if not 0.0 <= value <= 1.0:
+        raise ValueError(f"{label} is outside 0.0..1.0, got {value!r}")
+
+
+def _validate_attributes(attributes: Mapping[str, JsonValue], label: str) -> None:
+    """Require attribute values that JSON can represent exactly.
+
+    Checked at construction rather than at write time so the offending producer
+    is named, not the serializer.
+    """
+    for key, value in attributes.items():
+        if not isinstance(key, str):
+            raise ValueError(f"{label} attribute key {key!r} is not a string")
+        if value is None or isinstance(value, (str, bool, int)):
+            continue
+        if isinstance(value, float):
+            if not isfinite(value):
+                raise ValueError(f"{label} attribute {key!r} is not finite, got {value!r}")
+            continue
+        raise ValueError(
+            f"{label} attribute {key!r} holds an unrepresentable {type(value).__name__}"
+        )
+
+
+@dataclass(frozen=True)
+class FindingItem:
+    """One structured observation explaining a parent finding's verdict.
+
+    Non-recursive by construction: an item carries no items. ``id`` is unique
+    within the parent and stable under reordering, so prefer a domain identity
+    over a position. ``kind`` is an open string because external rule packs need
+    domain-specific values.
+
+    An item is explanatory. It is never independently scored, baselined or
+    suppressed — that is what keeps a rule checking thousands of assertions
+    from outweighing its neighbours.
+    """
+
+    id: str
+    status: Status
+    message: str
+    confidence: float = 1.0
+    locations: tuple[Location, ...] = ()
+    remediation: str = ""
+    kind: str | None = None
+    attributes: Mapping[str, JsonValue] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.id, str):
+            raise ValueError(f"finding item id is not a string, got {type(self.id).__name__}")
+        if not self.id:
+            raise ValueError("finding item id is empty")
+        label = f"finding item {self.id!r}"
+        if not isinstance(self.message, str):
+            raise ValueError(f"{label} message is not a string, got {type(self.message).__name__}")
+        _validate_confidence(self.confidence, f"{label} confidence")
+        _validate_attributes(self.attributes, label)
+
+    def to_dict(self) -> dict:
+        return {
+            "id": self.id,
+            "status": self.status.value,
+            "message": self.message,
+            "confidence": self.confidence,
+            "locations": [{"path": loc.path, "line": loc.line} for loc in self.locations],
+            "remediation": self.remediation,
+            "kind": self.kind,
+            "attributes": dict(self.attributes),
+        }
+
+
+def summarize_items(items: Iterable[FindingItem]) -> dict[Status, int]:
+    """Per-status counts over ``items``, every :class:`Status` member present.
+
+    Zeros are materialised rather than created on first increment, so a consumer
+    can index any member without a presence check. No policy is imposed: the
+    rule author chooses the parent status from the rule's own documented
+    semantics, and this only reports what the children say.
+    """
+    counts = dict.fromkeys(Status, 0)
+    for item in items:
+        counts[item.status] += 1
+    return counts
+
+
 @dataclass
 class Finding:
     """The outcome of evaluating one rule against one repository."""
@@ -95,6 +193,16 @@ class Finding:
     locations: list[Location] = field(default_factory=list)
     fix_command: str | None = None
     suppressed: bool = False
+    #: Observations explaining this verdict. The finding stays the unit of rule
+    #: identity, scoring, category weight, baseline tracking and suppression.
+    items: tuple[FindingItem, ...] = ()
+
+    def __post_init__(self) -> None:
+        seen: set[str] = set()
+        for item in self.items:
+            if item.id in seen:
+                raise ValueError(f"duplicate finding item id {item.id!r} on {self.rule_id!r}")
+            seen.add(item.id)
 
     def to_dict(self) -> dict:
         return {
@@ -110,6 +218,9 @@ class Finding:
             "locations": [{"path": loc.path, "line": loc.line} for loc in self.locations],
             "fix_command": self.fix_command,
             "suppressed": self.suppressed,
+            # Always present, empty when there are none: a conditional key would
+            # force every consumer to write a presence check.
+            "items": [item.to_dict() for item in self.items],
         }
 
 
@@ -160,6 +271,8 @@ class Rule:
         message: str,
         remediation: str = "",
         locations: list[Location] | None = None,
+        *,
+        items: Sequence[FindingItem] = (),
     ) -> Finding:
         return Finding(
             rule_id=self.id,
@@ -173,4 +286,5 @@ class Rule:
             severity=self.effective_severity,
             locations=locations or [],
             fix_command=self.fix_command,
+            items=tuple(items),
         )

@@ -13,6 +13,12 @@ def render(result: CheckResult) -> str:
     reviewer_time = result.reviewer_time
     payload: dict[str, Any] = {
         "tool": {"name": "adduce", "version": __version__},
+        # `tool.version` names the release that wrote this file; it says nothing
+        # about the file's shape. Version 1 is the 0.2 document: the
+        # applicability keys, the nullable total, and the per-finding items.
+        # Stamped here rather than on the score card, because the schema is a
+        # property of the report and `ScoreCard.to_dict` has other consumers.
+        "schema": {"name": "adduce-report", "version": 1},
         "repository": {
             "root": str(result.repo.root),
             "commit": result.repo.git.head_commit,
