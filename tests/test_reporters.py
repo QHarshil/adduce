@@ -289,8 +289,8 @@ def _items(count=_ITEM_COUNT):
     )
 
 
-def _carrying_items(tmp_path, items):
-    """A real `CheckResult` whose card holds one item-bearing actionable finding."""
+def _carrying_items(tmp_path, items, status=None):
+    """A real `CheckResult` whose card holds one item-bearing finding."""
     from adduce.profiles import load_profile
     from adduce.rules.base import Category, Status
     from adduce.scoring import score
@@ -298,7 +298,7 @@ def _carrying_items(tmp_path, items):
     _write(tmp_path, WELL_FORMED)
     result = run_check(tmp_path)
     result.card = score(
-        [_category_finding("R-ITEMS-001", Category.DRIFT, Status.FAIL, items=items)],
+        [_category_finding("R-ITEMS-001", Category.DRIFT, status or Status.FAIL, items=items)],
         load_profile("default"),
     )
     return result
@@ -352,6 +352,27 @@ def test_sarif_leaves_a_childless_finding_exactly_as_it_was(tmp_path):
     assert "properties" not in sarif_result
 
 
+def test_sarif_drops_a_non_actionable_findings_items_entirely_while_json_keeps_them(tmp_path):
+    """Documented intent, not an oversight: SARIF encodes PASS by absence.
+
+    A PASS finding never reaches ``_LEVELS``, so its whole result -- including
+    any items it carries -- never reaches SARIF, no matter how many there are.
+    JSON has no such filter: it is the format that carries every finding.
+    """
+    from adduce.rules.base import Status
+
+    items = _items()
+    result = _carrying_items(tmp_path, items, status=Status.PASS)
+
+    sarif = json.loads(RENDERERS["sarif"](result))
+    assert sarif["runs"][0]["results"] == []
+    sarif_text = json.dumps(sarif)
+    assert not any(item.id in sarif_text for item in items)
+
+    reported = json.loads(RENDERERS["json"](result))["findings"][0]["items"]
+    assert [entry["id"] for entry in reported] == [item.id for item in items]
+
+
 def test_markdown_and_terminal_state_the_complete_item_count(tmp_path):
     """Human output summarises, and says how many children the summary covers."""
     from adduce.rules.base import Category, Status
@@ -382,3 +403,17 @@ def test_a_finding_without_items_renders_no_census_at_all(tmp_path):
     for rendered in (markdown_text, terminal_text):
         assert "item(s) not listed here" not in rendered
         assert "0 item" not in rendered
+
+
+def test_the_item_census_is_absent_at_default_verbosity(tmp_path):
+    """The findings table -- and its census -- is verbose-only; default output has neither."""
+    from adduce.rules.base import Category, Status
+
+    items = _items()
+    result = _carrying_items(tmp_path, items)
+    findings = [_category_finding("R-ITEMS-001", Category.DRIFT, Status.FAIL, items=items)]
+
+    terminal_text = _terminal_text(result, findings, verbose=False)
+
+    assert _CENSUS not in terminal_text
+    assert "item(s) not listed here" not in terminal_text

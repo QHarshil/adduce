@@ -20,7 +20,9 @@ def _item_census(finding: Finding) -> str:
 
     A human report summarises rather than listing thousands of children, so it
     states how many there are: no child is listed here, so nothing can be read
-    as the full set. The machine-readable formats carry them in full.
+    as the full set. ``json`` carries every item of every finding; ``sarif``
+    carries every item of every finding it reports, and it reports only
+    actionable (fail/partial) findings.
     """
     if not finding.items:
         return ""

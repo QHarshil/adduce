@@ -2220,7 +2220,10 @@ def _load_checked_in_preregistration() -> dict[str, Any]:
 #:
 #: ``check_builtin.py`` enforces an explicit allowlist of the git commands a
 #: corpus scan may run, and honouring ``.gitignore`` during ingestion takes two
-#: further read-only queries, so the allowlist had to name them.
+#: further read-only queries, so the allowlist had to name them. Its synthesised
+#: not-applicable finding now also emits ``"items": []``, once every finding
+#: was required to carry the key rather than only the ones a rule actually
+#: evaluated.
 #:
 #: ``run_contract.py`` recomputed a tier from a score and rejected any artifact
 #: where the two disagreed. A tier is now withheld when the analyzer parsed too
@@ -2234,6 +2237,17 @@ def _load_checked_in_preregistration() -> dict[str, Any]:
 #: exactly and reconstructs both the total and the tier, so its key set had to
 #: admit the new counts and its two reconstructions had to learn that an absent
 #: total is not a failing zero and carries a tier of its own.
+#:
+#: It moved a third time, for a separate reason. The report gained a top-level
+#: ``schema`` key naming the document's shape independently of the tool version
+#: that wrote it, and each finding gained an ``items`` key carrying the
+#: individual observations behind its verdict. The contract's exact key set
+#: had to admit both, and an item is now validated field by field: id
+#: uniqueness within the finding, status against the same states a finding
+#: itself may carry, confidence in range, and its own locations and
+#: JSON-scalar attributes, through the same location and attribute checks the
+#: finding already used, factored out so item and finding are held to one
+#: implementation rather than two that could drift apart.
 #:
 #: ``run_validation.py`` recorded a category that applied but that no check
 #: could assess as a zero in the combined CSV, where it reads exactly like a

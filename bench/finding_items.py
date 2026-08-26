@@ -6,8 +6,9 @@ finding: 10,000 is the guaranteed envelope, aggregation stays linear, and the
 machine-readable formats never silently truncate. A resource ceiling for that
 promise has to come from measurement, so this builds one parent finding at each
 requested size and measures construction, serialisation, aggregation, and every
-reporter that walks the children -- including SARIF, which carries them in full
-and is therefore the other unbounded path.
+reporter that walks the children -- including SARIF, which drops passes but
+carries every child of every finding it reports, and is therefore the other
+unbounded path for the failing finding measured here.
 
 Deliberately not a ``bench/runner.py`` subcommand. ``runner`` measures
 repository scans against strata, targets and a committed baseline; this measures
