@@ -283,6 +283,48 @@ def test_a_mixed_unknown_and_not_applicable_category_is_kept():
     assert kept[0].possible == 0
 
 
+def test_a_zero_weight_verdict_does_not_keep_its_category_as_unassessed():
+    """Retention asks for applicable *and* unassessed, not applicable alone.
+
+    Nothing constrains a rule's weight, so an out-of-tree pack can register one
+    at 0. Its category reaches `possible == 0` while holding a verdict, and
+    keeping it would render a FAIL as a question adduce never answered.
+    """
+    profile = load_profile("default")
+    answered = score(
+        [
+            _finding("ZERO", Category.NOTEBOOK, Status.FAIL, 0),
+            _finding("REAL", Category.DATA, Status.PASS, 3),
+        ],
+        profile,
+    )
+    assert [c.category for c in answered.categories] == [Category.DATA]
+
+    # The control: an unanswered category is still kept, so the tightened
+    # predicate has not disabled the retention path it guards.
+    unanswered = score(
+        [
+            _finding("UNANSWERED", Category.NOTEBOOK, Status.UNKNOWN, 3),
+            _finding("REAL", Category.DATA, Status.PASS, 3),
+        ],
+        profile,
+    )
+    assert [c.category for c in unanswered.categories] == [Category.DATA, Category.NOTEBOOK]
+
+    # And a category holding both is kept, on the strength of the unanswered one.
+    mixed = score(
+        [
+            _finding("ZERO", Category.NOTEBOOK, Status.FAIL, 0),
+            _finding("UNANSWERED", Category.NOTEBOOK, Status.UNKNOWN, 3),
+            _finding("REAL", Category.DATA, Status.PASS, 3),
+        ],
+        profile,
+    )
+    kept = [c for c in mixed.categories if c.category is Category.NOTEBOOK]
+    assert len(kept) == 1
+    assert kept[0].possible == 0
+
+
 def test_top_fixes_ignores_a_retained_unassessed_category():
     findings = [
         _finding("A", Category.CODE_EXECUTION, Status.FAIL, 3),
