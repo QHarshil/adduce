@@ -394,6 +394,11 @@ def finding_diff(strata_path: Path, only: str | None = None) -> dict[str, Any]:
     }
 
 
+def _score_cell(value: float | None) -> str:
+    """A score for a fixed-width column, or a dash when there is no score."""
+    return "-" if value is None else f"{value:.1f}"
+
+
 def _render_finding_diff(report: dict[str, Any]) -> str:
     lines: list[str] = []
     for record in report["results"]:
@@ -402,9 +407,12 @@ def _render_finding_diff(report: dict[str, Any]) -> str:
             continue
         files = record["files"]
         score = record["score"]
+        # A score is None when nothing in the arm reached an assessment, which
+        # is not a zero. Formatting it as one would read as a total failure.
         lines.append(
             f"{record['id']:34s} files {files['whole_tree']:>6d} -> {files['honoured']:<6d} "
-            f"score {score['whole_tree']:>6.1f} -> {score['honoured']:<6.1f} "
+            f"score {_score_cell(score['whole_tree']):>6s} -> "
+            f"{_score_cell(score['honoured']):<6s} "
             f"moved {record['rules_moved']:>3d} {record['classification_tally'] or ''}"
         )
     for record in report["results"]:
