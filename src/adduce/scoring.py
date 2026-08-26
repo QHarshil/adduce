@@ -189,16 +189,22 @@ def score(
             earned += value * finding.weight
             possible += finding.weight
         if possible == 0:
-            # Nothing here reached an assessment, which is wider than nothing
-            # applying. A category that is entirely not-applicable is correctly
-            # omitted. One that is applicable and unanswered is not: dropping it
-            # removes the question instead of reporting it. Keep it visible with
-            # an empty score, and fall through to the `continue` below so its
-            # weight still stays out of the renormalisation — admitting it would
-            # let a category adduce could not assess drag the total down as
-            # though it had failed. Reporters read possible == 0 as "nothing
-            # assessed here".
-            if any(finding.status.is_applicable for finding in cat_findings):
+            # No assessed weight here, which is wider than nothing applying. A
+            # category that is entirely not-applicable is correctly omitted. One
+            # that is applicable and unanswered is not: dropping it removes the
+            # question instead of reporting it. Keep it visible with an empty
+            # score, and fall through to the `continue` below so its weight
+            # still stays out of the renormalisation — admitting it would let a
+            # category adduce could not assess drag the total down as though it
+            # had failed. Reporters read possible == 0 as "nothing assessed
+            # here", so the test is applicable *and* unassessed: a rule that
+            # answered at weight 0 reaches this branch and must not keep a
+            # category that would then render as unassessed while holding a
+            # verdict.
+            if any(
+                finding.status.is_applicable and not finding.status.is_assessed
+                for finding in cat_findings
+            ):
                 categories.append(
                     CategoryScore(
                         category=category,
