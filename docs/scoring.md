@@ -47,8 +47,9 @@ in.
 | Evaluated, unassessed | `evaluate` returned `UNKNOWN` | yes | yes | yes | no |
 | Evaluated and assessed | `evaluate` returned `PASS`, `PARTIAL` or `FAIL` | yes | yes | yes | yes |
 
-All four outcomes are counted, and the counts sit together in the JSON report
-under `evidence_base.rules` (`scoring.py:88-93`). On adduce's own repository:
+Every outcome but the disabled skip is counted, and those counts sit together
+in the JSON report under `evidence_base.rules` (`scoring.py:88-93`). A rule the
+profile disabled is counted in no report at all. On adduce's own repository:
 
 ```json
 "rules": {
@@ -76,8 +77,22 @@ between them for all 78 built-in rules.
 
 The two pre-evaluation skips also have telemetry counters,
 `rules.skipped_disabled` and `rules.skipped_inapplicable`. `--timings` prints
-both on stderr and adds them to the `telemetry` block of `--format json`. The
-inapplicable count additionally reaches the score card, at
+the counters that fired on stderr and puts that same set in the `telemetry`
+block of `--format json`.
+
+**A counter that never fires is absent, not zero.** `Telemetry.count` creates
+the key on first increment (`telemetry.py:50-51`), and `snapshot` emits only the
+keys present (`telemetry.py:59-66`). Measured on adduce's own repository under
+the default profile, which disables no rule, stderr reports
+`rules.skipped_inapplicable: 9` and says nothing about disabled rules, and the
+only `rules.*` keys in the JSON block are `rules.evaluated` and
+`rules.skipped_inapplicable`. Read the block with `.get(name, 0)`: indexing
+`counters["rules.skipped_disabled"]` raises `KeyError` rather than returning 0.
+In-process, `Telemetry.counter` already returns 0 for a name that never fired
+(`telemetry.py:53-54`), so the two access paths disagree and only the JSON one
+can raise.
+
+The inapplicable count additionally reaches the score card, at
 `evidence_base.rules.skipped_inapplicable`; the disabled count appears in
 neither the score card nor any report body.
 
@@ -105,7 +120,7 @@ moves the category in neither direction. `finding.weight` is the integer weight
 declared on the rule class; across the shipped rules it spans 1 to 8.
 
 The ratio is then scaled by the profile's category weight
-(`scoring.py:211-218`): `CategoryScore.earned` is `earned / possible *
+(`scoring.py:217-224`): `CategoryScore.earned` is `earned / possible *
 cat_weight`, and `CategoryScore.possible` is `cat_weight`. A category row
 reading `8/10` reports category weight, not rule weight.
 `CategoryScore.findings` holds every finding in the category, including the ones
@@ -120,7 +135,7 @@ Category weights come from the profile TOML (`src/adduce/profiles/*.toml`); a
 category the profile does not name weighs 0. Each surviving category adds its
 scaled ratio to `weighted_earned` and its weight to `weighted_possible`, and the
 total is `100 * weighted_earned / weighted_possible`, or `None` when no category
-survived (`scoring.py:219-222`).
+survived (`scoring.py:225-228`).
 
 Only surviving categories enter `weighted_possible`. That renormalisation is
 what keeps an inapplicable category out of the result in both directions: a
@@ -131,19 +146,30 @@ nothing from its absence either.
 
 A category contributing no assessed weight reaches `if possible == 0`
 (`scoring.py:191`), and what happens next depends on why it got there.
-`possible == 0` means *nothing assessed*, which is wider than nothing
-applicable, so the two cases are separated by
-`any(finding.status.is_applicable for finding in cat_findings)`
-(`scoring.py:201`):
 
-- No finding is applicable — in practice, every finding is `NOT_APPLICABLE`. The
-  category never applied; it is dropped from `ScoreCard.categories` and omitted
-  from every report. This is correct.
-- At least one finding is applicable. With nothing assessed, those findings are
-  exactly the `UNKNOWN` ones: the category applied and went unanswered. It is
-  **kept** on the card, carrying its full `findings` list with `earned == 0.0`
-  and `possible == 0.0`. Dropping it would remove the question instead of
-  reporting it.
+`possible == 0` means *no assessed weight*, which is wider than nothing
+assessed: a rule declaring `weight == 0` can return a `FAIL` and still add
+nothing to `possible`. Nothing validates the weight a rule class declares — no
+shipped rule uses 0, but an out-of-tree pack can — so the zero cannot be read as
+evidence that the category went unanswered. The branch asks for that finding
+directly instead of inferring it (`scoring.py:204-207`):
+
+```python
+any(
+    finding.status.is_applicable and not finding.status.is_assessed
+    for finding in cat_findings
+)
+```
+
+- No finding applied and went unanswered. Either every finding is
+  `NOT_APPLICABLE`, or everything applicable was assessed and only carried no
+  weight. The category is dropped from `ScoreCard.categories` and omitted from
+  every report. Keeping the second case would render a category as unassessed
+  while it holds a verdict, which is the reading `possible == 0` already has.
+- At least one finding applied and reached no assessment — an `UNKNOWN`. The
+  category applied and went unanswered, so it is **kept** on the card, carrying
+  its full `findings` list with `earned == 0.0` and `possible == 0.0`. Dropping
+  it would remove the question instead of reporting it.
 
 In both cases the category's weight stays out of `weighted_possible`. A retained
 unassessed category therefore moves no number: `total`, `tier`, `coverage`,
@@ -185,10 +211,36 @@ There are two unrated tiers, and they are not interchangeable:
 | `UNRATED_TIER` (`scoring.py:117`) | `Unrated (insufficient evidence)` | `analysable_lines` below the floor | too little source to judge |
 | `UNASSESSED_TIER` (`scoring.py:123`) | `Unrated (nothing assessed)` | `total is None` | source the checks could not assess |
 
-`total is None` is tested first (`scoring.py:224-229`), so a repository that is
+`total is None` is tested first (`scoring.py:230-235`), so a repository that is
 both tiny and unassessed reports the unassessed tier. A reader handed the wrong
 one of these looks in the wrong place for the cause, which is why they are
 separate strings rather than one.
+
+Terminal output prints a note below the panel, and the note follows the tier
+rather than restating a cause the tier did not choose
+(`report/terminal.py:67-94`). With `total is None` the score cell reads
+`no score` and the note is:
+
+```
+No tier assigned: no check reached an assessment, so there is nothing to score.
+Every check either did not apply to this repository or could not be answered
+from the evidence collected.
+```
+
+If that same card is also unrated, one sentence is appended rather than
+substituted:
+
+```
+The analyzer parsed <n> lines of source, itself below the floor for a rating.
+```
+
+Thin source is a second fact there, never the stated cause: the card would carry
+no score however much source it had. A card that is unrated but does carry a
+score keeps its own note, which names the line count and the coverage fraction,
+and that text is unchanged.
+
+One behaviour follows from the ordering. A card that is unassessed but rated
+printed no note at all before; it now prints the unassessed one.
 
 `--fail-under` does not invent a zero for a card with no score. It reports that
 the threshold could not be evaluated because no check reached an assessment, and
@@ -222,7 +274,7 @@ coverage         = 100 * evaluated_rules / applicable_rules
 ```
 
 The three counts are taken with the status predicates rather than with
-`score_value` (`scoring.py:236-238`). `ScoreCard.coverage` is a computed property
+`score_value` (`scoring.py:242-244`). `ScoreCard.coverage` is a computed property
 returning `0.0` when nothing was applicable (`scoring.py:63-68`). It surfaces as
 `evidence_base.coverage_percent` in `--format json` and in the unrated note in
 terminal output.
@@ -272,7 +324,7 @@ percentage points. The reasoning is recorded in
 buy: `100 * (1 - score_value) * weight / applicable_weight * cat.possible /
 total_possible`, where `applicable_weight` is the assessed weight in that
 category and `total_possible` the summed weight of the surviving categories
-(`scoring.py:245-260`). Suppressed findings, findings that reached no
+(`scoring.py:251-266`). Suppressed findings, findings that reached no
 assessment, and findings already at `1.0` are skipped. The estimate holds the
 applicable set fixed: a change that makes another rule apply, or turns an
 `UNKNOWN` into an assessment, moves the denominators too.

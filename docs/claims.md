@@ -282,51 +282,67 @@ matter most are that ground truth is transcribed from the *rendered PDF* rather
 than from the LaTeX source, and that an extraction matches a label only when
 both the value and the canonicalised metric agree, one-to-one.
 
-Measured over the 20 of 34 pairs labelled so far:
+The figures below are as of 2026-08-25, when 20 of the 34 pairs carried labels
+and 6 carried an adjudication. Every one of them moves as those two sets grow,
+so read the date with the number.
 
 | measurement | value |
 | --- | --- |
-| pooled recall | 97 / 296 = 32.8% |
-| recall against labels whose metric the vocabulary can name | 97 / 184 = 52.7% |
-| pooled precision, over the 4 pairs adjudicated | 395 / 668 = 59.1% |
-| metric names the vocabulary canonicalises | 242 of 296 eligible labels, over 43 names |
+| pooled recall, over the 20 labelled pairs | 141 / 296 = 47.6% |
+| pooled precision, over the 6 pairs adjudicated | 700 / 1156 = 60.6% |
+| high-confidence false positives, pooled over those 6 pairs | 122 |
 
 Precision per pair, each against an adjudication that corresponds one-to-one with
 what the extractor produces today:
 
-| pair | precision | baseline | hyperparameter | not in paper | in repo, not paper |
-| --- | --- | --- | --- | --- | --- |
-| `detr` | 95 / 130 = 73.1% | 29 | 1 | 5 | 0 |
-| `convnext` | 166 / 263 = 63.1% | 70 | 26 | 1 | 0 |
-| `bert` | 94 / 154 = 61.0% | 49 | 10 | 1 | 6 |
-| `barlowtwins` | 40 / 121 = 33.1% | 78 | 1 | 2 | 0 |
+| pair | precision | high-confidence false positives |
+| --- | --- | --- |
+| `bit` | 111 / 136 = 81.6% | 0 |
+| `detr` | 104 / 138 = 75.4% | 5 |
+| `convnext` | 186 / 297 = 62.6% | 47 |
+| `bert` | 106 / 180 = 58.9% | 2 |
+| `blip` | 148 / 269 = 55.0% | 26 |
+| `barlowtwins` | 45 / 136 = 33.1% | 42 |
 
-**Quoted baselines are the dominant cost, not fabrication.** 226 of the 668
-adjudicated extractions are numbers the paper really reports but attributes to
-prior work; only 9 are values the paper does not state at all.
+"One-to-one" is checked, not hoped for: all six pairs report 0 unadjudicated
+extractions, 0 stale verdicts and 0 label degradations.
 
-Because a claim now records the confidence it was read at, a stricter question
-can be asked: how many of the extractions that are *not* the paper's own result
-were nonetheless asserted at confidence `1.0`? Measured over the same four
-pairs, **109 of 273**, distributed very unevenly — 3 on `detr`, 25 on `bert`,
-38 on `barlowtwins`, 43 on `convnext`. That figure is reported rather than
-smoothed: it is the number a reader should weigh before treating a
-full-confidence claim as settled, and reducing it is what the caption rule's
-demotion to `lexical_match` and the metric-header requirement are both for.
+Pooled, the six adjudications hold 1,164 verdicts — 700 `real_own_result`, 380
+`baseline`, 70 `hyperparameter`, 6 `not_in_paper`, 8 `in_repo_not_paper` and 0
+`unclear`. `unclear` and `in_repo_not_paper` sit outside the precision
+denominator, which is why 1,164 verdicts carry a denominator of 1,156.
 
-The vocabulary's coverage is concentrated: `accuracy` accounts for 98 of those
-165 labels, `map` for 12 and `wer` for 11.
+**Quoted baselines are the dominant cost, not fabrication.** Of the 456 false
+positives, 380 — 83.3% — are numbers the paper really reports but attributes to
+prior work; only 6 are values the paper does not state at all.
+
+Because a claim records the confidence it was read at, a stricter question can be
+asked: how many of the extractions that are *not* the paper's own result were
+nonetheless asserted at confidence `1.0`? Pooled over the six pairs, **122**,
+distributed very unevenly — the per-pair column above runs from 0 to 47. That
+figure is reported rather than smoothed: it is the number a reader should weigh
+before treating a full-confidence claim as settled, and reducing it is what the
+caption rule's demotion to `lexical_match` and the metric-header requirement are
+both for. `bit` is the only pair that reaches zero. The
+zero-high-confidence-false-positive acceptance criterion is **not met**.
+
+Pooled recall is taken over every sampled label, including labels whose metric
+name the vocabulary cannot canonicalise. Those cannot match, because a match
+requires the canonicalised metric to agree as well as the value, so the pooled
+figure sits below the same measurement restricted to labels the vocabulary can
+name. `bench/dev/recall.py measure` reports that subset separately.
 
 Recall and precision run in opposite directions and need separate evidence.
 Recall runs from the paper to the extraction and is answered by the sampled
 labels. Precision runs from the extraction to the paper — of the claims the
 system produced, how many are real reported own results? — and is answered only
-by adjudicating each extraction. **Precision is reported for 4 of the 34 pairs.**
-The other 30 report `unavailable` with a reason rather than a fabricated zero —
-most because no adjudication exists, and any whose adjudication stopped
-corresponding to what the extractor produces likewise reports `unavailable`
-rather than a stale figure. An `unavailable` never contributes a zero to an
-average.
+by adjudicating each extraction. **Precision is reported for 6 of the 34 pairs;
+28 are unadjudicated.** Those 28 report `unavailable` with a reason rather than a
+fabricated zero: no adjudication exists for them, and an adjudication that
+stopped corresponding to what the extractor produces would likewise report
+`unavailable` rather than a stale figure. Recall reports `unavailable` on 14
+pairs, every one of them for a missing label file. An `unavailable` never
+contributes a zero to an average.
 
 A precision figure here counts an extraction as correct only when it is the
 paper's own reported result. It is therefore a stricter measure than "is this
@@ -334,8 +350,11 @@ number in the paper": a quoted baseline is a real printed number, and it still
 counts against precision, because surfacing a competitor's figure as a claim
 about this artifact would misattribute it.
 
-For a before-and-after: on `barlowtwins`, the LaTeX-prose-only extractor scored
-0 of 15 labels. Today it scores 9 of 15.
+A before-and-after is measured rather than remembered. `bench/dev/recall.py
+measure --src` resolves the extractor from any source tree, so the
+LaTeX-prose-only baseline at commit `6f00c8b` runs against the same labels as the
+shipped one and the two arms are compared on demand. Neither arm's score is
+quoted here, because both move whenever matching or the label set moves.
 
 ## Claim text is untrusted input
 
