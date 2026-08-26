@@ -221,7 +221,8 @@ not recorded in the verification file, so it is joined from the live extraction 
 cannot be joined unambiguously is counted separately as `unjoined_false_positives` rather than
 guessed at.
 **Measured over the six adjudicated pairs: 122 of 456 false positives were extracted at
-confidence 1.0, and `bit` is still the only pair to meet the criterion, at 0.** Precision is
+confidence 1.0, and `bit` is still the only pair to meet the criterion, at 0 — so the
+zero-high-confidence-false-positive acceptance criterion is not met.** Precision is
 700/1156 = 60.6 % pooled — bit 111/136 = 81.6 %, detr 104/138 = 75.4 %, convnext
 186/297 = 62.6 %, bert 106/180 = 58.9 %, blip 148/269 = 55.0 %, barlowtwins 45/136 = 33.1 % —
 with `unclear` 0 across all six. Note `adjudicated` already excludes `unclear` and
