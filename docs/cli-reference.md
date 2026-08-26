@@ -135,11 +135,26 @@ ran. What it is a score *of* is what the tier cannot vouch for.
 "evidence_base": {
   "rated": false,
   "evaluated_rules": 34,
-  "considered_rules": 68,
+  "considered_rules": 76,
+  "applicable_rules": 68,
   "coverage_percent": 50.0,
-  "analysable_lines": 10
+  "analysable_lines": 10,
+  "rules": {
+    "assessed": 34,
+    "unknown": 34,
+    "not_applicable": 8,
+    "skipped_inapplicable": 2
+  }
 }
 ```
+
+`coverage_percent` is `evaluated_rules / applicable_rules`, not
+`evaluated_rules / considered_rules`: a check that does not apply to the
+repository never had an answer to reach, so counting it against coverage would
+understate what was assessed. The `rules` block separates the four outcomes a
+registered rule can reach, so the two rules skipped before evaluation here stay
+visible without entering that fraction. [Scoring](scoring.md#coverage) sets out
+the arithmetic.
 
 Two limits, both deliberate:
 
