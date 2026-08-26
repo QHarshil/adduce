@@ -103,7 +103,7 @@ def test_repository_exports_strip_remote_credentials(tmp_path):
     assert "also-secret" not in heritage_note
 
 
-def _terminal_text(result, findings, analysable_lines=None):
+def _terminal_text(result, findings, analysable_lines=None, verbose=False):
     """Render the terminal report over a constructed score card."""
     from rich.console import Console
 
@@ -113,7 +113,7 @@ def _terminal_text(result, findings, analysable_lines=None):
 
     result.card = score(findings, load_profile("default"), analysable_lines=analysable_lines)
     console = Console(width=200, record=True, force_terminal=False, legacy_windows=False)
-    terminal.render(result, console)
+    terminal.render(result, console, verbose=verbose)
     return console.export_text()
 
 
@@ -122,7 +122,7 @@ def _terminal_prose(result, findings, analysable_lines=None):
     return " ".join(_terminal_text(result, findings, analysable_lines).split())
 
 
-def _category_finding(rule_id, category, status, weight=3):
+def _category_finding(rule_id, category, status, weight=3, items=()):
     from adduce.rules.base import Finding
 
     return Finding(
@@ -134,6 +134,7 @@ def _category_finding(rule_id, category, status, weight=3):
         message=f"{rule_id} message",
         remediation="",
         weight=weight,
+        items=tuple(items),
     )
 
 
@@ -262,3 +263,122 @@ def test_an_all_unknown_category_is_visible_and_shows_no_score(tmp_path):
     assert Category.NOTEBOOK.value in text
     assert "none could be assessed" in text
     assert "0/0" not in text
+
+
+#: Item count for the completeness assertions: large enough that a silent cap
+#: or a truncating join would be visible, small enough to stay a fast test.
+_ITEM_COUNT = 750
+_CENSUS = "750 item(s) not listed here: 562 pass, 188 fail"
+
+
+def _items(count=_ITEM_COUNT):
+    from adduce.rules.base import FindingItem, Location, Status
+
+    return tuple(
+        FindingItem(
+            id=f"assertion:{index}",
+            status=Status.FAIL if index % 4 == 0 else Status.PASS,
+            message=f"observation {index}",
+            confidence=0.5,
+            locations=(Location("paper.tex", index + 1),),
+            remediation="restate the figure",
+            kind="assertion",
+            attributes={"index": index, "quoted": False},
+        )
+        for index in range(count)
+    )
+
+
+def _carrying_items(tmp_path, items):
+    """A real `CheckResult` whose card holds one item-bearing actionable finding."""
+    from adduce.profiles import load_profile
+    from adduce.rules.base import Category, Status
+    from adduce.scoring import score
+
+    _write(tmp_path, WELL_FORMED)
+    result = run_check(tmp_path)
+    result.card = score(
+        [_category_finding("R-ITEMS-001", Category.DRIFT, Status.FAIL, items=items)],
+        load_profile("default"),
+    )
+    return result
+
+
+def test_json_report_stamps_the_document_schema_beside_the_tool_version(tmp_path):
+    _write(tmp_path, WELL_FORMED)
+    payload = json.loads(RENDERERS["json"](run_check(tmp_path)))
+
+    assert payload["schema"] == {"name": "adduce-report", "version": 1}
+    assert payload["tool"]["name"] == "adduce"
+
+
+def test_json_serialises_every_finding_item(tmp_path):
+    """Machine-readable output carries all children, uncapped and in order."""
+    items = _items()
+    result = _carrying_items(tmp_path, items)
+
+    reported = json.loads(RENDERERS["json"](result))["findings"][0]["items"]
+
+    assert [entry["id"] for entry in reported] == [item.id for item in items]
+    assert reported[0]["attributes"] == {"index": 0, "quoted": False}
+    assert reported[4]["locations"] == [{"path": "paper.tex", "line": 5}]
+    assert reported[1]["status"] == "pass"
+    assert reported[0]["kind"] == "assertion"
+
+
+def test_sarif_carries_every_finding_item_and_stays_schema_valid(tmp_path):
+    from jsonschema import Draft7Validator
+
+    from tests.test_schema_conformance import _FORMAT_CHECKER, _load_schema
+
+    items = _items()
+    result = _carrying_items(tmp_path, items)
+
+    report = json.loads(RENDERERS["sarif"](result))
+    reported = report["runs"][0]["results"][0]["properties"]["adduceFindingItems"]
+
+    assert [entry["id"] for entry in reported] == [item.id for item in items]
+    assert reported[0]["attributes"] == {"index": 0, "quoted": False}
+    Draft7Validator(
+        _load_schema("sarif-schema-2.1.0.json"), format_checker=_FORMAT_CHECKER
+    ).validate(report)
+
+
+def test_sarif_leaves_a_childless_finding_exactly_as_it_was(tmp_path):
+    result = _carrying_items(tmp_path, ())
+
+    sarif_result = json.loads(RENDERERS["sarif"](result))["runs"][0]["results"][0]
+
+    assert "properties" not in sarif_result
+
+
+def test_markdown_and_terminal_state_the_complete_item_count(tmp_path):
+    """Human output summarises, and says how many children the summary covers."""
+    from adduce.rules.base import Category, Status
+
+    items = _items()
+    result = _carrying_items(tmp_path, items)
+    findings = [_category_finding("R-ITEMS-001", Category.DRIFT, Status.FAIL, items=items)]
+
+    markdown_text = RENDERERS["markdown"](result)
+    terminal_text = " ".join(_terminal_text(result, findings, verbose=True).split())
+
+    for rendered in (markdown_text, terminal_text):
+        assert _CENSUS in rendered
+        # A summary that showed some children could be read as all of them.
+        assert "observation 0" not in rendered
+        assert "assertion:0" not in rendered
+
+
+def test_a_finding_without_items_renders_no_census_at_all(tmp_path):
+    from adduce.rules.base import Category, Status
+
+    result = _carrying_items(tmp_path, ())
+    findings = [_category_finding("R-ITEMS-001", Category.DRIFT, Status.FAIL)]
+
+    markdown_text = RENDERERS["markdown"](result)
+    terminal_text = _terminal_text(result, findings, verbose=True)
+
+    for rendered in (markdown_text, terminal_text):
+        assert "item(s) not listed here" not in rendered
+        assert "0 item" not in rendered
