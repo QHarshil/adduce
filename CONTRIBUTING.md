@@ -131,23 +131,21 @@ high-confidence false positives pooled and exactly one pair at zero. The
 zero-high-confidence-false-positive acceptance criterion is not met, and no
 project document, release note or README line should describe it as met.
 
-## Reserved work and release gates
+## Claiming work and release gates
 
-Some work is reserved by agreement for an outside contributor who has offered to
-implement it. Reserved work is not pre-implemented by maintainers, so nobody is
-asked to rebase onto a competing implementation of what they took on. If you are
-planning something substantial, say so on the issue first; it will be marked
-reserved or left open.
+Substantial work should have a public issue before it is implemented, so the
+design can be settled while it is still cheap to change. Open one, or say on an
+existing issue that you are working on it. Maintainers coordinate on the issue
+when two people are heading for the same change, so the duplicated effort costs
+a comment rather than a discarded branch.
 
-A reservation never becomes a release gate. Gates are capability-based, not
-contributor-identity-based: "a pull request was submitted" is not a gate. The
-gate is that the capability exists, is tested, and is correct. If reserved work
-is still unsubmitted once every other gate for the release is met, ownership is
-reassessed and maintainers may implement it. The trigger is that condition, not
-a date.
-
-No reservation covers a correctness defect. Maintainers fix defects in shipped
-behaviour without waiting on reserved feature work.
+Saying so records intent; it does not reserve the work. Release gates are
+capability-based: the gate is that the capability exists, is tested, and is
+correct, never that a particular contributor opened a pull request. Maintainers
+implement whatever a release needs, whenever correctness or release progress
+requires it, and fix defects in shipped behaviour without waiting. Where that
+overlaps something you have started, say so on the issue and we will settle
+which parts land from where.
 
 Maintainer release gates and the Trusted Publishing boundary are documented in
 [`docs/releasing.md`](docs/releasing.md). A release tag is not part of the
