@@ -95,3 +95,14 @@ ADR 0004.
 
 Baselines and suppression stay at the parent level. Stable item ids leave
 item-level support possible later without committing to its semantics now.
+
+## Implementation note (2026-08-26)
+
+SARIF's finding-level filter predates `FindingItem`: only `FAIL` and `PARTIAL`
+findings become SARIF results (`src/adduce/report/sarif.py`), and this is
+applied before a finding's items are considered at all. A `PASS`, `UNKNOWN` or
+`NOT_APPLICABLE` finding is not emitted to SARIF, so its items never reach that
+format either — they are outside SARIF's scope entirely, not truncated from a
+finding SARIF did report. JSON carries every item of every finding without
+exception, matching the Consequences above. The pre-existing filter is
+unchanged by this feature.
