@@ -30,8 +30,7 @@ import pytest
 
 from adduce.engine import CheckResult, run_check
 from adduce.report import RENDERERS, json_report
-from adduce.rules import Finding, Location, Status, discover_rules
-from adduce.rules.base import FindingItem
+from adduce.rules import Finding, FindingItem, Location, Status, discover_rules
 
 DISTRIBUTION = "adduce-contract-plugin"
 RULE_ID = "X-CONTRACT-PLUGIN-001"
