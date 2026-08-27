@@ -335,6 +335,10 @@ def main() -> int:
                 "locations": [],
                 "fix_command": rule.fix_command,
                 "suppressed": False,
+                # A rule that never ran reported nothing, so it has no child
+                # results. The key is required, not optional, so a reader never
+                # has to tell absent from empty.
+                "items": [],
             }
         )
     payload["corpus_execution"] = {

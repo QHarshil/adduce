@@ -31,3 +31,45 @@ my_lab = "my_lab_rules"
 ```
 
 Installing the pack is all it takes.
+
+## Attaching item detail
+
+A rule that checks many individual things — one row per declared artifact,
+one row per citation — can attach a `FindingItem` per observation instead of
+collapsing them into one message. The parent `Finding` stays the scored unit;
+items only explain it:
+
+```python
+from adduce.rules import Category, FindingItem, Rule, Status
+
+class DeclaredArtifactsRule(Rule):
+    id = "R-LAB-002"
+    category = Category.DATA
+    title = "Declared artifacts are present"
+    rationale = "Every path listed in artifacts.txt should exist on disk."
+    weight = 2
+
+    def evaluate(self, ev):
+        names = (ev.repo.read_text("artifacts.txt") or "").splitlines()
+        items = [
+            FindingItem(
+                id=name,
+                status=Status.PASS if ev.repo.exists(name) else Status.FAIL,
+                message="found" if ev.repo.exists(name) else "missing",
+            )
+            for name in names if name
+        ]
+        missing = sum(1 for item in items if item.status is Status.FAIL)
+        summary = (
+            f"{missing} of {len(items)} declared artifacts are missing."
+            if missing else "All declared artifacts are present."
+        )
+        return self.finding(
+            Status.FAIL if missing else Status.PASS, 0.9, summary, items=items,
+        )
+```
+
+`items` is keyword-only and optional; a rule that never passes it is
+unaffected. See [Finding items](plugin-api.md#finding-items) for the
+constructor's full field list, the resource envelope, and how each report
+format serialises children.

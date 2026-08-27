@@ -8,11 +8,21 @@ confidence — static analysis detects signals, it does not certify outcomes.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+import sys
+from collections.abc import Iterable, Mapping, Sequence
+from dataclasses import dataclass, field, fields
 from enum import Enum
+from math import isfinite
+from types import MappingProxyType
 
 from ..evidence import Evidence
 from ..model import Repo
+
+#: What a finding item's ``attributes`` may hold: JSON scalars only. Integrations
+#: read these instead of parsing prose, so nested containers and binary blobs are
+#: refused at construction. Widening this stays backward compatible; narrowing it
+#: would not.
+JsonValue = str | int | float | bool | None
 
 
 class Status(Enum):
@@ -79,6 +89,176 @@ class Location:
         return f"{self.path}:{self.line}" if self.line else self.path
 
 
+def _validate_confidence(value: float, label: str) -> None:
+    if not isinstance(value, (int, float)) or isinstance(value, bool):
+        raise ValueError(f"{label} is not a number, got {type(value).__name__}")
+    if not isfinite(value):
+        raise ValueError(f"{label} is not finite, got {value!r}")
+    if not 0.0 <= value <= 1.0:
+        raise ValueError(f"{label} is outside 0.0..1.0, got {value!r}")
+
+
+def _int_max_str_digits() -> int:
+    # Landed in CPython 3.11 and backported only to later 3.10 patches; this
+    # project's floor is a bare "3.10", so the symbol may not exist. 0 means
+    # "no limit", the same value CPython itself uses for a disabled limit.
+    getter = getattr(sys, "get_int_max_str_digits", None)
+    return getter() if getter is not None else 0
+
+
+def _validate_attributes(attributes: Mapping[str, JsonValue], label: str) -> None:
+    """Require attribute values that JSON can represent exactly.
+
+    Checked at construction rather than at write time so the offending producer
+    is named, not the serializer.
+    """
+    for key, value in attributes.items():
+        if not isinstance(key, str):
+            raise ValueError(f"{label} attribute key {key!r} is not a string")
+        if value is None or isinstance(value, (str, bool)):
+            continue
+        if isinstance(value, int):
+            magnitude = value if value >= 0 else -value
+            try:
+                str(magnitude)
+            except ValueError:
+                # CPython refuses to convert an int this large to a string at
+                # all -- the same conversion ``json.dumps`` would perform --
+                # so the failed conversion itself is the exact check; nothing
+                # computed separately from it could be more precise.
+                raise ValueError(
+                    f"{label} attribute {key!r} exceeds the "
+                    f"{_int_max_str_digits()}-digit integer conversion limit"
+                ) from None
+            continue
+        if isinstance(value, float):
+            if not isfinite(value):
+                raise ValueError(f"{label} attribute {key!r} is not finite, got {value!r}")
+            continue
+        raise ValueError(
+            f"{label} attribute {key!r} holds an unrepresentable {type(value).__name__}"
+        )
+
+
+@dataclass(frozen=True)
+class FindingItem:
+    """One structured observation explaining a parent finding's verdict.
+
+    Non-recursive by construction: an item carries no items. ``id`` is unique
+    within the parent and stable under reordering, so prefer a domain identity
+    over a position. ``kind`` is an open string because external rule packs need
+    domain-specific values.
+
+    An item is explanatory. It is never independently scored, baselined or
+    suppressed — that is what keeps a rule checking thousands of assertions
+    from outweighing its neighbours.
+    """
+
+    id: str
+    status: Status
+    message: str
+    confidence: float = 1.0
+    locations: tuple[Location, ...] = ()
+    remediation: str = ""
+    kind: str | None = None
+    attributes: Mapping[str, JsonValue] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.id, str):
+            raise ValueError(f"finding item id is not a string, got {type(self.id).__name__}")
+        if not self.id:
+            raise ValueError("finding item id is empty")
+        label = f"finding item {self.id!r}"
+        if not isinstance(self.message, str):
+            raise ValueError(f"{label} message is not a string, got {type(self.message).__name__}")
+        if not isinstance(self.status, Status):
+            raise ValueError(
+                f"{label} status is not a Status member, got {type(self.status).__name__}"
+            )
+        _validate_confidence(self.confidence, f"{label} confidence")
+        if isinstance(self.locations, (str, bytes)):
+            raise ValueError(
+                f"{label} locations is a {type(self.locations).__name__}, "
+                "expected an iterable of Location"
+            )
+        locations = tuple(self.locations)
+        for location in locations:
+            if not isinstance(location, Location):
+                raise ValueError(f"{label} locations element {location!r} is not a Location")
+        if self.kind is not None and not isinstance(self.kind, str):
+            raise ValueError(f"{label} kind is not a string or None, got {type(self.kind).__name__}")
+        if not isinstance(self.remediation, str):
+            raise ValueError(
+                f"{label} remediation is not a string, got {type(self.remediation).__name__}"
+            )
+        # Snapshot before validating: validating ``self.attributes`` and then
+        # re-reading it for storage are two reads of a caller-controlled object
+        # through two different protocols, and a Mapping whose ``items()``
+        # disagrees with its storage view would be checked on one and kept on
+        # the other. Validate the one copy that is actually kept.
+        attributes = dict(self.attributes)
+        _validate_attributes(attributes, label)
+        # Defensive copies: a caller-owned dict or list mutated after construction
+        # must never change an already-validated, frozen item.
+        object.__setattr__(self, "attributes", MappingProxyType(attributes))
+        object.__setattr__(self, "locations", locations)
+
+    def __hash__(self) -> int:
+        return hash(
+            (
+                self.id,
+                self.status,
+                self.message,
+                self.confidence,
+                self.locations,
+                self.remediation,
+                self.kind,
+                tuple(sorted(self.attributes.items())),
+            )
+        )
+
+    def __reduce__(self) -> tuple:
+        # The read-only attributes view cannot be copied by the default
+        # protocol, which would otherwise cost this public type copy support it
+        # had before. Rebuilding through __init__ re-validates and re-wraps.
+        # Driven off the dataclass's own field list rather than a hardcoded
+        # tuple, so a subclass with an extra field is reconstructed in full
+        # instead of silently losing it.
+        values = []
+        for item_field in fields(self):
+            value = getattr(self, item_field.name)
+            if item_field.name == "attributes":
+                value = dict(value)
+            values.append(value)
+        return (self.__class__, tuple(values))
+
+    def to_dict(self) -> dict:
+        return {
+            "id": self.id,
+            "status": self.status.value,
+            "message": self.message,
+            "confidence": self.confidence,
+            "locations": [{"path": loc.path, "line": loc.line} for loc in self.locations],
+            "remediation": self.remediation,
+            "kind": self.kind,
+            "attributes": dict(self.attributes),
+        }
+
+
+def summarize_items(items: Iterable[FindingItem]) -> dict[Status, int]:
+    """Per-status counts over ``items``, every :class:`Status` member present.
+
+    Zeros are materialised rather than created on first increment, so a consumer
+    can index any member without a presence check. No policy is imposed: the
+    rule author chooses the parent status from the rule's own documented
+    semantics, and this only reports what the children say.
+    """
+    counts = dict.fromkeys(Status, 0)
+    for item in items:
+        counts[item.status] += 1
+    return counts
+
+
 @dataclass
 class Finding:
     """The outcome of evaluating one rule against one repository."""
@@ -95,6 +275,26 @@ class Finding:
     locations: list[Location] = field(default_factory=list)
     fix_command: str | None = None
     suppressed: bool = False
+    #: Observations explaining this verdict. The finding stays the unit of rule
+    #: identity, scoring, category weight, baseline tracking and suppression.
+    items: tuple[FindingItem, ...] = ()
+
+    def __post_init__(self) -> None:
+        # Materialise before validating: an iterator would be consumed by the
+        # duplicate check and leave nothing to serialise, and a caller's list
+        # would stay aliased and admit ids this check never saw.
+        self.items = tuple(self.items)
+        _validate_confidence(self.confidence, f"finding {self.rule_id!r} confidence")
+        seen: set[str] = set()
+        for index, item in enumerate(self.items):
+            if not isinstance(item, FindingItem):
+                raise ValueError(
+                    f"finding {self.rule_id!r} item at index {index} is not a FindingItem, "
+                    f"got {type(item).__name__}"
+                )
+            if item.id in seen:
+                raise ValueError(f"duplicate finding item id {item.id!r} on {self.rule_id!r}")
+            seen.add(item.id)
 
     def to_dict(self) -> dict:
         return {
@@ -110,6 +310,9 @@ class Finding:
             "locations": [{"path": loc.path, "line": loc.line} for loc in self.locations],
             "fix_command": self.fix_command,
             "suppressed": self.suppressed,
+            # Always present, empty when there are none: a conditional key would
+            # force every consumer to write a presence check.
+            "items": [item.to_dict() for item in self.items],
         }
 
 
@@ -160,6 +363,8 @@ class Rule:
         message: str,
         remediation: str = "",
         locations: list[Location] | None = None,
+        *,
+        items: Sequence[FindingItem] = (),
     ) -> Finding:
         return Finding(
             rule_id=self.id,
@@ -173,4 +378,5 @@ class Rule:
             severity=self.effective_severity,
             locations=locations or [],
             fix_command=self.fix_command,
+            items=tuple(items),
         )

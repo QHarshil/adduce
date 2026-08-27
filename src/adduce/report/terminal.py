@@ -15,7 +15,7 @@ from rich.text import Text
 from ..engine import CheckResult
 from ..graph import TrailStatus
 from ..modes import Mode, badge_eligibility, blocking_issues, unverifiable_findings
-from ..rules.base import Finding, Status
+from ..rules.base import Finding, Status, summarize_items
 from ..scoring import top_fixes
 
 _STATUS_STYLE = {
@@ -39,6 +39,23 @@ def _score_color(percentage: float) -> str:
     if percentage >= 60:
         return "yellow"
     return "red"
+
+
+def _item_census(finding: Finding) -> str:
+    """The complete child count and its per-status split, or nothing.
+
+    Summarised rather than listed: none of the children appear here, so the
+    line cannot be mistaken for the whole set. `json` carries every item of
+    every finding; `sarif` carries every item of every finding it reports, and
+    it reports only actionable (fail/partial) findings.
+    """
+    if not finding.items:
+        return ""
+    counts = summarize_items(finding.items)
+    split = ", ".join(
+        f"{count} {_STATUS_STYLE[status][1]}" for status, count in counts.items() if count
+    )
+    return f"{len(finding.items)} item(s) not listed here: {split}"
 
 
 def _status_text(finding: Finding) -> Text:
@@ -261,14 +278,34 @@ def _render_findings_table(result: CheckResult, console: Console) -> None:
         location_note = (
             "\n  at " + ", ".join(str(loc) for loc in finding.locations[:3]) if finding.locations else ""
         )
+        census = _item_census(finding)
+        item_note = f"\n  {census}" if census else ""
         detail.add_row(
             finding.rule_id,
             _status_text(finding),
             f"{finding.confidence:.0%}",
-            finding.message + location_note,
+            finding.message + location_note + item_note,
         )
     console.print(detail)
     console.print()
+
+
+def _structured_observation_notice(result: CheckResult) -> str:
+    """One line saying that child results exist, and where to read them.
+
+    Counted, never rendered: one ``len()`` per finding, so the cost is fixed
+    per finding rather than per child. Default output lists no child and, until
+    this line, gave no sign that any existed -- which left the reader of a
+    finding backed by thousands of observations unable to know they were there.
+    """
+    carrying = [finding for finding in result.card.findings if finding.items]
+    if not carrying:
+        return ""
+    total = sum(len(finding.items) for finding in carrying)
+    return (
+        f"{total} structured observation(s) attached to {len(carrying)} finding(s), "
+        "not listed here — use --verbose for per-finding counts, or --format json for the detail."
+    )
 
 
 def render(
@@ -290,6 +327,10 @@ def render(
 
     if verbose:
         _render_findings_table(result, console)
+
+    notice = _structured_observation_notice(result)
+    if notice:
+        console.print(Text(notice, style="dim"))
 
     console.print(
         Text(
