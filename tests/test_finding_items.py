@@ -6,13 +6,13 @@ import copy
 import dataclasses
 import json
 import pickle
-import sys
 from collections.abc import Mapping
 
 import pytest
 
 import adduce.rules as rules_package
 from adduce.profiles import load_profile
+from adduce.rules import base
 from adduce.rules.base import (
     Category,
     Finding,
@@ -188,25 +188,48 @@ def test_non_finite_attribute_value_is_rejected(value):
         _item("x", attributes={"delta": value})
 
 
+def _conversion_refused(value: int) -> bool:
+    """Does this interpreter refuse to render this int as a string?
+
+    That refusal is the exact condition the guard anticipates -- it is the same
+    conversion ``json.dumps`` performs -- so these tests read it from the
+    interpreter rather than from a reported digit limit. The limit may be
+    absent (it reached 3.10 only in a later patch) or switched off
+    (``PYTHONINTMAXSTRDIGITS=0``), and in either case there is nothing
+    oversized to reject and acceptance is the correct behaviour.
+    """
+    try:
+        str(value)
+    except ValueError:
+        return True
+    return False
+
+
 def test_oversized_integer_attribute_is_rejected():
     """A four-figure-plus-digit int reaches ``json.dumps`` clean today and blows
     the encoder's own conversion limit there instead of at construction.
     """
-    limit = sys.get_int_max_str_digits()
-    oversized = 10**limit  # one digit past the limit
-    with pytest.raises(ValueError, match=f"attribute 'n' exceeds the {limit}-digit"):
-        _item("x", attributes={"n": oversized})
+    huge = 10**5000
+    if not _conversion_refused(huge):
+        assert _item("x", attributes={"n": huge}).to_dict()["attributes"]["n"] == huge
+        return
+    with pytest.raises(ValueError, match="attribute 'n' exceeds the"):
+        _item("x", attributes={"n": huge})
 
 
 def test_oversized_negative_integer_attribute_is_rejected():
-    limit = sys.get_int_max_str_digits()
-    with pytest.raises(ValueError, match=f"attribute 'n' exceeds the {limit}-digit"):
-        _item("x", attributes={"n": -(10**limit)})
+    huge = -(10**5000)
+    if not _conversion_refused(huge):
+        assert _item("x", attributes={"n": huge}).to_dict()["attributes"]["n"] == huge
+        return
+    with pytest.raises(ValueError, match="attribute 'n' exceeds the"):
+        _item("x", attributes={"n": huge})
 
 
 def test_integer_attribute_at_the_limit_is_still_accepted():
-    limit = sys.get_int_max_str_digits()
-    at_limit = int("9" * limit)
+    limit = base._int_max_str_digits()
+    at_limit = int("9" * limit) if limit else 10**100
+    assert not _conversion_refused(at_limit)
     item = _item("x", attributes={"n": at_limit})
     assert item.to_dict()["attributes"]["n"] == at_limit
 
