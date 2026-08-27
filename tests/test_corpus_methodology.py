@@ -2256,6 +2256,23 @@ def _load_checked_in_preregistration() -> dict[str, Any]:
 #: so the conflation could not reach an accepted artifact; it now can. The CSV
 #: leaves that cell empty, as it already does for a category the score card
 #: drops, and the contract requires the empty cell in both directions.
+#:
+#: All three copies of ``_source_tree_sha256`` moved together, which is what
+#: brings ``audit_sentinel_generation.py`` into this list. The helper ordered
+#: files by comparing ``Path`` objects, and ``Path`` comparison casefolds on
+#: Windows and does not on POSIX, so the analyzer digest every lock is bound to
+#: depended on the host that computed it. It orders by the segments of the
+#: relative POSIX path now, the key ``scan_repository`` already uses. Both keys
+#: reproduce every digest recorded against this helper, so that choice is
+#: conservative rather than forced; the divergence that settled the question for
+#: the repository walk was measured over its inventory, not over this digest. The current ``src/adduce`` tree is unaffected and the digest is
+#: byte-identical either way, by coincidence rather than design — adding a
+#: ``README.md``, ``LICENSE`` or ``Dockerfile`` splits it in 39 of the 42
+#: placements across the package's fourteen directories, the three exceptions
+#: all being ``fixers/templates/``, whose existing names already lead with
+#: uppercase. The three copies are deliberate rather than drift — the checker
+#: runs as a sandboxed child process and imports nothing from its siblings —
+#: so a test now holds them to the same value.
 _R6_VOID: dict[str, Any] = {
     "protocol_id": "pilot-0.1.2-r6",
     "analyzer_source_tree_sha256": (
@@ -2267,6 +2284,9 @@ _R6_VOID: dict[str, Any] = {
         ),
         "README.md": (
             "0ec62377e8c72ac889ed88e4e8369848dec49cf9da6443c74998b8ff18dea003"
+        ),
+        "scripts/audit_sentinel_generation.py": (
+            "59b869e0f8b25142630e1a3554a84c110c8a7b58ea539339017a853ea4d104d6"
         ),
         "scripts/check_builtin.py": (
             "851240df89e4c2f90369c94efe030e960448a113cf6682cfbedeca67001e5537"

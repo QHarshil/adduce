@@ -3,13 +3,18 @@
 from __future__ import annotations
 
 import csv
+import hashlib
 import json
 import os
 import shutil
 import subprocess
 import sys
-from pathlib import Path
+from collections.abc import Iterator
+from pathlib import Path, PurePath, PurePosixPath, PureWindowsPath
+from typing import Any, cast
 
+import corpus.scripts.audit_sentinel_generation as generation
+import corpus.scripts.check_builtin as check_builtin
 import corpus.scripts.run_validation as run_validation
 import pytest
 from corpus.scripts.check_builtin import _allowed_git_command, _enforce_offline
@@ -823,3 +828,125 @@ def test_runner_keeps_acquisition_failure_separate_from_scanner_crash(tmp_path: 
     assert rows["unavailable"]["run_status"] == "acquisition_failed"
     assert rows["unavailable"]["acquisition_failed"] == "True"
     assert rows["unavailable"]["crash"] == "False"
+
+
+def _write_flavour_sensitive_tree(package_dir: Path) -> None:
+    """Lay out names that separate the three candidate ordering rules.
+
+    The uppercase-leading names divide the POSIX and Windows flavours, which
+    casefold differently. ``sub.py`` sits beside the ``sub/`` directory, which
+    divides segment order from whole-string order: ``.`` precedes ``/``, so the
+    whole string interleaves the two while the segments keep them apart.
+    """
+    (package_dir / "sub").mkdir(parents=True)
+    for relative, body in (
+        ("README.md", "readme\n"),
+        ("adapters.py", "adapters\n"),
+        ("sub/Widget.py", "widget\n"),
+        ("sub/parser.py", "parser\n"),
+        ("sub.py", "sibling\n"),
+    ):
+        (package_dir / relative).write_text(body, encoding="utf-8")
+
+
+def _relative_posix_paths(package_dir: Path) -> list[str]:
+    return [
+        path.relative_to(package_dir).as_posix()
+        for path in package_dir.rglob("*")
+        if path.is_file() and "__pycache__" not in path.parts and path.suffix != ".pyc"
+    ]
+
+
+def _digest_in_string_order(package_dir: Path) -> str:
+    """Rebuild the digest ordering by the whole relative path instead of its segments."""
+    digest = hashlib.sha256()
+    for relative_posix in sorted(_relative_posix_paths(package_dir)):
+        encoded = relative_posix.encode()
+        digest.update(len(encoded).to_bytes(4, "big"))
+        digest.update(encoded)
+        digest.update((package_dir / relative_posix).read_bytes())
+    return digest.hexdigest()
+
+
+def _digest_in_flavour_order(package_dir: Path, flavour: type[PurePath]) -> str:
+    """Rebuild the source-tree digest using one path flavour's segment ordering."""
+    digest = hashlib.sha256()
+    for relative_posix in sorted(_relative_posix_paths(package_dir), key=flavour):
+        encoded = relative_posix.encode()
+        digest.update(len(encoded).to_bytes(4, "big"))
+        digest.update(encoded)
+        digest.update((package_dir / relative_posix).read_bytes())
+    return digest.hexdigest()
+
+
+class _WindowsOrderedPath:
+    """A real path that sorts the way it would on Windows, to model that host here."""
+
+    def __init__(self, real: Path, root: Path) -> None:
+        self._real = real
+        self._root = root
+
+    def __lt__(self, other: _WindowsOrderedPath) -> bool:
+        return PureWindowsPath(self._real.relative_to(self._root)) < PureWindowsPath(
+            other._real.relative_to(other._root)
+        )
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self._real, name)
+
+    def relative_to(self, other: object) -> Path:
+        return self._real.relative_to(self._root)
+
+    def rglob(self, pattern: str) -> Iterator[_WindowsOrderedPath]:
+        for path in self._real.rglob(pattern):
+            yield _WindowsOrderedPath(path, self._root)
+
+
+def test_source_tree_digest_orders_by_posix_path_not_by_host_flavour(tmp_path: Path) -> None:
+    """Reproduces the Windows condition (Path comparison casefolds) on any platform."""
+    package_dir = tmp_path / "adduce"
+    _write_flavour_sensitive_tree(package_dir)
+
+    posix_order = _digest_in_flavour_order(package_dir, PurePosixPath)
+    windows_order = _digest_in_flavour_order(package_dir, PureWindowsPath)
+
+    # Guards everything below against going vacuous: these assertions only say
+    # something while the two flavours still order these names differently.
+    # Python 3.10 through 3.14 compare paths part by part, so casefolding is
+    # what separates them and a path separator never participates.
+    assert posix_order != windows_order
+
+    # A host whose paths sort the Windows way must still produce the POSIX
+    # value. Sorting Path objects would return windows_order here instead, and
+    # the digest names the analyzer a preregistration lock is bound to.
+    windows_host = cast(Path, _WindowsOrderedPath(package_dir, package_dir))
+    assert _source_tree_sha256(windows_host) == posix_order
+
+    # Segments, not the whole relative string. Both are host-independent, but
+    # they part company as soon as a file sits beside a directory of the same
+    # stem, and only the segment order reproduces what the corpus recorded
+    # before this helper was fixed.
+    assert posix_order != _digest_in_string_order(package_dir)
+
+    assert _source_tree_sha256(package_dir) == posix_order
+
+
+def test_source_tree_digest_agrees_across_every_harness_copy(tmp_path: Path) -> None:
+    """check_builtin runs sandboxed and keeps its own copy; the copies must not drift."""
+    package_dir = tmp_path / "adduce"
+    _write_flavour_sensitive_tree(package_dir)
+    posix_order = _digest_in_flavour_order(package_dir, PurePosixPath)
+    windows_host = cast(Path, _WindowsOrderedPath(package_dir, package_dir))
+
+    copies = {
+        "run_validation": _source_tree_sha256,
+        "check_builtin": check_builtin._source_tree_sha256,
+        "audit_sentinel_generation": generation._source_tree_sha256,
+    }
+
+    # Each copy is checked against the Windows-ordered tree as well, because a
+    # copy that still sorts Path objects returns the same value as a fixed one
+    # on a POSIX host and parts company only there.
+    for name, digest_of in copies.items():
+        assert digest_of(package_dir) == posix_order, name
+        assert digest_of(windows_host) == posix_order, name
