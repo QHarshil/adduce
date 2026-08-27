@@ -184,10 +184,13 @@ adduce check corpus/synthetic/synthetic_tf32 --format json
 repository never had an answer to reach, so counting it against coverage would
 understate what was assessed. The difference is large here, not cosmetic —
 37/38 reads 97.4 %, and 37 over the 69 rules considered would read 53.6 % of a
-repository that left only one question open. The `rules` block separates the
-four outcomes a registered rule can reach, so the nine rules skipped before
-evaluation here stay visible without entering that fraction.
-[Scoring](scoring.md#coverage) sets out the arithmetic.
+repository that left only one question open. The `rules` block names three of
+the [five outcomes](scoring.md#five-outcomes-for-a-registered-rule) a registered
+rule can reach — assessed, unassessed, and evaluated-not-applicable — plus one
+of the two causes of a fourth, so the nine rules `applies_to` excluded here stay
+visible without entering that fraction. It carries nothing for a rule the
+profile disabled or one that could not supply its identity; those reach
+telemetry only. [Scoring](scoring.md#coverage) sets out the arithmetic.
 
 Two limits, both deliberate:
 

@@ -265,6 +265,36 @@ counts these; `rules.evaluated` does not. Built-in rules are not contained this
 way: a built-in that does any of the three is a defect in adduce and ends the
 run.
 
+The engine reads `id`, `category`, `title`, `weight` and `effective_severity`
+once, together, before it asks anything else of your rule, and a raise from any
+of them ends differently from a raise anywhere later. `effective_severity`
+consults `.severity` and `.weight`, so a raise from either arrives here. Your
+rule is passed over: it produces no finding, it appears in no report, and the
+run counts it as `rules.skipped_unidentifiable`. The warning names your rule's
+class, because there is no id to name it by. A finding is filed under an id, a
+category and a title, so a rule that cannot supply them cannot be named in a
+report, in a score or in a baseline, and adduce will not invent values to put
+there. Define `id`, `category`, `title`, `weight` and `severity` as plain
+attributes where you can. A property that computes from the filesystem, or from
+state that changes between calls, can fail on the run where it matters, and the
+rule is dropped when it does.
+
+One consequence worth knowing: disabling a broken rule no longer silences it.
+A profile's `disabled_rules` is matched against the id read during
+identification, so a rule that fails to identify never reaches that test and is
+passed over with a warning rather than skipped quietly. A disable cannot be
+honoured for a rule the run is unable to name.
+
+Your `applies_to` is guarded separately. Your rule has an identity by then, so a
+raise from it is contained the way a raising `evaluate` is: `UNKNOWN` under your
+own id, counted as `rules.degraded`, and suppressible through configuration. The
+finding carries no source location, so no inline pragma reaches it. It is not
+recorded as inapplicable. Answering `False` leaves the score untouched, and a
+rule that raised reached no answer, so recording it as inapplicable would credit
+your rule with a decision it never made. The cost is the same as any other
+contained failure: applicable, unassessed, and a lower coverage fraction. A
+built-in that raises at either point ends the run instead.
+
 The text naming that failure is bounded like the loader's, and the name is
 dropped unless it is a real identifier. Neither an exception's message nor its
 class name is under adduce's control, and a class built through `type()` carries
