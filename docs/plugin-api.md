@@ -253,6 +253,24 @@ inside an otherwise valid `RULES` warns and is dropped while the valid classes i
 the same pack still load; if iteration itself raises, nothing from that pack
 registers.
 
+A rule that loads can still fail when it runs, and that failure is contained
+rather than skipped. The engine warns with `RulePluginWarning` and records the
+rule as `UNKNOWN` when `evaluate` raises, returns something that is not a
+`Finding`, or returns a `Finding` filed under another rule's id. The run
+continues and every other rule still reports. Your rule appears in the report
+under its own id, unassessed, at confidence 0.0, with a message saying the check
+did not complete — so it scores nothing, and the cost is a lower coverage
+fraction rather than a lower score. The telemetry counter `rules.degraded`
+counts these; `rules.evaluated` does not. Built-in rules are not contained this
+way: a built-in that does any of the three is a defect in adduce and ends the
+run.
+
+The text naming that failure is bounded like the loader's, and the name is
+dropped unless it is a real identifier. Neither an exception's message nor its
+class name is under adduce's control, and a class built through `type()` carries
+text of any length. If your exception class has a forged or otherwise unusual
+name, expect a generic phrase where you were looking for the name.
+
 The reporter loader warns with `ReporterPluginWarning` and skips when entry-point
 metadata is unreadable, the name is invalid, the name collides with an
 already-registered format, loading raises, or the loaded object is not callable.
