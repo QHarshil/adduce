@@ -87,8 +87,8 @@ Statuses are detected signals from static analysis, not a certification of repro
 ```
 
 Location-bearing findings are anchored to source lines—the TF32 finding above
-points at `train.py:107`, and the unpinned hub call at `model.py:238`. Six of
-the fourteen categories that applied to this repository are shown above; the
+points at `train.py:107`, and the unpinned hub call at `model.py:238`. Seven of
+the fifteen categories that applied to this repository are shown above; the
 full run also covers Documentation, Run Traceability, Checkpoint & Experiment
 State, Notebooks, Remote Artifacts & Rot, Versioning, Access & Legal, and
 Archival Readiness.
@@ -138,7 +138,10 @@ historical recovery, dynamic reproduction's non-sandboxed execution, and more
 
 Adduce ships **78 rules across 17 categories**, each gated on whether it
 applies, so an inapplicable category drops out of scoring rather than counting
-against a repository.
+against a repository. A category that did apply but reached no assessment —
+`Result Reconciliation` above — keeps its row and shows `—` rather than a
+zero, because "nothing to check here" and "checked and found nothing" are
+different answers and only one of them is a finding.
 
 Full documentation — every rule, the CLI reference, the manifest and
 claim-trail model, CI recipes, generation safety, the optional LLM layer, and
