@@ -421,6 +421,41 @@ def test_the_item_census_is_absent_at_default_verbosity(tmp_path):
     assert "item(s) not listed here" not in terminal_text
 
 
+def test_default_output_says_child_results_exist_without_listing_them(tmp_path):
+    """Default output lists no child, so it has to say that children are there.
+
+    The count is the whole disclosure: a reader who sees a verdict backed by
+    hundreds of observations can tell they exist and where to read them,
+    without the summary turning into the list it is a summary of.
+    """
+    from adduce.rules.base import Category, Status
+
+    items = _items()
+    result = _carrying_items(tmp_path, items)
+    findings = [_category_finding("R-ITEMS-001", Category.DRIFT, Status.FAIL, items=items)]
+
+    terminal_text = _terminal_text(result, findings, verbose=False)
+
+    assert f"{len(items)} structured observation(s) attached to 1 finding(s)" in terminal_text
+    assert "--format json" in terminal_text
+    for item in items:
+        assert item.id not in terminal_text
+        assert item.message not in terminal_text
+
+
+def test_a_report_with_no_child_results_says_nothing_about_them(tmp_path):
+    """The line is absent when there is nothing to disclose, so every ordinary
+    run -- no built-in rule attaches children -- is unchanged."""
+    from adduce.rules.base import Category, Status
+
+    result = _carrying_items(tmp_path, ())
+    findings = [_category_finding("R-ITEMS-001", Category.DRIFT, Status.FAIL)]
+
+    terminal_text = _terminal_text(result, findings, verbose=False)
+
+    assert "structured observation" not in terminal_text
+
+
 def _reject_non_finite(value: str) -> None:
     raise ValueError(f"non-finite constant in document: {value}")
 

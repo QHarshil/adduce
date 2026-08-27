@@ -290,6 +290,24 @@ def _render_findings_table(result: CheckResult, console: Console) -> None:
     console.print()
 
 
+def _structured_observation_notice(result: CheckResult) -> str:
+    """One line saying that child results exist, and where to read them.
+
+    Counted, never rendered: one ``len()`` per finding, so the cost is fixed
+    per finding rather than per child. Default output lists no child and, until
+    this line, gave no sign that any existed -- which left the reader of a
+    finding backed by thousands of observations unable to know they were there.
+    """
+    carrying = [finding for finding in result.card.findings if finding.items]
+    if not carrying:
+        return ""
+    total = sum(len(finding.items) for finding in carrying)
+    return (
+        f"{total} structured observation(s) attached to {len(carrying)} finding(s), "
+        "not listed here — use --verbose for per-finding counts, or --format json for the detail."
+    )
+
+
 def render(
     result: CheckResult,
     console: Console,
@@ -309,6 +327,10 @@ def render(
 
     if verbose:
         _render_findings_table(result, console)
+
+    notice = _structured_observation_notice(result)
+    if notice:
+        console.print(Text(notice, style="dim"))
 
     console.print(
         Text(
