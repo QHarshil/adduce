@@ -40,9 +40,12 @@ These are load-bearing; pull requests that violate them will be asked to change.
 2. **Every finding is honest about confidence.** Static analysis detects
    signals. A rule must return a confidence, and `PASS` messages must be
    phrased as "detected", never as a guarantee.
-3. **False positives are bugs.** Every rule declares `applies_to` so that,
-   for example, a scikit-learn-only repository is never scored against CUDA
-   determinism flags. If your rule can misfire, gate it or lower its
+3. **False positives are bugs.** 64 of the 78 rules override `applies_to`
+   so that, for example, a scikit-learn-only repository is never scored
+   against CUDA determinism flags; the rest return `not-applicable` from the
+   rule body instead. Do not assume the framework will gate a new rule for
+   you: override `applies_to`, or return `not-applicable` explicitly, or the
+   rule fires everywhere. If your rule can misfire, gate it or lower its
    confidence, and add a regression test for the misfire you fixed.
 4. **The default run is diagnostic.** Nothing in the default `adduce check`
    may fail a build; gating is opt-in (`--fail-under`, `--fail-on-regression`).

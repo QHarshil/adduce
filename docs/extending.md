@@ -73,3 +73,13 @@ class DeclaredArtifactsRule(Rule):
 unaffected. See [Finding items](plugin-api.md#finding-items) for the
 constructor's full field list, the resource envelope, and how each report
 format serialises children.
+
+This rule reads the filesystem directly inside `evaluate`
+(`ev.repo.read_text`, `ev.repo.exists`), which no built-in rule does. It
+illustrates a known gap in the purity contract, not the intended pattern: the
+plugin API has no entry-point group for adding a collector, so a third-party
+rule that needs new evidence has no in-contract way to get it. Nothing in
+adduce stops the read shown here, but see
+[Rule purity](plugin-api.md#rule-purity) and
+[ADR 0004](adr/0004-rule-purity-and-output-ownership.md) before writing one
+like it.

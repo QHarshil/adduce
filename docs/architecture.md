@@ -37,9 +37,10 @@ the Artifact Evidence Graph; `engine.py` contains no reference to `aeg`.
 
 Fourteen `collect_*` collectors fill one `Evidence` object: config, data,
 dependencies, environment, docs, portability, git, notebook, precision, results,
-latex, run_history, remote, python_ast. Their order encodes real dependencies —
-Python evidence feeds framework detection, data, precision and remote; docs
-evidence feeds git.
+latex, run_history, remote, python_ast — this list is not the order they run in.
+Real dependencies exist between them regardless of how they are listed: Python
+evidence feeds framework detection, data, precision and remote; docs evidence
+feeds git.
 
 **Collection is not single-pass.** Three collectors run behind one shared read
 pass (`content.py::scan_once`) — the Python AST analysis, the remote-text scan

@@ -18,7 +18,7 @@ frozen claim truth `9a26d06c…`. A successor lock will be registered under a da
 protocol amendment against the finished analyzer, and no effectiveness,
 calibration, or false-positive figure is stated in the meantime.
 
-Three analysis-plan files changed. `corpus/scripts/check_builtin.py` changed for
+Five analysis-plan files changed. `corpus/scripts/check_builtin.py` changed for
 two reasons. It permits the two read-only git queries that honouring
 `.gitignore` requires; its offline enforcement is otherwise unchanged, and the
 queries are measured to be a no-op on the pilot corpus — all fifteen pinned
@@ -45,9 +45,13 @@ combined CSV for a category nothing could assess, which read as a category
 assessed at zero. It now uses the empty-cell absence convention the CSV
 already carries, which is what the run contract requires; a payload of that
 shape was rejected outright until the retained-category change made an
-unassessed category representable at all. Every one of those changes is
-recorded against the digests the lock still carries, and the record asserts
-that exactly those three files moved.
+unassessed category representable at all. `corpus/README.md` described the r6
+preregistration record as the live prospective lock when the project has
+since retired it. `corpus/ANNOTATION_GUIDE.md`'s verification-mode table
+offered `dynamic`, which is not in `finding-review.schema.json`'s
+`verification_mode` enum and is rejected on submission. Every one of those
+changes is recorded against the digests the lock still carries, and the
+record asserts that exactly those five files moved.
 
 This release makes **no final effectiveness claim**, and deliberately ships with
 no preregistration lock. That is not an exception: `docs/releasing.md`'s first
@@ -65,11 +69,11 @@ the preregistered validation report belong to the following release.
 
 - Added per-stage timing and work counters to the check pipeline, reported by
   `adduce check --timings` and as a `telemetry` block in the JSON report. A
-  default offline run records 23 stage durations and 8 counters. Durations differ
+  default offline run records 23 stage durations and 9 counters. Durations differ
   between identical runs, so they are omitted unless requested and the default
   report remains byte-for-byte stable. Measured cost on the largest corpus
   repository, per operation rather than by subtracting two whole-run timings:
-  11.6 µs for the stage timers, 1.1 ms for counter recording over 8,840
+  11.6 µs for the stage timers, 1.1 ms for counter recording over 6,282
   inventoried files, and 3.3 µs for a snapshot — about 0.005% of a 21-second run.
 - Added a benchmark harness under `bench/` with a committed baseline covering
   five real repositories, this repository, and the fourteen synthetic
