@@ -2262,6 +2262,12 @@ _R6_VOID: dict[str, Any] = {
         "1b24ccf68aba75cfeb75825817497dbefc9132cb5173e5e2f80fa857a7867485"
     ),
     "analysis_plan_files": {
+        "ANNOTATION_GUIDE.md": (
+            "df0b106bbdb2ab818c28da66283cfe13c1c30e200345431d6d9436e1174f652c"
+        ),
+        "README.md": (
+            "0ec62377e8c72ac889ed88e4e8369848dec49cf9da6443c74998b8ff18dea003"
+        ),
         "scripts/check_builtin.py": (
             "851240df89e4c2f90369c94efe030e960448a113cf6682cfbedeca67001e5537"
         ),

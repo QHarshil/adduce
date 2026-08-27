@@ -192,8 +192,8 @@ full, clean Git commit so the analyzer can be reconstructed; a release tag or
 package publication is not required for this candidate evidence.
 
 The tracked
-[`pilot-r6-preregistration.json`](pilot-r6-preregistration.json) is the
-machine-readable prospective lock. It freezes the exact candidate names,
+[`pilot-r6-preregistration.json`](pilot-r6-preregistration.json) was the
+machine-readable prospective lock. It froze the exact candidate names,
 300-second timeout, analyzer, rule-set and dependency identity, repository,
 clone, truth and provenance digests, reviewer/offline/no-plugin execution
 policy, and the complete analysis-plan file map. Before creating an output
@@ -208,8 +208,15 @@ names it. Protocol amendment 6 voids that lock, and it is retained only as a
 historical artifact: no script, test, or run loads it.
 `pilot-r5-preregistration.json` is also present because protocol amendment 6
 names it. Protocol amendment 7 voids that lock, and it is retained only as a
-historical artifact: no script, test, or run loads it, and
-`pilot-r6-preregistration.json` is the live prospective lock.
+historical artifact: no script, test, or run loads it.
+`pilot-r6-preregistration.json` is itself now void: its analyzer digest binds
+a `src/adduce` byte tree the project has since rebuilt, and no human reviewer
+decision had yet been collected against it, so it is retired rather than
+carried forward. It is retained only as a historical artifact: no script,
+test, or run loads it. The successor is a fresh `r7` candidate pair,
+preregistered under a dated protocol amendment against the finished analyzer.
+Do not draw new bound samples, and do not point any current command at r6,
+until that amendment and lock are registered and tracked.
 
 ```bash
 python corpus/scripts/run_validation.py \
@@ -281,8 +288,9 @@ stopped on a repository `SyntaxWarning`; the narrowly amended r2 harness then
 produced a valid deterministic pair and generation audit. All preflights, r1,
 and r2 remain immutable historical evidence. Current scripts have changed and
 must not reinterpret any of those directories; historical verification uses
-only each run's frozen `harness/` copy. The preregistered r6 pair is the next
-candidate and has not been run as part of this documentation change.
+only each run's frozen `harness/` copy. The r6 pair's preregistration lock is
+now void; the next candidate awaits a fresh `r7` preregistration under a
+dated protocol amendment.
 
 The following historical checks are read-only. They invoke only the frozen r2
 harness, do not pass an output path, and disable bytecode writes so validation
@@ -325,7 +333,8 @@ Use the operational definitions and edge-case rules in the
 samples and outputs remain immutable historical evidence. Because
 `label_findings.py` is part of the run-bound harness, the current reporter must
 not reinterpret those samples after its source changes. Draw new bound samples
-only from the validated r6 candidate. Do not point any current command at r2:
+only from a currently valid, preregistered candidate run — r6 is void. Do not
+point any current command at r2:
 
 ```bash
 RUN=corpus/outputs/pilot-0.1.2-r6-a
@@ -672,8 +681,8 @@ The corpus slice of the 0.1.2 trust milestone is complete only when:
    submodule or Git LFS state;
 2. all fourteen synthetic controls pass and the complete local gate succeeds:
    `pytest --cov=adduce --cov-report=term-missing --cov-fail-under=85`,
-   `ruff check src tests scripts corpus/scripts`, and
-   `mypy src/adduce scripts corpus/scripts`;
+   `ruff check src tests scripts corpus/scripts bench`, and
+   `mypy src/adduce scripts corpus/scripts bench`;
 3. one candidate claim for each of the ten Layer B repositories is frozen
    before the first scan, validates against the exact checkout, and covers all
    ten link targets; two human domain reviewers independently review every
