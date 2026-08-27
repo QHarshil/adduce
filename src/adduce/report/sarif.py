@@ -116,4 +116,6 @@ def render(result: CheckResult) -> str:
             }
         ],
     }
-    return json.dumps(sarif, indent=2)
+    # allow_nan=False: a NaN/Infinity confidence must fail loudly here rather
+    # than reach a consumer as invalid JSON at exit 0.
+    return json.dumps(sarif, allow_nan=False, indent=2)

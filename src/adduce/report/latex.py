@@ -3,7 +3,30 @@
 from __future__ import annotations
 
 from ..engine import CheckResult
-from ..rules.base import Status
+from ..rules.base import Finding, Status, summarize_items
+
+_STATUS_LABEL = {
+    Status.PASS: "pass",
+    Status.PARTIAL: "partial",
+    Status.FAIL: "fail",
+    Status.NOT_APPLICABLE: "n/a",
+    Status.UNKNOWN: "unknown",
+}
+
+
+def _item_census(finding: Finding) -> str:
+    """The complete child count and its per-status split, or nothing.
+
+    Summarised rather than listed, matching ``markdown`` and ``terminal``: no
+    child appears here, so this line cannot be mistaken for the whole set.
+    """
+    if not finding.items:
+        return ""
+    counts = summarize_items(finding.items)
+    split = ", ".join(
+        f"{count} {_STATUS_LABEL[status]}" for status, count in counts.items() if count
+    )
+    return f"{len(finding.items)} item(s) not listed here: {split}"
 
 
 def _escape(text: str) -> str:
@@ -41,7 +64,11 @@ def render(result: CheckResult) -> str:
     for cat in card.categories:
         passed = [f for f in cat.findings if f.status is Status.PASS and not f.suppressed]
         for finding in passed:
-            lines.append(r"  \item " + _escape(f"{finding.title}: {finding.message}"))
+            text = f"{finding.title}: {finding.message}"
+            census = _item_census(finding)
+            if census:
+                text += f" -- {census}"
+            lines.append(r"  \item " + _escape(text))
     lines.append(r"\end{itemize}")
 
     gaps = [
@@ -54,6 +81,9 @@ def render(result: CheckResult) -> str:
         lines.append("% Known gaps at generation time -- resolve or disclose:")
         for finding in gaps:
             suffix = " (ignored by policy; observed status retained)" if finding.suppressed else ""
+            census = _item_census(finding)
+            if census:
+                suffix += f" -- {census}"
             lines.append(f"% - {finding.rule_id}: {finding.message}{suffix}")
     lines.append("")
     return "\n".join(lines)

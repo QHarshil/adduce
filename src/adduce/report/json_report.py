@@ -64,4 +64,6 @@ def render(result: CheckResult) -> str:
     # for byte and never asks.
     if result.telemetry.report:
         payload["telemetry"] = result.telemetry.snapshot()
-    return json.dumps(payload, indent=2)
+    # allow_nan=False: a NaN/Infinity confidence must fail loudly here rather
+    # than reach a consumer as invalid JSON at exit 0.
+    return json.dumps(payload, allow_nan=False, indent=2)
