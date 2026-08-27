@@ -30,7 +30,7 @@ import pytest
 
 from adduce.engine import CheckResult, run_check
 from adduce.report import RENDERERS, json_report
-from adduce.rules import Finding, Status, discover_rules
+from adduce.rules import Finding, FindingItem, Location, Status, discover_rules
 
 DISTRIBUTION = "adduce-contract-plugin"
 RULE_ID = "X-CONTRACT-PLUGIN-001"
@@ -155,6 +155,61 @@ def test_a_builtin_format_name_cannot_be_shadowed(check_result: CheckResult) -> 
     assert json.loads(rendered)["tool"]
 
 
-# Structured child findings (docs/adr/0002-hierarchical-findings.md) are
-# PROPOSED and unbuilt. Their contract test belongs here as a further test
-# function over the fixtures above; nothing already written has to change.
+def test_an_existing_rule_returning_one_finding_keeps_working_unchanged(
+    check_result: CheckResult,
+) -> None:
+    """The compatibility guarantee for structured child findings (ADR 0002).
+
+    The installed pack predates `FindingItem` and was not touched to admit it.
+    Its rule still returns one `Finding`, that finding carries no children, and
+    the report says so with an empty array rather than an absent key.
+    """
+    _require_external_plugin()
+
+    rule = next(rule for rule in discover_rules() if rule.id == RULE_ID)
+    finding = rule.evaluate(check_result.evidence)
+
+    assert finding.items == ()
+    assert finding.to_dict()["items"] == []
+
+    payload = json.loads(json_report.render(check_result))
+    reported = next(entry for entry in payload["findings"] if entry["rule_id"] == RULE_ID)
+    assert reported["items"] == []
+
+
+def test_an_installed_pack_can_attach_items_and_json_keeps_every_one(
+    check_result: CheckResult,
+) -> None:
+    """A plugin author reaches the child model through the installed helper."""
+    _require_external_plugin()
+
+    rule = next(rule for rule in discover_rules() if rule.id == RULE_ID)
+    items = [
+        FindingItem(
+            id=f"assertion:{index}",
+            status=Status.FAIL if index % 4 == 0 else Status.PASS,
+            message=f"observation {index}",
+            confidence=0.5,
+            locations=(Location("README.md", index + 1),),
+            kind="assertion",
+            attributes={"index": index},
+        )
+        for index in range(250)
+    ]
+    finding = rule.finding(Status.PARTIAL, 0.5, "Some observations did not resolve.", items=items)
+
+    assert isinstance(finding, Finding)
+    assert finding.items == tuple(items)
+
+    position = next(
+        index
+        for index, reported in enumerate(check_result.card.findings)
+        if reported.rule_id == RULE_ID
+    )
+    check_result.card.findings[position] = finding
+    payload = json.loads(json_report.render(check_result))
+    reported = next(entry for entry in payload["findings"] if entry["rule_id"] == RULE_ID)
+
+    assert [entry["id"] for entry in reported["items"]] == [item.id for item in items]
+    assert reported["items"][0]["attributes"] == {"index": 0}
+    assert reported["items"][4]["locations"] == [{"path": "README.md", "line": 5}]

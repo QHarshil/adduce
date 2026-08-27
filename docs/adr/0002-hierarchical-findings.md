@@ -95,3 +95,26 @@ ADR 0004.
 
 Baselines and suppression stay at the parent level. Stable item ids leave
 item-level support possible later without committing to its semantics now.
+
+## Implementation note (2026-08-26)
+
+SARIF's finding-level filter predates `FindingItem`: only `FAIL` and `PARTIAL`
+findings become SARIF results (`src/adduce/report/sarif.py`), and this is
+applied before a finding's items are considered at all. A `PASS`, `UNKNOWN` or
+`NOT_APPLICABLE` finding is not emitted to SARIF, so its items never reach that
+format either — they are outside SARIF's scope entirely, not truncated from a
+finding SARIF did report. JSON carries every item of every finding without
+exception, matching the Consequences above. The pre-existing filter is
+unchanged by this feature.
+
+The terminal report (`src/adduce/report/terminal.py`) states the per-finding
+item count and status split only under `--verbose`; at default verbosity it
+prints the category summary and per-finding messages for `PARTIAL`/`FAIL`
+findings as before, but no census line and no other indication that a
+finding carries items — a card with items is indistinguishable in that output
+from one without. This is deliberate and held by a test, but it reads, on its
+own, as tension with "no output silently discards children" above: at
+default verbosity the terminal's own output gives no sign that a finding has
+children to ask `--verbose` or another format for. `markdown` and `latex` are
+not subject to this because both always state the count regardless of
+verbosity; only the terminal report has a verbosity-gated default.

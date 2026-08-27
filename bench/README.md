@@ -97,7 +97,17 @@ python bench/runner.py compare --baseline bench/reports/baseline.json \
 python bench/runner.py finding-diff --only adduce-self
 python bench/runner.py ab --baseline-src /path/to/old/src --current-src src \
                           --only torchtune --reps 5
+python bench/finding_items.py --output bench/reports/finding-items.json
 ```
+
+`finding_items.py` is the second entry point here and it measures something
+different: what a finding's child results cost to construct, serialise and
+render, at 10,000, 50,000 and 100,000 items. It scans no repository, reads no
+target from `strata.json`, and stays **out of the CI regression gate**, which
+compares repository scans against a stored baseline. `runner.py` answers "did a
+scan get slower"; this answers "what does a child result cost". Every size is
+measured in its own process, and peak RSS is reported apart from the traced
+allocation figures because the two count different things.
 
 `compare` exits non-zero when, against the baseline, a repeated run stops being
 byte-identical, parser failures rise, a synthetic-corpus score moves, or disk

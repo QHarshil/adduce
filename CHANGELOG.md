@@ -18,26 +18,36 @@ frozen claim truth `9a26d06c…`. A successor lock will be registered under a da
 protocol amendment against the finished analyzer, and no effectiveness,
 calibration, or false-positive figure is stated in the meantime.
 
-Three analysis-plan files changed. `corpus/scripts/check_builtin.py` permits the
-two read-only git queries that honouring `.gitignore` requires; its offline
-enforcement is otherwise unchanged, and the queries are measured to be a no-op on
-the pilot corpus — all fifteen pinned clones report zero ignored paths, so no
-finding, score, or status moves for any of them. `corpus/scripts/run_contract.py`
-moved twice, for two independent reasons. It stops recomputing a tier from a
-score, which is no longer a valid invariant now that a tier is withheld when the
-analyzer parsed too little source; it validates the new `evidence_base` block
-instead. It then had to follow the score card's public shape again when that
-shape gained the applicability keys and a nullable total: the contract asserts an
-exact key set and reconstructs the total and the tier, so both the key set it
-accepts and that reconstruction had to take in `applicable_rules`, the nested
-`rules` block, and a `total` that may be absent. `corpus/scripts/run_validation.py`
-stops writing `0.0` into the combined CSV for a category nothing could assess,
-which read as a category assessed at zero. It now uses the empty-cell absence
-convention the CSV already carries, which is what the run contract requires; a
-payload of that shape was rejected outright until the retained-category change
-made an unassessed category representable at all. Every one of those changes is
-recorded against the digests the lock still carries, and the record asserts that
-exactly those three files moved.
+Three analysis-plan files changed. `corpus/scripts/check_builtin.py` changed for
+two reasons. It permits the two read-only git queries that honouring
+`.gitignore` requires; its offline enforcement is otherwise unchanged, and the
+queries are measured to be a no-op on the pilot corpus — all fifteen pinned
+clones report zero ignored paths, so no finding, score, or status moves for any
+of them. It also now emits `"items": []` on the not-applicable finding it
+synthesises for a rule that never ran, because the run contract's per-finding
+key check now requires that key whether or not the rule ran.
+`corpus/scripts/run_contract.py` moved three times, for three independent
+reasons. It stops recomputing a tier from a score, which is no longer a valid
+invariant now that a tier is withheld when the analyzer parsed too little
+source; it validates the new `evidence_base` block instead. It then had to
+follow the score card's public shape again when that shape gained the
+applicability keys and a nullable total: the contract asserts an exact key set
+and reconstructs the total and the tier, so both the key set it accepts and
+that reconstruction had to take in `applicable_rules`, the nested `rules`
+block, and a `total` that may be absent. It now also validates the finished
+`FindingItem` serialisation shape: the top-level `schema` key joins the exact
+key set the contract asserts, and each finding's `items` list is checked field
+by field against the same shape `FindingItem` itself enforces — id uniqueness,
+status, confidence bounds, message and remediation as strings, an optional
+`kind` string, well-formed locations, and attribute values restricted to JSON
+scalars. `corpus/scripts/run_validation.py` stops writing `0.0` into the
+combined CSV for a category nothing could assess, which read as a category
+assessed at zero. It now uses the empty-cell absence convention the CSV
+already carries, which is what the run contract requires; a payload of that
+shape was rejected outright until the retained-category change made an
+unassessed category representable at all. Every one of those changes is
+recorded against the digests the lock still carries, and the record asserts
+that exactly those three files moved.
 
 This release makes **no final effectiveness claim**, and deliberately ships with
 no preregistration lock. That is not an exception: `docs/releasing.md`'s first
@@ -116,6 +126,65 @@ the preregistered validation report belong to the following release.
   job except `pypi-smoke`, which is dispatch- and schedule-only and skips on pull
   requests. It treats skipped and cancelled as failure, because a skipped required
   check reads as "not failed" on branch protection.
+- **Findings can now carry structured child observations.** `FindingItem` is a
+  frozen, non-recursive record — `id`, `status`, `message`, `confidence`,
+  `locations`, `remediation`, an open `kind` string, and `attributes` restricted
+  to JSON scalars (`str | int | float | bool | None`; a nested dict, list, or
+  bytes value is rejected at construction, naming the offending key).
+  `Rule.finding(...)` gained a keyword-only `items` parameter. Every existing
+  positional call keeps working, and a rule that returns one `Finding` with no
+  items behaves exactly as it did before this parameter existed. `id` must be
+  unique within its parent — a duplicate is rejected at construction, as is a
+  non-finite `confidence` or a non-finite float anywhere in `attributes`,
+  because `json.dumps` would otherwise emit a bare `NaN` or `Infinity`, which is
+  not valid JSON. `Finding` stays the sole unit of rule identity, scoring,
+  category weight, baseline tracking and suppression no matter how many items
+  it carries: items are never independently scored. `summarize_items(items)`
+  returns a per-status count over all five `Status` members, including the ones
+  that did not occur, so a caller can index any of them without a presence
+  check; it imposes no policy of its own, the rule author still chooses the
+  parent status. `Finding.to_dict()["items"]` is always present and `[]` when
+  empty.
+
+  0.2 guarantees an envelope of 10,000 children on one finding. Measured on
+  this machine (python 3.14.0, darwin arm64, `bench/finding_items.py`, 5 reps,
+  each size in its own process): at 10,000 items the JSON report is 5.09 MiB,
+  construction takes about 31 ms, and resident memory grows by 8,486,912 bytes
+  holding the items. Measured headroom extends to 100,000 items on one
+  finding: the JSON report is 51.03 MiB, SARIF is 60.00 MiB, resident growth
+  is 86,999,040 bytes, and construction takes about 326 ms. Byte sizes and
+  `summarize_items` scale linearly across that range; building the parent
+  finding grows 1.16× per item, under the 1.25× per-item growth the bench's
+  `worse_than_linear` screen flags a metric at, so it is not flagged.
+  Converting items to a dict does not — `to_dict_seconds` grows 1.30× per
+  item, which the bench attributes to CPython's generational collector
+  traversing a larger live object graph rather than to any change in
+  algorithm. JSON carries every item of every finding and never truncates.
+  SARIF carries every item of every finding it reports, and it reports only
+  actionable findings — `FAIL` and `PARTIAL`; a `PASS`, `UNKNOWN` or
+  `NOT_APPLICABLE` finding produces no SARIF result, so none of its items
+  reach SARIF.
+
+  The human formats never list children. `markdown`, `latex`, and `adduce
+  check --verbose` each add one line to a finding that carries items —
+  `"<n> item(s) not listed here: <split>"`, a count per status — and no
+  child's content appears in any of them; `markdown` and `latex` show this
+  line for every finding that carries items, terminal only under `--verbose`.
+  Markdown's bytes are flat to within 4 bytes across the same tenfold
+  increase (711 B to 715 B); rendering time is a separate quantity and is not
+  flat, moving from 1.021 ms to 9.786 ms across the same range, growing
+  slightly less than proportionally to item count. Terminal output at its
+  default verbosity carries no item detail at all, and its near-flat cost
+  (1.021 ms to 1.045 ms across the same range) is not evidence about item
+  cost either way; `--verbose` renders the item census, and its cost grows
+  from 2.355 ms to 11.482 ms, a 4.9× increase, because the census is O(n) in
+  items. 0.2 sets no hard ceiling on
+  item count; if one is introduced later it should bound items per report,
+  not per finding, enforced as a hard construction error rather than silent
+  truncation: report size and resident memory are what it would need to
+  contain. The bound exists to contain accidental or pathological plugin
+  output. It is not a security boundary — rule packs remain trusted
+  in-process Python regardless of how many items they attach.
 
 ### Changed
 
@@ -246,13 +315,18 @@ the preregistered validation report belong to the following release.
   reports that the threshold could not be evaluated because no check reached an
   assessment, and exits 1 rather than comparing against an invented zero.
 - **The `evidence_base` and `total` changes above are breaking changes to the
-  JSON report for existing consumers.** `total` can be `null` where it was always
-  a number, and `coverage_percent` keeps its name while its denominator changes.
-  The report still carries no schema-version key of any kind: `tool.version`
-  identifies the adduce release that produced the file, not the report's shape.
-  The version key lands with the `FindingItem` serialisation shape still to come
-  in this same release, so one key stamps the finished shape and no released
-  version ships a half-versioned contract.
+  JSON report for existing consumers, and the report gained a further breaking
+  change alongside them.** `total` can be `null` where it was always a number,
+  and `coverage_percent` keeps its name while its denominator changes. The
+  report also gained a top-level `schema` key, `{"name": "adduce-report",
+  "version": 1}`, so a consumer that asserts an exact top-level key set has to
+  admit it. `tool.version` still identifies the adduce release that wrote the
+  file, not the report's shape; `schema.version` is what now names the shape,
+  and version 1 covers the applicability keys, the nullable `total`, and
+  per-finding `items` together, so one key stamps the finished 0.2 shape rather
+  than a half-versioned contract. Inside this repository,
+  `corpus/scripts/run_contract.py` is exactly such a consumer and was updated to
+  accept the new key.
 - `corpus/scripts/run_contract.py` no longer recomputes a tier from a score
   unconditionally. That invariant held only while a tier was a pure function of
   the score, and enforcing it would now reject a correct artifact for any

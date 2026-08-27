@@ -68,6 +68,14 @@ def render(result: CheckResult) -> str:
                     "adduceFindingKey": _fingerprint(finding, primary_path),
                 },
             }
+        if finding.items:
+            # SARIF is machine-readable, so every child is carried, uncapped and
+            # in the same shape the JSON report uses. The property bag is the
+            # standard extension point; it is absent, not empty, when a finding
+            # has no children, which is how a SARIF consumer already reads it.
+            sarif_result["properties"] = {
+                "adduceFindingItems": [item.to_dict() for item in finding.items]
+            }
         if finding.suppressed:
             sarif_result["suppressions"] = [
                 {
@@ -108,4 +116,6 @@ def render(result: CheckResult) -> str:
             }
         ],
     }
-    return json.dumps(sarif, indent=2)
+    # allow_nan=False: a NaN/Infinity confidence must fail loudly here rather
+    # than reach a consumer as invalid JSON at exit 0.
+    return json.dumps(sarif, allow_nan=False, indent=2)

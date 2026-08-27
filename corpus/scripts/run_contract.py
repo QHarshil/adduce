@@ -725,6 +725,109 @@ def _exact_keys(value: dict[str, Any], expected: set[str], context: str) -> None
         )
 
 
+def _validate_locations(value: object, owner: str, repo_id: str) -> None:
+    """Validate a location list, wherever it hangs.
+
+    A finding and each of its items carry the same location shape, so they are
+    held to one implementation rather than two that can drift apart.
+    """
+    if not isinstance(value, list):
+        raise RunContractError(f"raw JSON {owner} locations are invalid for {repo_id}")
+    for location in value:
+        if not isinstance(location, dict):
+            raise RunContractError(f"raw JSON {owner} location is invalid for {repo_id}")
+        _exact_keys(location, {"path", "line"}, f"raw JSON {owner} location for {repo_id}")
+        path = location.get("path")
+        if not isinstance(path, str):
+            raise RunContractError(f"raw JSON {owner} location path is invalid for {repo_id}")
+        _safe_relative_path(path)
+        line = location.get("line")
+        if line is not None and (isinstance(line, bool) or not isinstance(line, int) or line <= 0):
+            raise RunContractError(f"raw JSON {owner} location line is invalid for {repo_id}")
+
+
+def _validate_item_attributes(value: object, item_id: str, repo_id: str) -> None:
+    """Require JSON scalars, matching what the model accepts at construction."""
+    if not isinstance(value, dict):
+        raise RunContractError(
+            f"raw JSON finding item {item_id!r} attributes are invalid for {repo_id}"
+        )
+    for key, attribute in value.items():
+        if not isinstance(key, str):
+            raise RunContractError(
+                f"raw JSON finding item {item_id!r} attribute key is invalid for {repo_id}"
+            )
+        if attribute is None or isinstance(attribute, (str, bool, int)):
+            continue
+        if isinstance(attribute, float) and math.isfinite(attribute):
+            continue
+        raise RunContractError(
+            f"raw JSON finding item {item_id!r} attribute {key!r} is invalid for {repo_id}"
+        )
+
+
+def _validate_finding_items(value: object, repo_id: str) -> None:
+    """Validate a finding's children field by field.
+
+    Admitting the key without checking its contents would let any payload
+    through inside ``items`` while every sibling field stays checked, so each
+    item is held to the same standard as the finding that carries it. Ids are
+    unique within one finding, which is what makes an item addressable.
+    """
+    if not isinstance(value, list):
+        raise RunContractError(f"raw JSON finding items are invalid for {repo_id}")
+    seen: set[str] = set()
+    for item in value:
+        if not isinstance(item, dict):
+            raise RunContractError(f"raw JSON finding item is invalid for {repo_id}")
+        _exact_keys(
+            item,
+            {
+                "id",
+                "status",
+                "message",
+                "confidence",
+                "locations",
+                "remediation",
+                "kind",
+                "attributes",
+            },
+            f"raw JSON finding item for {repo_id}",
+        )
+        item_id = item.get("id")
+        if not isinstance(item_id, str) or not item_id:
+            raise RunContractError(f"raw JSON finding item id is invalid for {repo_id}")
+        if item_id in seen:
+            raise RunContractError(
+                f"raw JSON finding item id {item_id!r} is duplicated for {repo_id}"
+            )
+        seen.add(item_id)
+        if item.get("status") not in _FINDING_STATES:
+            raise RunContractError(
+                f"raw JSON finding item {item_id!r} status is invalid for {repo_id}"
+            )
+        for field in ("message", "remediation"):
+            if not isinstance(item.get(field), str):
+                raise RunContractError(
+                    f"raw JSON finding item {item_id!r} {field} is invalid for {repo_id}"
+                )
+        confidence = _finite_number(
+            item.get("confidence"),
+            f"raw JSON finding item {item_id!r} confidence for {repo_id}",
+        )
+        if not 0 <= confidence <= 1:
+            raise RunContractError(
+                f"raw JSON finding item {item_id!r} confidence is invalid for {repo_id}"
+            )
+        kind = item.get("kind")
+        if kind is not None and not isinstance(kind, str):
+            raise RunContractError(
+                f"raw JSON finding item {item_id!r} kind is invalid for {repo_id}"
+            )
+        _validate_locations(item.get("locations"), f"finding item {item_id!r}", repo_id)
+        _validate_item_attributes(item.get("attributes"), item_id, repo_id)
+
+
 def _validate_peak_rss(value: object, repo_id: str, expected_platform: str) -> dict[str, str]:
     context = f"raw JSON peak RSS for {repo_id}"
     if not isinstance(value, dict):
@@ -791,6 +894,7 @@ def validate_raw_payload(
         payload,
         {
             "tool",
+            "schema",
             "repository",
             "configuration",
             "reviewer_time",
@@ -809,6 +913,16 @@ def validate_raw_payload(
     repository = payload.get("repository")
     if not isinstance(tool, dict) or tool != {"name": "adduce", "version": version}:
         raise RunContractError(f"raw JSON tool identity mismatch for {repo_id}")
+    # The document shape is pinned independently of the release that wrote it:
+    # a run compared against another run has to be comparing the same shape.
+    # `True == 1`, so the version is refused as a boolean before the equality.
+    schema = payload.get("schema")
+    if (
+        not isinstance(schema, dict)
+        or isinstance(schema.get("version"), bool)
+        or schema != {"name": "adduce-report", "version": 1}
+    ):
+        raise RunContractError(f"raw JSON report schema mismatch for {repo_id}")
     if not isinstance(repository, dict) or repository.get("commit") != resolved_sha:
         raise RunContractError(f"raw JSON commit mismatch for {repo_id}")
     configuration = payload.get("configuration")
@@ -960,6 +1074,7 @@ def validate_raw_payload(
                 "locations",
                 "fix_command",
                 "suppressed",
+                "items",
             },
             f"raw JSON finding for {repo_id}",
         )
@@ -992,22 +1107,8 @@ def validate_raw_payload(
             raise RunContractError(f"raw JSON finding fix command is invalid for {repo_id}")
         if not isinstance(finding.get("suppressed"), bool):
             raise RunContractError(f"raw JSON finding suppression is invalid for {repo_id}")
-        locations = finding.get("locations")
-        if not isinstance(locations, list):
-            raise RunContractError(f"raw JSON finding locations are invalid for {repo_id}")
-        for location in locations:
-            if not isinstance(location, dict):
-                raise RunContractError(f"raw JSON finding location is invalid for {repo_id}")
-            _exact_keys(location, {"path", "line"}, f"raw JSON finding location for {repo_id}")
-            path = location.get("path")
-            if not isinstance(path, str):
-                raise RunContractError(f"raw JSON finding location path is invalid for {repo_id}")
-            _safe_relative_path(path)
-            line = location.get("line")
-            if line is not None and (
-                isinstance(line, bool) or not isinstance(line, int) or line <= 0
-            ):
-                raise RunContractError(f"raw JSON finding location line is invalid for {repo_id}")
+        _validate_locations(finding.get("locations"), "finding", repo_id)
+        _validate_finding_items(finding.get("items"), repo_id)
 
     if seen_rules != builtin_rule_ids:
         raise RunContractError(

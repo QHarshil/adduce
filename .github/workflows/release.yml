@@ -49,8 +49,8 @@ jobs:
           python scripts/validate_release.py --tag "${GITHUB_REF_NAME}"
       - name: Run release quality gates
         run: |
-          ruff check src tests scripts corpus/scripts
-          mypy src/adduce scripts corpus/scripts
+          ruff check src tests scripts corpus/scripts bench
+          mypy src/adduce scripts corpus/scripts bench
           pytest \
             --cov=adduce \
             --cov-report=term-missing \

@@ -115,12 +115,13 @@ their own CLI commands, not by `--format`.
 
 Any `CheckResult -> str` callable registered under the `adduce.reporters` group
 joins `RENDERERS` as a further `--format` value named after its entry point.
-Every reporter reads the finished `CheckResult`; none can change a verdict. The JSON report carries no schema key and no version key of any kind;
-adding one is proposed in
-[ADR 0003](adr/0003-public-extension-api-stability.md). The report's shape
-changes twice in 0.2 — the `evidence_base` keys, already landed, and the
-`FindingItem` serialisation shape still to come — and the version key lands with
-the second, so one key stamps the finished 0.2 shape.
+Every reporter reads the finished `CheckResult`; none can change a verdict.
+The JSON report carries a top-level `schema` key, `{"name": "adduce-report",
+"version": 1}`, proposed in
+[ADR 0003](adr/0003-public-extension-api-stability.md) and now landed. The
+report's shape changed twice in 0.2 — the `evidence_base` keys and the
+`FindingItem` serialisation shape — and version 1 is the finished shape both
+changes produced, so one key stamps it.
 
 ## The Artifact Evidence Graph
 
@@ -187,10 +188,10 @@ you trust.
 | Rule discovery and evaluation | `IMPLEMENTED` | 78 rules, 17 categories, plus plugins |
 | Rule purity contract | `PARTIALLY IMPLEMENTED` | held by every built-in rule, enforced by nothing |
 | Applicability-aware coverage | `IMPLEMENTED` | [ADR 0001](adr/0001-status-applicability-and-assessment-coverage.md); coverage is assessed over applicable findings |
-| Hierarchical findings (`FindingItem`) | `PROPOSED` | [ADR 0002](adr/0002-hierarchical-findings.md); absent from `src/adduce/` |
+| Hierarchical findings (`FindingItem`) | `IMPLEMENTED` | [ADR 0002](adr/0002-hierarchical-findings.md) |
 | Scoring | `IMPLEMENTED` | [scoring.md](scoring.md) |
 | Reporters | `IMPLEMENTED` | 13 modules: 5 in `RENDERERS`, terminal direct, 7 own-command surfaces |
-| JSON report schema and version keys | `PROPOSED` | [ADR 0003](adr/0003-public-extension-api-stability.md) |
+| JSON report schema and version keys | `IMPLEMENTED` | [ADR 0003](adr/0003-public-extension-api-stability.md) |
 | Public re-export namespace and deprecation policy | `PROPOSED` | [ADR 0003](adr/0003-public-extension-api-stability.md) |
 | Claim graph | `IMPLEMENTED` | `graph.py`, built on the check path |
 | Artifact Evidence Graph | `PARTIALLY IMPLEMENTED` | diagnostic only; 10 of 19 node types |

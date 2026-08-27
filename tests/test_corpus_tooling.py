@@ -35,6 +35,7 @@ from corpus.scripts.run_contract import (
     load_json_object_bytes,
     sha256_file,
     validate_badged_provenance_bytes,
+    validate_raw_payload,
     validate_run,
     write_json,
 )
@@ -297,6 +298,7 @@ def _write_minimal_valid_run(path: Path, *, run_id: str = "test-run") -> None:
     (path / "harness").mkdir()
     payload = {
         "tool": {"name": "adduce", "version": "0.test"},
+        "schema": {"name": "adduce-report", "version": 1},
         "repository": {
             "root": str(path / "checkout"),
             "commit": "a" * 40,
@@ -346,6 +348,7 @@ def _write_minimal_valid_run(path: Path, *, run_id: str = "test-run") -> None:
                 "locations": [],
                 "fix_command": None,
                 "suppressed": False,
+                "items": [],
             }
         ],
         "corpus_execution": {
@@ -907,6 +910,256 @@ def test_raw_score_must_be_recomputable_from_findings(tmp_path: Path) -> None:
 
     with pytest.raises(RunContractError, match="total score is not supported"):
         validate_run(run)
+
+
+def _finding_item(**overrides: object) -> dict[str, object]:
+    item: dict[str, object] = {
+        "id": "citation:10.1234/a",
+        "status": "fail",
+        "message": "The cited work is not in the bibliography.",
+        "confidence": 0.5,
+        "locations": [{"path": "paper.tex", "line": 12}],
+        "remediation": "Add the reference.",
+        "kind": "citation",
+        "attributes": {"doi": "10.1234/a", "page": 4, "quoted": True, "note": None},
+    }
+    item.update(overrides)
+    return item
+
+
+def _reseal_raw_payload(run: Path, payload: dict) -> None:
+    """Rewrite the run's raw JSON and re-seal the integrity hashes over it."""
+    write_json(run / "raw_json" / "repo.json", payload)
+    _rehash_completed_run(run, "raw_json/repo.json")
+
+
+def _read_raw_payload(run: Path) -> dict:
+    return json.loads((run / "raw_json" / "repo.json").read_text(encoding="utf-8"))
+
+
+def _validate_fixture_payload(payload: dict) -> None:
+    """Validate a payload against the minimal fixture's declared run identity.
+
+    Called directly where the strict JSON loader would reject the input before
+    the payload validator ever saw it, so the payload validator's own guard is
+    what the test exercises.
+    """
+    validate_raw_payload(payload, "repo", "a" * 40, "0.test", "b" * 64, "test", {"R-TEST-001"})
+
+
+def test_raw_finding_items_are_accepted_and_never_reach_the_score(tmp_path: Path) -> None:
+    run = tmp_path / "run"
+    _write_minimal_valid_run(run)
+    payload = _read_raw_payload(run)
+    payload["findings"][0]["items"] = [
+        _finding_item(id=f"citation:10.1234/{index}", status="pass" if index else "fail")
+        for index in range(64)
+    ]
+    _reseal_raw_payload(run, payload)
+
+    validate_run(run)
+
+    with (run / "combined.csv").open(newline="", encoding="utf-8") as handle:
+        row = next(csv.DictReader(handle))
+    assert row["score"] == "0.0"
+
+
+@pytest.mark.parametrize(
+    ("items", "match"),
+    [
+        pytest.param(
+            [_finding_item(kind="citation", extra="surprise")],
+            r"finding item for repo fields are invalid \(missing=\[\], extra=\['extra'\]\)",
+            id="unknown-key",
+        ),
+        pytest.param(
+            [_finding_item(), _finding_item(status="pass")],
+            "finding item id 'citation:10.1234/a' is duplicated",
+            id="duplicate-id",
+        ),
+        pytest.param(
+            [_finding_item(attributes={"trail": {"nested": 1}})],
+            "attribute 'trail' is invalid",
+            id="nested-attribute",
+        ),
+        pytest.param(
+            [_finding_item(attributes={"pages": [1, 2]})],
+            "attribute 'pages' is invalid",
+            id="list-attribute",
+        ),
+        pytest.param(
+            [_finding_item(attributes=[])],
+            "attributes are invalid",
+            id="attributes-not-an-object",
+        ),
+        pytest.param(
+            [_finding_item(id="")],
+            "finding item id is invalid",
+            id="empty-id",
+        ),
+        pytest.param(
+            [_finding_item(status="skipped")],
+            "status is invalid",
+            id="unknown-status",
+        ),
+        pytest.param(
+            [_finding_item(confidence=1.5)],
+            "confidence is invalid",
+            id="confidence-out-of-range",
+        ),
+        pytest.param(
+            [_finding_item(confidence="high")],
+            "confidence for repo must be numeric",
+            id="confidence-not-a-number",
+        ),
+        pytest.param(
+            [_finding_item(message=None)],
+            "message is invalid",
+            id="message-not-a-string",
+        ),
+        pytest.param(
+            [_finding_item(remediation=None)],
+            "remediation is invalid",
+            id="remediation-not-a-string",
+        ),
+        pytest.param(
+            [_finding_item(kind=7)],
+            "kind is invalid",
+            id="kind-not-a-string",
+        ),
+        pytest.param(
+            [_finding_item(locations=[{"path": "../escape.tex", "line": 1}])],
+            "unsafe run artifact path",
+            id="escaping-location",
+        ),
+        pytest.param(
+            [_finding_item(locations=[{"path": "paper.tex", "line": 0}])],
+            "location line is invalid",
+            id="non-positive-location-line",
+        ),
+        pytest.param(
+            [_finding_item(locations=[{"path": "paper.tex"}])],
+            "location for repo fields are invalid",
+            id="partial-location",
+        ),
+        pytest.param(["citation:10.1234/a"], "finding item is invalid", id="item-not-an-object"),
+        pytest.param({}, "finding items are invalid", id="items-not-a-list"),
+    ],
+)
+def test_raw_finding_items_are_content_checked_not_merely_admitted(
+    tmp_path: Path, items: object, match: str
+) -> None:
+    """Every item field is validated, so admitting the key cannot fail open."""
+    run = tmp_path / "run"
+    _write_minimal_valid_run(run)
+    payload = _read_raw_payload(run)
+    payload["findings"][0]["items"] = items
+    _reseal_raw_payload(run, payload)
+
+    with pytest.raises(RunContractError, match=match):
+        validate_run(run)
+
+
+@pytest.mark.parametrize(
+    ("locations", "match"),
+    [
+        pytest.param(
+            [{"path": "../escape.py", "line": 1}], "unsafe run artifact path", id="escaping"
+        ),
+        pytest.param([{"path": "train.py", "line": 0}], "location line is invalid", id="zero-line"),
+        pytest.param([{"path": "train.py"}], "location for repo fields", id="partial"),
+        pytest.param({}, "finding locations are invalid", id="not-a-list"),
+    ],
+)
+def test_a_findings_own_locations_are_still_validated(
+    tmp_path: Path, locations: object, match: str
+) -> None:
+    """The finding and its items share one location validator; both call it."""
+    run = tmp_path / "run"
+    _write_minimal_valid_run(run)
+    payload = _read_raw_payload(run)
+    payload["findings"][0]["locations"] = locations
+    _reseal_raw_payload(run, payload)
+
+    with pytest.raises(RunContractError, match=match):
+        validate_run(run)
+
+
+def test_raw_finding_cannot_omit_its_items_array(tmp_path: Path) -> None:
+    run = tmp_path / "run"
+    _write_minimal_valid_run(run)
+    payload = _read_raw_payload(run)
+    del payload["findings"][0]["items"]
+    _reseal_raw_payload(run, payload)
+
+    with pytest.raises(RunContractError, match=r"finding for repo fields are invalid.*'items'"):
+        validate_run(run)
+
+
+@pytest.mark.parametrize("value", [float("nan"), float("inf"), float("-inf")])
+def test_raw_finding_item_attribute_must_be_a_finite_number(
+    tmp_path: Path, value: float
+) -> None:
+    """Validated on the live payload, because no artifact can carry these bytes.
+
+    ``json.dumps`` writes bare ``NaN`` and ``Infinity``, which is not JSON, so
+    the strict writer refuses to record them and the strict loader refuses to
+    read them back. The payload validator refuses them too, so the runner
+    holding a scanner's dict in memory is not the only thing between a
+    non-finite float and a recorded artifact.
+    """
+    run = tmp_path / "run"
+    _write_minimal_valid_run(run)
+    payload = _read_raw_payload(run)
+    payload["findings"][0]["items"] = [_finding_item(attributes={"delta": value})]
+
+    with pytest.raises(RunContractError, match="attribute 'delta' is invalid"):
+        _validate_fixture_payload(payload)
+
+
+@pytest.mark.parametrize(
+    "schema",
+    [
+        pytest.param({"name": "adduce-report", "version": 2}, id="future-version"),
+        pytest.param({"name": "adduce-report", "version": "1"}, id="stringified-version"),
+        pytest.param({"name": "adduce-report", "version": True}, id="boolean-version"),
+        pytest.param({"name": "adduce", "version": 1}, id="wrong-name"),
+        pytest.param({"version": 1}, id="missing-name"),
+        pytest.param("adduce-report-1", id="not-an-object"),
+    ],
+)
+def test_raw_report_schema_identity_is_pinned(tmp_path: Path, schema: object) -> None:
+    run = tmp_path / "run"
+    _write_minimal_valid_run(run)
+    payload = _read_raw_payload(run)
+    payload["schema"] = schema
+    _reseal_raw_payload(run, payload)
+
+    with pytest.raises(RunContractError, match="report schema mismatch"):
+        validate_run(run)
+
+
+def test_raw_payload_cannot_omit_the_report_schema(tmp_path: Path) -> None:
+    run = tmp_path / "run"
+    _write_minimal_valid_run(run)
+    payload = _read_raw_payload(run)
+    del payload["schema"]
+    _reseal_raw_payload(run, payload)
+
+    with pytest.raises(RunContractError, match=r"object for repo fields are invalid.*'schema'"):
+        validate_run(run)
+
+
+def test_the_json_reporter_stamps_the_schema_the_contract_pins(tmp_path: Path) -> None:
+    """The shape the contract requires is the shape a real report carries."""
+    from adduce.engine import run_check
+    from adduce.report import json_report
+
+    _make_git_repo(tmp_path / "repo")
+    payload = json.loads(json_report.render(run_check(tmp_path / "repo")))
+
+    assert payload["schema"] == {"name": "adduce-report", "version": 1}
+    assert payload["schema"]["version"] != payload["tool"]["version"]
 
 
 def _write_unassessed_run(path: Path) -> None:
