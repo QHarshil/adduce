@@ -32,6 +32,7 @@ adduce check --timings               # per-stage durations and work counters, to
 adduce drift                         # paper ↔ code/config consistency + result reconciliation
 adduce precision                     # TF32/AMP/low-precision audit
 adduce deps                          # ghost/unused/notebook dependency analysis
+adduce graph --format json           # artifact evidence graph: nodes, edges, provenance
 adduce manifest                      # scaffold .adduce/manifest.yaml
 adduce manifest --refresh            # write a separate refresh proposal; never overwrite author content
 adduce checklist --profile neurips   # repository-evidence checklist draft (also: acl); --strict-evidence
@@ -71,6 +72,11 @@ selected script without a sandbox; it reports ordering only for supported
 module-level Python, NumPy, and Torch RNG calls and does not observe
 generator-instance methods or library-internal/native draws. Read the
 [security model](security-model.md) before either execution mode.
+
+`adduce graph` inspects the artifact evidence graph built from the same
+evidence a check run collects; it is diagnostic only and changes nothing
+about a check. See [Evidence graph](aeg-schema.md) for the node and edge
+schema.
 
 ## Output formats and item detail
 
@@ -240,11 +246,15 @@ loader = DataLoader(ds, shuffle=True)  # adduce: ignore=R-DET-004
 profile = "neurips"
 ignore = ["R-ARC-001"]
 exclude = ["third_party"]
+fail-under = 70          # or fail_under; not both
 ```
 
 Suppressed findings still appear, marked as ignored, and retain their
 observed score. Suppression records an accepted exception; it does not count
 missing evidence as a pass. Repository-configured exclusions reduce scan
-scope and are disclosed in reports. `--mode reviewer` and `--mode ae-chair`
+scope and are disclosed in reports. `fail-under` (or `fail_under`, never
+both) sets the same gate as `--fail-under`, a finite number from 0 to 100; an
+explicit `--fail-under` on the command line takes precedence over the
+repository's configured value. `--mode reviewer` and `--mode ae-chair`
 bypass repository-supplied profile, ignore, exclude, and threshold settings
 unless the caller supplies explicit CLI options.

@@ -1,8 +1,11 @@
 # Rule reference
 
-78 rules across 17 categories. The evidence collectors make a single offline
-filesystem pass; the rules themselves are pure functions over the typed
-evidence that pass produces, and never touch the filesystem.
+78 rules across 17 categories. Evidence collection is offline by default;
+3 of the 14 collectors share one content pass over source text and the other
+11 each walk and read independently through a bounded cache (see
+[ADR 0007](../adr/0007-collection-is-partly-single-pass.md)). The rules
+themselves are pure functions over the typed evidence collection produces, and
+never touch the filesystem.
 
 Applicability is gated two ways: 64 of the 78 rules override `applies_to` and
 are skipped outright when they do not apply, and the remaining 14 always run but
@@ -120,7 +123,7 @@ confidence, never a verdict.
 | [R-REMOTE-004](R-REMOTE-004.md) | Remote Artifacts & Rot | medium | 3 | Raw URL / drive / bucket downloads carry integrity checks |
 | [R-REMOTE-005](R-REMOTE-005.md) | Remote Artifacts & Rot | low | 1 | Online resolution of remote references (opt-in) |
 | [R-VER-001](R-VER-001.md) | Versioning | medium | 3 | Under version control |
-| [R-VER-002](R-VER-002.md) | Versioning | low | 2 | Tagged release marking the reported state |
+| [R-VER-002](R-VER-002.md) | Versioning | low | 2 | Tag marking the scanned revision |
 | [R-VER-003](R-VER-003.md) | Versioning | low | 2 | Exact revision referenced in README or manifest |
 | [R-LIC-001](R-LIC-001.md) | Access & Legal | medium | 3 | License file present |
 | [R-LIC-002](R-LIC-002.md) | Access & Legal | low | 2 | Citation metadata provided |

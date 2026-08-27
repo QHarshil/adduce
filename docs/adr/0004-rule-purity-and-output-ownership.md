@@ -9,7 +9,7 @@ Rules are meant to read typed evidence and return a verdict: no creating,
 updating or deleting files, no executing repository code, no subprocesses, no
 network calls, no mutating evidence or the repository.
 
-That holds today. Across all 74 built-in rule implementations, no rule module
+That holds today. Across all 78 built-in rule implementations, no rule module
 imports or calls a filesystem, subprocess or network API, no rule mutates
 evidence, and no `applies_to` performs I/O.
 
