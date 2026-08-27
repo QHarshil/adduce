@@ -106,3 +106,15 @@ format either — they are outside SARIF's scope entirely, not truncated from a
 finding SARIF did report. JSON carries every item of every finding without
 exception, matching the Consequences above. The pre-existing filter is
 unchanged by this feature.
+
+The terminal report (`src/adduce/report/terminal.py`) states the per-finding
+item count and status split only under `--verbose`; at default verbosity it
+prints the category summary and per-finding messages for `PARTIAL`/`FAIL`
+findings as before, but no census line and no other indication that a
+finding carries items — a card with items is indistinguishable in that output
+from one without. This is deliberate and held by a test, but it reads, on its
+own, as tension with "no output silently discards children" above: at
+default verbosity the terminal's own output gives no sign that a finding has
+children to ask `--verbose` or another format for. `markdown` and `latex` are
+not subject to this because both always state the count regardless of
+verbosity; only the terminal report has a verbosity-gated default.

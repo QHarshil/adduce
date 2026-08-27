@@ -72,6 +72,26 @@ module-level Python, NumPy, and Torch RNG calls and does not observe
 generator-instance methods or library-internal/native draws. Read the
 [security model](security-model.md) before either execution mode.
 
+## Output formats and item detail
+
+A `Finding` may carry structured child observations (`FindingItem`) explaining
+its verdict — see [Finding items](plugin-api.md#finding-items). Formats split
+into two groups over how they carry those children:
+
+- **`json` and `sarif` are machine-readable and carry every item.** `json`
+  carries every item of every finding without exception. `sarif` carries
+  every item of every finding it reports, and it reports only actionable
+  findings — `FAIL` and `PARTIAL` — so a `PASS`, `UNKNOWN` or `NOT_APPLICABLE`
+  finding's items never reach SARIF either, along with the finding itself.
+- **`markdown`, `latex`, and `adduce check --verbose` are human-readable and
+  summarise.** Instead of listing children, a finding that carries items adds
+  one line: `"<n> item(s) not listed here: <split>"`, where `<split>` is a
+  count per status (for example `"1 partial, 3 fail"`). No child's content
+  appears in these formats. `markdown` and `latex` show this line for every
+  finding that carries items; terminal output shows it only under
+  `--verbose` — at default verbosity the terminal report carries no item
+  detail at all.
+
 ## Scan scope and `--no-gitignore`
 
 The scan skips paths git ignores, using git's own matcher so nested ignore
