@@ -41,6 +41,7 @@ from corpus.scripts.run_contract import (
 
 ROOT = Path(__file__).resolve().parent.parent
 RUNNER = ROOT / "corpus" / "scripts" / "run_validation.py"
+SUMMARIZE = ROOT / "corpus" / "scripts" / "summarize.py"
 
 
 def _git(*args: str, cwd: Path) -> str:
@@ -264,6 +265,31 @@ def _write_accepted_claim_review(
     return source_paths
 
 
+def _evidence_base(**overrides: object) -> dict[str, object]:
+    """The minimal fixture's evidence base, with individual fields replaced.
+
+    Rated with a numeric total, so the contract still recomputes the tier from
+    the score. ``considered_rules`` must equal the number of findings in the
+    payload, and the rule census must partition it exactly.
+    """
+    base: dict[str, object] = {
+        "rated": True,
+        "evaluated_rules": 1,
+        "considered_rules": 1,
+        "applicable_rules": 1,
+        "coverage_percent": 100.0,
+        "analysable_lines": 500,
+        "rules": {
+            "assessed": 1,
+            "unknown": 0,
+            "not_applicable": 0,
+            "skipped_inapplicable": 0,
+        },
+    }
+    base.update(overrides)
+    return base
+
+
 def _write_minimal_valid_run(path: Path, *, run_id: str = "test-run") -> None:
     ensure_new_output_directory(path)
     (path / "raw_json").mkdir()
@@ -297,15 +323,7 @@ def _write_minimal_valid_run(path: Path, *, run_id: str = "test-run") -> None:
         "total": 0.0,
         "tier": "Needs work",
         "profile": "default",
-        "evidence_base": {
-            # Rated, so the contract still recomputes the tier from the score.
-            # considered_rules must equal the number of findings below.
-            "rated": True,
-            "evaluated_rules": 1,
-            "considered_rules": 1,
-            "coverage_percent": 100.0,
-            "analysable_lines": 500,
-        },
+        "evidence_base": _evidence_base(),
         "categories": [
             {
                 "category": "Documentation",
@@ -891,6 +909,325 @@ def test_raw_score_must_be_recomputable_from_findings(tmp_path: Path) -> None:
         validate_run(run)
 
 
+def _write_unassessed_run(path: Path) -> None:
+    """A valid run whose only rule applied and returned no answer.
+
+    Nothing reached an assessment, so the raw JSON carries a null total and the
+    tier that says so, its one category is reported with an empty score, and the
+    combined row leaves both the score and that category empty rather than
+    writing a zero.
+    """
+    _write_minimal_valid_run(path)
+    raw_path = path / "raw_json" / "repo.json"
+    payload = json.loads(raw_path.read_text(encoding="utf-8"))
+    payload["total"] = None
+    payload["tier"] = "Unrated (nothing assessed)"
+    payload["findings"][0]["status"] = "unknown"
+    payload["categories"] = [
+        {"category": "Documentation", "earned": 0.0, "possible": 0.0, "percentage": 0.0}
+    ]
+    payload["evidence_base"] = _evidence_base(
+        evaluated_rules=0,
+        coverage_percent=0.0,
+        rules={"assessed": 0, "unknown": 1, "not_applicable": 0, "skipped_inapplicable": 0},
+    )
+    write_json(raw_path, payload)
+    combined = path / "combined.csv"
+    text = combined.read_text(encoding="utf-8")
+    text = text.replace(
+        ",0.0,Needs work,1-2 minutes,1,0,",
+        ",,Unrated (nothing assessed),1-2 minutes,0,0,",
+    )
+    text = text.replace("unavailable,unavailable,,0.0\n", "unavailable,unavailable,,\n")
+    combined.write_text(text, encoding="utf-8")
+    _rehash_completed_run(path, "raw_json/repo.json")
+    _rehash_completed_run(path, "combined.csv")
+
+
+def _write_partly_unassessed_run(path: Path) -> None:
+    """A valid run that scored one category and could not assess another.
+
+    The unassessed category is reported with an empty score rather than dropped,
+    so the unanswered question survives into the artifact. Its weight stays out
+    of the total, which is therefore unmoved, and its combined cell is empty
+    beside a scored category that genuinely earned zero.
+    """
+    _write_minimal_valid_run(path)
+    raw_path = path / "raw_json" / "repo.json"
+    payload = json.loads(raw_path.read_text(encoding="utf-8"))
+    payload["findings"].append(
+        {
+            **payload["findings"][0],
+            "rule_id": "R-TEST-002",
+            "category": "Determinism & Seeds",
+            "status": "unknown",
+        }
+    )
+    payload["categories"].append(
+        {"category": "Determinism & Seeds", "earned": 0.0, "possible": 0.0, "percentage": 0.0}
+    )
+    payload["evidence_base"] = _evidence_base(
+        considered_rules=2,
+        applicable_rules=2,
+        coverage_percent=50.0,
+        rules={"assessed": 1, "unknown": 1, "not_applicable": 0, "skipped_inapplicable": 0},
+    )
+    write_json(raw_path, payload)
+    combined = path / "combined.csv"
+    text = combined.read_text(encoding="utf-8")
+    text = text.replace(
+        "error,cat_documentation\n", "error,cat_determinism_seeds,cat_documentation\n"
+    )
+    text = text.replace("unavailable,unavailable,,0.0\n", "unavailable,unavailable,,,0.0\n")
+    combined.write_text(text, encoding="utf-8")
+    metadata_path = path / "run_meta.json"
+    metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+    metadata["builtin_rule_ids"] = ["R-TEST-001", "R-TEST-002"]
+    metadata["builtin_rule_count"] = 2
+    write_json(metadata_path, metadata)
+    _rehash_completed_run(path, "raw_json/repo.json")
+    _rehash_completed_run(path, "combined.csv")
+
+
+def test_unassessed_run_records_a_null_score_that_is_not_a_zero(tmp_path: Path) -> None:
+    run = tmp_path / "run"
+    _write_unassessed_run(run)
+
+    validate_run(run)
+
+    with (run / "combined.csv").open(newline="", encoding="utf-8") as handle:
+        row = next(csv.DictReader(handle))
+    assert row["score"] == ""
+    assert row["tier"] == "Unrated (nothing assessed)"
+
+
+def test_unassessed_tier_outranks_the_unrated_one(tmp_path: Path) -> None:
+    """Nothing assessed is reported ahead of too little source, as the analyzer does."""
+    run = tmp_path / "run"
+    _write_unassessed_run(run)
+    raw_path = run / "raw_json" / "repo.json"
+    payload = json.loads(raw_path.read_text(encoding="utf-8"))
+    payload["evidence_base"]["rated"] = False
+    payload["evidence_base"]["analysable_lines"] = 1
+    write_json(raw_path, payload)
+    _rehash_completed_run(run, "raw_json/repo.json")
+
+    validate_run(run)
+
+
+@pytest.mark.parametrize(
+    ("total", "tier", "match"),
+    [
+        (0.0, "Unrated (nothing assessed)", "total score is not supported"),
+        (0.0, "Needs work", "total score is not supported"),
+        (None, "Needs work", "tier is inconsistent with its score"),
+    ],
+)
+def test_raw_null_total_and_its_tier_must_agree_with_the_findings(
+    tmp_path: Path,
+    total: float | None,
+    tier: str,
+    match: str,
+) -> None:
+    run = tmp_path / "run"
+    _write_unassessed_run(run)
+    raw_path = run / "raw_json" / "repo.json"
+    payload = json.loads(raw_path.read_text(encoding="utf-8"))
+    payload["total"] = total
+    payload["tier"] = tier
+    write_json(raw_path, payload)
+    _rehash_completed_run(run, "raw_json/repo.json")
+
+    with pytest.raises(RunContractError, match=match):
+        validate_run(run)
+
+
+def test_combined_cannot_report_a_zero_for_a_null_score(tmp_path: Path) -> None:
+    run = tmp_path / "run"
+    _write_unassessed_run(run)
+    combined = run / "combined.csv"
+    combined.write_text(
+        combined.read_text(encoding="utf-8").replace(",,Unrated", ",0.0,Unrated"),
+        encoding="utf-8",
+    )
+    _rehash_completed_run(run, "combined.csv")
+
+    with pytest.raises(RunContractError, match="score disagrees"):
+        validate_run(run)
+
+
+def test_combined_cannot_omit_a_score_the_raw_json_reports(tmp_path: Path) -> None:
+    run = tmp_path / "run"
+    _write_minimal_valid_run(run)
+    combined = run / "combined.csv"
+    combined.write_text(
+        combined.read_text(encoding="utf-8").replace(",0.0,Needs work,", ",,Needs work,"),
+        encoding="utf-8",
+    )
+    _rehash_completed_run(run, "combined.csv")
+
+    with pytest.raises(RunContractError, match="score disagrees"):
+        validate_run(run)
+
+
+def test_a_category_with_nothing_assessed_is_reported_rather_than_dropped(tmp_path: Path) -> None:
+    run = tmp_path / "run"
+    _write_partly_unassessed_run(run)
+
+    validate_run(run)
+
+    with (run / "combined.csv").open(newline="", encoding="utf-8") as handle:
+        row = next(csv.DictReader(handle))
+    assert row["cat_determinism_seeds"] == ""
+    assert row["cat_documentation"] == "0.0"
+
+
+def test_combined_cannot_report_a_zero_for_an_unassessed_category(tmp_path: Path) -> None:
+    run = tmp_path / "run"
+    _write_partly_unassessed_run(run)
+    combined = run / "combined.csv"
+    combined.write_text(
+        combined.read_text(encoding="utf-8").replace("unavailable,,,0.0\n", "unavailable,,0.0,0.0\n"),
+        encoding="utf-8",
+    )
+    _rehash_completed_run(run, "combined.csv")
+
+    with pytest.raises(RunContractError, match="category disagrees"):
+        validate_run(run)
+
+
+def test_combined_cannot_omit_a_category_the_raw_json_scored(tmp_path: Path) -> None:
+    """The absence convention cannot be met by leaving every category cell empty."""
+    run = tmp_path / "run"
+    _write_partly_unassessed_run(run)
+    combined = run / "combined.csv"
+    combined.write_text(
+        combined.read_text(encoding="utf-8").replace("unavailable,,,0.0\n", "unavailable,,,\n"),
+        encoding="utf-8",
+    )
+    _rehash_completed_run(run, "combined.csv")
+
+    with pytest.raises(RunContractError, match="category disagrees"):
+        validate_run(run)
+
+
+def test_an_empty_category_score_must_be_backed_by_an_unanswered_rule(tmp_path: Path) -> None:
+    run = tmp_path / "run"
+    _write_partly_unassessed_run(run)
+    raw_path = run / "raw_json" / "repo.json"
+    payload = json.loads(raw_path.read_text(encoding="utf-8"))
+    payload["findings"][1]["status"] = "not-applicable"
+    payload["evidence_base"] = _evidence_base(
+        considered_rules=2,
+        rules={"assessed": 1, "unknown": 0, "not_applicable": 1, "skipped_inapplicable": 0},
+    )
+    write_json(raw_path, payload)
+    _rehash_completed_run(run, "raw_json/repo.json")
+
+    with pytest.raises(RunContractError, match="empty category score is not supported"):
+        validate_run(run)
+
+
+@pytest.mark.parametrize(
+    ("evidence_base", "match"),
+    [
+        (
+            {
+                "rated": True,
+                "evaluated_rules": 1,
+                "considered_rules": 1,
+                "applicable_rules": 1,
+                "coverage_percent": 100.0,
+                "analysable_lines": 500,
+            },
+            r"evidence base for \w+ fields are invalid",
+        ),
+        (
+            _evidence_base(
+                rules={
+                    "assessed": 1,
+                    "unknown": 0,
+                    "not_applicable": 0,
+                    "skipped_inapplicable": 0,
+                    "retired": 0,
+                }
+            ),
+            r"rule census for \w+ fields are invalid",
+        ),
+        (
+            _evidence_base(applicable_rules=True),
+            "applicable-rule count is invalid",
+        ),
+        (
+            _evidence_base(
+                rules={
+                    "assessed": True,
+                    "unknown": 0,
+                    "not_applicable": 0,
+                    "skipped_inapplicable": 0,
+                }
+            ),
+            "assessed-rule census is invalid",
+        ),
+        (
+            _evidence_base(
+                rules={"assessed": 1, "unknown": 0, "not_applicable": 0, "skipped_inapplicable": -1}
+            ),
+            "skipped_inapplicable-rule census is invalid",
+        ),
+        (
+            _evidence_base(applicable_rules=0),
+            "evaluated rules exceed those applicable",
+        ),
+        (
+            _evidence_base(applicable_rules=2),
+            "applicable rules exceed those considered",
+        ),
+        (
+            _evidence_base(
+                rules={"assessed": 0, "unknown": 1, "not_applicable": 0, "skipped_inapplicable": 0}
+            ),
+            "assessed-rule census disagrees with its evaluated count",
+        ),
+        (
+            _evidence_base(
+                rules={"assessed": 1, "unknown": 1, "not_applicable": 0, "skipped_inapplicable": 0}
+            ),
+            "does not partition the applicable rules",
+        ),
+        (
+            _evidence_base(
+                rules={"assessed": 1, "unknown": 0, "not_applicable": 1, "skipped_inapplicable": 0}
+            ),
+            "does not partition the considered rules",
+        ),
+        (
+            _evidence_base(coverage_percent=73.9),
+            "coverage is not supported",
+        ),
+        (
+            _evidence_base(coverage_percent="100.0"),
+            "coverage .* must be numeric",
+        ),
+    ],
+)
+def test_raw_evidence_base_must_partition_the_rules_it_counts(
+    tmp_path: Path,
+    evidence_base: dict[str, object],
+    match: str,
+) -> None:
+    run = tmp_path / "run"
+    _write_minimal_valid_run(run)
+    raw_path = run / "raw_json" / "repo.json"
+    payload = json.loads(raw_path.read_text(encoding="utf-8"))
+    payload["evidence_base"] = evidence_base
+    write_json(raw_path, payload)
+    _rehash_completed_run(run, "raw_json/repo.json")
+
+    with pytest.raises(RunContractError, match=match):
+        validate_run(run)
+
+
 def test_output_containment_rejects_descendants_of_immutable_inputs(tmp_path: Path) -> None:
     immutable = tmp_path / "immutable"
     immutable.mkdir()
@@ -1093,6 +1430,180 @@ def test_runner_records_clone_tool_digest_and_live_agreement(tmp_path: Path) -> 
     manifest = json.loads((clones / "clones_manifest.json").read_bytes())
     assert metadata["clone_tool_sha256"] == manifest["clone_tool_sha256"]
     assert metadata["clone_tool_sha256_matches_live"] is True
+
+
+def _make_reconciliation_repo(path: Path, url: str, *, runnable: bool) -> str:
+    """A repository whose result-reconciliation rules apply, and may go unanswered.
+
+    The framework import makes the category applicable. With no paper, manifest
+    or run script nothing in it reaches an assessment, so the score card retains
+    the category carrying no score; a run script gives the seed-coverage rule
+    something to judge, and the same category is scored instead.
+    """
+    path.mkdir(parents=True)
+    _write(path / "README.md", "# Fixture\n")
+    _write(path / "train.py", "import torch\n\nprint('fixture')\n")
+    if runnable:
+        _write(path / "run.sh", "python train.py --lr 0.1\n")
+    _git("init", "-q", cwd=path)
+    _git("config", "user.name", "Corpus Test", cwd=path)
+    _git("config", "user.email", "corpus@example.invalid", cwd=path)
+    _git("add", ".", cwd=path)
+    _git("commit", "-qm", "fixture", cwd=path)
+    _git("remote", "add", "origin", url, cwd=path)
+    return _git("rev-parse", "HEAD", cwd=path)
+
+
+def _write_reconciliation_cohorts(tmp_path: Path) -> tuple[Path, Path, Path]:
+    """One unvetted and one badged repository, differing only in what was assessed."""
+    clones = tmp_path / "clones"
+    repos = tmp_path / "repos.csv"
+    provenance = tmp_path / "badged-provenance.csv"
+    cohorts = {"fixture": "unvetted", "badged": "badged_functional"}
+    urls = {repo_id: f"https://example.invalid/{repo_id}" for repo_id in cohorts}
+    commits = {
+        repo_id: _make_reconciliation_repo(
+            clones / repo_id, urls[repo_id], runnable=repo_id == "badged"
+        )
+        for repo_id in cohorts
+    }
+    with repos.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(
+            handle, fieldnames=["id", "cohort", "repo_url", "commit_sha", "badge_type"]
+        )
+        writer.writeheader()
+        for repo_id, cohort in cohorts.items():
+            writer.writerow(
+                {
+                    "id": repo_id,
+                    "cohort": cohort,
+                    "repo_url": urls[repo_id],
+                    "commit_sha": commits[repo_id],
+                    "badge_type": "available+functional" if repo_id == "badged" else "",
+                }
+            )
+    with provenance.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=list(BADGED_PROVENANCE_FIELDS))
+        writer.writeheader()
+        writer.writerow(
+            {
+                "id": "badged",
+                "commit_sha": commits["badged"],
+                "paper_title": "Fixture artifact",
+                "artifact_result_id": "fixture-result",
+                "badge_set": "available+functional",
+                "evaluation_results_url": "https://example.invalid/evaluation",
+                "artifact_snapshot_url": f"{urls['badged']}/archive",
+                "artifact_appendix_url": "https://example.invalid/appendix",
+                "artifact_ref_kind": "commit",
+                "artifact_ref": commits["badged"],
+                "artifact_ref_url": f"{urls['badged']}/commit/{commits['badged']}",
+                "resolved_commit_sha": commits["badged"],
+                "resolved_commit_url": f"{urls['badged']}/commit/{commits['badged']}",
+                "retrieved_at_utc": "2026-01-01T00:00:00Z",
+                "mapping_basis": "fixture mapping",
+            }
+        )
+    write_json(
+        clones / "clones_manifest.json",
+        {
+            "clone_schema_version": CLONE_SCHEMA_VERSION,
+            "created_at": "2026-01-01T00:00:00+00:00",
+            "repos_file": str(repos),
+            "repos_file_sha256": sha256_file(repos),
+            "clone_tool_sha256": sha256_file(ROOT / "corpus" / "scripts" / "clone_repos.py"),
+            "records": [
+                {
+                    "id": repo_id,
+                    "cohort": cohort,
+                    "repo_url": urls[repo_id],
+                    "requested_sha": commits[repo_id],
+                    "resolved_sha": commits[repo_id],
+                    "status": "cloned",
+                    "error": None,
+                    "origin_url": urls[repo_id],
+                    "dirty": False,
+                    "git_tree_sha": _git("rev-parse", "HEAD^{tree}", cwd=clones / repo_id),
+                    "worktree_sha256": repository_tree_sha256(clones / repo_id),
+                    "submodule_status": [],
+                    "submodule_state": "not_configured",
+                    "git_lfs_state": "no_pointers",
+                    "git_lfs_pointer_count": 0,
+                    "git_lfs_paths_sample": [],
+                    "acquisition_status": "complete",
+                }
+                for repo_id, cohort in cohorts.items()
+            ],
+        },
+    )
+    return repos, clones, provenance
+
+
+def _run_reconciliation_cohorts(tmp_path: Path) -> Path:
+    repos, clones, provenance = _write_reconciliation_cohorts(tmp_path)
+    run = tmp_path / "run"
+    completed = subprocess.run(
+        [
+            sys.executable,
+            str(RUNNER),
+            "--repos",
+            str(repos),
+            "--clones",
+            str(clones),
+            "--badged-provenance",
+            str(provenance),
+            "--out",
+            str(run),
+            "--timeout",
+            "30",
+            "--operational-only",
+        ],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    validate_run(run)
+    return run
+
+
+def test_runner_records_an_unassessed_category_as_an_absent_combined_value(
+    tmp_path: Path,
+) -> None:
+    """The raw JSON keeps its zero beside a zero ``possible``; the CSV cannot."""
+    run = _run_reconciliation_cohorts(tmp_path)
+
+    payload = json.loads((run / "raw_json" / "fixture.json").read_text(encoding="utf-8"))
+    unassessed = [category for category in payload["categories"] if category["possible"] == 0]
+    assert [category["category"] for category in unassessed] == ["Result Reconciliation"]
+    assert unassessed[0]["percentage"] == 0.0
+    with (run / "combined.csv").open(newline="", encoding="utf-8") as handle:
+        rows = {row["id"]: row for row in csv.DictReader(handle)}
+    assert rows["fixture"]["cat_result_reconciliation"] == ""
+    assert rows["badged"]["cat_result_reconciliation"] == "50.0"
+    assert rows["fixture"]["cat_documentation"] == "0.0"
+
+
+def test_summary_excludes_an_unassessed_category_from_its_per_category_gaps(
+    tmp_path: Path,
+) -> None:
+    """The gap that reads a zero for an unassessed category is the one this prevents."""
+    run = _run_reconciliation_cohorts(tmp_path)
+    summary = tmp_path / "summary.md"
+
+    completed = subprocess.run(
+        [sys.executable, str(SUMMARIZE), "--run", str(run), "--out", str(summary)],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    text = summary.read_text(encoding="utf-8")
+    assert "## Per-category median gaps" in text
+    assert "\n- documentation: +0.0\n" in text
+    assert "result_reconciliation" not in text
 
 
 def test_effectiveness_runner_requires_claim_review_before_creating_output(

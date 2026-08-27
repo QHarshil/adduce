@@ -192,3 +192,49 @@ def test_readme_documentation_links_resolve_to_files_in_the_tree() -> None:
         assert _covered_by_sdist(target, include), (
             f"README links to {target}, which the sdist does not ship"
         )
+
+
+def _action_score_command() -> str:
+    """The score expression the shipped composite Action actually runs.
+
+    Extracted from ``action.yml`` rather than restated, so the test cannot
+    drift away from the file it is guarding.
+    """
+    text = (ROOT / "action.yml").read_text(encoding="utf-8")
+    for line in text.splitlines():
+        stripped = line.strip()
+        prefix = 'SCORE=$(python -c "'
+        if stripped.startswith(prefix):
+            rest = stripped[len(prefix) :]
+            return rest[: rest.index('"')]
+    raise AssertionError("action.yml no longer contains a SCORE=$(python -c ...) line")
+
+
+@pytest.mark.parametrize(
+    ("total", "expected"),
+    [(47.1, "47.1"), (0.0, "0.0"), (None, "")],
+)
+def test_the_action_reports_an_absent_score_as_empty_never_as_none(
+    tmp_path: Path, total: object, expected: str
+) -> None:
+    """A card that assessed nothing has a null total, and ``print`` would emit
+    the string ``None`` for it. A workflow comparing that against a threshold
+    reads an absence as a value, so the Action must emit nothing instead.
+
+    ``0.0`` is included deliberately: an all-FAIL card scores zero and must
+    still be reported as a number.
+    """
+    import json
+    import subprocess
+    import sys
+
+    report = tmp_path / "report.json"
+    report.write_text(json.dumps({"total": total}), encoding="utf-8")
+    completed = subprocess.run(
+        [sys.executable, "-c", _action_score_command(), str(report)],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    assert completed.stdout.strip() == expected
+    assert completed.stdout.strip() != "None"

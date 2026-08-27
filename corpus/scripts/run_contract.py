@@ -861,9 +861,15 @@ def validate_raw_payload(
     ):
         raise RunContractError(f"raw JSON frameworks are invalid for {repo_id}")
 
-    total = _finite_number(payload.get("total"), f"raw JSON score for {repo_id}")
-    if not 0 <= total <= 100:
-        raise RunContractError(f"raw JSON score is invalid for {repo_id}")
+    # A null total is "no check anywhere reached an assessment", which is a
+    # different statement from a failing zero and is preserved as such. The
+    # range applies only to a reported number.
+    reported_total = payload.get("total")
+    total: float | None = None
+    if reported_total is not None:
+        total = _finite_number(reported_total, f"raw JSON score for {repo_id}")
+        if not 0 <= total <= 100:
+            raise RunContractError(f"raw JSON score is invalid for {repo_id}")
     if not isinstance(payload.get("tier"), str) or not payload["tier"]:
         raise RunContractError(f"raw JSON tier is invalid for {repo_id}")
     if payload.get("profile") != "default":
@@ -1019,8 +1025,15 @@ def validate_raw_payload(
         earned, possible = applicable.get(finding["category"], (0.0, 0.0))
         weight = float(finding["weight"])
         applicable[finding["category"]] = (earned + value * weight, possible + weight)
+    # A category whose rules all applied and none of which answered is reported
+    # with an empty score rather than dropped, so the unanswered question stays
+    # visible. It carries no weight either way, so the total is unaffected, and
+    # it has no percentage to report: null here, an empty cell in the CSV.
+    unassessed_categories = {
+        finding["category"] for finding in findings if finding["status"] == "unknown"
+    } - set(applicable)
 
-    category_percentages: dict[str, float] = {}
+    category_percentages: dict[str, float | None] = {}
     observed_categories: set[str] = set()
     weighted_earned = 0.0
     weighted_possible = 0.0
@@ -1047,13 +1060,16 @@ def validate_raw_payload(
         percentage = _finite_number(
             category.get("percentage"), f"raw JSON category percentage for {repo_id}"
         )
-        if (
-            key in category_percentages
-            or not 0 <= percentage <= 100
-            or possible <= 0
-            or earned > possible
-        ):
+        if key in category_percentages or not 0 <= percentage <= 100 or earned > possible:
             raise RunContractError(f"raw JSON category score is invalid for {repo_id}")
+        if possible == 0:
+            if category_name not in unassessed_categories or earned != 0 or percentage != 0:
+                raise RunContractError(
+                    f"raw JSON empty category score is not supported by its findings for {repo_id}"
+                )
+            observed_categories.add(category_name)
+            category_percentages[key] = None
+            continue
         if category_name not in applicable:
             raise RunContractError(
                 f"raw JSON reports a category with no applicable rules for {repo_id}"
@@ -1071,24 +1087,24 @@ def validate_raw_payload(
         observed_categories.add(category_name)
         category_percentages[key] = percentage
 
-    if observed_categories != set(applicable):
+    expected_categories = set(applicable) | unassessed_categories
+    if observed_categories != expected_categories:
         raise RunContractError(
             f"raw JSON category census is incomplete for {repo_id} "
-            f"(missing={sorted(set(applicable) - observed_categories)})"
+            f"(missing={sorted(expected_categories - observed_categories)})"
         )
-    expected_total = round(
-        100.0 * weighted_earned / weighted_possible if weighted_possible else 0.0,
-        1,
+    expected_total = (
+        round(100.0 * weighted_earned / weighted_possible, 1) if weighted_possible else None
     )
     if total != expected_total:
         raise RunContractError(
             f"raw JSON total score is not supported by its findings for {repo_id}"
         )
-    # A tier is a function of the score only when the analyzer had enough parsed
-    # source for the score to be a statement about anything. Below that floor it
-    # reports no tier, so recomputing one from the score here would reject a
-    # correct artifact. The evidence base carries which case applies, and both
-    # branches are still checked exactly.
+    # A tier is a function of the score only when there is a score and the
+    # analyzer had enough parsed source for it to be a statement about anything.
+    # Withheld in either case, so recomputing one from the score alone would
+    # reject a correct artifact. The evidence base and the null total carry
+    # which of the three cases applies, and every branch is checked exactly.
     evidence_base = payload.get("evidence_base")
     if not isinstance(evidence_base, dict):
         raise RunContractError(f"raw JSON evidence base is invalid for {repo_id}")
@@ -1098,8 +1114,10 @@ def validate_raw_payload(
             "rated",
             "evaluated_rules",
             "considered_rules",
+            "applicable_rules",
             "coverage_percent",
             "analysable_lines",
+            "rules",
         },
         f"raw JSON evidence base for {repo_id}",
     )
@@ -1108,11 +1126,58 @@ def validate_raw_payload(
         raise RunContractError(f"raw JSON evidence-base rating is invalid for {repo_id}")
     evaluated = evidence_base["evaluated_rules"]
     considered = evidence_base["considered_rules"]
-    for label, value in (("evaluated", evaluated), ("considered", considered)):
+    applicable_rules = evidence_base["applicable_rules"]
+    for label, value in (
+        ("evaluated", evaluated),
+        ("considered", considered),
+        ("applicable", applicable_rules),
+    ):
         if not isinstance(value, int) or isinstance(value, bool) or value < 0:
             raise RunContractError(f"raw JSON {label}-rule count is invalid for {repo_id}")
     if evaluated > considered:
         raise RunContractError(f"raw JSON evaluated rules exceed those considered for {repo_id}")
+    if evaluated > applicable_rules:
+        raise RunContractError(f"raw JSON evaluated rules exceed those applicable for {repo_id}")
+    if applicable_rules > considered:
+        raise RunContractError(f"raw JSON applicable rules exceed those considered for {repo_id}")
+    # Applicability and assessment are separate: a rule is out of scope before
+    # evaluation, evaluated and not applicable, applicable and unanswered, or
+    # applicable and answered. Only the last two reach coverage, so the census
+    # has to partition the considered rules exactly for the fraction to mean
+    # what it says. skipped_inapplicable returned no finding and entered no
+    # count, so nothing here constrains it beyond its own type.
+    rule_census = evidence_base["rules"]
+    if not isinstance(rule_census, dict):
+        raise RunContractError(f"raw JSON rule census is invalid for {repo_id}")
+    _exact_keys(
+        rule_census,
+        {"assessed", "unknown", "not_applicable", "skipped_inapplicable"},
+        f"raw JSON rule census for {repo_id}",
+    )
+    for label in ("assessed", "unknown", "not_applicable", "skipped_inapplicable"):
+        value = rule_census[label]
+        if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+            raise RunContractError(f"raw JSON {label}-rule census is invalid for {repo_id}")
+    if rule_census["assessed"] != evaluated:
+        raise RunContractError(
+            f"raw JSON assessed-rule census disagrees with its evaluated count for {repo_id}"
+        )
+    if rule_census["assessed"] + rule_census["unknown"] != applicable_rules:
+        raise RunContractError(
+            f"raw JSON rule census does not partition the applicable rules for {repo_id}"
+        )
+    if applicable_rules + rule_census["not_applicable"] != considered:
+        raise RunContractError(
+            f"raw JSON rule census does not partition the considered rules for {repo_id}"
+        )
+    coverage = _finite_number(
+        evidence_base["coverage_percent"], f"raw JSON coverage for {repo_id}", minimum=0
+    )
+    expected_coverage = round(100.0 * evaluated / applicable_rules, 1) if applicable_rules else 0.0
+    if coverage != expected_coverage:
+        raise RunContractError(
+            f"raw JSON coverage is not supported by its rule counts for {repo_id}"
+        )
     # The corpus census pads this list to the full built-in rule set, adding a
     # not-applicable entry for every rule that emitted nothing, so the findings
     # here are a superset of what the analyzer itself considered. What must
@@ -1135,7 +1200,11 @@ def validate_raw_payload(
     ):
         raise RunContractError(f"raw JSON analysable-line count is invalid for {repo_id}")
 
-    if rated:
+    if total is None:
+        expected_tier = "Unrated (nothing assessed)"
+    elif not rated:
+        expected_tier = "Unrated (insufficient evidence)"
+    else:
         expected_tier = next(
             name
             for threshold, name in (
@@ -1146,8 +1215,6 @@ def validate_raw_payload(
             )
             if total >= threshold
         )
-    else:
-        expected_tier = "Unrated (insufficient evidence)"
     if payload["tier"] != expected_tier:
         raise RunContractError(f"raw JSON tier is inconsistent with its score for {repo_id}")
 
@@ -1861,7 +1928,19 @@ def _validate_combined_rows(
             metadata["runtime_context"]["peak_rss_platform"],
             set(metadata["builtin_rule_ids"]),
         )
-        if _parse_nonnegative_number(row["score"], f"score for {repo_id}") != expected["score"]:
+        # A raw JSON that assessed nothing carries a null total, which the CSV
+        # writer renders as an empty cell. Empty means absent in both
+        # directions: a null total requires it and a numeric total forbids it,
+        # so the absence cannot be read back as a zero.
+        expected_score = expected["score"]
+        observed_score = row["score"]
+        if expected_score is None:
+            if observed_score != "":
+                raise RunContractError(f"combined score disagrees with raw JSON for {repo_id}")
+        elif (
+            observed_score == ""
+            or _parse_nonnegative_number(observed_score, f"score for {repo_id}") != expected_score
+        ):
             raise RunContractError(f"combined score disagrees with raw JSON for {repo_id}")
         if (
             row["tier"] != expected["tier"]
@@ -1886,12 +1965,24 @@ def _validate_combined_rows(
                 raise RunContractError(f"combined {field} disagrees with raw JSON for {repo_id}")
         expected_categories = expected["categories"]
         observed_category_columns.update(expected_categories)
+        # A category that applied but that nothing could assess carries a null
+        # percentage, and the CSV has no companion column to tell that apart
+        # from a scored zero. Absence is that distinction, and it is exact in
+        # both directions: required for an unassessed category, forbidden for
+        # one with a score.
         for field in category_fields:
             value = row[field]
             if field in expected_categories:
-                if (
-                    _parse_nonnegative_number(value, f"{field} for {repo_id}")
-                    != expected_categories[field]
+                expected_category = expected_categories[field]
+                if expected_category is None:
+                    if value != "":
+                        raise RunContractError(
+                            f"combined category disagrees with raw JSON for {repo_id}"
+                        )
+                elif (
+                    value == ""
+                    or _parse_nonnegative_number(value, f"{field} for {repo_id}")
+                    != expected_category
                 ):
                     raise RunContractError(
                         f"combined category disagrees with raw JSON for {repo_id}"

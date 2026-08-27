@@ -625,3 +625,39 @@ def test_ab_records_a_mid_run_failure_with_its_reason(tmp_path: Path, monkeypatc
     assert record["available"] is False
     assert record["reason"] == "worker exited 1"
     assert report["summary"]["targets_unavailable"] == 1
+
+
+def test_a_target_that_assessed_nothing_renders_a_dash_rather_than_a_zero() -> None:
+    """A score of None is the absence of a score, not a score of zero.
+
+    ``ScoreCard.total`` is None when no check reached an assessment. Rendering
+    that as ``0.0`` in the finding-diff table would read as a total failure,
+    which is the distinction the nullable total exists to preserve.
+    """
+    assert runner._score_cell(None) == "-"
+    assert runner._score_cell(0.0) == "0.0"
+    assert runner._score_cell(73.9) == "73.9"
+
+    report = {
+        "results": [
+            {
+                "id": "nothing-assessed",
+                "available": True,
+                "files": {"whole_tree": 3, "honoured": 3},
+                "score": {"whole_tree": None, "honoured": None},
+                "rules_moved": 0,
+                "classification_tally": {},
+                "moves": [],
+            }
+        ],
+        "summary": {
+            "targets_measured": 1,
+            "targets_unavailable": 0,
+            "targets_unchanged": 1,
+            "rules_moved_total": 0,
+        },
+    }
+    rendered = runner._render_finding_diff(report)
+
+    assert "nothing-assessed" in rendered
+    assert "0.0" not in rendered

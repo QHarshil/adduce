@@ -141,8 +141,10 @@ jobs:
       - name: Validate Action outputs
         env:
           ADDUCE_ACTION_SCORE: ${{ steps.audit.outputs.score }}
+          ADDUCE_ACTION_SCORE_AVAILABLE: ${{ steps.audit.outputs.score-available }}
         run: |
           python -c "import os; score = float(os.environ['ADDUCE_ACTION_SCORE']); assert 0 <= score < 100"
+          python -c "import os; assert os.environ['ADDUCE_ACTION_SCORE_AVAILABLE'] == 'true'"
           python -c "import json; data = json.load(open('${{ runner.temp }}/adduce-action.sarif')); assert data['version'] == '2.1.0'"
           test -s "${{ runner.temp }}/adduce-action.md"
       - name: Exercise a failing score gate

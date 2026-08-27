@@ -16,7 +16,13 @@ _SVG_COLORS = {
     "green": "#97ca00",
     "yellow": "#dfb317",
     "orange": "#fe7d37",
+    "lightgrey": "#9f9f9f",
 }
+
+#: Shown when no check reached an assessment. A number here would be read as a
+#: score, and the repository does not have one.
+_UNASSESSED_MESSAGE = "not assessed"
+_UNASSESSED_COLOR = "lightgrey"
 
 
 def _color(total: float) -> str:
@@ -35,8 +41,8 @@ def render(result: CheckResult) -> str:
         {
             "schemaVersion": 1,
             "label": "reproducibility",
-            "message": f"{total:.0f}/100",
-            "color": _color(total),
+            "message": _UNASSESSED_MESSAGE if total is None else f"{total:.0f}/100",
+            "color": _UNASSESSED_COLOR if total is None else _color(total),
         },
         indent=2,
     )
@@ -46,8 +52,8 @@ def render_svg(result: CheckResult) -> str:
     """A self-contained flat badge SVG the GitHub Action can commit in-repo."""
     total = result.card.total
     label = "reproducibility"
-    message = f"{total:.0f}/100"
-    color = _SVG_COLORS[_color(total)]
+    message = _UNASSESSED_MESSAGE if total is None else f"{total:.0f}/100"
+    color = _SVG_COLORS[_UNASSESSED_COLOR if total is None else _color(total)]
     label_width = 6 * len(label) + 10
     message_width = 6 * len(message) + 10
     width = label_width + message_width
