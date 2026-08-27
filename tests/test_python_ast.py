@@ -2,6 +2,13 @@
 
 from __future__ import annotations
 
+import ast
+import subprocess
+import sys
+from collections.abc import Callable
+
+import pytest
+
 
 def test_direct_call_resolution(make_evidence):
     ev = make_evidence({"train.py": "import torch\ntorch.manual_seed(0)\n"})
@@ -143,6 +150,140 @@ def test_inline_suppression_parsing(make_evidence):
 def test_syntax_error_does_not_crash(make_evidence):
     ev = make_evidence({"broken.py": "def f(:\n", "ok.py": "import torch\ntorch.manual_seed(0)\n"})
     assert any(m.parse_error for m in ev.py.modules)
+    assert ev.py.calls("torch.manual_seed")
+
+
+def _elif_chain_source(branches: int) -> str:
+    lines = ["def f(x):", "    if x == 0:", "        pass"]
+    for i in range(1, branches):
+        lines.append(f"    elif x == {i}:")
+        lines.append("        pass")
+    return "\n".join(lines) + "\n"
+
+
+def _binop_chain_source(terms: int) -> str:
+    return "x = " + " + ".join("1" for _ in range(terms)) + "\n"
+
+
+def _unary_chain_source(depth: int) -> str:
+    return "x = " + "-" * depth + "1\n"
+
+
+# A minimal, out-of-process probe for how a candidate source behaves. Reads
+# the source from stdin so the caller never has to shell-quote megabytes of
+# generated code.
+_OVERFLOW_PROBE = (
+    "import ast, sys\n"
+    "try:\n"
+    "    ast.parse(sys.stdin.read())\n"
+    "except (MemoryError, RecursionError):\n"
+    "    print('raised')\n"
+    "else:\n"
+    "    print('ok')\n"
+)
+
+
+def _overflow_outcome(source: str) -> str:
+    """Return 'raised', 'ok', or 'crashed' for how a fresh interpreter handles ``ast.parse(source)``.
+
+    Run out of process. The whole point of this probe is to find inputs that
+    make ast.parse misbehave, and on some interpreter and platform
+    combinations that misbehavior is an uncaught native stack overflow
+    (the process is killed by a signal) rather than a Python exception --
+    which would take this test process down with it if attempted in-process.
+    """
+    result = subprocess.run(
+        [sys.executable, "-c", _OVERFLOW_PROBE],
+        input=source,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+    if result.returncode < 0:
+        return "crashed"
+    return "raised" if result.stdout.strip() == "raised" else "ok"
+
+
+def _overflow_source(build: Callable[[int], str], start: int, limit: int) -> str | None:
+    """The smallest ``build(n)`` for ``n`` doubling from ``start`` to ``limit``
+    whose ``ast.parse`` raises ``(MemoryError, RecursionError)`` in a fresh
+    interpreter, or ``None`` if growth reaches a native crash, or ``limit``,
+    before any size raises cleanly.
+    """
+    n = start
+    while n <= limit:
+        outcome = _overflow_outcome(build(n))
+        if outcome == "raised":
+            return build(n)
+        if outcome == "crashed":
+            return None
+        n *= 2
+    return None
+
+
+def _compiler_overflow_source() -> str:
+    """A benign module whose parse overflows ast.parse's AST-construction
+    step, distinctly from the elif chain's parser-stack overflow above.
+
+    A long chain of binary additions is the shape that does this: pegen
+    parses it iteratively (left-recursion is memoised, not deeply recursed),
+    so the overflow is deferred to the later step that recursively builds
+    nested BinOp nodes -- a RecursionError from CPython 3.11 on. On CPython
+    3.10 that construction step has no recursion guard at all, so growing
+    this shape does not raise; it corrupts the native stack outright and the
+    interpreter is killed. Where that happens, fall back to a chain of
+    unary negations, which is parsed by genuine recursive descent (no
+    left-recursion optimisation applies) and so overflows the same guarded
+    parser-stack limit as the elif chain, just through a different shape.
+    """
+    source = _overflow_source(_binop_chain_source, start=1_000, limit=2_000_000)
+    if source is not None:
+        return source
+    source = _overflow_source(_unary_chain_source, start=1_000, limit=200_000)
+    if source is None:
+        raise AssertionError("no fixture overflowed ast.parse without crashing on this interpreter")
+    return source
+
+
+def _elif_overflow_source() -> str:
+    """An elif chain sized to overflow ast.parse's pegen parser-stack limit.
+
+    MAXSTACK is a compile-time constant, but not the same constant on every
+    CPython build, so the branch count that overflows it is interpreter- and
+    platform-dependent. Sizing the fixture at test time keeps this
+    regression non-vacuous everywhere instead of pinning a number measured
+    on one interpreter.
+    """
+    source = _overflow_source(_elif_chain_source, start=1_000, limit=500_000)
+    if source is None:
+        raise AssertionError("no elif chain up to 500000 branches overflowed ast.parse here")
+    return source
+
+
+def test_parser_stack_overflow_does_not_crash(make_evidence):
+    # See _elif_overflow_source: ast.parse itself raises MemoryError or
+    # RecursionError here, not SyntaxError or ValueError.
+    source = _elif_overflow_source()
+    with pytest.raises((MemoryError, RecursionError)):
+        ast.parse(source)
+    ev = make_evidence({"huge.py": source, "ok.py": "import torch\ntorch.manual_seed(0)\n"})
+    modules = {m.path: m for m in ev.py.modules}
+    assert modules["huge.py"].parse_error
+    assert ev.py.calls("torch.manual_seed")
+
+
+def test_compiler_recursion_overflow_does_not_crash(make_evidence):
+    # See _compiler_overflow_source: ast.parse itself raises MemoryError or
+    # RecursionError here, not SyntaxError or ValueError. Sizing (and, on
+    # interpreters that cannot raise cleanly for the preferred shape,
+    # reshaping) the fixture out of process keeps this non-vacuous without
+    # risking this process on a native crash.
+    source = _compiler_overflow_source()
+    with pytest.raises((MemoryError, RecursionError)):
+        ast.parse(source)
+    ev = make_evidence({"huge.py": source, "ok.py": "import torch\ntorch.manual_seed(0)\n"})
+    modules = {m.path: m for m in ev.py.modules}
+    assert modules["huge.py"].parse_error
     assert ev.py.calls("torch.manual_seed")
 
 
