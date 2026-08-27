@@ -13,7 +13,7 @@ from .model import Repo, scan_repository
 from .profiles import Profile, load_profile
 from .reviewer_time import ReviewerTime
 from .reviewer_time import estimate as estimate_reviewer_time
-from .rules import BUILTIN_RULES, Finding, Rule, Status, discover_rules
+from .rules import BUILTIN_RULES, Category, Finding, Rule, Status, discover_rules
 from .rules.registry import RulePluginWarning, safe_label
 from .scoring import ScoreCard, score
 from .telemetry import Telemetry
@@ -78,14 +78,63 @@ def _type_label(value: object, fallback: str) -> str:
     report. A name that is not an identifier is dropped rather than repaired --
     a punctuation-mangled string tells a reader less than saying the name was
     unusable, and repairing it would still pass the characters through.
+
+    The read itself is guarded. ``__name__`` on a class is served by its
+    metaclass, and a rule pack supplies its own; ``getattr`` with a default
+    suppresses only ``AttributeError``, so a metaclass property that raises
+    anything else would escape. This function is what names a rule the run has
+    already given up on, so it is the last place that may fail.
     """
-    name = getattr(type(value), "__name__", None)
+    try:
+        name = getattr(type(value), "__name__", None)
+    except Exception:
+        return fallback
     if not isinstance(name, str) or not name.isidentifier():
         return fallback
     return safe_label(name)
 
 
-def _degrade(rule: Rule, reason: str, telemetry: Telemetry) -> Finding:
+@dataclass(frozen=True)
+class _RuleIdentity:
+    """What a rule must be able to say about itself before a run can use it."""
+
+    id: str
+    category: Category
+    title: str
+    weight: int
+    severity: str
+
+
+def _identify(rule: Rule) -> _RuleIdentity | None:
+    """Read what a result needs from a rule, or None when the rule cannot say.
+
+    Each of these is an attribute lookup on an object a rule pack wrote, and a
+    pack may define any of them as a property that raises. They are read once,
+    here, and every later use is of this record rather than of the rule, so a
+    rule cannot answer one way when the engine asks and another way when the
+    finding it returned is checked against that answer. The finding is a
+    separate object and is not pinned this way.
+
+    A rule that cannot supply them is passed over rather than named. A finding
+    needs an id, a category and a title before it can appear in a report, a
+    score or a baseline, and synthesising them would file a result under a rule
+    that does not exist.
+    """
+    try:
+        return _RuleIdentity(
+            id=rule.id,
+            category=rule.category,
+            title=rule.title,
+            weight=rule.weight,
+            severity=rule.effective_severity,
+        )
+    except Exception:
+        if not _is_third_party(rule):
+            raise
+        return None
+
+
+def _degrade(identity: _RuleIdentity, reason: str, telemetry: Telemetry) -> Finding:
     """Stand in for a third-party rule that produced no usable result.
 
     UNKNOWN, not a verdict: the rule applied and reached no assessment, so the
@@ -96,15 +145,15 @@ def _degrade(rule: Rule, reason: str, telemetry: Telemetry) -> Finding:
     of it a rule pack controls arrives already through ``safe_label``.
     """
     warnings.warn(
-        f"Recorded adduce rule {safe_label(rule.id)} as unknown: {reason}.",
+        f"Recorded adduce rule {safe_label(identity.id)} as unknown: {reason}.",
         RulePluginWarning,
         stacklevel=2,
     )
     telemetry.count("rules.degraded")
     return Finding(
-        rule_id=rule.id,
-        category=rule.category,
-        title=rule.title,
+        rule_id=identity.id,
+        category=identity.category,
+        title=identity.title,
         status=Status.UNKNOWN,
         confidence=0.0,
         message=f"This check did not complete: {reason}. Its result is unknown.",
@@ -112,12 +161,14 @@ def _degrade(rule: Rule, reason: str, telemetry: Telemetry) -> Finding:
             "Report the failure to whoever maintains this rule. A check that "
             "did not complete says nothing about this repository."
         ),
-        weight=rule.weight,
-        severity=rule.effective_severity,
+        weight=identity.weight,
+        severity=identity.severity,
     )
 
 
-def _evaluate_guarded(rule: Rule, evidence: Evidence, telemetry: Telemetry) -> Finding:
+def _evaluate_guarded(
+    rule: Rule, evidence: Evidence, identity: _RuleIdentity, telemetry: Telemetry
+) -> Finding:
     """Evaluate one rule, containing a third-party rule that misbehaves.
 
     One installed rule pack must not be able to discard an entire audit. A
@@ -137,8 +188,8 @@ def _evaluate_guarded(rule: Rule, evidence: Evidence, telemetry: Telemetry) -> F
         if not _is_third_party(rule):
             raise
         label = _type_label(error, "an exception with no usable class name")
-        return _degrade(rule, f"the rule raised {label}", telemetry)
-    if reported_id is None or reported_id != rule.id:
+        return _degrade(identity, f"the rule raised {label}", telemetry)
+    if reported_id is None or reported_id != identity.id:
         # Both leave this rule unrepresented: a missing ``return`` yields no
         # finding at all, and a finding filed under another id takes that
         # rule's place in the report, the score and the baseline.
@@ -148,8 +199,8 @@ def _evaluate_guarded(rule: Rule, evidence: Evidence, telemetry: Telemetry) -> F
             label = _type_label(finding, "a value with no usable class name")
             reason = f"the rule returned {label}, not a finding"
         if not _is_third_party(rule):
-            raise ValueError(f"rule {rule.id!r} returned an unusable finding: {reason}")
-        return _degrade(rule, reason, telemetry)
+            raise ValueError(f"rule {identity.id!r} returned an unusable finding: {reason}")
+        return _degrade(identity, reason, telemetry)
     telemetry.count("rules.evaluated")
     return finding
 
@@ -228,14 +279,41 @@ def run_check(
         skipped_inapplicable = 0
         with telemetry.stage("rules.evaluate"):
             for rule in discovered:
-                if rule.id in profile.disabled_rules:
+                identity = _identify(rule)
+                if identity is None:
+                    telemetry.count("rules.skipped_unidentifiable")
+                    warnings.warn(
+                        "Passed over an adduce rule from "
+                        f"{_type_label(rule, 'a class with no usable name')}: it could "
+                        "not supply the identity a result is filed under.",
+                        RulePluginWarning,
+                        stacklevel=2,
+                    )
+                    continue
+                if identity.id in profile.disabled_rules:
                     telemetry.count("rules.skipped_disabled")
                     continue
-                if not rule.applies_to(repo):
-                    skipped_inapplicable += 1
-                    telemetry.count("rules.skipped_inapplicable")
-                    continue
-                finding = _evaluate_guarded(rule, evidence, telemetry)
+                try:
+                    applies = rule.applies_to(repo)
+                except Exception as error:
+                    if not _is_third_party(rule):
+                        raise
+                    # Not the same as answering "no". The run does not know
+                    # whether this rule applied, and a rule that answered "no"
+                    # leaves the score untouched, so recording it as
+                    # inapplicable would claim something nothing established.
+                    label = _type_label(error, "an exception with no usable class name")
+                    finding = _degrade(
+                        identity,
+                        f"the rule's applicability check raised {label}",
+                        telemetry,
+                    )
+                else:
+                    if not applies:
+                        skipped_inapplicable += 1
+                        telemetry.count("rules.skipped_inapplicable")
+                        continue
+                    finding = _evaluate_guarded(rule, evidence, identity, telemetry)
                 _apply_suppressions(finding, evidence, config)
                 findings.append(finding)
 

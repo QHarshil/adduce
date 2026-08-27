@@ -377,8 +377,24 @@ the preregistered validation report belong to the following release.
   equality or hash method of its own choosing will pass it off as a built-in.
   Text describing the failure is bounded and dropped unless it is a real
   identifier, since neither an exception's message nor its class name is under
-  adduce's control. Containment covers evaluation; a rule whose `id` or
-  `applies_to` raises is still read before the boundary.
+  adduce's control. Containment now begins before evaluation. Each rule's id,
+  category, title, weight and severity are read once, together, ahead of
+  anything else, and a rule that is not one of adduce's own and cannot supply
+  them is passed over: it produces no finding, it is counted as
+  `rules.skipped_unidentifiable`, and the warning names its class because there
+  is no id to name it by. A finding needs an id, a category and a title before
+  it can appear in a report, a score or a baseline, so synthesising one would
+  file a result under a rule that does not exist; degrading the rule instead
+  would name it in the report and lower coverage, and neither is possible for a
+  rule with no usable identity. A rule whose `applies_to` raises does have an
+  identity, so it is contained the way a raising `evaluate` is: recorded
+  `UNKNOWN` under its own id, applicable but unassessed, and counted as
+  `rules.degraded`. It is not folded into the inapplicable count, because a
+  rule that answered `False` leaves the score untouched and this one reached no
+  answer, so counting it there would record an applicability decision the rule
+  never made. A built-in that fails at either of the two new steps still ends
+  the run. `rules.skipped_unidentifiable` is telemetry only and does not reach
+  the score card.
 
 - **File inventory order differed between Windows and POSIX, and reached
   rendered output.** The repository walk sorted the native `Path` objects it got

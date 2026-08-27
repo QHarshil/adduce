@@ -33,24 +33,34 @@ be: `UNKNOWN` and `NOT_APPLICABLE` both carry `None`, so a `score_value is None`
 test cannot separate them. Coverage, the category-retention branch and
 `top_fixes` all read the predicates rather than the value.
 
-## Four outcomes for a registered rule
+## Five outcomes for a registered rule
 
-A rule reaches exactly one of four outcomes. The first and the third each have
-two causes, counted the same way within an outcome. The last three columns are
+A rule reaches exactly one of five outcomes. Two of them have more than one
+cause, counted the same way within an outcome. The last three columns are
 the score-card counts each outcome lands in.
 
 | Outcome | Cause | Finding | `considered_rules` | `applicable_rules` | `evaluated_rules` |
 | --- | --- | --- | --- | --- | --- |
-| Skipped before evaluation | rule id in the profile's `disabled_rules` (`engine.py:231-232`) | none | no | no | no |
-| Skipped before evaluation | `applies_to(repo)` returned `False` (`engine.py:234-236`) | none | no | no | no |
+| Passed over | the rule could not supply its id, category, title, weight and severity (`engine.py:282-292`) | none | no | no | no |
+| Skipped before evaluation | rule id in the profile's `disabled_rules` (`engine.py:293-294`) | none | no | no | no |
+| Skipped before evaluation | `applies_to(repo)` returned `False` (`engine.py:312-314`) | none | no | no | no |
 | Evaluated, not applicable | `evaluate` returned `NOT_APPLICABLE` | yes | yes | no | no |
 | Evaluated, unassessed | `evaluate` returned `UNKNOWN` | yes | yes | yes | no |
-| Evaluated, unassessed | the engine contained a third-party rule (`engine.py:103`) | yes | yes | yes | no |
+| Evaluated, unassessed | the engine contained a third-party rule whose `evaluate` misbehaved (`engine.py:152`) | yes | yes | yes | no |
+| Evaluated, unassessed | the engine contained a third-party rule whose `applies_to` raised (`engine.py:296-310`) | yes | yes | yes | no |
 | Evaluated and assessed | `evaluate` returned `PASS`, `PARTIAL` or `FAIL` | yes | yes | yes | yes |
 
-Every outcome but the disabled skip is counted, and those counts sit together
-in the JSON report under `evidence_base.rules` (`scoring.py:88-93`). A rule the
-profile disabled is counted in no report at all. On adduce's own repository:
+The rule whose `applies_to` raised never reached `evaluate`. It lands in that
+outcome because the run knows it was considered and does not know that it was
+inapplicable: a rule that answers `False` leaves the score untouched, and
+counting this one there would record an applicability decision it never
+reached.
+
+Every outcome but the disabled skip and the pass-over is counted, and those
+counts sit together in the JSON report under `evidence_base.rules`
+(`scoring.py:88-93`). A rule the profile disabled, and a rule passed over
+because it could not identify itself, are counted in no report body at all. On
+adduce's own repository:
 
 ```json
 "rules": {
@@ -64,28 +74,32 @@ profile disabled is counted in no report at all. On adduce's own repository:
 `assessed` is `evaluated_rules`; `unknown` and `not_applicable` are the two
 differences between the three counts, exposed as properties
 (`scoring.py:55-61`). `skipped_inapplicable` is passed into `score()` by the
-engine (`engine.py:247`), because the rules it counts left no finding behind to
+engine (`engine.py:325`), because the rules it counts left no finding behind to
 count from later. The block exists so that a reader who sees 96.2 % coverage can
 see why that is not a statement about all 78 built-in rules.
 
-A rule skipped before evaluation produces no `Finding` at all and is invisible
-to scoring, to coverage, and to every reporter's finding list. **A coverage
-percentage is therefore not a statement about every registered rule.** It is
-computed over the findings returned; rules that never ran are in neither its
-numerator nor its denominator. Measured on adduce's own repository, 69 findings
-were returned and a further 9 rules were skipped by `applies_to`, accounting
-between them for all 78 built-in rules.
+A rule skipped or passed over before evaluation produces no `Finding` at all
+and is invisible to scoring, to coverage, and to every reporter's finding list.
+**A coverage percentage is therefore not a statement about every registered
+rule.** It is computed over the findings returned; rules that never ran are in
+neither its numerator nor its denominator. Measured on adduce's own repository,
+69 findings were returned and a further 9 rules were skipped by `applies_to`,
+accounting between them for all 78 built-in rules.
 
-The two pre-evaluation skips also have telemetry counters,
-`rules.skipped_disabled` and `rules.skipped_inapplicable`. `--timings` prints
-the counters that fired on stderr and puts that same set in the `telemetry`
-block of `--format json`.
+The two pre-evaluation skips and the pass-over each have a telemetry counter:
+`rules.skipped_disabled`, `rules.skipped_inapplicable` and
+`rules.skipped_unidentifiable` (`engine.py:284`). `--timings` prints the
+counters that fired on stderr and puts that same set in the `telemetry` block
+of `--format json`. `rules.skipped_unidentifiable` is telemetry only: it
+reaches no score card and no report body, so a rule the run could not identify
+is visible in the counters and in the warning it raised, and nowhere else.
 
-A third counter, `rules.degraded`, counts something else: the times the engine
-contained a rule that is not one of adduce's own and recorded an `UNKNOWN`
-finding under that rule's id in place of the result it did not produce
-(`engine.py:103`). A built-in never reaches it, because a built-in that
-misbehaves ends the run instead.
+One further counter, `rules.degraded`, counts something else: the times the
+engine contained a rule that is not one of adduce's own and recorded an
+`UNKNOWN` finding under that rule's id in place of the result it did not
+produce (`engine.py:152`), whether the rule failed in `applies_to` or in
+`evaluate`. A built-in never reaches it, because a built-in that misbehaves
+ends the run instead.
 
 **A counter that never fires is absent, not zero.** `Telemetry.count` creates
 the key on first increment (`telemetry.py:50-51`), and `snapshot` emits only the
@@ -94,19 +108,22 @@ the default profile, which disables no rule, and with no rule plugins installed,
 stderr reports `rules.skipped_inapplicable: 9` and says nothing about disabled
 or degraded rules, and the only `rules.*` keys in the JSON block are
 `rules.evaluated` and `rules.skipped_inapplicable`. Read the block with
-`.get(name, 0)`: indexing `counters["rules.skipped_disabled"]` or
-`counters["rules.degraded"]` raises `KeyError` rather than returning 0.
+`.get(name, 0)`: indexing `counters["rules.skipped_disabled"]`,
+`counters["rules.skipped_unidentifiable"]` or `counters["rules.degraded"]`
+raises `KeyError` rather than returning 0. `rules.skipped_unidentifiable`
+cannot fire at all unless a rule pack is installed, so a consumer that indexes
+it directly breaks on the ordinary case rather than on a rare one.
 In-process, `Telemetry.counter` already returns 0 for a name that never fired
 (`telemetry.py:53-54`), so the two access paths disagree and only the JSON one
 can raise.
 
 The inapplicable count additionally reaches the score card, at
-`evidence_base.rules.skipped_inapplicable`; the disabled count appears in
-neither the score card nor any report body.
+`evidence_base.rules.skipped_inapplicable`; the disabled and unidentifiable
+counts appear in neither the score card nor any report body.
 
 **Two counters share the word "evaluated", and they count different things.**
 `evidence_base.evaluated_rules` is the number of rules that reached an
-assessment. The telemetry counter `rules.evaluated` (`engine.py:153`) is the
+assessment. The telemetry counter `rules.evaluated` (`engine.py:204`) is the
 number of rules whose own `evaluate` returned a usable finding. That is not the
 same as the number of findings on the card: where the engine contained a
 misbehaving third-party rule it supplied that finding itself, so
@@ -264,7 +281,7 @@ exits 1 (`cli.py:400-405`). A gate that cannot be evaluated is not a gate that
 passed.
 
 `analysable_lines` is the summed line count of the Python modules the analyzer
-parsed (`engine.py:246`). Below `MINIMUM_ANALYSABLE_LINES = 100`
+parsed (`engine.py:324`). Below `MINIMUM_ANALYSABLE_LINES = 100`
 (`scoring.py:139`) the card is `rated=False` and the tier reads
 `Unrated (insufficient evidence)`. The score is still computed and still
 reported.
