@@ -149,14 +149,14 @@ the preregistered validation report belong to the following release.
   0.2 guarantees an envelope of 10,000 children on one finding. Measured on
   this machine (python 3.14.0, darwin arm64, `bench/finding_items.py`, 5 reps,
   each size in its own process): at 10,000 items the JSON report is 5.09 MiB,
-  construction takes about 28 ms, and resident memory grows by 8,454,144 bytes
+  construction takes about 31 ms, and resident memory grows by 8,486,912 bytes
   holding the items. Measured headroom extends to 100,000 items on one
   finding: the JSON report is 51.03 MiB, SARIF is 60.00 MiB, resident growth
-  is 87,031,808 bytes, and construction takes about 295 ms. Byte sizes and
+  is 86,999,040 bytes, and construction takes about 326 ms. Byte sizes and
   `summarize_items` scale linearly across that range; building the parent
-  finding grows 1.19× per item, under the 1.25× per-item growth the bench's
+  finding grows 1.16× per item, under the 1.25× per-item growth the bench's
   `worse_than_linear` screen flags a metric at, so it is not flagged.
-  Converting items to a dict does not — `to_dict_seconds` grows 1.31× per
+  Converting items to a dict does not — `to_dict_seconds` grows 1.30× per
   item, which the bench attributes to CPython's generational collector
   traversing a larger live object graph rather than to any change in
   algorithm. JSON carries every item of every finding and never truncates.
@@ -172,12 +172,13 @@ the preregistered validation report belong to the following release.
   line for every finding that carries items, terminal only under `--verbose`.
   Markdown's bytes are flat to within 4 bytes across the same tenfold
   increase (711 B to 715 B); rendering time is a separate quantity and is not
-  flat, moving from 0.954 ms to 9.749 ms across the same range, proportionally
-  to item count. Terminal output at its default verbosity carries no item
-  detail at all, and its near-flat cost (1.004 ms to 1.002 ms across the same
-  range) is not evidence about item cost either way; `--verbose` renders the
-  item census, and its cost grows from 2.277 ms to 11.077 ms, a 4.9×
-  increase, because the census is O(n) in items. 0.2 sets no hard ceiling on
+  flat, moving from 1.021 ms to 9.786 ms across the same range, growing
+  slightly less than proportionally to item count. Terminal output at its
+  default verbosity carries no item detail at all, and its near-flat cost
+  (1.021 ms to 1.045 ms across the same range) is not evidence about item
+  cost either way; `--verbose` renders the item census, and its cost grows
+  from 2.355 ms to 11.482 ms, a 4.9× increase, because the census is O(n) in
+  items. 0.2 sets no hard ceiling on
   item count; if one is introduced later it should bound items per report,
   not per finding, enforced as a hard construction error rather than silent
   truncation: report size and resident memory are what it would need to

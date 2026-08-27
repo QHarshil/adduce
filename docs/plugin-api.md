@@ -129,31 +129,31 @@ reps, each size run in its own process) for a report holding one parent
 finding built with that many items; the byte sizes and resident-memory
 figures are properties of the report as a whole, not of the finding in
 isolation. At the guaranteed envelope: the JSON report is 5.09 MiB,
-construction takes about 28 ms, and resident memory grows by 8,454,144 bytes
+construction takes about 31 ms, and resident memory grows by 8,486,912 bytes
 holding the items.
 
 Measured headroom extends to 100,000 items on one finding. At that size the
-JSON report is 51.03 MiB, SARIF is 60.00 MiB, resident growth is 87,031,808
-bytes, construction takes about 295 ms, and rendering the JSON report takes
-about 227 ms. Per item that is 535 B in JSON and 629 B in SARIF — both read
+JSON report is 51.03 MiB, SARIF is 60.00 MiB, resident growth is 86,999,040
+bytes, construction takes about 326 ms, and rendering the JSON report takes
+about 234 ms. Per item that is 535 B in JSON and 629 B in SARIF — both read
 off the serialised byte sizes above. The bench separately reports about 744 B
 retained per item; that figure comes from `tracemalloc`'s allocation
-accounting, not from the 87,031,808-byte peak-RSS delta, and the bench itself
+accounting, not from the 86,999,040-byte peak-RSS delta, and the bench itself
 notes the two are not comparable measurement bases. Do not divide the
 resident-memory figure by item count and expect either result.
 
 Some of this scales linearly across that tenfold and some does not. Linear:
 the serialised byte sizes (JSON, SARIF, and the report as a whole) and
 `json_dumps_seconds`, all within 1% of proportional, and `summarize_items`,
-which stays O(n) at 0.098 microseconds per item at 10,000 and 0.097
+which stays O(n) at 0.101 microseconds per item at 10,000 and 0.097
 microseconds per item at 100,000. Building the parent finding
-(`construction_parent_seconds`) grows 1.19× per item across that range, under
+(`construction_parent_seconds`) grows 1.16× per item across that range, under
 the 1.25× per-item growth the bench's `worse_than_linear` screen flags a
 metric at, so it is not flagged. Converting items to a dict
-(`to_dict_seconds`) grows 1.31× per item and is the only metric that screen
+(`to_dict_seconds`) grows 1.30× per item and is the only metric that screen
 flags. Concretely, extrapolating the 10,000-item `to_dict()` cost as linear
-predicts 51.76 ms at 100,000 items (10 × 5.176 ms); the bench measured
-67.601 ms. The bench's own
+predicts 53.15 ms at 100,000 items (10 × 5.315 ms); the bench measured
+69.236 ms. The bench's own
 explanation, offered as an account rather than a further measurement: a larger
 live object graph makes CPython's generational collector traverse more on
 each pass, which moves a per-item timing without any algorithm changing.
@@ -169,14 +169,15 @@ line interpolates four integers (the total and the three non-zero per-status
 counts the bench's item mix produces), and each one gains a digit going from
 10,000 to 100,000 (5+4+4+4 digits becomes 6+5+5+5), which is exactly the +4
 bytes observed. Rendering time is a separate quantity and is not flat:
-`markdown_render_seconds` moves from 0.954 ms to 9.749 ms across the same
-range, proportionally to item count (1.02× per item). Terminal output at its
-default verbosity renders no item at all, so its near-flat cost (1.004 ms at
-10,000 items to 1.002 ms at 100,000) is not evidence about item cost either
-way. `--verbose` renders a per-finding item census — a count and a per-status
-split, formatted as `"<n> item(s) not listed here: <split>"` — never the
-children themselves. Its cost is not flat because the census is O(n) in
-items: 2.277 ms to 11.077 ms across the same tenfold, a 4.9× increase.
+`markdown_render_seconds` moves from 1.021 ms to 9.786 ms across the same
+range, growing slightly less than proportionally to item count (0.96× per
+item). Terminal output at its default verbosity renders no item at all, so
+its near-flat cost (1.021 ms at 10,000 items to 1.045 ms at 100,000) is not
+evidence about item cost either way. `--verbose` renders a per-finding item
+census — a count and a per-status split, formatted as `"<n> item(s) not
+listed here: <split>"` — never the children themselves. Its cost is not flat
+because the census is O(n) in items: 2.355 ms to 11.482 ms across the same
+tenfold, a 4.9× increase.
 
 0.2 sets no hard ceiling on item count. If one is introduced later, it should
 bound items per report rather than per finding, enforced as a hard
@@ -189,7 +190,7 @@ findings may each carry a full envelope. A 0.3 review trigger is already
 defined: an integration reporting peak resident memory as a problem, or
 per-item `to_dict()` cost growing past 2× between the 10,000-item envelope and
 ten times that many. The bench already reports one number under that trigger
-without crossing it: per-item `to_dict()` cost grows 1.31× across that range.
+without crossing it: per-item `to_dict()` cost grows 1.30× across that range.
 
 This bound exists to contain accidental or pathological plugin output. It is
 not a security boundary and must not be read as one: rule packs are trusted
