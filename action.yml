@@ -36,8 +36,15 @@ inputs:
 
 outputs:
   score:
-    description: "Total reproducibility score (0-100)."
+    description: >-
+      Total reproducibility score (0-100). Empty when the run assessed nothing
+      and the card carries no score; check score-available before comparing.
     value: ${{ steps.score.outputs.score }}
+  score-available:
+    description: >-
+      "true" when score holds a number, "false" when the run assessed nothing.
+      A numeric comparison against score is only meaningful when this is "true".
+    value: ${{ steps.score.outputs.score-available }}
 
 runs:
   using: "composite"
@@ -74,7 +81,15 @@ runs:
         adduce check "${GATE_ARGS[@]}" || GATE_STATUS=$?
 
         adduce check "${BASE_ARGS[@]}" --format json --output "$RESULT_FILE"
-        SCORE=$(python -c "import json, sys; print(json.load(open(sys.argv[1]))['total'])" "$RESULT_FILE")
+        # A card that assessed nothing carries a null total. Printing it
+        # directly emitted the string "None", which a workflow comparing
+        # score against a threshold reads as a value rather than an absence.
+        SCORE=$(python -c "import json, sys; total = json.load(open(sys.argv[1]))['total']; print('' if total is None else total)" "$RESULT_FILE")
+        if [ -n "$SCORE" ]; then
+          echo "score-available=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "score-available=false" >> "$GITHUB_OUTPUT"
+        fi
         echo "score=$SCORE" >> "$GITHUB_OUTPUT"
 
         if [ -n "$ADDUCE_INPUT_SARIF_FILE" ]; then
