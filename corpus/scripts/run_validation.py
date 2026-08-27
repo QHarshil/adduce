@@ -23,7 +23,7 @@ import subprocess
 import sys
 import time
 from datetime import datetime, timezone
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any, cast
 
 import adduce
@@ -277,13 +277,22 @@ def _git(*args: str, cwd: Path) -> subprocess.CompletedProcess[str]:
 def _source_tree_sha256(package_dir: Path) -> str:
     """Hash installed Adduce package bytes, independent of Git cleanliness."""
     digest = hashlib.sha256()
-    files = sorted(
-        path
-        for path in package_dir.rglob("*")
-        if path.is_file() and "__pycache__" not in path.parts and path.suffix != ".pyc"
+    # Order by the segments of the relative POSIX path, the key the repository
+    # walk settled on. Path comparison casefolds on Windows and does not on
+    # POSIX, so sorting Path objects made this digest depend on the host that
+    # computed it. Segments rather than the whole string: both are
+    # host-independent, but only segments reproduce the order already recorded,
+    # because a separator never takes part in a segment comparison.
+    entries = sorted(
+        (
+            (PurePosixPath(path.relative_to(package_dir).as_posix()), path)
+            for path in package_dir.rglob("*")
+            if path.is_file() and "__pycache__" not in path.parts and path.suffix != ".pyc"
+        ),
+        key=lambda entry: entry[0].parts,
     )
-    for path in files:
-        relative = path.relative_to(package_dir).as_posix().encode()
+    for relative_posix, path in entries:
+        relative = relative_posix.as_posix().encode()
         digest.update(len(relative).to_bytes(4, "big"))
         digest.update(relative)
         with path.open("rb") as handle:
