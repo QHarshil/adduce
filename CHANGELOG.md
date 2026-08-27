@@ -18,14 +18,15 @@ frozen claim truth `9a26d06c…`. A successor lock will be registered under a da
 protocol amendment against the finished analyzer, and no effectiveness,
 calibration, or false-positive figure is stated in the meantime.
 
-Five analysis-plan files changed. `corpus/scripts/check_builtin.py` changed for
-two reasons. It permits the two read-only git queries that honouring
-`.gitignore` requires; its offline enforcement is otherwise unchanged, and the
-queries are measured to be a no-op on the pilot corpus — all fifteen pinned
-clones report zero ignored paths, so no finding, score, or status moves for any
-of them. It also now emits `"items": []` on the not-applicable finding it
-synthesises for a rule that never ran, because the run contract's per-finding
-key check now requires that key whether or not the rule ran.
+Six analysis-plan files changed. `corpus/scripts/check_builtin.py` moved three
+times, twice for reasons of its own. It permits the two read-only git queries
+that honouring `.gitignore` requires; its offline enforcement is otherwise
+unchanged, and the queries are measured to be a no-op on the pilot corpus — all
+fifteen pinned clones report zero ignored paths, so no finding, score, or
+status moves for any of them. It also now emits `"items": []` on the
+not-applicable finding it synthesises for a rule that never ran, because the
+run contract's per-finding key check now requires that key whether or not the
+rule ran.
 `corpus/scripts/run_contract.py` moved three times, for three independent
 reasons. It stops recomputing a tier from a score, which is no longer a valid
 invariant now that a tier is withheld when the analyzer parsed too little
@@ -49,9 +50,35 @@ unassessed category representable at all. `corpus/README.md` described the r6
 preregistration record as the live prospective lock when the project has
 since retired it. `corpus/ANNOTATION_GUIDE.md`'s verification-mode table
 offered `dynamic`, which is not in `finding-review.schema.json`'s
-`verification_mode` enum and is rejected on submission. Every one of those
-changes is recorded against the digests the lock still carries, and the
-record asserts that exactly those five files moved.
+`verification_mode` enum and is rejected on submission.
+
+`corpus/scripts/audit_sentinel_generation.py` enters that list for the sixth
+change, which moved all three copies of `_source_tree_sha256` together and is
+the third reason `check_builtin.py` moved and the second for
+`run_validation.py`. The helper ordered files by comparing `Path` objects, and
+`Path` comparison casefolds on Windows and does not on POSIX, so the analyzer
+digest a preregistration lock binds depended on the host that computed it. It
+orders by the segments of the relative POSIX path now, the key the repository
+walk already uses. The two rules part company as soon as a file sits beside a
+directory of the same stem, so they are not interchangeable, and one ordering
+rule across the project is one rule to reason about. Both keys reproduce every
+digest recorded against this helper, so the choice is conservative here rather
+than forced; the divergence 987c708 measured was over the repository walk's
+inventory of corpus targets, not over this digest.
+
+The digest of the current `src/adduce` tree is byte-identical before and after
+the fix, so no recorded digest moves and no lock is disturbed. That is
+coincidence rather than design: its ninety-nine names happen to sort the same
+way under both flavours today. Adding a `README.md`, a `LICENSE` or a
+`Dockerfile` splits it in 39 of the 42 placements across the package's fourteen
+directories; the three that do not are all in `fixers/templates/`, the only
+directory whose existing names already lead with uppercase. The helper is
+duplicated because the built-in checker runs as a sandboxed child process that
+imports nothing from its siblings, and a test now holds the three copies to one
+value.
+
+Every one of those changes is recorded against the digests the lock still
+carries, and the record asserts that exactly those six files moved.
 
 This release makes **no final effectiveness claim**, and deliberately ships with
 no preregistration lock. That is not an exception: `docs/releasing.md`'s first
