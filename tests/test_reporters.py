@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import json
 
+import pytest
+
 from adduce.engine import run_check
 from adduce.report import RENDERERS, codemeta, software_heritage
 from tests.test_engine import BARE, WELL_FORMED, _write
@@ -417,3 +419,76 @@ def test_the_item_census_is_absent_at_default_verbosity(tmp_path):
 
     assert _CENSUS not in terminal_text
     assert "item(s) not listed here" not in terminal_text
+
+
+def _reject_non_finite(value: str) -> None:
+    raise ValueError(f"non-finite constant in document: {value}")
+
+
+@pytest.mark.parametrize("confidence", [float("nan"), float("inf"), float("-inf")])
+def test_json_report_refuses_to_serialise_a_non_finite_confidence(tmp_path, confidence):
+    """`allow_nan=False` raises here, instead of shipping a document a strict parser rejects."""
+    from adduce.rules.base import Category, Status
+
+    result = _carrying_items(tmp_path, ())
+    finding = result.card.findings[0]
+    assert finding.category is Category.DRIFT and finding.status is Status.FAIL
+    finding.confidence = confidence
+
+    with pytest.raises(ValueError):
+        RENDERERS["json"](result)
+
+
+@pytest.mark.parametrize("confidence", [float("nan"), float("inf"), float("-inf")])
+def test_sarif_report_refuses_to_serialise_a_non_finite_item_confidence(tmp_path, confidence):
+    """Every finding item SARIF carries is JSON too; the same defence applies."""
+    item = _items(1)[0]
+    object.__setattr__(item, "confidence", confidence)
+    result = _carrying_items(tmp_path, (item,))
+
+    with pytest.raises(ValueError):
+        RENDERERS["sarif"](result)
+
+
+def test_json_report_stays_strictly_parseable_when_confidence_is_finite(tmp_path):
+    """The defence does not fire on the values it was never meant to catch."""
+    result = _carrying_items(tmp_path, _items(3))
+
+    rendered = RENDERERS["json"](result)
+
+    json.loads(rendered, parse_constant=_reject_non_finite)
+
+
+def test_latex_states_the_item_census_for_a_finding_that_carries_items(tmp_path):
+    """The comment listing a gap states the child count, like markdown and terminal."""
+    items = _items()
+    result = _carrying_items(tmp_path, items)
+
+    output = RENDERERS["latex"](result)
+
+    assert _CENSUS in output
+    assert "observation 0" not in output
+    assert "assertion:0" not in output
+
+
+def test_latex_states_the_item_census_in_the_itemize_block_too(tmp_path):
+    """A passed finding carrying items is also listed, not just gaps."""
+    from adduce.rules.base import Status
+
+    items = _items()
+    result = _carrying_items(tmp_path, items, status=Status.PASS)
+
+    output = RENDERERS["latex"](result)
+    itemize_lines = [line for line in output.splitlines() if line.startswith(r"  \item")]
+
+    assert any(_CENSUS in line for line in itemize_lines)
+
+
+def test_latex_renders_a_finding_without_items_byte_identically(tmp_path):
+    """No built-in rule emits items, so this is the shape of every real report."""
+    result = _carrying_items(tmp_path, ())
+
+    output = RENDERERS["latex"](result)
+
+    assert output.splitlines()[-1] == "% - R-ITEMS-001: R-ITEMS-001 message"
+    assert "item(s) not listed here" not in output

@@ -374,7 +374,15 @@ def check(
     if output_format == "terminal":
         terminal_report.render(result, console, verbose=verbose, mode=mode)
     else:
-        _write_or_print(RENDERERS[output_format](result), output)
+        try:
+            rendered = RENDERERS[output_format](result)
+        except ValueError as exc:
+            # A reporter refuses to emit a document it cannot make valid --
+            # a non-finite float would serialise as bare NaN. Surfacing it the
+            # way every other usage error surfaces beats a traceback.
+            err_console.print(f"[red]error:[/red] {exc}")
+            raise typer.Exit(code=2) from exc
+        _write_or_print(rendered, output)
 
     if timings:
         # Diagnostics go to stderr so a machine-readable document on stdout
