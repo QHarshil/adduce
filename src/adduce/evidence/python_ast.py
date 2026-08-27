@@ -194,9 +194,16 @@ class ModuleAnalysis:
     cli_args: list[CliArg] = field(default_factory=list)
     dataclass_defaults: list[CliArg] = field(default_factory=list)
     has_main_guard: bool = False
+    #: Set when the module could not be turned into reliable evidence, whether
+    #: because it failed to parse or because traversal aborted partway through
+    #: an oversized tree. Either way the fields above hold their empty
+    #: defaults; the AEG marks the module's source-file node ``parse_failed``
+    #: rather than dropping it, and other consumers see an evidence-free
+    #: record rather than an absent one.
     parse_error: bool = False
-    #: Physical lines in this module. Zero when the module did not parse, so a
-    #: sum over modules measures source actually analysed rather than present.
+    #: Physical lines in this module. Zero when the module did not parse or
+    #: the walk aborted partway through, so a sum over modules measures
+    #: source actually analysed rather than present.
     line_count: int = 0
 
 
@@ -674,6 +681,19 @@ class PythonConsumer:
         return self.evidence
 
 
+def _record_unanalysable(evidence: PythonEvidence, rel: str, module_name: str) -> None:
+    """Record a module that could not be safely turned into evidence.
+
+    Used both when the source never became a tree and when a tree was built
+    but the walk over it did not finish. Both cases get the same empty
+    ``ModuleAnalysis``: a hand-kept invariant that the two failure paths stay
+    indistinguishable is not something a test can enforce, since the second
+    path is unreachable by any known input, so the bookkeeping is centralised
+    here instead of duplicated at each call site.
+    """
+    evidence.modules.append(ModuleAnalysis(path=rel, module_name=module_name, parse_error=True))
+
+
 def _analyse_module(
     evidence: PythonEvidence,
     project_functions: dict[str, set[str]],
@@ -685,12 +705,25 @@ def _analyse_module(
     visitor = _ModuleVisitor(path=rel, module_name=_module_name_for(entry.path))
     try:
         tree = ast.parse(source)
-    except (SyntaxError, ValueError):
-        evidence.modules.append(
-            ModuleAnalysis(path=rel, module_name=visitor.analysis.module_name, parse_error=True)
-        )
+    except (SyntaxError, ValueError, MemoryError, RecursionError):
+        # A pathologically deep or wide module can blow the parser stack
+        # (MemoryError) or the compiler's recursive tree walk (RecursionError)
+        # without being syntactically invalid. Treat it the same as a parse
+        # failure: there is no tree to analyse.
+        _record_unanalysable(evidence, rel, visitor.analysis.module_name)
         return
-    visitor.visit(tree)
+    try:
+        visitor.visit(tree)
+    except (MemoryError, RecursionError):
+        # visit() is an explicit worklist, not recursion (see _ModuleVisitor
+        # above), so nothing on this path recurses today. Guarded anyway: a
+        # handler or an interpreter-level stack check could still raise here,
+        # and a partially visited module must never be kept. A half-visited
+        # module looks like complete evidence of absence — a rule could
+        # conclude "no seed is set" when the seed call sat in the unvisited
+        # subtree — which is a false positive, not a diagnostic gap.
+        _record_unanalysable(evidence, rel, visitor.analysis.module_name)
+        return
     analysis = visitor.analysis
     analysis.suppressions = _parse_suppressions(source)
     analysis.has_main_guard = bool(_MAIN_GUARD_RE.search(source))

@@ -527,3 +527,153 @@ def test_latex_renders_a_finding_without_items_byte_identically(tmp_path):
 
     assert output.splitlines()[-1] == "% - R-ITEMS-001: R-ITEMS-001 message"
     assert "item(s) not listed here" not in output
+
+
+# -- SARIF location anchors ---------------------------------------------------
+
+
+def _anchor_uris(result):
+    sarif = json.loads(RENDERERS["sarif"](result))
+    return [
+        location["physicalLocation"]["artifactLocation"]["uri"]
+        for item in sarif["runs"][0]["results"]
+        for location in item["locations"]
+    ]
+
+
+def _inventory(result):
+    return {str(entry.path) for entry in result.repo.files}
+
+
+def test_sarif_anchors_a_repository_level_finding_to_an_inventoried_file(tmp_path):
+    """A report must not point at a file the repository does not contain."""
+    _write(tmp_path, {"train.py": "import torch\nnet = torch.nn.Linear(2, 2)\n"})
+    result = run_check(tmp_path)
+
+    uris = _anchor_uris(result)
+
+    assert uris
+    assert set(uris) <= _inventory(result)
+    assert "README.md" not in uris
+
+
+def test_sarif_repository_level_anchor_does_not_depend_on_inventory_order(tmp_path):
+    _write(tmp_path, {"b/nested.py": "x = 1\n", "train.py": "y = 2\n", "setup.cfg": "[x]\n"})
+    result = run_check(tmp_path)
+
+    forward = _anchor_uris(result)
+    result.repo.files.reverse()
+
+    assert _anchor_uris(result) == forward
+    assert set(forward) == {"setup.cfg"}
+
+
+def test_sarif_prefers_the_repo_root_readme_when_one_was_inventoried(tmp_path):
+    _write(tmp_path, WELL_FORMED)
+    result = run_check(tmp_path)
+
+    locationless = [
+        finding.rule_id
+        for finding in result.card.findings
+        if not finding.locations and finding.status.value in {"fail", "partial"}
+    ]
+
+    assert locationless
+    assert "README.md" in _anchor_uris(result)
+
+
+def test_sarif_accepts_a_readme_in_another_spelling_as_the_anchor(tmp_path):
+    _write(tmp_path, {"README.rst": "Demo\n", "train.py": "y = 2\n"})
+    result = run_check(tmp_path)
+
+    assert set(_anchor_uris(result)) == {"README.rst"}
+
+
+@pytest.mark.parametrize("files", [BARE, WELL_FORMED], ids=["bare", "well_formed"])
+def test_sarif_anchors_every_result_to_an_inventoried_path(tmp_path, files):
+    _write(tmp_path, files)
+    result = run_check(tmp_path)
+
+    uris = _anchor_uris(result)
+
+    assert uris
+    assert set(uris) <= _inventory(result)
+
+
+def _located(rule_id, locations):
+    from adduce.rules.base import Category, Finding, Status
+
+    return Finding(
+        rule_id=rule_id,
+        category=Category.DRIFT,
+        title=rule_id,
+        status=Status.FAIL,
+        confidence=0.8,
+        message="message",
+        remediation="",
+        weight=3,
+        locations=tuple(locations),
+    )
+
+
+def _rendered_locations(tmp_path, findings):
+    from adduce.profiles import load_profile
+    from adduce.scoring import score
+
+    _write(tmp_path, WELL_FORMED)
+    result = run_check(tmp_path)
+    result.card = score(findings, load_profile("default"))
+    reported = json.loads(RENDERERS["sarif"](result))["runs"][0]["results"]
+    return {item["ruleId"]: item["locations"][0]["physicalLocation"] for item in reported}
+
+
+def test_sarif_leaves_a_file_scoped_location_file_level(tmp_path):
+    """A region says where a result was detected, and no line was observed here."""
+    from adduce.rules.base import Location
+
+    file_scoped = _located("R-ANCHOR-001", [Location("configs/main.yaml")])
+    with_line = _located("R-ANCHOR-002", [Location("train.py", 7)])
+    anchored = _rendered_locations(tmp_path, [file_scoped, with_line])
+
+    assert "region" not in anchored["R-ANCHOR-001"]
+    assert anchored["R-ANCHOR-001"]["artifactLocation"]["uri"] == "configs/main.yaml"
+    assert anchored["R-ANCHOR-002"]["region"] == {"startLine": 7}
+
+
+def test_sarif_gives_the_repository_level_anchor_a_start_line(tmp_path):
+    """The anchor is wholly synthetic, so line 1 navigates and claims nothing."""
+    from adduce.rules.base import Category, Status
+
+    repo_level = _category_finding("R-ANCHOR-003", Category.DRIFT, Status.FAIL)
+    anchored = _rendered_locations(tmp_path, [repo_level])
+
+    assert anchored["R-ANCHOR-003"]["region"] == {"startLine": 1}
+    assert anchored["R-ANCHOR-003"]["artifactLocation"]["uri"] == "README.md"
+
+
+@pytest.mark.parametrize("line", [0, -1])
+def test_sarif_refuses_to_serialise_a_line_that_is_not_1_based(tmp_path, line):
+    """Collectors number lines from 1, so a non-positive one is a bug, not a region."""
+    from adduce.rules.base import Location
+
+    with pytest.raises(ValueError, match="not 1-based"):
+        _rendered_locations(tmp_path, [_located("R-ANCHOR-004", [Location("train.py", line)])])
+
+
+def test_sarif_reports_no_location_when_nothing_was_inventoried(tmp_path):
+    """An empty repository offers no file to anchor to, so no anchor is stated."""
+    from jsonschema import Draft7Validator
+
+    from tests.test_schema_conformance import _FORMAT_CHECKER, _load_schema
+
+    result = run_check(tmp_path)
+    report = json.loads(RENDERERS["sarif"](result))
+    reported = report["runs"][0]["results"]
+
+    assert result.repo.files == []
+    assert reported
+    assert all(item["locations"] == [] for item in reported)
+    assert all(item["partialFingerprints"]["adduceFindingKey"] for item in reported)
+    Draft7Validator(
+        _load_schema("sarif-schema-2.1.0.json"), format_checker=_FORMAT_CHECKER
+    ).validate(report)
