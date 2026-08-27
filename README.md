@@ -37,7 +37,7 @@ always a draft.
 ## What it reports
 
 Verbatim excerpt from `adduce check` on [nanoGPT](https://github.com/karpathy/nanoGPT)
-at commit `3adf61e`. Omitted whole: eight of the fourteen category rows, the
+at commit `3adf61e`. Omitted whole: eight of the fifteen category rows, the
 no-paper-sources notice, the inferred claim-trail block, the last two fixes, and
 the closing `Next:` line. Nothing is reworded, and every `…` is the tool's own
 truncation marker.
@@ -71,6 +71,7 @@ Numerical Precision & Hardware    2/4  TF32 / float32-matmul precision control i
                                        (torch.backends.cuda.matmul.allow_tf32 = True;
                                        torch.backends.cudnn.allow_tf32 = True) but no precision
                                        policy is documented …
+Result Reconciliation               —  1 check(s) applied; none could be assessed
 Portability                       3/3  all detected checks satisfied
 
 Top fixes (largest score gains first)
