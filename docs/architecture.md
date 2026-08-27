@@ -66,7 +66,7 @@ whatever the `adduce.rules` entry-point group supplies. Two tests run before
 evaluation:
 
 1. `rule.id in profile.disabled_rules` → counted as `rules.skipped_disabled`, skipped.
-2. `not rule.applies_to(repo)` → counted as `rules.skipped_inapplicable` (`engine.py:127`), skipped.
+2. `not rule.applies_to(repo)` → counted as `rules.skipped_inapplicable` (`engine.py:236`), skipped.
 
 **A rule skipped by either branch produces no `Finding` at all.** It is absent
 from the result set, from both scoring denominators, and from every finding list
@@ -76,15 +76,21 @@ rules that never ran is now recoverable from output; `rules.skipped_disabled`
 remains telemetry only. `adduce check .` against this repository returns 69
 findings and skips a further 9 rules this way.
 
-A rule that does run returns exactly one `Finding` carrying one of five
-statuses. `UNKNOWN` and `NOT_APPLICABLE` do not mean the same thing — `UNKNOWN`
-means the check applied and reached no assessment, `NOT_APPLICABLE` means it did
-not apply — and scoring now separates them with the `Status.is_applicable` and
-`Status.is_assessed` predicates rather than with a `score_value is None` test,
-which cannot tell the two apart. A category left applicable and wholly
-unanswered is kept on the score card rather than dropped, and coverage divides
-assessed findings by applicable ones rather than by every finding returned. Both
-follow [ADR 0001](adr/0001-status-applicability-and-assessment-coverage.md), and
+Every rule that is considered contributes exactly one `Finding` carrying one of
+five statuses. The rule normally returns it. If a rule that is not one of
+adduce's own raises, returns something that is not a `Finding`, or files one
+under another rule's id, the engine contains the failure, warns, and records an
+`UNKNOWN` finding under that rule's own id in its place, so one installed rule
+pack cannot end the run (`engine.py:120-154`). A built-in doing any of the three
+is a defect in adduce and is not contained. `UNKNOWN` and `NOT_APPLICABLE` do
+not mean the same thing — `UNKNOWN` means the check applied and reached no
+assessment, `NOT_APPLICABLE` means it did not apply — and scoring now
+separates them with the `Status.is_applicable` and `Status.is_assessed`
+predicates rather than with a `score_value is None` test, which cannot tell
+the two apart. A category left applicable and wholly unanswered is kept on
+the score card rather than dropped, and coverage divides assessed findings by
+applicable ones rather than by every finding returned. Both follow
+[ADR 0001](adr/0001-status-applicability-and-assessment-coverage.md), and
 both are in [scoring.md](scoring.md).
 
 Rule purity is a convention, not an enforced boundary. No built-in rule module

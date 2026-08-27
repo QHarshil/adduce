@@ -341,6 +341,75 @@ the preregistered validation report belong to the following release.
 
 ### Fixed
 
+- **One generated Python file could end an entire audit.** The Python collector
+  parsed each module inside a `try` that caught `SyntaxError` and `ValueError`,
+  but a pathologically wide or deep module is not invalid — it exhausts the
+  parser instead. Measured on CPython 3.14: an `elif` chain overflows the pegen
+  parser's fixed-size stack with `MemoryError` from 5,957 branches, and a chain
+  of binary additions overflows AST construction with `RecursionError` from
+  22,713 terms. Neither was caught, so one machine-generated file ended the run
+  for every other file in the repository. Both are now recorded as modules that
+  could not be turned into evidence, and the audit continues. The walk after the
+  parse is guarded the same way and discards any partial analysis rather than
+  keeping it, because a half-visited module reads as complete evidence of
+  absence — a rule would report no seed where the seed sat in the unvisited
+  subtree. Neither threshold is a constant worth pinning: the parser limit is a
+  compile-time constant but the recursion limit is measured in stack bytes, and
+  on CPython 3.10 the addition chain has no catchable range at all — it parses
+  at 130,600 terms and takes the interpreter down at 130,650. The regression
+  fixtures therefore size themselves, in a subprocess so a native crash cannot
+  reach the test run, and fail loudly rather than passing vacuously if no size
+  raises.
+
+- **One raising rule from an installed pack discarded every other finding.** The
+  engine called each rule's `evaluate` with no boundary, so a single exception
+  propagated out of the check and took the other 77 results with it. A rule that
+  is not one of adduce's own is now contained: it is recorded as `UNKNOWN` under
+  its own identity, with a warning, and the run completes. `UNKNOWN` is
+  applicable but unassessed, so containment lowers coverage instead of inventing
+  a verdict, and moves neither the earned nor the possible score. A rule that
+  returns something other than a `Finding`, or files one under another rule's id,
+  is contained the same way — the latter would otherwise displace that rule's
+  entry in the report, the score card and the baseline. adduce's own rules still
+  fail loudly, because a built-in raising is a defect in adduce rather than a
+  condition to degrade past, and membership is decided by class identity against
+  the shipped set: a pack cannot join it, and neither a module name nor an
+  equality or hash method of its own choosing will pass it off as a built-in.
+  Text describing the failure is bounded and dropped unless it is a real
+  identifier, since neither an exception's message nor its class name is under
+  adduce's control. Containment covers evaluation; a rule whose `id` or
+  `applies_to` raises is still read before the boundary.
+
+- **File inventory order differed between Windows and POSIX, and reached
+  rendered output.** The repository walk sorted the native `Path` objects it got
+  back, and that comparison casefolds on Windows, so the same tree inventoried
+  in a different order on a different platform while several reporters name only
+  the first few paths they are given. Entries are now ordered by the segments of
+  their relative POSIX path, which never casefolds and so is identical on every
+  host. Measured over 49 targets — 33 synthetic cases, 15 pinned clones and a
+  real clone of adduce itself: the previous ordering differs between the two
+  platforms on 48 of them, and the new ordering is byte-identical to the
+  previous POSIX ordering on all 49, so no recorded corpus output moves. A
+  committed digest over a fixture that provokes the divergence pins the
+  contract, so a platform that computes a different order fails the build.
+
+- **SARIF anchored repository-level findings to a file that need not exist.** A
+  finding with no source location was anchored to the literal path `README.md`
+  whether or not the repository contained one. Measured: on a repository holding
+  only `train.py`, 23 of 23 results pointed at a `README.md` that was not on
+  disk, and on an empty repository all 9 did. The anchor is now chosen from the
+  paths adduce actually inventoried and carries a line-1 region so a consumer
+  can resolve it; a repository with nothing inventoried reports no location
+  rather than a false one. A location that names its own file but never observed
+  a line stays file-level, because a SARIF region is where a result was detected
+  and line 1 would claim a detection that did not happen; a line below 1 is a
+  collector bug and is now refused rather than rendered. Measured across eight
+  pinned clones: 180 repository-level anchors gain a region, no file-scoped
+  location gains one, and no existing line number moves. This changes the
+  `adduceFindingKey` fingerprint for locationless findings in repositories with
+  no root `README.md`, which re-keys any existing code-scanning alert for them —
+  the old alert closes and an equivalent one opens.
+
 - **A category adduce could not assess disappeared from the report entirely.**
   `scoring.py` treated "nothing assessed" as "nothing applicable": one line kept
   the category's weight out of the renormalisation, which is correct, and also

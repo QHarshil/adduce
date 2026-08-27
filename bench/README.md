@@ -158,24 +158,49 @@ archive. They are reported unavailable in CI; the synthetic targets always run.
 
 ## Instrumentation overhead
 
-Measured on the largest target (`transformers`, 4,643 Python files,
-1,687,480 Python LOC, ~21 s cold):
-
 | added operation | cost |
 |---|---|
-| the 23 stage context managers a default offline run enters | 15.9 µs |
-| `_record_counters`, dominated by one pass over 6,282 inventoried files | 1,100.5 µs |
-| `snapshot()`, only when reporting | 3.3 µs |
-| **total** | **~1.12 ms, or 0.005% of the run** |
+| the 23 stage context managers a default offline run enters | 16.4 µs |
+| `_record_counters`, dominated by one pass over 6,282 inventoried files | 1,319.9 µs |
+| `snapshot()`, only when reporting | 5.7 µs |
+| **total** | **~1.34 ms, or 0.005% of the run** |
+
+**Provenance of the table above.** Measured 2026-08-27 against analyzer source
+tree `bd85c5cc302cfa69ada36d2a4da1d5811f9fa35ff2e090ad3026e6497466f078` and
+corpus harness `b444d115bbbca79ec20f481068ea8a09f98f980727c07d9a9a942a955d57f2c5`,
+on python 3.14.0, darwin arm64. Target `transformers` at 4,643 Python files,
+1,688,009 Python LOC, 6,282 inventoried files; the run it is a fraction of
+measured 26.70 s median. Protocol: each operation timed directly in a loop, not
+by subtracting whole-run timings; 7 repetitions, median reported, per-row spread
+0.6-3.4%, machine otherwise idle. Regenerate the analyzer digest with
+`python3 corpus/scripts/review_facts.py show --root .`.
+
+The digests, not a commit hash, identify what was measured: writing a commit
+hash into the commit that carries it changes it, and the analyzer digest is
+already the identity the corpus harness records. One block governs the whole
+table, because dating individual numbers invites a table whose rows were taken
+against different trees.
+
+**Idleness is part of the protocol, not a courtesy.** Re-running this table
+while another job held the CPU returned 27.8 µs, 2,227.9 µs and 9.1 µs — every
+row roughly double, including two operations no code change had touched. A
+uniform factor across untouched operations is the signature of contention rather
+than regression, and it is the reason the environment belongs in the block.
 
 The counter row is the whole of `engine._record_counters`, not the `count()` calls
 inside it: those are nine calls taking under a microsecond together, and the cost
 is `repo.python_files()` walking the inventory once. It is charged here in full
 rather than split, because the pass exists only to be counted.
 
-Measured directly, per operation. Establishing the same figure by subtracting
-two whole-run timings does not work on a loaded developer machine: the spread
-within a single arm reached 4.6%, which cannot resolve a 2% effect. Interleaved
-A/B on `torchtune` over 7 alternations each put the difference at −0.5%, i.e.
-below the noise floor -- the manual version of what `bench/runner.py ab` now
-automates.
+Why per operation, rather than by subtracting two whole-run timings: on a
+developer machine the whole-run number is not stable enough to carry the
+difference. The spread within a single arm reached 4.6%, which cannot resolve a
+2% effect, and interleaved A/B on `torchtune` over 7 alternations each put the
+difference at −0.5%, below the noise floor. A later paired run on
+`transformers` made the point more sharply still: 4 alternations put the
+difference at +0.0% with 0.8-1.1% spread inside each arm, while the same scan
+measured anywhere from 16.7 s to 26.7 s across one afternoon depending on what
+else the machine was doing. Two unpaired samples taken minutes apart would have
+shown a 24% "regression" that four paired alternations show does not exist. This
+is the manual version of what `bench/runner.py ab` now automates, and the reason
+to reach for it before quoting any timing.
