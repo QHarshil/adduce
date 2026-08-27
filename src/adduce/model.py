@@ -382,8 +382,15 @@ def scan_repository(
     gitignored ``data/`` or ``wandb/`` tree is not part of the artifact under
     review, so scanning it costs time and lets one repository earn a status
     from another repository's files. Pass ``False`` to examine the whole tree
-    regardless. The filter is purely subtractive: everything else about the
-    walk, including its refusal to follow symlinks, is unchanged.
+    regardless. The filter is purely subtractive: it removes entries and
+    changes nothing else, including the walk's refusal to follow symlinks.
+
+    Entries are ordered by the segments of their relative POSIX path. Both
+    path flavours compare segment by segment, but each under its own case
+    rules, so Windows casefolding reordered the same tree when the walk sorted
+    its native ``Path`` objects, and inventory order reaches rendered output.
+    ``PurePosixPath`` never casefolds, so comparing its segments gives the same
+    POSIX ordering on every host.
     """
     root = root.resolve()
     extra = frozenset(exclude)
@@ -392,7 +399,7 @@ def scan_repository(
     if honor_gitignore and (ignored := _collect_ignored(root)) is not None:
         ignored_files, ignored_directories = ignored
     entries: list[FileEntry] = []
-    for path in sorted(root.rglob("*")):
+    for path in root.rglob("*"):
         if not path.is_file() or path.is_symlink():
             continue
         rel = PurePosixPath(path.relative_to(root).as_posix())
@@ -406,4 +413,5 @@ def scan_repository(
         except OSError:
             continue
         entries.append(FileEntry(path=rel, size=size))
+    entries.sort(key=lambda entry: entry.path.parts)
     return Repo(root=root, files=entries, git=_collect_git_info(root))
