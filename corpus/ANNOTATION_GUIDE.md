@@ -175,7 +175,7 @@ quality.
 | --- | --- |
 | `manual_static` | Inspection of the pinned repository, frozen claim source, or other versioned local artifact without execution. |
 | `manual_online` | Inspection of an authoritative public source; record the exact URL and, when material, a dated or hashed local snapshot. |
-| `dynamic` | Out of scope for this initial pilot. A later protocol must predeclare an isolated environment, credential and network policy, resource limits, command, inputs, and retained output before this mode is used. |
+| `dynamic` (reserved, not a valid value) | Not selectable in this pilot: `finding-review.schema.json` does not include it in the `verification_mode` enum, and a submission using it is rejected. A later protocol must predeclare an isolated environment, credential and network policy, resource limits, command, inputs, and retained output before this mode is added. |
 | `author_confirmed` | A versioned, attributable author or maintainer statement; record its date and locator. |
 
 Choose the mode that supplied the decisive evidence. If several modes were
