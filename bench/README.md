@@ -164,7 +164,7 @@ Measured on the largest target (`transformers`, 4,643 Python files,
 | added operation | cost |
 |---|---|
 | the 23 stage context managers a default offline run enters | 15.9 µs |
-| `_record_counters`, dominated by one pass over 8,840 inventoried files | 1,100.5 µs |
+| `_record_counters`, dominated by one pass over 6,282 inventoried files | 1,100.5 µs |
 | `snapshot()`, only when reporting | 3.3 µs |
 | **total** | **~1.12 ms, or 0.005% of the run** |
 

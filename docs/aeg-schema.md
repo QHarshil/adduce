@@ -95,11 +95,11 @@ is built at the boundary.
   "provenance": {
     "producer": "adduce.aeg.producers.config",
     "producer_version": 1,
-    "parser": "yaml.safe_load",
-    "parser_version": "pyyaml/6.0.2",
+    "parser": "yaml.safe_load|json.loads|tomllib.loads",
+    "parser_version": "stdlib+pyyaml",
     "resolution_method": "direct_parse",
     "inputs": ["sha256:…"],
-    "analyzer_version": "0.2.0.dev0"
+    "analyzer_version": "0.1.2"
   },
   "confidence": 1.0,
   "uncertainty": null,
