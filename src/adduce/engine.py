@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -12,7 +13,8 @@ from .model import Repo, scan_repository
 from .profiles import Profile, load_profile
 from .reviewer_time import ReviewerTime
 from .reviewer_time import estimate as estimate_reviewer_time
-from .rules import Finding, Rule, Status, discover_rules
+from .rules import BUILTIN_RULES, Finding, Rule, Status, discover_rules
+from .rules.registry import RulePluginWarning, safe_label
 from .scoring import ScoreCard, score
 from .telemetry import Telemetry
 
@@ -45,6 +47,111 @@ def _apply_suppressions(finding: Finding, evidence: Evidence, config: Config) ->
             if finding.rule_id in ids:
                 finding.suppressed = True
                 return
+
+
+#: The exact classes that ship with adduce. Membership is the test for
+#: built-in-ness because it is the only one a rule pack cannot forge: any
+#: predicate over ``__module__`` is defeated by one assignment in a class body,
+#: and a rule that talks its way into the built-in branch gets the power to
+#: abort the whole audit. A pack subclassing a built-in is not a member and so
+#: stays contained, which is the safe direction to be wrong in.
+_BUILTIN_RULE_CLASSES: tuple[type[Rule], ...] = tuple(BUILTIN_RULES)
+
+
+def _is_third_party(rule: Rule) -> bool:
+    # Identity, not set membership: ``in`` on a set consults ``__hash__`` and
+    # ``__eq__``, and a rule pack supplies its own metaclass. A metaclass whose
+    # ``__eq__`` returns True and whose ``__hash__`` matches a built-in's reads
+    # as a built-in and regains the power to abort the audit, and one whose
+    # ``__hash__`` raises aborts it from inside the test itself. ``is`` cannot
+    # be overridden, so the comparison stays a question about this class rather
+    # than one the class gets to answer.
+    return not any(type(rule) is builtin for builtin in _BUILTIN_RULE_CLASSES)
+
+
+def _type_label(value: object, fallback: str) -> str:
+    """Name a value's type without handing a rule pack a free text channel.
+
+    A class name is only an identifier when it was declared as one: built
+    through ``type()`` it is arbitrary text of arbitrary length, and echoing it
+    verbatim is enough to forge a heading and break a table row in a rendered
+    report. A name that is not an identifier is dropped rather than repaired --
+    a punctuation-mangled string tells a reader less than saying the name was
+    unusable, and repairing it would still pass the characters through.
+    """
+    name = getattr(type(value), "__name__", None)
+    if not isinstance(name, str) or not name.isidentifier():
+        return fallback
+    return safe_label(name)
+
+
+def _degrade(rule: Rule, reason: str, telemetry: Telemetry) -> Finding:
+    """Stand in for a third-party rule that produced no usable result.
+
+    UNKNOWN, not a verdict: the rule applied and reached no assessment, so the
+    run reports lower coverage rather than a score no rule earned. The rule's
+    own identity is carried so the report still shows it was considered.
+
+    ``reason`` reaches both a warning and a rendered report, so every fragment
+    of it a rule pack controls arrives already through ``safe_label``.
+    """
+    warnings.warn(
+        f"Recorded adduce rule {safe_label(rule.id)} as unknown: {reason}.",
+        RulePluginWarning,
+        stacklevel=2,
+    )
+    telemetry.count("rules.degraded")
+    return Finding(
+        rule_id=rule.id,
+        category=rule.category,
+        title=rule.title,
+        status=Status.UNKNOWN,
+        confidence=0.0,
+        message=f"This check did not complete: {reason}. Its result is unknown.",
+        remediation=(
+            "Report the failure to whoever maintains this rule. A check that "
+            "did not complete says nothing about this repository."
+        ),
+        weight=rule.weight,
+        severity=rule.effective_severity,
+    )
+
+
+def _evaluate_guarded(rule: Rule, evidence: Evidence, telemetry: Telemetry) -> Finding:
+    """Evaluate one rule, containing a third-party rule that misbehaves.
+
+    One installed rule pack must not be able to discard an entire audit. A
+    built-in doing either of these things is adduce's own bug and propagates:
+    degrading it would bury the defect under a lowered coverage number, where
+    nobody would look for it.
+    """
+    try:
+        finding = rule.evaluate(evidence)
+        # Read the identity inside the boundary too. ``isinstance`` consults
+        # ``__class__``, which an object may define as a property, so passing
+        # the type test does not mean the attribute reads will work; and a real
+        # subclass may define ``rule_id`` as a property that raises. Either way
+        # the failure belongs to the rule, not to the run.
+        reported_id = finding.rule_id if isinstance(finding, Finding) else None
+    except Exception as error:
+        if not _is_third_party(rule):
+            raise
+        label = _type_label(error, "an exception with no usable class name")
+        return _degrade(rule, f"the rule raised {label}", telemetry)
+    if reported_id is None or reported_id != rule.id:
+        # Both leave this rule unrepresented: a missing ``return`` yields no
+        # finding at all, and a finding filed under another id takes that
+        # rule's place in the report, the score and the baseline.
+        if isinstance(finding, Finding):
+            reason = "the rule reported under another rule's id"
+        else:
+            label = _type_label(finding, "a value with no usable class name")
+            reason = f"the rule returned {label}, not a finding"
+        if not _is_third_party(rule):
+            raise ValueError(f"rule {rule.id!r} returned an unusable finding: {reason}")
+        return _degrade(rule, reason, telemetry)
+    telemetry.count("rules.evaluated")
+    return finding
 
 
 def run_check(
@@ -128,10 +235,9 @@ def run_check(
                     skipped_inapplicable += 1
                     telemetry.count("rules.skipped_inapplicable")
                     continue
-                finding = rule.evaluate(evidence)
+                finding = _evaluate_guarded(rule, evidence, telemetry)
                 _apply_suppressions(finding, evidence, config)
                 findings.append(finding)
-                telemetry.count("rules.evaluated")
 
         with telemetry.stage("score"):
             card = score(

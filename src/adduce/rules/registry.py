@@ -205,8 +205,15 @@ class RulePluginWarning(UserWarning):
     """A configured rule plugin could not be used safely."""
 
 
-def _safe_label(value: object, fallback: str = "unknown") -> str:
-    """Return bounded printable metadata suitable for a diagnostic."""
+def safe_label(value: object, fallback: str = "unknown") -> str:
+    """Return bounded printable metadata suitable for a diagnostic.
+
+    Shared with the engine, which quotes the same kind of plugin-supplied text.
+    A class name is only an identifier when it was declared as one -- built
+    through ``type()`` it is arbitrary text of arbitrary length, so the
+    newlines that break a Markdown table and the headings that forge one are
+    stripped here rather than at each call site.
+    """
     try:
         text = str(value)
     except Exception:
@@ -223,8 +230,8 @@ def _entry_point_field(entry_point: object, field: str) -> object:
 
 
 def _entry_point_label(entry_point: EntryPoint) -> str:
-    name = _safe_label(_entry_point_field(entry_point, "name"), "unnamed")
-    value = _safe_label(_entry_point_field(entry_point, "value"))
+    name = safe_label(_entry_point_field(entry_point, "name"), "unnamed")
+    value = safe_label(_entry_point_field(entry_point, "value"))
     return f"{name} ({value})"
 
 
@@ -249,9 +256,9 @@ def _entry_point_key(entry_point: EntryPoint) -> tuple[str, str, str]:
     distribution = _entry_point_field(entry_point, "dist")
     distribution_name = _entry_point_field(distribution, "name")
     return (
-        _safe_label(_entry_point_field(entry_point, "name")),
-        _safe_label(_entry_point_field(entry_point, "value")),
-        _safe_label(distribution_name),
+        safe_label(_entry_point_field(entry_point, "name")),
+        safe_label(_entry_point_field(entry_point, "value")),
+        safe_label(distribution_name),
     )
 
 
@@ -343,7 +350,7 @@ def discover_rules(include_plugins: bool = True) -> list[Rule]:
         if rule_id in seen:
             _warn_plugin(
                 entry_point,
-                f"Rule id {_safe_label(rule_id)} conflicts with an existing rule",
+                f"Rule id {safe_label(rule_id)} conflicts with an existing rule",
             )
             continue
         seen.add(rule_id)
