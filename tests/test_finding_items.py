@@ -6,6 +6,8 @@ import copy
 import dataclasses
 import json
 import pickle
+import sys
+from collections.abc import Mapping
 
 import pytest
 
@@ -30,13 +32,17 @@ class _Rule(Rule):
     weight = 4
 
 
-def _parent(status: Status = Status.PASS, items: tuple[FindingItem, ...] = ()) -> Finding:
+def _parent(
+    status: Status = Status.PASS,
+    items: tuple[FindingItem, ...] = (),
+    confidence: float = 0.9,
+) -> Finding:
     return Finding(
         rule_id="demo.rule",
         category=Category.DOCUMENTATION,
         title="Demo",
         status=status,
-        confidence=0.9,
+        confidence=confidence,
         message="",
         remediation="",
         weight=4,
@@ -78,6 +84,32 @@ def test_rule_finding_carries_items_as_a_tuple():
     assert finding.to_dict()["items"][1]["status"] == "fail"
 
 
+def test_a_sixth_positional_argument_to_rule_finding_is_rejected():
+    """The ``*`` before ``items`` is the backward-compatibility promise: a 6th
+    positional argument can never silently bind to ``items``. Deleting the
+    marker leaves this call succeeding with ``items`` bound by position.
+    """
+    with pytest.raises(TypeError):
+        _Rule().finding(Status.PASS, 1.0, "message", "remediation", None, [_item("x")])  # type: ignore[misc]
+
+
+def test_finding_items_elements_must_be_finding_items():
+    with pytest.raises(ValueError, match="item at index 0 is not a FindingItem, got dict"):
+        _parent(items=({"id": "a", "status": Status.PASS, "message": "m"},))  # type: ignore[arg-type]
+
+
+def test_a_duck_typed_item_is_rejected_despite_matching_attributes():
+    class _Impostor:
+        id = "a"
+        status = Status.PASS
+
+        def to_dict(self):
+            return {"id": self.id, "status": self.status.value}
+
+    with pytest.raises(ValueError, match="item at index 0 is not a FindingItem, got _Impostor"):
+        _parent(items=(_Impostor(),))  # type: ignore[arg-type]
+
+
 def test_duplicate_item_ids_are_rejected_and_the_error_names_the_id():
     with pytest.raises(ValueError, match="citation:10.1234/a"):
         _parent(items=(_item("citation:10.1234/a"), _item("citation:10.1234/a", Status.FAIL)))
@@ -101,6 +133,16 @@ def test_empty_id_is_rejected():
 def test_non_string_message_is_rejected():
     with pytest.raises(ValueError, match="'x' message is not a string, got int"):
         FindingItem(id="x", status=Status.PASS, message=3)  # type: ignore[arg-type]
+
+
+def test_a_status_value_string_is_rejected_instead_of_failing_later_in_a_serializer():
+    """``Status.FAIL.value == "fail"`` makes this the likeliest rule-pack mistake.
+
+    Left unchecked, construction succeeds and the failure surfaces later,
+    differently per reporter, instead of here where the offending item is named.
+    """
+    with pytest.raises(ValueError, match="'a' status is not a Status member, got str"):
+        FindingItem(id="a", status="fail", message="m")  # type: ignore[arg-type]
 
 
 @pytest.mark.parametrize("confidence", [-0.1, 1.1])
@@ -144,6 +186,29 @@ def test_non_string_attribute_key_is_rejected():
 def test_non_finite_attribute_value_is_rejected(value):
     with pytest.raises(ValueError, match="attribute 'delta' is not finite"):
         _item("x", attributes={"delta": value})
+
+
+def test_oversized_integer_attribute_is_rejected():
+    """A four-figure-plus-digit int reaches ``json.dumps`` clean today and blows
+    the encoder's own conversion limit there instead of at construction.
+    """
+    limit = sys.get_int_max_str_digits()
+    oversized = 10**limit  # one digit past the limit
+    with pytest.raises(ValueError, match=f"attribute 'n' exceeds the {limit}-digit"):
+        _item("x", attributes={"n": oversized})
+
+
+def test_oversized_negative_integer_attribute_is_rejected():
+    limit = sys.get_int_max_str_digits()
+    with pytest.raises(ValueError, match=f"attribute 'n' exceeds the {limit}-digit"):
+        _item("x", attributes={"n": -(10**limit)})
+
+
+def test_integer_attribute_at_the_limit_is_still_accepted():
+    limit = sys.get_int_max_str_digits()
+    at_limit = int("9" * limit)
+    item = _item("x", attributes={"n": at_limit})
+    assert item.to_dict()["attributes"]["n"] == at_limit
 
 
 def test_scalar_attributes_are_accepted():
@@ -274,10 +339,64 @@ def test_the_aliasing_loop_yields_distinct_attributes_per_item():
     assert [item.attributes["doi"] for item in items] == ["10.1/a", "10.1/b", "10.1/c"]
 
 
+class _DriftingMapping(Mapping):
+    """A ``Mapping`` whose ``items()`` disagrees with its storage view.
+
+    Validating one view and storing from another is exactly how a caller could
+    smuggle an unvalidated nested container past the guard: ``items()`` (what
+    validation read) reports a safe scalar, while iteration and ``__getitem__``
+    (what ``dict()`` reads) report something the guard would have refused.
+    """
+
+    def __init__(self, safe: dict, actual: dict) -> None:
+        self._safe = safe
+        self._actual = actual
+
+    def __iter__(self):
+        return iter(self._actual)
+
+    def __len__(self) -> int:
+        return len(self._actual)
+
+    def __getitem__(self, key):
+        return self._actual[key]
+
+    def items(self):
+        return self._safe.items()
+
+
+def test_attributes_are_validated_from_the_same_view_that_is_stored():
+    drifting = _DriftingMapping(safe={"trail": "safe"}, actual={"trail": {"nested": 1}})
+    with pytest.raises(ValueError, match="attribute 'trail' holds an unrepresentable dict"):
+        _item("x", attributes=drifting)  # type: ignore[arg-type]
+
+
 def test_item_attributes_cannot_be_mutated_directly():
     item = _item("x", attributes={"doi": "10.1234/a"})
     with pytest.raises(TypeError):
         item.attributes["doi"] = "10.1234/mutated"  # type: ignore[index]
+
+
+def test_a_default_constructed_item_is_hashable():
+    """Every instance, including the plain default, used to raise on ``hash()``
+    because ``attributes`` is a mapping. A frozen public record with a hashable
+    sibling (``Location``) is expected to support ``set()`` for deduplication.
+    """
+    assert isinstance(hash(_item("x")), int)
+
+
+def test_equal_items_hash_equal():
+    a = _item("x", attributes={"doi": "10.1234/a", "page": 4})
+    b = _item("x", attributes={"page": 4, "doi": "10.1234/a"})
+    assert a == b
+    assert hash(a) == hash(b)
+
+
+def test_items_are_deduplicated_by_a_set():
+    a = _item("x")
+    b = _item("x")
+    c = _item("y")
+    assert len({a, b, c}) == 2
 
 
 def test_a_list_of_locations_is_coerced_to_a_tuple_and_decoupled_from_its_source():
@@ -287,6 +406,52 @@ def test_a_list_of_locations_is_coerced_to_a_tuple_and_decoupled_from_its_source
     assert isinstance(item.locations, tuple)
     source.append(Location("refs.bib"))
     assert item.locations == (Location("paper.tex", 1),)
+
+
+def test_a_bare_string_locations_is_rejected_instead_of_exploded_into_characters():
+    """A string is iterable: ``tuple("ab")`` silently becomes two locations,
+    ``('a', 'b')``, with no error at all. Reject the string outright.
+    """
+    with pytest.raises(
+        ValueError, match="'x' locations is a str, expected an iterable of Location"
+    ):
+        _item("x", locations="ab")  # type: ignore[arg-type]
+
+
+def test_a_bare_bytes_locations_is_rejected():
+    with pytest.raises(
+        ValueError, match="'x' locations is a bytes, expected an iterable of Location"
+    ):
+        _item("x", locations=b"ab")  # type: ignore[arg-type]
+
+
+def test_a_non_location_element_in_locations_is_rejected():
+    with pytest.raises(ValueError, match="'x' locations element 'README.md' is not a Location"):
+        _item("x", locations=("README.md",))  # type: ignore[arg-type]
+
+
+def test_non_string_kind_is_rejected():
+    with pytest.raises(ValueError, match="'x' kind is not a string or None, got int"):
+        _item("x", kind=123)  # type: ignore[arg-type]
+
+
+def test_none_kind_is_still_accepted():
+    assert _item("x", kind=None).kind is None
+
+
+def test_unrepresentable_kind_object_is_rejected():
+    with pytest.raises(ValueError, match="'x' kind is not a string or None, got object"):
+        _item("x", kind=object())  # type: ignore[arg-type]
+
+
+def test_non_string_remediation_is_rejected():
+    with pytest.raises(ValueError, match="'x' remediation is not a string, got NoneType"):
+        _item("x", remediation=None)  # type: ignore[arg-type]
+
+
+def test_unrepresentable_remediation_object_is_rejected():
+    with pytest.raises(ValueError, match="'x' remediation is not a string, got object"):
+        _item("x", remediation=object())  # type: ignore[arg-type]
 
 
 def test_deepcopy_preserves_every_field_and_stays_read_only():
@@ -350,6 +515,24 @@ def test_reduce_rebuilds_through_init_so_a_bad_field_revalidates_on_the_way_back
         cls(*(("",) + args[1:]))
 
 
+def test_reduce_is_driven_by_the_dataclass_field_list_not_a_hardcoded_tuple():
+    """A hardcoded positional tuple silently drops a subclass's own field on
+    every ``copy``/``pickle`` round trip, with no error. Building the arguments
+    off ``dataclasses.fields`` instead means a 9th field on ``FindingItem``
+    itself would also be carried automatically, not require a matching edit here.
+    """
+
+    @dataclasses.dataclass(frozen=True)
+    class _ExtendedFindingItem(FindingItem):
+        extra: str = "unset"
+
+    original = _ExtendedFindingItem(id="x", status=Status.PASS, message="m", extra="carried")
+    duplicate = copy.deepcopy(original)
+
+    assert duplicate.extra == "carried"
+    assert duplicate == original
+
+
 def test_asdict_still_raises_type_error_to_dict_is_the_supported_serialisation_route():
     """Known limitation: ``asdict`` deep-copies fields directly and bypasses ``__reduce__``."""
     item = _item("x", attributes={"doi": "10.1234/a"})
@@ -359,6 +542,11 @@ def test_asdict_still_raises_type_error_to_dict_is_the_supported_serialisation_r
 
 
 def test_item_status_never_moves_the_parent_status_score_or_weight():
+    """INV-005 names eight quantities an item must never move. A prior version
+    of this test asserted only ``total``, which cannot catch a scoring change
+    that shifts a category, the tier, or the coverage counters while leaving
+    the combined total unchanged by coincidence.
+    """
     items = tuple(_item(f"a{n}", Status.FAIL) for n in range(6))
     with_items = _parent(Status.PASS, items=items)
     without = _parent(Status.PASS)
@@ -367,7 +555,49 @@ def test_item_status_never_moves_the_parent_status_score_or_weight():
     assert with_items.weight == without.weight
 
     profile = load_profile("default")
-    assert score([with_items], profile).total == score([without], profile).total == 100.0
+    card_with = score([with_items], profile).to_dict()
+    card_without = score([without], profile).to_dict()
+    del card_with["findings"], card_without["findings"]
+
+    assert card_with["total"] == card_without["total"] == 100.0
+    assert card_with["tier"] == card_without["tier"]
+    assert card_with["categories"] == card_without["categories"]
+    assert (
+        card_with["evidence_base"]["coverage_percent"]
+        == card_without["evidence_base"]["coverage_percent"]
+    )
+    assert (
+        card_with["evidence_base"]["evaluated_rules"]
+        == card_without["evidence_base"]["evaluated_rules"]
+    )
+    assert (
+        card_with["evidence_base"]["considered_rules"]
+        == card_without["evidence_base"]["considered_rules"]
+    )
+    assert (
+        card_with["evidence_base"]["applicable_rules"]
+        == card_without["evidence_base"]["applicable_rules"]
+    )
+
+
+@pytest.mark.parametrize("confidence", [float("nan"), float("inf"), float("-inf")])
+def test_finding_non_finite_confidence_is_rejected(confidence):
+    """``FindingItem.confidence`` is validated for exactly this reason: a
+    non-finite value reaches ``json.dumps`` and produces invalid JSON. The
+    parent carries the same field and the same risk.
+    """
+    with pytest.raises(ValueError, match="finding 'demo.rule' confidence is not finite"):
+        _parent(confidence=confidence)
+
+
+def test_finding_confidence_outside_the_unit_range_is_rejected():
+    with pytest.raises(ValueError, match="finding 'demo.rule' confidence is outside 0.0..1.0"):
+        _parent(confidence=1.5)
+
+
+def test_finding_non_numeric_confidence_is_rejected():
+    with pytest.raises(ValueError, match="finding 'demo.rule' confidence is not a number"):
+        _parent(confidence="high")  # type: ignore[arg-type]
 
 
 def test_rules_package_all_pins_the_exact_covered_surface():
