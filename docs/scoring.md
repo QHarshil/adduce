@@ -10,7 +10,7 @@ report are in the [CLI reference](cli-reference.md#scoring-profiles-suppression)
 
 ## Statuses and their score contributions
 
-Five statuses (`rules/base.py:28-32`). `score_value` is a three-key dict lookup
+Five statuses (`rules/base.py:29-33`). `score_value` is a three-key dict lookup
 (`rules/base.py:37`); anything else returns `None`.
 
 | Status | Applicable | Assessed | `score_value` |
@@ -28,7 +28,7 @@ and adduce could not determine the answer.
 The Applicable and Assessed columns are predicates on the enum, not commentary.
 `Status.is_applicable` (`rules/base.py:39-46`) and `Status.is_assessed`
 (`rules/base.py:48-55`) each test membership of a frozenset of members
-(`rules/base.py:58-59`). Neither is derived from `score_value`, and neither may
+(`rules/base.py:59-60`). Neither is derived from `score_value`, and neither may
 be: `UNKNOWN` and `NOT_APPLICABLE` both carry `None`, so a `score_value is None`
 test cannot separate them. Coverage, the category-retention branch and
 `top_fixes` all read the predicates rather than the value.
@@ -119,7 +119,7 @@ Findings carrying `None` are skipped, so a not-applicable or unassessed check
 moves the category in neither direction. `finding.weight` is the integer weight
 declared on the rule class; across the shipped rules it spans 1 to 8.
 
-A finding's `items` (`rules/base.py:221`) never enter this loop. Each
+A finding's `items` (`rules/base.py:280`) never enter this loop. Each
 `FindingItem` carries its own `Status`, but only the parent `Finding`'s status
 and weight are counted here, so a finding stays exactly one scoring unit no
 matter how many items it carries.
@@ -249,7 +249,7 @@ printed no note at all before; it now prints the unassessed one.
 
 `--fail-under` does not invent a zero for a card with no score. It reports that
 the threshold could not be evaluated because no check reached an assessment, and
-exits 1 (`cli.py:392-397`). A gate that cannot be evaluated is not a gate that
+exits 1 (`cli.py:400-405`). A gate that cannot be evaluated is not a gate that
 passed.
 
 `analysable_lines` is the summed line count of the Python modules the analyzer

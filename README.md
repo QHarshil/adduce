@@ -37,7 +37,7 @@ always a draft.
 ## What it reports
 
 Verbatim excerpt from `adduce check` on [nanoGPT](https://github.com/karpathy/nanoGPT)
-at commit `3adf61e`. Omitted whole: eight of the fourteen category rows, the
+at commit `3adf61e`. Omitted whole: eight of the fifteen category rows, the
 no-paper-sources notice, the inferred claim-trail block, the last two fixes, and
 the closing `Next:` line. Nothing is reworded, and every `…` is the tool's own
 truncation marker.
@@ -71,6 +71,7 @@ Numerical Precision & Hardware    2/4  TF32 / float32-matmul precision control i
                                        (torch.backends.cuda.matmul.allow_tf32 = True;
                                        torch.backends.cudnn.allow_tf32 = True) but no precision
                                        policy is documented …
+Result Reconciliation               —  1 check(s) applied; none could be assessed
 Portability                       3/3  all detected checks satisfied
 
 Top fixes (largest score gains first)
@@ -86,8 +87,8 @@ Statuses are detected signals from static analysis, not a certification of repro
 ```
 
 Location-bearing findings are anchored to source lines—the TF32 finding above
-points at `train.py:107`, and the unpinned hub call at `model.py:238`. Six of
-the fourteen categories that applied to this repository are shown above; the
+points at `train.py:107`, and the unpinned hub call at `model.py:238`. Seven of
+the fifteen categories that applied to this repository are shown above; the
 full run also covers Documentation, Run Traceability, Checkpoint & Experiment
 State, Notebooks, Remote Artifacts & Rot, Versioning, Access & Legal, and
 Archival Readiness.
@@ -137,7 +138,10 @@ historical recovery, dynamic reproduction's non-sandboxed execution, and more
 
 Adduce ships **78 rules across 17 categories**, each gated on whether it
 applies, so an inapplicable category drops out of scoring rather than counting
-against a repository.
+against a repository. A category that did apply but reached no assessment —
+`Result Reconciliation` above — keeps its row and shows `—` rather than a
+zero, because "nothing to check here" and "checked and found nothing" are
+different answers and only one of them is a finding.
 
 Full documentation — every rule, the CLI reference, the manifest and
 claim-trail model, CI recipes, generation safety, the optional LLM layer, and
