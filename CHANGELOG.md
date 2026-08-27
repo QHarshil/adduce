@@ -163,19 +163,27 @@ the preregistered validation report belong to the following release.
   SARIF carries every item of every finding it reports, and it reports only
   actionable findings — `FAIL` and `PARTIAL`; a `PASS`, `UNKNOWN` or
   `NOT_APPLICABLE` finding produces no SARIF result, so none of its items
-  reach SARIF. Markdown's bytes do not grow with item count across the same
-  tenfold increase (711 B to 715 B); rendering time is a separate quantity and
-  is not flat, moving from 0.954 ms to 9.749 ms across the same range,
-  proportionally to item count. Terminal output at its default verbosity
-  renders no item and is not evidence either way (1.004 ms to 1.002 ms across
-  the same range), and `--verbose` terminal rendering grows from 2.277 ms to
-  11.077 ms, a 4.9× increase. 0.2 sets no hard ceiling on item count; if
-  one is introduced later it will bound items per report, not per finding,
-  because report size and resident memory are what it would need to contain.
-  It will be a hard construction error, never silent truncation. The bound
-  exists to contain accidental or pathological plugin output. It is not a
-  security boundary — rule packs remain trusted in-process Python regardless
-  of how many items they attach.
+  reach SARIF.
+
+  The human formats never list children. `markdown`, `latex`, and `adduce
+  check --verbose` each add one line to a finding that carries items —
+  `"<n> item(s) not listed here: <split>"`, a count per status — and no
+  child's content appears in any of them; `markdown` and `latex` show this
+  line for every finding that carries items, terminal only under `--verbose`.
+  Markdown's bytes are flat to within 4 bytes across the same tenfold
+  increase (711 B to 715 B); rendering time is a separate quantity and is not
+  flat, moving from 0.954 ms to 9.749 ms across the same range, proportionally
+  to item count. Terminal output at its default verbosity carries no item
+  detail at all, and its near-flat cost (1.004 ms to 1.002 ms across the same
+  range) is not evidence about item cost either way; `--verbose` renders the
+  item census, and its cost grows from 2.277 ms to 11.077 ms, a 4.9×
+  increase, because the census is O(n) in items. 0.2 sets no hard ceiling on
+  item count; if one is introduced later it should bound items per report,
+  not per finding, enforced as a hard construction error rather than silent
+  truncation: report size and resident memory are what it would need to
+  contain. The bound exists to contain accidental or pathological plugin
+  output. It is not a security boundary — rule packs remain trusted
+  in-process Python regardless of how many items they attach.
 
 ### Changed
 

@@ -46,8 +46,10 @@ covered by the ordinary convention for that attribute.
 
 Covered members: `Rule.id`, `.category`, `.title`, `.rationale`, `.weight`,
 `.severity`, `.fix_command`, `.effective_severity`, `.applies_to(repo)`,
-`.evaluate(ev)` and `.finding(...)`; `Finding.to_dict()`; `FindingItem.to_dict()`
-and `summarize_items(items)`; `Status.score_value`, `.is_applicable` and
+`.evaluate(ev)` and `.finding(...)`; `Finding.to_dict()` and `.items`;
+`FindingItem`'s constructor fields — `id`, `status`, `message`, `confidence`,
+`locations`, `remediation`, `kind` and `attributes` — and its `.to_dict()`;
+`summarize_items(items)`; `Status.score_value`, `.is_applicable` and
 `.is_assessed`; the attribute names on `Evidence`.
 
 `Status` has five members. `NOT_APPLICABLE` and `UNKNOWN` both have
@@ -71,6 +73,8 @@ these from.
 
 ## Finding items
 
+Shape and rationale: [ADR 0002](adr/0002-hierarchical-findings.md).
+
 `Rule.finding(...)` takes a keyword-only `items` parameter: a sequence of
 `FindingItem`, each one a structured observation explaining the parent finding's
 verdict. Every existing positional call to `finding()` keeps working, and a rule
@@ -90,13 +94,29 @@ value, naming the offending key rather than waiting for the JSON encoder to
 fail; a duplicate `id` among the items on one `Finding`, because `id` must be
 unique within its parent; and a non-finite `confidence` or a non-finite float
 anywhere in `attributes`, because `json.dumps` would otherwise emit a bare `NaN`
-or `Infinity`, which is not valid JSON. Widening the accepted attribute value
-types later is backward compatible; narrowing them would not be. `attributes`
-is copied at construction and exposed as a read-only mapping, so mutating the
-mapping a caller passed in afterwards has no effect on the item.
+or `Infinity`, which is not valid JSON. Every other field is checked at
+construction too, so the offending producer is named rather than surfacing
+later at the serializer: `status` must be a `Status` member, `message` and
+`remediation` must be strings, `kind` must be a string or `None`, and every
+element of `locations` must be a `Location`. `Finding.confidence` gets the
+same non-finite check as `FindingItem.confidence`. Widening the accepted
+attribute value types later is backward compatible; narrowing them would not
+be. `attributes` is copied at construction and exposed as a read-only
+mapping, so mutating the mapping a caller passed in afterwards has no effect
+on the item.
+
+`FindingItem` is hashable: two items with identical fields hash equal, so a
+rule pack may collect them in a `set` or use them as dict keys even though
+`attributes` is stored as a mapping rather than something hashable by
+default.
 `FindingItem.to_dict()` is the supported serialisation route;
 `dataclasses.asdict()` raises `TypeError` on a `FindingItem`, because the
-read-only `attributes` view cannot be copied by that path.
+read-only `attributes` view cannot be copied by that path. The same failure
+reaches `Finding`: `dataclasses.asdict()` also raises `TypeError` on any
+`Finding` that carries an item, since `asdict()` recurses into `items` and
+hits the same read-only view. `Finding` predates this change, so this is
+where a caller that already used `asdict()` on a `Finding` breaks once that
+finding carries items. Use `to_dict()` on both `Finding` and `FindingItem`.
 
 `kind` is an open string rather than a closed enum, because external rule packs
 need domain-specific values a shared enum could not anticipate.
@@ -115,8 +135,12 @@ holding the items.
 Measured headroom extends to 100,000 items on one finding. At that size the
 JSON report is 51.03 MiB, SARIF is 60.00 MiB, resident growth is 87,031,808
 bytes, construction takes about 295 ms, and rendering the JSON report takes
-about 227 ms. Per item that is 535 B in JSON, 629 B in SARIF, and about 744 B
-retained.
+about 227 ms. Per item that is 535 B in JSON and 629 B in SARIF — both read
+off the serialised byte sizes above. The bench separately reports about 744 B
+retained per item; that figure comes from `tracemalloc`'s allocation
+accounting, not from the 87,031,808-byte peak-RSS delta, and the bench itself
+notes the two are not comparable measurement bases. Do not divide the
+resident-memory figure by item count and expect either result.
 
 Some of this scales linearly across that tenfold and some does not. Linear:
 the serialised byte sizes (JSON, SARIF, and the report as a whole) and
@@ -139,15 +163,20 @@ every item of every finding it reports, and it reports only actionable
 findings — `FAIL` and `PARTIAL`. A `PASS`, `UNKNOWN` or `NOT_APPLICABLE`
 finding produces no SARIF result at all, so none of its items reach SARIF
 either; the same finding's items still appear in full in the JSON report.
-Markdown output is genuinely O(1) with item count in bytes: across the same
-tenfold increase it moves from 711 B to 715 B. Rendering time is a separate
-quantity and is not flat: `markdown_render_seconds` moves from 0.954 ms to
-9.749 ms across the same range, proportionally to item count (1.02× per
-item). Terminal output at its default verbosity renders no item at all, so
-its near-flat cost (1.004 ms at 10,000 items to 1.002 ms at 100,000) is not
-evidence about item cost either way. `--verbose` terminal rendering does
-render items, and its cost is not flat: 2.277 ms to 11.077 ms across the same
-tenfold, a 4.9× increase.
+Markdown output is flat to within 4 bytes across a tenfold increase in item
+count: it moves from 711 B to 715 B. That is not exactly O(1) — the census
+line interpolates four integers (the total and the three non-zero per-status
+counts the bench's item mix produces), and each one gains a digit going from
+10,000 to 100,000 (5+4+4+4 digits becomes 6+5+5+5), which is exactly the +4
+bytes observed. Rendering time is a separate quantity and is not flat:
+`markdown_render_seconds` moves from 0.954 ms to 9.749 ms across the same
+range, proportionally to item count (1.02× per item). Terminal output at its
+default verbosity renders no item at all, so its near-flat cost (1.004 ms at
+10,000 items to 1.002 ms at 100,000) is not evidence about item cost either
+way. `--verbose` renders a per-finding item census — a count and a per-status
+split, formatted as `"<n> item(s) not listed here: <split>"` — never the
+children themselves. Its cost is not flat because the census is O(n) in
+items: 2.277 ms to 11.077 ms across the same tenfold, a 4.9× increase.
 
 0.2 sets no hard ceiling on item count. If one is introduced later, it should
 bound items per report rather than per finding, enforced as a hard
@@ -171,13 +200,16 @@ in-process Python regardless of how many items they attach. See
 
 The JSON report carries a top-level `schema` key: `{"name": "adduce-report",
 "version": 1}`. `tool.version` still records the adduce release that wrote the
-file; `schema.version` is what identifies the report's shape, so a consumer can
-tell which document version it is holding without inferring it from a release
-number. Version 1 is this release's finished shape: the applicability keys, the
-nullable `total`, and per-finding `items`.
+file; `schema.version` identifies the report's shape, and increments whenever
+that shape changes in a way that could break a consumer reading it — a key
+renamed, removed, retyped, or repurposed. Version 1 is this release's finished
+shape: the applicability keys, the nullable `total`, and per-finding `items`.
 
-The key exists; the shape it names is still not a covered surface — see Not
-covered, below.
+The shape itself is still not a covered surface — see Not covered, below — and
+may change in any release. It may not change *silently* under a stationary
+version number: a consumer may rely on an unchanged `schema.version` to mean
+that nothing it already parses has moved beneath it, without having to track
+adduce's release number to know that.
 
 ## Not covered
 
@@ -197,10 +229,11 @@ covered, below.
   and import cleanly, but their fields track the collectors that build them and
   change when those change. Depend on the `Evidence` attribute names; treat each
   sub-object's fields as version-specific.
-- The JSON report shape, including its key set. The report now carries a
-  `schema` key that names its shape and a version number (see Report schema,
-  above), but the shape itself is still not a covered surface and may change in
-  any release.
+- The JSON report shape, including its key set. The report carries a `schema`
+  key that names its shape and a version that increments on any change that
+  could break a consumer (see Report schema, above), but the shape itself is
+  still not a covered surface in the sense Public surface uses that word: it
+  may change in any release, so long as a breaking change moves the version.
 
 If a name is not listed as covered, it is not covered. Assume nothing from its
 presence in the package.
