@@ -18,16 +18,26 @@ frozen claim truth `9a26d06c…`. A successor lock will be registered under a da
 protocol amendment against the finished analyzer, and no effectiveness,
 calibration, or false-positive figure is stated in the meantime.
 
-Two analysis-plan files changed. `corpus/scripts/check_builtin.py` permits the
+Three analysis-plan files changed. `corpus/scripts/check_builtin.py` permits the
 two read-only git queries that honouring `.gitignore` requires; its offline
 enforcement is otherwise unchanged, and the queries are measured to be a no-op on
 the pilot corpus — all fifteen pinned clones report zero ignored paths, so no
 finding, score, or status moves for any of them. `corpus/scripts/run_contract.py`
-stops recomputing a tier from a score, which is no longer a valid invariant now
-that a tier is withheld when the analyzer parsed too little source; it validates
-the new `evidence_base` block instead. Both changes are recorded against the
-digests the lock still carries, and the record asserts that exactly those two
-files moved.
+moved twice, for two independent reasons. It stops recomputing a tier from a
+score, which is no longer a valid invariant now that a tier is withheld when the
+analyzer parsed too little source; it validates the new `evidence_base` block
+instead. It then had to follow the score card's public shape again when that
+shape gained the applicability keys and a nullable total: the contract asserts an
+exact key set and reconstructs the total and the tier, so both the key set it
+accepts and that reconstruction had to take in `applicable_rules`, the nested
+`rules` block, and a `total` that may be absent. `corpus/scripts/run_validation.py`
+stops writing `0.0` into the combined CSV for a category nothing could assess,
+which read as a category assessed at zero. It now uses the empty-cell absence
+convention the CSV already carries, which is what the run contract requires; a
+payload of that shape was rejected outright until the retained-category change
+made an unassessed category representable at all. Every one of those changes is
+recorded against the digests the lock still carries, and the record asserts that
+exactly those three files moved.
 
 This release makes **no final effectiveness claim**, and deliberately ships with
 no preregistration lock. That is not an exception: `docs/releasing.md`'s first
@@ -185,17 +195,71 @@ the preregistered validation report belong to the following release.
   `telemetry` keyword. Both are additive; rule and reporter plugins are
   unaffected.
 - The JSON report gains an `evidence_base` block recording `rated`,
-  `evaluated_rules`, `considered_rules`, `coverage_percent`, and
-  `analysable_lines`, so a consumer can see how much the score rests on rather
-  than inferring it. Existing keys are unchanged. `ScoreCard` gains the matching
-  fields and a `coverage` property, all defaulted, and `score()` takes an
-  optional `analysable_lines` keyword — a caller that omits it still gets a tier,
-  so plugins scoring findings directly are unaffected.
+  `evaluated_rules`, `considered_rules`, `applicable_rules`, `coverage_percent`,
+  `analysable_lines`, and a nested `rules` object holding `assessed`, `unknown`,
+  `not_applicable` and `skipped_inapplicable`, so a consumer can see how much the
+  score rests on rather than inferring it. Those four counts are the four
+  outcomes a registered rule can reach; `skipped_inapplicable` counts the rules
+  whose `applies_to` returned `False`, which produce no finding at all and enter
+  neither denominator. On this repository they read 51, 2, 16 and 9, which is why
+  96.2% coverage is not a statement about all 78 built-in rules. `ScoreCard`
+  gains the matching fields — `applicable_rules` and `skipped_inapplicable`, plus
+  `unknown_rules`, `not_applicable_rules` and `coverage` as properties — all
+  defaulted, and `score()` takes optional `analysable_lines` and
+  `skipped_inapplicable` keywords; a caller that omits them still gets a tier, so
+  plugins scoring findings directly are unaffected.
+- **Assessment coverage now divides by applicable findings, not by every finding
+  returned.** `Status` gained `is_applicable` (`PASS`, `PARTIAL`, `FAIL`,
+  `UNKNOWN`) and `is_assessed` (`PASS`, `PARTIAL`, `FAIL`). Both are membership
+  tests over the enum members rather than tests of `score_value`, because
+  `NOT_APPLICABLE` and `UNKNOWN` both carry `score_value is None` and one test
+  cannot separate them. Coverage is `assessed / applicable`.
+
+  Migration, measured on this repository:
+
+  ```
+  old:  51 assessed / 69 returned findings   = 73.9 %
+  new:  51 assessed / 53 applicable findings = 96.2 %
+  ```
+
+  **This is a denominator correction, not improved effectiveness.** The same 51
+  checks reach the same 51 assessments on the same repository, and nothing
+  further is assessed. The 16 `NOT_APPLICABLE` findings never applied and should
+  not have reduced coverage. adduce does not assess 22 percentage points more
+  evidence than it did before, and a `coverage_percent` recorded under an earlier
+  release cannot be compared with one recorded under this release.
+
+  Weighted coverage stays a backlog measurement rather than a second metric, and
+  **adduce reports no weighted coverage number**. On this repository it would
+  read 157.0 / 161.0 = 97.5%, a divergence of 1.3 percentage points from the
+  count-based figure. Measurement reopens the question: either more than 20% of
+  measured repositories diverging by more than 5 percentage points, or a corpus
+  p95 absolute divergence above 10 percentage points.
+- **`ScoreCard.total` and the JSON `total` may now be `null`**, and only when no
+  check anywhere reached an assessment. A card on which every finding is a `FAIL`
+  still reports `0.0`: a measured zero and no measurement are different results,
+  and the type now says so. In the `null` case the tier reads
+  `Unrated (nothing assessed)`, which is distinct from
+  `Unrated (insufficient evidence)` — the first is source no check could assess,
+  the second too little source to judge, and a reader handed the wrong one looks
+  in the wrong place for the cause. `--fail-under` against a card with no score
+  reports that the threshold could not be evaluated because no check reached an
+  assessment, and exits 1 rather than comparing against an invented zero.
+- **The `evidence_base` and `total` changes above are breaking changes to the
+  JSON report for existing consumers.** `total` can be `null` where it was always
+  a number, and `coverage_percent` keeps its name while its denominator changes.
+  The report still carries no schema-version key of any kind: `tool.version`
+  identifies the adduce release that produced the file, not the report's shape.
+  The version key lands with the `FindingItem` serialisation shape still to come
+  in this same release, so one key stamps the finished shape and no released
+  version ships a half-versioned contract.
 - `corpus/scripts/run_contract.py` no longer recomputes a tier from a score
   unconditionally. That invariant held only while a tier was a pure function of
   the score, and enforcing it would now reject a correct artifact for any
   repository the analyzer could not read. It validates the `evidence_base` block
-  and checks the scored population exactly instead.
+  and checks the scored population exactly instead, and its exact key set and its
+  total and tier reconstruction were extended again to accept `applicable_rules`,
+  the nested `rules` block, and a `total` that may be absent.
 
 ### Fixed
 

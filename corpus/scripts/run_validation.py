@@ -624,25 +624,6 @@ def check_repo(repo_path: Path, timeout: int) -> tuple[dict | None, str | None, 
     return payload, None, None, runtime
 
 
-def _category_key(name: str) -> str:
-    return "cat_" + name.lower().replace(" & ", "_").replace(" ", "_")
-
-
-def summarise_payload(payload: dict) -> dict:
-    row = {
-        "score": payload["total"],
-        "tier": payload["tier"],
-        "reviewer_time_bucket": payload["reviewer_time"]["bucket"],
-        "findings_fail": sum(1 for finding in payload["findings"] if finding["status"] == "fail"),
-        "findings_partial": sum(
-            1 for finding in payload["findings"] if finding["status"] == "partial"
-        ),
-    }
-    for category in payload["categories"]:
-        row[_category_key(category["category"])] = category["percentage"]
-    return row
-
-
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--repos", type=Path, default=CORPUS_DIR / "repos.csv")
@@ -927,7 +908,14 @@ def main() -> int:
                 )
             else:
                 base.update({key: value for key, value in summary.items() if key != "categories"})
-                base.update(summary["categories"])
+                # A category nothing could assess has no percentage to record;
+                # the empty cell is what keeps it distinct from a scored zero.
+                base.update(
+                    {
+                        key: "" if percentage is None else percentage
+                        for key, percentage in summary["categories"].items()
+                    }
+                )
                 base["run_status"] = (
                     "succeeded_with_partial_acquisition"
                     if base["acquisition_status"] == "partial"

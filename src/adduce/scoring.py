@@ -15,7 +15,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from .profiles import Profile
-from .rules.base import Category, Finding, Status
+from .rules.base import Category, Finding
 
 
 @dataclass
@@ -32,15 +32,20 @@ class CategoryScore:
 
 @dataclass
 class ScoreCard:
-    total: float  # 0..100
+    #: None when nothing anywhere was assessed, which is not a failing zero.
+    total: float | None  # 0..100
     categories: list[CategoryScore]
     findings: list[Finding]
     profile_name: str
     tier: str
-    #: Rules that reached a scoring verdict, against the rules considered.
-    #: Not-applicable and unknown findings count only in the denominator.
+    #: Rules that reached an assessment, rules that returned a finding at all,
+    #: and the applicable subset of those. Coverage is the first over the third.
     evaluated_rules: int = 0
     considered_rules: int = 0
+    applicable_rules: int = 0
+    #: Rules whose ``applies_to`` returned False, so they produced no finding.
+    #: Reported alongside the outcome counts and never scored against.
+    skipped_inapplicable: int = 0
     #: Physical lines across the source files the analyzer actually parsed.
     #: The substance the score rests on, and the input to ``rated``.
     analysable_lines: int = 0
@@ -48,15 +53,23 @@ class ScoreCard:
     rated: bool = True
 
     @property
+    def unknown_rules(self) -> int:
+        return self.applicable_rules - self.evaluated_rules
+
+    @property
+    def not_applicable_rules(self) -> int:
+        return self.considered_rules - self.applicable_rules
+
+    @property
     def coverage(self) -> float:
-        """Percentage of considered rules that reached a scoring verdict."""
-        if not self.considered_rules:
+        """Percentage of applicable checks that reached an assessment."""
+        if not self.applicable_rules:
             return 0.0
-        return 100.0 * self.evaluated_rules / self.considered_rules
+        return 100.0 * self.evaluated_rules / self.applicable_rules
 
     def to_dict(self) -> dict:
         return {
-            "total": round(self.total, 1),
+            "total": round(self.total, 1) if self.total is not None else None,
             "tier": self.tier,
             "profile": self.profile_name,
             # Additive. Existing consumers keep working; a reader that wants to
@@ -65,8 +78,19 @@ class ScoreCard:
                 "rated": self.rated,
                 "evaluated_rules": self.evaluated_rules,
                 "considered_rules": self.considered_rules,
+                "applicable_rules": self.applicable_rules,
                 "coverage_percent": round(self.coverage, 1),
                 "analysable_lines": self.analysable_lines,
+                # Why coverage is not a statement about every registered rule:
+                # a rule is out of scope before evaluation, evaluated and not
+                # applicable, applicable and unanswered, or applicable and
+                # answered. Only the last two reach the coverage fraction.
+                "rules": {
+                    "assessed": self.evaluated_rules,
+                    "unknown": self.unknown_rules,
+                    "not_applicable": self.not_applicable_rules,
+                    "skipped_inapplicable": self.skipped_inapplicable,
+                },
             },
             "categories": [
                 {
@@ -91,6 +115,12 @@ _TIERS: tuple[tuple[float, str], ...] = (
 #: The tier reported when the repository carries too little parsed source for a
 #: tier to be a statement about anything.
 UNRATED_TIER = "Unrated (insufficient evidence)"
+
+#: The tier reported when no check reached an assessment at all. Distinct from
+#: ``UNRATED_TIER``: that one is too little source to judge, this one is source
+#: no check could assess, and a reader given the wrong one looks in the wrong
+#: place for the cause.
+UNASSESSED_TIER = "Unrated (nothing assessed)"
 
 #: Physical lines of parsed source below which no tier is assigned.
 #:
@@ -121,6 +151,7 @@ def score(
     profile: Profile,
     *,
     analysable_lines: int | None = None,
+    skipped_inapplicable: int = 0,
 ) -> ScoreCard:
     """Aggregate findings into an explainable scorecard.
 
@@ -134,6 +165,10 @@ def score(
     about a repository that has not shown enough to support one. Passing ``None``
     leaves the card rated, so a caller that scores findings on their own — a
     plugin, or a test — is unaffected.
+
+    ``skipped_inapplicable`` is how many rules ``applies_to`` excluded before
+    evaluation. They returned no finding, so they enter neither the score nor
+    coverage; the count is carried only so a report can say they existed.
     """
     by_category: dict[Category, list[Finding]] = {}
     for finding in findings:
@@ -149,21 +184,27 @@ def score(
         possible = 0.0
         for finding in cat_findings:
             value = finding.status.score_value
-            if value is None:  # not-applicable / unknown
+            if value is None:  # not assessed
                 continue
             earned += value * finding.weight
             possible += finding.weight
         if possible == 0:
-            # Nothing here reached an assessment, which is wider than nothing
-            # applying. A category that is entirely not-applicable is correctly
-            # omitted. One that is applicable and unanswered is not: dropping it
-            # removes the question instead of reporting it. Keep it visible with
-            # an empty score, and fall through to the `continue` below so its
-            # weight still stays out of the renormalisation — admitting it would
-            # let a category adduce could not assess drag the total down as
-            # though it had failed. Reporters read possible == 0 as "nothing
-            # assessed here".
-            if any(finding.status is Status.UNKNOWN for finding in cat_findings):
+            # No assessed weight here, which is wider than nothing applying. A
+            # category that is entirely not-applicable is correctly omitted. One
+            # that is applicable and unanswered is not: dropping it removes the
+            # question instead of reporting it. Keep it visible with an empty
+            # score, and fall through to the `continue` below so its weight
+            # still stays out of the renormalisation — admitting it would let a
+            # category adduce could not assess drag the total down as though it
+            # had failed. Reporters read possible == 0 as "nothing assessed
+            # here", so the test is applicable *and* unassessed: a rule that
+            # answered at weight 0 reaches this branch and must not keep a
+            # category that would then render as unassessed while holding a
+            # verdict.
+            if any(
+                finding.status.is_applicable and not finding.status.is_assessed
+                for finding in cat_findings
+            ):
                 categories.append(
                     CategoryScore(
                         category=category,
@@ -184,16 +225,24 @@ def score(
         weighted_earned += earned / possible * cat_weight
         weighted_possible += cat_weight
 
-    total = 100.0 * weighted_earned / weighted_possible if weighted_possible else 0.0
+    total = 100.0 * weighted_earned / weighted_possible if weighted_possible else None
     rated = analysable_lines is None or analysable_lines >= MINIMUM_ANALYSABLE_LINES
+    if total is None:
+        tier = UNASSESSED_TIER
+    elif not rated:
+        tier = UNRATED_TIER
+    else:
+        tier = tier_for(total)
     return ScoreCard(
         total=total,
         categories=categories,
         findings=findings,
         profile_name=profile.name,
-        tier=tier_for(total) if rated else UNRATED_TIER,
-        evaluated_rules=sum(1 for f in findings if f.status.score_value is not None),
+        tier=tier,
+        evaluated_rules=sum(1 for f in findings if f.status.is_assessed),
         considered_rules=len(findings),
+        applicable_rules=sum(1 for f in findings if f.status.is_applicable),
+        skipped_inapplicable=skipped_inapplicable,
         analysable_lines=analysable_lines or 0,
         rated=rated,
     )
@@ -205,11 +254,11 @@ def top_fixes(card: ScoreCard, limit: int = 5) -> list[Finding]:
     gains: list[tuple[float, Finding]] = []
     for cat in card.categories:
         applicable_weight = sum(
-            f.weight for f in cat.findings if f.status.score_value is not None
+            f.weight for f in cat.findings if f.status.is_assessed
         ) or 1.0
         for finding in cat.findings:
             value = finding.status.score_value
-            if finding.suppressed or value is None or value >= 1.0:
+            if finding.suppressed or not finding.status.is_assessed or value is None or value >= 1.0:
                 continue
             points = 100.0 * (1.0 - value) * finding.weight / applicable_weight * cat.possible / total_possible
             gains.append((points, finding))

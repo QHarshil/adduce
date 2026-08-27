@@ -27,6 +27,28 @@ class Status(Enum):
         """Contribution toward the rule's weight; None means excluded from scoring."""
         return {"pass": 1.0, "partial": 0.5, "fail": 0.0}.get(self.value)
 
+    @property
+    def is_applicable(self) -> bool:
+        """Whether the check applies to this repository at all.
+
+        Membership over the members, not a test of ``score_value``: UNKNOWN and
+        NOT_APPLICABLE both carry no value and differ only here.
+        """
+        return self in _APPLICABLE
+
+    @property
+    def is_assessed(self) -> bool:
+        """Whether the check applies and reached an answer.
+
+        Membership for the same reason ``is_applicable`` is: a missing value
+        says nothing about which of the two unvalued states this is.
+        """
+        return self in _ASSESSED
+
+
+_APPLICABLE = frozenset({Status.PASS, Status.PARTIAL, Status.FAIL, Status.UNKNOWN})
+_ASSESSED = frozenset({Status.PASS, Status.PARTIAL, Status.FAIL})
+
 
 class Category(Enum):
     CODE_EXECUTION = "Code & Execution"
