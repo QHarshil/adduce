@@ -8,6 +8,25 @@ Every section below describes the code as it stands; there is no forward-looking
 section on this page. Profiles, suppression, and how an unrated card reads in a
 report are in the [CLI reference](cli-reference.md#scoring-profiles-suppression).
 
+**Provenance of every figure below attributed to adduce's own repository.**
+Measured 2026-08-28 against analyzer source tree
+`cae7dd33dd0077b5ecc4fe805ad707bd49e19bd2556a76204d494a5ea36ec8dd`, on python
+3.14.0, darwin arm64, by `adduce check . --format json` under the default
+profile, with no rule plugins installed and the repository's own ignore file
+honoured. The telemetry counters below come from the same command with
+`--timings` added, which reports them and moves no other figure on the card.
+One block governs the page, because dating individual numbers invites a page
+whose figures were taken against different trees. The digest, not a commit
+hash, identifies what was measured: writing a commit hash into the commit that
+carries it changes it. Regenerate the digest with
+`python3 corpus/scripts/review_facts.py show --root .`.
+
+This is a dated observation, not a maintained figure. A later tree that reports
+different counts does not make it stale; it makes it a record of a tree that no
+longer exists. Figures attributed to the synthetic corpus, to the pilot corpus,
+or to a repository other than this one come from other measurements and are
+outside the block.
+
 ## Statuses and their score contributions
 
 Five statuses (`rules/base.py:29-33`). `score_value` is a three-key dict lookup
@@ -60,13 +79,13 @@ Every outcome but the disabled skip and the pass-over is counted, and those
 counts sit together in the JSON report under `evidence_base.rules`
 (`scoring.py:88-93`). A rule the profile disabled, and a rule passed over
 because it could not identify itself, are counted in no report body at all. On
-adduce's own repository:
+adduce's own repository the run reported:
 
 ```json
 "rules": {
-  "assessed": 51,
-  "unknown": 2,
-  "not_applicable": 16,
+  "assessed": 50,
+  "unknown": 1,
+  "not_applicable": 18,
   "skipped_inapplicable": 9
 }
 ```
@@ -75,7 +94,7 @@ adduce's own repository:
 differences between the three counts, exposed as properties
 (`scoring.py:55-61`). `skipped_inapplicable` is passed into `score()` by the
 engine (`engine.py:325`), because the rules it counts left no finding behind to
-count from later. The block exists so that a reader who sees 96.2 % coverage can
+count from later. The block exists so that a reader who sees 98.0 % coverage can
 see why that is not a statement about all 78 built-in rules.
 
 A rule skipped or passed over before evaluation produces no `Finding` at all
@@ -105,8 +124,8 @@ ends the run instead.
 the key on first increment (`telemetry.py:50-51`), and `snapshot` emits only the
 keys present (`telemetry.py:59-66`). Measured on adduce's own repository under
 the default profile, which disables no rule, and with no rule plugins installed,
-stderr reports `rules.skipped_inapplicable: 9` and says nothing about disabled
-or degraded rules, and the only `rules.*` keys in the JSON block are
+stderr reported `rules.skipped_inapplicable: 9` and said nothing about disabled
+or degraded rules, and the only `rules.*` keys in the JSON block were
 `rules.evaluated` and `rules.skipped_inapplicable`. Read the block with
 `.get(name, 0)`: indexing `counters["rules.skipped_disabled"]`,
 `counters["rules.skipped_unidentifiable"]` or `counters["rules.degraded"]`
@@ -128,11 +147,12 @@ number of rules whose own `evaluate` returned a usable finding. That is not the
 same as the number of findings on the card: where the engine contained a
 misbehaving third-party rule it supplied that finding itself, so
 `rules.evaluated` plus `rules.degraded` is what the finding count comes to. On
-adduce's own repository the same run reports 51 for the first and 69 for the
+adduce's own repository the same run reported 50 for the first and 69 for the
 second. They were already distinct quantities; before the coverage change the
 denominator happened to carry the telemetry counter's value, so the two at
-least met in one fraction. Coverage is now 51 over 53 and they meet nowhere.
-Read the field names, not the shared word.
+least met in one fraction. Coverage is now assessed over applicable — 50 over
+51 in that run — and they meet nowhere. Read the field names, not the shared
+word.
 
 ## Within a category
 
@@ -213,18 +233,19 @@ could not assess drag the total down as though it had failed.
 `possible == 0` is the signal a reporter reads for "nothing assessed here".
 Terminal output shows such a category with no score rather than `0/0`.
 
-On adduce's own repository 15 of the 17 categories render a row. The two
-absences have different causes, and only one of them is this branch:
-`Checkpoint & Experiment State` is dropped here, holding 5 findings that are all
-`NOT_APPLICABLE`, which is the legitimate omission. `Notebooks` has no findings
-at all, so it never reaches the branch. No category on this repository is wholly
-unassessed, so the retention path is not exercised here.
+On adduce's own repository 15 of the 17 categories rendered a row. The two
+absences had different causes, and only one of them was this branch:
+`Checkpoint & Experiment State` was dropped here, holding 5 findings that were
+all `NOT_APPLICABLE`, which is the legitimate omission. `Notebooks` had no
+findings at all, so it never reached the branch. No category on that run was
+wholly unassessed, so the retention path was not exercised there.
 
-It is exercised elsewhere. Across the 33-case synthetic corpus, **13 categories
-in 10 cases** hold at least one `UNKNOWN` and nothing assessed — most of them
-`Paper & Artifact Consistency` or `Result Reconciliation` carrying a handful of
-`NOT_APPLICABLE` findings and one unanswered check. Every one of those was
-previously dropped from the score card, and every one is now reported.
+It is exercised elsewhere. The synthetic corpus holds cases in which a
+category's only applicable finding is an `UNKNOWN` and the rest are
+`NOT_APPLICABLE`; `Result Reconciliation` is one category that reaches that
+state. Every such category was previously dropped from the score card, and every
+one is now reported. `tests/test_scoring.py` pins the branch itself, so it stays
+exercised whatever the corpus holds.
 
 ## Tiers, and when no tier is given
 
@@ -312,27 +333,27 @@ returning `0.0` when nothing was applicable (`scoring.py:63-68`). It surfaces as
 `evidence_base.coverage_percent` in `--format json` and in the unrated note in
 terminal output.
 
-On adduce's own repository the 69 findings returned are 23 `PASS`, 12 `PARTIAL`,
-16 `FAIL`, 16 `NOT_APPLICABLE` and 2 `UNKNOWN`. 53 of those are applicable, 51 of
-the 53 reached an assessment, and coverage reads `51 / 53 = 96.2 %`. The 2
-`UNKNOWN` findings are the whole of the shortfall.
+On adduce's own repository the 69 findings returned were 20 `PASS`, 12
+`PARTIAL`, 18 `FAIL`, 18 `NOT_APPLICABLE` and 1 `UNKNOWN`. 51 of those were
+applicable, 50 of the 51 reached an assessment, and coverage read
+`50 / 51 = 98.0 %`. The single `UNKNOWN` finding was the whole of the shortfall.
 
 ### The denominator changed, not the analysis
 
 ```
-old:  51 assessed / 69 returned findings   = 73.9 %
-new:  51 assessed / 53 applicable findings = 96.2 %
+old:  50 assessed / 69 returned findings   = 72.5 %
+new:  50 assessed / 51 applicable findings = 98.0 %
 ```
 
-**This is a denominator correction, not improved effectiveness.** The same 51
-checks reach the same 51 assessments on the same repository, and not one
-additional piece of evidence is assessed. What changed is that the 16
+**This is a denominator correction, not improved effectiveness.** The same 50
+checks reached the same 50 assessments on the same repository, and not one
+additional piece of evidence was assessed. What changed is that the 18
 `NOT_APPLICABLE` findings left the denominator, where they never belonged: a
 check that does not apply to a repository is not a check adduce failed to answer
-about it. adduce does not assess 22 percentage points more evidence than it did
-before. A coverage figure recorded before this change and one recorded after it
-are not comparable, and neither number says anything about how good the answers
-were.
+about it. adduce does not assess 25.6 percentage points more evidence than it
+did before. A coverage figure recorded before this change and one recorded
+after it are not comparable, and neither number says anything about how good
+the answers were.
 
 ### Coverage stays count-based
 
@@ -342,9 +363,9 @@ continue to apply to the quality score alone.
 
 Weighted coverage — assessed weight over applicable weight — is a measurement
 kept in the backlog, not a second metric. **adduce reports no weighted coverage
-number.** Measured on adduce's own repository it would read
-`157.0 / 161.0 = 97.5 %`, a divergence of 1.3 percentage points from the
-count-based 96.2 %. Rule weights span 1 to 8, so a repository whose unassessed
+number.** Measured on adduce's own repository it would have read
+`156.0 / 157.0 = 99.4 %`, a divergence of 1.3 percentage points from the
+count-based 98.0 %. Rule weights span 1 to 8, so a repository whose unassessed
 checks are its heaviest would diverge further. Measurement reopens the question,
 not preference: either more than 20 % of measured repositories diverging by more
 than 5 percentage points, or a corpus p95 absolute divergence above 10
