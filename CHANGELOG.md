@@ -8,77 +8,39 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Validation status
 
-The `r6` effectiveness preregistration lock is void, deliberately and once. Its
-analyzer digest binds the `src/adduce` byte tree, and the work in this release
-changes that tree. Invalidating it now costs nothing, because no human reviewer
-decision has been collected; the same change after the claim review begins would
-cost 220 decisions. Every other frozen input is unchanged and still verified: the
-preregistration schema, the built-in rule-ID set, the corpus inventory, and the
-frozen claim truth `9a26d06c…`. A successor lock will be registered under a dated
-protocol amendment against the finished analyzer, and no effectiveness,
-calibration, or false-positive figure is stated in the meantime.
+The `r6` effectiveness preregistration lock is retired. Its analyzer digest
+binds the `src/adduce` byte tree, and the work in this release rebuilds that
+tree. Protocol amendment 8 does not register a successor: amendments 5, 6 and 7
+each answered a byte change by re-locking, which is the right answer when the
+analyzer is settled and the wrong one while it is being rebuilt on purpose.
+Enumerating every edit against a dead lock recreates the bookkeeping of a
+preregistration without its guarantee.
 
-Six analysis-plan files changed. `corpus/scripts/check_builtin.py` moved three
-times, twice for reasons of its own. It permits the two read-only git queries
-that honouring `.gitignore` requires; its offline enforcement is otherwise
-unchanged, and the queries are measured to be a no-op on the pilot corpus — all
-fifteen pinned clones report zero ignored paths, so no finding, score, or
-status moves for any of them. It also now emits `"items": []` on the
-not-applicable finding it synthesises for a rule that never ran, because the
-run contract's per-finding key check now requires that key whether or not the
-rule ran.
-`corpus/scripts/run_contract.py` moved three times, for three independent
-reasons. It stops recomputing a tier from a score, which is no longer a valid
-invariant now that a tier is withheld when the analyzer parsed too little
-source; it validates the new `evidence_base` block instead. It then had to
-follow the score card's public shape again when that shape gained the
-applicability keys and a nullable total: the contract asserts an exact key set
-and reconstructs the total and the tier, so both the key set it accepts and
-that reconstruction had to take in `applicable_rules`, the nested `rules`
-block, and a `total` that may be absent. It now also validates the finished
-`FindingItem` serialisation shape: the top-level `schema` key joins the exact
-key set the contract asserts, and each finding's `items` list is checked field
-by field against the same shape `FindingItem` itself enforces — id uniqueness,
-status, confidence bounds, message and remediation as strings, an optional
-`kind` string, well-formed locations, and attribute values restricted to JSON
-scalars. `corpus/scripts/run_validation.py` stops writing `0.0` into the
-combined CSV for a category nothing could assess, which read as a category
-assessed at zero. It now uses the empty-cell absence convention the CSV
-already carries, which is what the run contract requires; a payload of that
-shape was rejected outright until the retained-category change made an
-unassessed category representable at all. `corpus/README.md` described the r6
-preregistration record as the live prospective lock when the project has
-since retired it. `corpus/ANNOTATION_GUIDE.md`'s verification-mode table
-offered `dynamic`, which is not in `finding-review.schema.json`'s
-`verification_mode` enum and is rejected on submission.
+Amendment 8 opens an unlocked development interval instead, and the line it
+draws is experimental data against analysis machinery. The analyzer source and
+its rules, the built-in rule inventory, the preregistration and report schemas,
+the run harness and the analysis-plan documentation are free to change, and no
+change to them is enumerated here. The study's material stays frozen and moves
+only under a further dated amendment: the repository inventory, the clone
+manifest and clone snapshot set, the badged-provenance identities, and the
+frozen claim truth `9a26d06c…`, which may be checked for integrity but never
+tuned against. Four executable assertions replace the lock — the tracked
+inventory and provenance digests, the gitignored study digests wherever the
+local corpus is present, and the refusal of an effectiveness run that binds no
+live lock. A successor lock is registered under a dated amendment against the
+finished analyzer, and no effectiveness, calibration, or false-positive figure
+is stated in the meantime.
 
-`corpus/scripts/audit_sentinel_generation.py` enters that list for the sixth
-change, which moved all three copies of `_source_tree_sha256` together and is
-the third reason `check_builtin.py` moved and the second for
-`run_validation.py`. The helper ordered files by comparing `Path` objects, and
-`Path` comparison casefolds on Windows and does not on POSIX, so the analyzer
-digest a preregistration lock binds depended on the host that computed it. It
-orders by the segments of the relative POSIX path now, the key the repository
-walk already uses. The two rules part company as soon as a file sits beside a
-directory of the same stem, so they are not interchangeable, and one ordering
-rule across the project is one rule to reason about. Both keys reproduce every
-digest recorded against this helper, so the choice is conservative here rather
-than forced; the divergence 987c708 measured was over the repository walk's
-inventory of corpus targets, not over this digest.
-
-The digest of the current `src/adduce` tree is byte-identical before and after
-the fix, so no recorded digest moves and no lock is disturbed. That is
-coincidence rather than design: its ninety-nine names happen to sort the same
-way under both flavours today. Adding a `README.md`, a `LICENSE` or a
-`Dockerfile` splits it in 39 of the 42 placements across the package's fourteen
-directories; the three that do not are all in `fixers/templates/`, the only
-directory whose existing names already lead with uppercase. The helper is
-duplicated because the built-in checker runs as a sandboxed child process that
-imports nothing from its siblings, and a test now holds the three copies to one
-value.
-
-Every one of those changes is recorded against the digests the lock still
-carries, and the record asserts that exactly those six files moved.
+One correction from this release outlives the lock that recorded it, because it
+concerns whether digests are comparable at all. The helper that hashes the
+`src/adduce` byte tree ordered files by comparing `Path` objects, and that
+comparison casefolds on Windows and does not on POSIX, so the analyzer digest
+every preregistration binds depended on the host that computed it. All three
+copies of the helper now order by the segments of the relative POSIX path. The
+current tree's digest is byte-identical either way, so no recorded digest moves,
+and a test holds the three copies to one value. The copies are deliberate: the
+built-in checker runs as a sandboxed child process that imports nothing from its
+siblings.
 
 This release makes **no final effectiveness claim**, and deliberately ships with
 no preregistration lock. That is not an exception: `docs/releasing.md`'s first
