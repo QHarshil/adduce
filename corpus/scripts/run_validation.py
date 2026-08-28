@@ -55,6 +55,7 @@ if __package__:
         ensure_output_outside,
         finalize_run,
         load_json_object_bytes,
+        reject_synthetic_protocol_in_recorded_outputs,
         validate_badged_provenance_bytes,
         validate_inventory_rows,
         validate_raw_payload,
@@ -86,6 +87,7 @@ else:
         ensure_output_outside,
         finalize_run,
         load_json_object_bytes,
+        reject_synthetic_protocol_in_recorded_outputs,
         validate_badged_provenance_bytes,
         validate_inventory_rows,
         validate_raw_payload,
@@ -93,7 +95,7 @@ else:
     )
 
 BUILTIN_CHECKER = Path(__file__).with_name("check_builtin.py")
-PREREGISTRATION_PATH = CORPUS_DIR / "pilot-r6-preregistration.json"
+LIVE_PREREGISTRATION_ENV = "ADDUCE_CORPUS_PREREGISTRATION"
 CONFIGURATION_MODE = "defaults-only-repository-config-disabled"
 ADDUCE_CHECK_MODE = "reviewer"
 SUCCESS_STATUSES = frozenset({"succeeded", "succeeded_with_partial_acquisition"})
@@ -301,6 +303,32 @@ def _source_tree_sha256(package_dir: Path) -> str:
     return digest.hexdigest()
 
 
+def live_preregistration_path() -> Path | None:
+    """The preregistration lock this run is bound to, or None.
+
+    A retired lock file stays on disk as a record of what was believed and when.
+    It is not a lock, and nothing binds to one by default: an effectiveness run
+    resolves a live lock explicitly, or it does not happen.
+    """
+    override = os.environ.get(LIVE_PREREGISTRATION_ENV)
+    if override:
+        return Path(override)
+    return None
+
+
+def require_live_preregistration() -> Path:
+    """Resolve the lock this effectiveness run binds to, or refuse the run."""
+    path = live_preregistration_path()
+    if path is None:
+        sys.exit(
+            "effectiveness requires a live preregistration lock. No lock is "
+            "registered, so no effectiveness run can be produced. Use "
+            f"--operational-only, or set {LIVE_PREREGISTRATION_ENV} to a "
+            "registered successor lock."
+        )
+    return path
+
+
 def _corpus_git_identity() -> dict[str, object]:
     """Prove that the prospective effectiveness harness is tracked and clean."""
     unavailable: dict[str, object] = {
@@ -311,21 +339,21 @@ def _corpus_git_identity() -> dict[str, object]:
     root_result = _git("rev-parse", "--show-toplevel", cwd=CORPUS_DIR)
     if root_result.returncode != 0:
         return unavailable
+    live_lock = live_preregistration_path()
     try:
         repository_root = Path(root_result.stdout.strip()).resolve(strict=True)
         corpus_relative = CORPUS_DIR.resolve(strict=True).relative_to(repository_root)
-        preregistration_relative = PREREGISTRATION_PATH.resolve(strict=True).relative_to(
-            repository_root
-        )
-    except (OSError, ValueError):
-        return unavailable
-    paths = sorted(
-        {
+        names = {
             (corpus_relative / Path(*name.split("/"))).as_posix()
             for name in REQUIRED_HARNESS_PATHS
         }
-        | {preregistration_relative.as_posix()}
-    )
+        if live_lock is not None:
+            names.add(
+                live_lock.resolve(strict=True).relative_to(repository_root).as_posix()
+            )
+    except (OSError, ValueError):
+        return unavailable
+    paths = sorted(names)
     head = _git("rev-parse", "HEAD", cwd=repository_root)
     status = _git(
         "status",
@@ -689,6 +717,10 @@ def main() -> int:
         sys.exit("an effectiveness run requires exactly two --claim-review-source inputs")
     if args.claims is None and args.claim_review_source:
         sys.exit("--claim-review-source requires --claims")
+    if args.claims is not None:
+        # Refuse before anything is read or written: with no live lock, an
+        # effectiveness run cannot exist, so nothing about one may be created.
+        require_live_preregistration()
     started_at = _utc_now()
     claim_ground_truth_sha256: str | None = None
     claim_truth_data: bytes | None = None
@@ -697,6 +729,7 @@ def main() -> int:
     claim_review_source_data: list[bytes] = []
     claim_review_source_sha256: list[str] | None = None
     preregistration_data: bytes | None = None
+    preregistration_path: Path | None = None
     preregistration_sha256: str | None = None
     analysis_scope = "operational-only" if args.operational_only else "effectiveness"
     try:
@@ -741,11 +774,12 @@ def main() -> int:
                     "claim ground truth must be frozen before the corpus run starts"
                 )
             claim_ground_truth_sha256 = hashlib.sha256(claim_truth_data).hexdigest()
+            preregistration_path = require_live_preregistration()
             try:
-                preregistration_data = PREREGISTRATION_PATH.read_bytes()
+                preregistration_data = preregistration_path.read_bytes()
             except OSError as exc:
                 raise PreregistrationError(
-                    f"cannot read effectiveness preregistration {PREREGISTRATION_PATH}: {exc}"
+                    f"cannot read effectiveness preregistration {preregistration_path}: {exc}"
                 ) from exc
             preregistration = validate_preregistration_bytes(
                 preregistration_data,
@@ -759,6 +793,9 @@ def main() -> int:
                 source_identity=identity,
                 candidate_run_name=out_dir.name,
                 timeout_seconds=args.timeout,
+            )
+            reject_synthetic_protocol_in_recorded_outputs(
+                preregistration["protocol_id"], out_dir
             )
             preregistration_sha256 = hashlib.sha256(preregistration_data).hexdigest()
             try:
@@ -1004,7 +1041,7 @@ def main() -> int:
             "claim_review": str(args.claim_review) if args.claim_review is not None else None,
             "claim_review_sources": [str(path) for path in args.claim_review_source],
             "preregistration": (
-                str(PREREGISTRATION_PATH) if preregistration_data is not None else None
+                str(preregistration_path) if preregistration_path is not None else None
             ),
             "badged_provenance": str(args.badged_provenance),
             "operational_only": args.operational_only,

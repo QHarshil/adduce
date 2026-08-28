@@ -189,16 +189,20 @@ pre-registers the fresh pair below. These commands are prospective: the pair
 must not run until the claim-review gate above passes and the candidate source
 and harness have stabilized. Effectiveness runs also require Adduce source at a
 full, clean Git commit so the analyzer can be reconstructed; a release tag or
-package publication is not required for this candidate evidence.
+package publication is not required for this candidate evidence. They also
+require a registered live lock, resolved through `ADDUCE_CORPUS_PREREGISTRATION`,
+which does not exist while no lock is registered.
 
 The tracked
 [`pilot-r6-preregistration.json`](pilot-r6-preregistration.json) was the
 machine-readable prospective lock. It froze the exact candidate names,
 300-second timeout, analyzer, rule-set and dependency identity, repository,
 clone, truth and provenance digests, reviewer/offline/no-plugin execution
-policy, and the complete analysis-plan file map. Before creating an output
-directory, effectiveness preflight requires the analyzer, preregistration, and
-every required harness file to be tracked and clean at one Git `HEAD`.
+policy, and the complete analysis-plan file map. Effectiveness preflight now
+begins by resolving a live lock, and refuses the run outright when none is
+registered. Once one resolves, and before creating an output directory,
+preflight requires the analyzer, that lock, and every required harness file to
+be tracked and clean at one Git `HEAD`.
 
 `pilot-r3-preregistration.json` is also present because protocol amendment 4
 names it. Protocol amendment 5 voided that lock, and it is retained only as a

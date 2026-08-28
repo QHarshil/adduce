@@ -26,6 +26,8 @@ RUNNING_MARKER = "_RUNNING"
 COMPLETE_MARKER = "_RUN_SUCCESS"
 RAW_DIRECTORY = "raw_json"
 HARNESS_DIRECTORY = "harness"
+SYNTHETIC_PROTOCOL_PREFIX = "synthetic-"
+_CORPUS_DIR = Path(__file__).resolve().parent.parent
 
 REQUIRED_HARNESS_PATHS = (
     "ANNOTATION_GUIDE.md",
@@ -175,6 +177,28 @@ def ensure_output_outside(output: Path, protected_roots: list[Path]) -> None:
             raise RunContractError(
                 f"output path must be outside immutable input {protected}: {output}"
             )
+
+
+def reject_synthetic_protocol_in_recorded_outputs(protocol_id: object, run_dir: Path) -> None:
+    """Keep a fixture lock out of the tracked corpus outputs tree.
+
+    A synthetic lock exists so the effectiveness path stays exercised while no
+    real lock is registered. It names invented repositories, so a run it governs
+    is not evidence about anything. The reserved prefix is what stops such a run
+    from being filed where real runs are read.
+    """
+    if not isinstance(protocol_id, str) or not protocol_id.startswith(
+        SYNTHETIC_PROTOCOL_PREFIX
+    ):
+        return
+    try:
+        run_dir.resolve().relative_to((_CORPUS_DIR / "outputs").resolve())
+    except (OSError, ValueError):
+        return
+    raise RunContractError(
+        f"a preregistration whose protocol ID begins with {SYNTHETIC_PROTOCOL_PREFIX!r} "
+        "is a fixture and cannot govern a run recorded under corpus/outputs"
+    )
 
 
 def finding_fingerprint(repo_id: str, repo_commit: str, finding: dict[str, Any]) -> str:
@@ -1859,6 +1883,9 @@ def _validate_input_copies(
                 },
                 candidate_run_name=str(candidate_name),
                 timeout_seconds=metadata["timeout_seconds"],
+            )
+            reject_synthetic_protocol_in_recorded_outputs(
+                preregistration.get("protocol_id"), run_dir
             )
             if review_payload.get("candidate_pair") != preregistration["candidate_pair"]:
                 raise RunContractError(

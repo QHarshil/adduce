@@ -365,6 +365,30 @@ the preregistered validation report belong to the following release.
   and checks the scored population exactly instead, and its exact key set and its
   total and tier reconstruction were extended again to accept `applicable_rules`,
   the nested `rules` block, and a `total` that may be absent.
+- **The effectiveness runner no longer carries a default preregistration lock.**
+  `corpus/scripts/run_validation.py` hard-coded the void `r6` record as the lock
+  every effectiveness run bound to. A retired lock stays on disk as a record of
+  what was believed and when, but it is not a lock: the runner resolves a live
+  lock from `ADDUCE_CORPUS_PREREGISTRATION`, and with none registered it refuses
+  the run before reading or writing anything, naming `--operational-only` as the
+  alternative. There is deliberately no provisional unlocked-effectiveness
+  artifact — a run that binds nothing is not weaker evidence about analyzer
+  quality, it is none, and refusing the operation says so where a disclaimer on
+  an artifact would not. The path stays covered by a synthetic fixture lock:
+  protocol IDs beginning `synthetic-` are reserved, and the run contract rejects
+  such a lock over any run under `corpus/outputs`, so a fixture run cannot be
+  produced under, or validated from, that tree. The guard is a contract check,
+  not a filesystem permission: it does not stop bytes being copied there by
+  other means.
+
+  One provenance field moves as a consequence, in every run including
+  `--operational-only`. The corpus-harness dirty and tracked flags are computed
+  over the required harness files plus the live lock, and with no live lock they
+  are computed over the harness files alone — so editing a retired lock on disk
+  no longer marks the harness dirty, where it previously did. That is the
+  correct reading, because a retired lock is not part of the harness, and it is
+  recorded provenance rather than enforcement: the run contract gates those
+  fields only for an effectiveness run.
 
 ### Fixed
 
