@@ -24,6 +24,7 @@ from corpus.scripts.clone_repos import (
     clone_one,
     repository_tree_sha256,
 )
+from corpus.scripts.preregistration import clone_snapshot_set_sha256
 from corpus.scripts.run_contract import (
     BADGED_PROVENANCE_FIELDS,
     RunContractError,
@@ -48,6 +49,14 @@ ROOT = Path(__file__).resolve().parent.parent
 CHECKER = ROOT / "corpus" / "scripts" / "check_builtin.py"
 RUNNER = ROOT / "corpus" / "scripts" / "run_validation.py"
 FROZEN_CLONES_DIR = ROOT / "corpus" / "clones" / "pilot-2026-07-13"
+# Frozen by protocol amendment 8 for the duration of the unlocked development
+# interval; they move only under a further dated amendment.
+FROZEN_CLONE_MANIFEST_SHA256 = (
+    "2fcefb2503e60d4a04a0b4a343056a99ad00294ae3d5ee5c8f430d0b79435b94"
+)
+FROZEN_CLONE_SNAPSHOT_SET_SHA256 = (
+    "9a171656825240a0b8371833f69c3b25b570e9bb74c4e6bd5f5cab618de06c31"
+)
 
 
 def _git(*args: str, cwd: Path) -> str:
@@ -661,6 +670,12 @@ def test_runner_accepts_the_real_frozen_corpus_despite_its_stale_clone_tool_dige
     # coincidental one: assert it rather than assume it.
     assert declared != live_clone_tool_sha256
     assert set(loaded) == {row["id"] for row in rows}
+
+    # The gitignored half of protocol amendment 8's frozen set: verified
+    # wherever the local corpus is present, and pinned in any checkout against
+    # the retired r6 record by tests/test_corpus_methodology.py.
+    assert hashlib.sha256(manifest_data).hexdigest() == FROZEN_CLONE_MANIFEST_SHA256
+    assert clone_snapshot_set_sha256(manifest_data) == FROZEN_CLONE_SNAPSHOT_SET_SHA256
 
 
 _MISSING_CLONE_TOOL_DIGEST = object()

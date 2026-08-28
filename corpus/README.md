@@ -216,11 +216,14 @@ historical artifact: no script, test, or run loads it.
 `pilot-r6-preregistration.json` is itself now void: its analyzer digest binds
 a `src/adduce` byte tree the project has since rebuilt, and no human reviewer
 decision had yet been collected against it, so it is retired rather than
-carried forward. It is retained only as a historical artifact: no script,
-test, or run loads it. The successor is a fresh `r7` candidate pair,
-preregistered under a dated protocol amendment against the finished analyzer.
-Do not draw new bound samples, and do not point any current command at r6,
-until that amendment and lock are registered and tracked.
+carried forward. Protocol amendment 8 retires it and registers no successor,
+opening an unlocked development interval instead; the record is retained as a
+historical artifact and as the tracked witness of the frozen study digests,
+and no script or run loads it. An `r7` candidate pair will be preregistered
+under a further dated protocol amendment against the finished analyzer;
+amendment 8 reserves no candidate-pair name. Do not draw new bound samples,
+and do not point any current command at r6, until that amendment and lock are
+registered and tracked.
 
 ```bash
 python corpus/scripts/run_validation.py \
@@ -293,8 +296,8 @@ produced a valid deterministic pair and generation audit. All preflights, r1,
 and r2 remain immutable historical evidence. Current scripts have changed and
 must not reinterpret any of those directories; historical verification uses
 only each run's frozen `harness/` copy. The r6 pair's preregistration lock is
-now void; the next candidate awaits a fresh `r7` preregistration under a
-dated protocol amendment.
+retired under protocol amendment 8; the next candidate awaits a fresh `r7`
+preregistration under a further dated protocol amendment.
 
 The following historical checks are read-only. They invoke only the frozen r2
 harness, do not pass an output path, and disable bytecode writes so validation
