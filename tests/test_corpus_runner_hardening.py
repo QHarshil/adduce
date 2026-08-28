@@ -310,10 +310,8 @@ def test_effectiveness_runs_require_a_clean_committed_analyzer() -> None:
             require_reconstructable_analyzer(identity, "effectiveness")
 
 
-def test_corpus_git_identity_requires_every_declared_file_tracked_and_clean(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+def _committed_corpus(tmp_path: Path) -> tuple[Path, Path, Path, str]:
+    """A one-file corpus harness and one lock, both tracked and clean at HEAD."""
     repository = tmp_path / "repository"
     corpus = repository / "corpus"
     corpus.mkdir(parents=True)
@@ -325,9 +323,16 @@ def test_corpus_git_identity_requires_every_declared_file_tracked_and_clean(
     _git("config", "user.email", "corpus@example.invalid", cwd=repository)
     _git("add", ".", cwd=repository)
     _git("commit", "-qm", "freeze corpus contract", cwd=repository)
-    commit = _git("rev-parse", "HEAD", cwd=repository)
+    return repository, corpus, preregistration, _git("rev-parse", "HEAD", cwd=repository)
+
+
+def test_corpus_git_identity_requires_every_declared_file_tracked_and_clean(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    repository, corpus, preregistration, commit = _committed_corpus(tmp_path)
     monkeypatch.setattr(run_validation, "CORPUS_DIR", corpus)
-    monkeypatch.setattr(run_validation, "PREREGISTRATION_PATH", preregistration)
+    monkeypatch.setenv(run_validation.LIVE_PREREGISTRATION_ENV, str(preregistration))
     monkeypatch.setattr(run_validation, "REQUIRED_HARNESS_PATHS", ("protocol.txt",))
 
     identity = _corpus_git_identity()
@@ -367,6 +372,54 @@ def test_corpus_git_identity_requires_every_declared_file_tracked_and_clean(
         ("protocol.txt", "untracked.txt"),
     )
     assert _corpus_git_identity()["corpus_harness_git_tracked"] is False
+
+    _write(corpus / "protocol.txt", "frozen protocol\n")
+    _write(preregistration, '{"retired": true}\n')
+    monkeypatch.setattr(run_validation, "REQUIRED_HARNESS_PATHS", ("protocol.txt",))
+    monkeypatch.delenv(run_validation.LIVE_PREREGISTRATION_ENV)
+    assert _corpus_git_identity() == {
+        "corpus_harness_git_commit": commit,
+        "corpus_harness_git_dirty": False,
+        "corpus_harness_git_tracked": True,
+    }
+
+
+def test_corpus_git_identity_audits_the_live_preregistration_lock(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A resolved lock is audited with the harness, so it cannot be unregistered.
+
+    This is the only thing forcing a live lock to be tracked and clean at the
+    analyzer commit. Without it any readable path is accepted as a lock, and the
+    run records a clean harness while binding a lock registered nowhere.
+    """
+    repository, corpus, preregistration, commit = _committed_corpus(tmp_path)
+    monkeypatch.setattr(run_validation, "CORPUS_DIR", corpus)
+    monkeypatch.setattr(run_validation, "REQUIRED_HARNESS_PATHS", ("protocol.txt",))
+
+    monkeypatch.setenv(run_validation.LIVE_PREREGISTRATION_ENV, str(preregistration))
+    _write(preregistration, '{"edited": true}\n')
+    assert _corpus_git_identity() == {
+        "corpus_harness_git_commit": commit,
+        "corpus_harness_git_dirty": True,
+        "corpus_harness_git_tracked": True,
+    }
+    _git("checkout", "--", "corpus/preregistration.json", cwd=repository)
+
+    untracked = corpus / "successor.json"
+    _write(untracked, "{}\n")
+    monkeypatch.setenv(run_validation.LIVE_PREREGISTRATION_ENV, str(untracked))
+    assert _corpus_git_identity()["corpus_harness_git_tracked"] is False
+
+    outside = tmp_path / "outside-lock.json"
+    _write(outside, "{}\n")
+    monkeypatch.setenv(run_validation.LIVE_PREREGISTRATION_ENV, str(outside))
+    assert _corpus_git_identity() == {
+        "corpus_harness_git_commit": None,
+        "corpus_harness_git_dirty": None,
+        "corpus_harness_git_tracked": False,
+    }
 
 
 def test_malformed_scanner_output_is_a_contract_failure(
