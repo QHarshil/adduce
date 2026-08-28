@@ -46,11 +46,12 @@ This release makes **no final effectiveness claim**, and deliberately ships with
 no preregistration lock. That is not an exception: `docs/releasing.md`'s first
 gate is satisfied by completing the version's corpus and human-review gates *or*
 by documenting explicitly which validation remains developmental, and this is the
-second path. The claim-extraction figures are developmental status rather than
-results. Pooled recall is **141/296 = 47.6%** over the 20 labelled pairs.
-Precision is **700/1156 = 60.6%** over the **6 of 34** pairs adjudicated so far,
-with **122** high-confidence false positives pooled and exactly one pair reaching
-zero. **The zero-high-confidence-false-positive acceptance criterion is not met.**
+second path. Claim extraction is developmental. Its recall, precision and
+false-positive counts are not stated: protocol amendment 8 admits no
+effectiveness, calibration or false-positive figure in a release note while the
+unlocked development interval is open, and the pairs those figures were drawn
+from are not reproducible from this tree. The verdict they supported stands.
+**The zero-high-confidence-false-positive acceptance criterion is not met.**
 The remaining claim-resolution stages, the effectiveness acceptance criteria, and
 the preregistered validation report belong to the following release.
 

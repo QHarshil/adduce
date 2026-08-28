@@ -88,10 +88,10 @@ Statuses are detected signals from static analysis, not a certification of repro
 
 Location-bearing findings are anchored to source lines—the TF32 finding above
 points at `train.py:107`, and the unpinned hub call at `model.py:238`. Seven of
-the fifteen categories that applied to this repository are shown above; the
-full run also covers Documentation, Run Traceability, Checkpoint & Experiment
-State, Notebooks, Remote Artifacts & Rot, Versioning, Access & Legal, and
-Archival Readiness.
+the fifteen categories that applied to nanoGPT are shown above; the same run
+also covers Documentation, Run Traceability, Checkpoint & Experiment State,
+Notebooks, Remote Artifacts & Rot, Versioning, Access & Legal, and Archival
+Readiness.
 
 When a manifest declares claims, the report adds a per-claim trail. Trimmed
 output from `adduce manifest` followed by `adduce check` on the synthetic

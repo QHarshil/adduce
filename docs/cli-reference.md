@@ -110,13 +110,12 @@ artifact.
 knowing:
 
 - **Honouring the ignore file can lower a score, and that is the point.** A
-  repository that vendors another project can otherwise earn passing statuses
-  from the vendored code. Measured on the adduce repository, whose working tree
-  carries fifteen gitignored clones: the scan covers 344 files rather than
-  8,844, the score reads 50.2 rather than 60.5, and 30 rule statuses move —
-  9 rules stop applying, 13 report not-applicable, 7 drop, and 1 improves. Nine
-  of the thirty were reporting PASS on another repository's files, among them
-  cuDNN determinism flags in a project containing no CUDA code.
+  repository that vendors another project, or keeps working clones under an
+  ignored path, can otherwise earn passing statuses from files that are not part
+  of the artifact a reader receives — cuDNN determinism flags detected in a
+  project that contains no CUDA code of its own, for one. Scanning the whole
+  tree instead moves rule statuses in both directions: rules stop applying, turn
+  not-applicable, drop a status, or improve one.
 - **Tracking beats ignoring**, as in git: a tracked file matching an ignore
   pattern is still scanned.
 - **It never scans less than it reports.** Scanning a directory that is itself
@@ -128,8 +127,10 @@ Ambient git configuration cannot change the answer: system and global config
 are suppressed for the query, so a user's `core.excludesFile` cannot silently
 shrink an audit.
 
-The reproducible measurement behind the numbers above is
-`bench/runner.py finding-diff`.
+`bench/runner.py finding-diff` enumerates every rule status that honouring the
+ignore file moves on a given tree. Run it rather than quoting a figure from
+here: what moves depends on what the working tree happens to carry, which is
+not a property of the release.
 
 ## Scores, tiers, and when no tier is given
 
@@ -191,6 +192,19 @@ of the two causes of a fourth, so the nine rules `applies_to` excluded here stay
 visible without entering that fraction. It carries nothing for a rule the
 profile disabled or one that could not supply its identity; those reach
 telemetry only. [Scoring](scoring.md#coverage) sets out the arithmetic.
+
+**Provenance of the `evidence_base` block above, and of the two percentages
+computed from it.** Measured 2026-08-28 against analyzer source tree
+`cae7dd33dd0077b5ecc4fe805ad707bd49e19bd2556a76204d494a5ea36ec8dd`, on python
+3.14.0, darwin arm64, by the command shown, under the default profile with no
+rule plugins installed. The fixture is version-controlled here, so you can run
+the command and compare; the counts still move when a rule is added or a rule's
+applicability changes, which is why one block dates them together rather than
+each in turn. The digest, not a commit hash, identifies what was measured:
+writing a commit hash into the commit that carries it changes it. Regenerate it
+with `python3 corpus/scripts/review_facts.py show --root .`. A later tree that
+reports different counts does not make the block stale — it stays a true
+statement about the tree it names.
 
 Two limits, both deliberate:
 
