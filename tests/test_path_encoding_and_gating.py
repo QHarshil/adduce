@@ -413,12 +413,18 @@ def test_fail_on_regression_reads_the_baseline_through_a_symlinked_ancestor(tmp_
 
 def _repository_with_a_control_sequence_in_a_filename(root):
     (root / "requirements.txt").write_text("torch\n", encoding="utf-8")
-    (root / CONTROL_NAME).write_text(
-        "import torch\n"
-        "DATA = '/Users/someone/data'\n"
-        "torch.backends.cuda.matmul.allow_tf32 = True\n",
-        encoding="utf-8",
-    )
+    try:
+        (root / CONTROL_NAME).write_text(
+            "import torch\n"
+            "DATA = '/Users/someone/data'\n"
+            "torch.backends.cuda.matmul.allow_tf32 = True\n",
+            encoding="utf-8",
+        )
+    except (OSError, ValueError) as error:
+        # NTFS rejects a control character in a filename outright, so the input
+        # this defect needs cannot exist there. The sanitiser is not
+        # platform-specific; the fixture is.
+        pytest.skip(f"this filesystem will not hold a control character: {error}")
     return run_check(root)
 
 
