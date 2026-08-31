@@ -60,7 +60,10 @@ def _analyse_notebook(path: str, raw: str, companion_stems: set[str]) -> Noteboo
     info = NotebookInfo(path=path)
     try:
         data = json.loads(raw)
-    except json.JSONDecodeError:
+    except (json.JSONDecodeError, MemoryError, RecursionError):
+        # A deeply nested but well-formed notebook exhausts the parser's stack
+        # (RecursionError) or memory (MemoryError). Record it the same way as a
+        # malformed one: nothing about it could be read.
         info.parse_error = True
         return info
     if not isinstance(data, dict):

@@ -9,8 +9,10 @@ from pathlib import Path
 import pytest
 from scripts.check_markdown_links import MarkdownScanError, check_markdown_links, main
 
+from adduce import __version__
+
 ROOT = Path(__file__).resolve().parents[1]
-SDIST = ROOT / "dist" / "adduce-0.1.2.tar.gz"
+SDIST = ROOT / "dist" / f"adduce-{__version__}.tar.gz"
 BLOB_URL_RE = re.compile(r"https://github\.com/QHarshil/adduce/(?:blob|tree)/main/([^)#\s]+)")
 
 

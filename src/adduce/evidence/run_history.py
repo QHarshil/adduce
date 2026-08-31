@@ -115,7 +115,13 @@ def _scan_script(repo: Repo, rel: str, evidence: RunHistoryEvidence) -> None:
     if text is None:
         return
     directives: list[str] = []
-    for lineno, raw in enumerate(text.splitlines(), start=1):
+    # split("\n"), not splitlines(): splitlines() also breaks on \f, \v,
+    # \x1c-\x1e, \x85, U+2028 and U+2029, none of which the CPython tokenizer
+    # treats as a line break. A file containing one would number these lines
+    # differently from the lines a finding is anchored to, which moves a
+    # suppression pragma onto some other finding and can put a reported line
+    # past the end of the file.
+    for lineno, raw in enumerate(text.split("\n"), start=1):
         sbatch = _SBATCH_RE.match(raw)
         if sbatch:
             directives.append(sbatch.group(1).strip())

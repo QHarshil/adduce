@@ -10,8 +10,10 @@ workflow.
 
 1. Create a GitHub environment named `pypi`, limit it to protected stable tags,
    and require an authorized maintainer to approve deployments.
-2. Protect the `v*` tag namespace so only release maintainers can create or
-   update release tags.
+2. Keep the `v*` tag namespace immutable. The ruleset that does this blocks
+   deletion and non-fast-forward updates on `refs/tags/v*`; it restricts nobody
+   from creating one, so what stands between a pushed tag and a published
+   release is the `pypi` environment approval above.
 3. In the existing PyPI `adduce` project, register a GitHub Trusted Publisher
    for repository `QHarshil/adduce`, workflow `release.yml`, and environment
    `pypi`.
@@ -39,11 +41,24 @@ Run the local metadata gate before tagging:
 python scripts/validate_release.py --tag vX.Y.Z
 ```
 
+The tag workflow installs its gate tools through `release-constraints.txt`
+rather than resolving them at tag time, so `ruff`, `mypy` and `pytest` answer on
+the tag the way they answered in CI on the same commit. Bump that file
+deliberately, in a pull request, with CI green on the new set.
+
 Create and push an annotated tag only after the release commit and environment
-approval are ready. The tag workflow reruns all quality gates, requires the tag
-commit to be on `main`, transfers only the validated wheel and source archive
-to the publish job, and publishes through PyPI Trusted Publishing with digital
-attestations.
+approval are ready. The tag workflow requires the pushed ref to be an annotated
+tag whose commit is an ancestor of `origin/main`, reruns lint, type checking,
+the coverage gate, the Markdown-link and reviewer-material checks, the metadata
+gate and the packaging and clean-install checks, transfers only the validated
+wheel and source archive to the publish job, and publishes through PyPI Trusted
+Publishing with digital attestations.
+
+It does not rerun all of CI. Those gates run on ubuntu with Python 3.12 only:
+the 3.10–3.14 matrix, macOS, Windows, the lowest-direct-dependency job, the
+external plugin contract, the benchmark regression gate and the self-check run
+on the pull request and on `main`, not on the tag. Confirm them green on the
+release commit before tagging, because a tag cannot be moved.
 
 If any gate fails, correct the source through the normal review process and use
 a new version. Do not move or replace a published release tag.

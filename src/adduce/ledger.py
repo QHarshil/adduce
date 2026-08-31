@@ -382,7 +382,7 @@ def write_ledger(root: Path, ledger: Ledger) -> Path:
     records[ledger.artifact_path] = ledger.to_dict()
     try:
         rendered = json.dumps(records, allow_nan=False, indent=2) + "\n"
-    except (TypeError, ValueError) as exc:
+    except (TypeError, ValueError, MemoryError, RecursionError) as exc:
         raise SafeWriteError(
             "evidence ledger contains values that cannot be serialized safely"
         ) from exc
@@ -414,7 +414,9 @@ def load_ledger(root: Path) -> dict[str, Any]:
 
     try:
         data = json.loads(source, parse_constant=reject_non_finite)
-    except (json.JSONDecodeError, ValueError) as exc:
+    except (json.JSONDecodeError, ValueError, MemoryError, RecursionError) as exc:
+        # A ledger nested deeper than the parser can walk exhausts its stack or
+        # memory. It cannot be read, so it must not be overwritten either.
         raise SafeWriteError("refusing to replace an invalid evidence ledger") from exc
     if not isinstance(data, dict):
         raise SafeWriteError("refusing to replace an invalid evidence ledger")

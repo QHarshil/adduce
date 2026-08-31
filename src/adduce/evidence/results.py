@@ -99,16 +99,35 @@ def _collect_scalars(data: object, result: ResultFile, prefix: str = "") -> None
                 _collect_scalars(value, result, dotted)
 
 
+def _collect_bounded(data: object, result: ResultFile) -> None:
+    """Walk the document, discarding the file's metrics if it nests too deep.
+
+    A partial walk reads as a complete set of logged metrics, which would let
+    reconciliation compare a paper number against a log that was never fully
+    read. Both failures are recoverable, so the file is simply dropped.
+    """
+    try:
+        _collect_scalars(data, result)
+    except (MemoryError, RecursionError):
+        result.metrics.clear()
+
+
 def _parse_json(text: str, result: ResultFile) -> None:
     try:
         data = json.loads(text)
-    except json.JSONDecodeError:
+    except (json.JSONDecodeError, MemoryError, RecursionError):
         return
-    _collect_scalars(data, result)
+    _collect_bounded(data, result)
 
 
 def _parse_jsonl(text: str, result: ResultFile) -> None:
-    for line_index, line in enumerate(text.splitlines()):
+    # split("\n"), not splitlines(): splitlines() also breaks on \f, \v,
+    # \x1c-\x1e, \x85, U+2028 and U+2029, none of which the CPython tokenizer
+    # treats as a line break. A file containing one would number these lines
+    # differently from the lines a finding is anchored to, which moves a
+    # suppression pragma onto some other finding and can put a reported line
+    # past the end of the file.
+    for line_index, line in enumerate(text.split("\n")):
         if line_index >= _MAX_ROWS:
             break
         line = line.strip()
@@ -116,9 +135,9 @@ def _parse_jsonl(text: str, result: ResultFile) -> None:
             continue
         try:
             data = json.loads(line)
-        except json.JSONDecodeError:
+        except (json.JSONDecodeError, MemoryError, RecursionError):
             continue
-        _collect_scalars(data, result)
+        _collect_bounded(data, result)
 
 
 def _looks_like_result_file(entry) -> bool:

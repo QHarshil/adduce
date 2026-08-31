@@ -17,6 +17,7 @@ from ..graph import TrailStatus
 from ..modes import Mode, badge_eligibility, blocking_issues, unverifiable_findings
 from ..rules.base import Finding, Status, summarize_items
 from ..scoring import top_fixes
+from ..text import safe_display_text
 
 _STATUS_STYLE = {
     Status.PASS: ("green", "pass"),
@@ -276,7 +277,13 @@ def _render_findings_table(result: CheckResult, console: Console) -> None:
     detail.add_column("Detail", overflow="fold")
     for finding in result.card.findings:
         location_note = (
-            "\n  at " + ", ".join(str(loc) for loc in finding.locations[:3]) if finding.locations else ""
+            # A path is repository-controlled, and this one is going to a
+            # terminal. Unsanitised it can carry an escape sequence that clears
+            # the findings printed above it, or an OSC 8 hyperlink pointing
+            # anywhere. JSON and SARIF escape these; prose formats must strip them.
+            "\n  at " + ", ".join(safe_display_text(str(loc)) for loc in finding.locations[:3])
+            if finding.locations
+            else ""
         )
         census = _item_census(finding)
         item_note = f"\n  {census}" if census else ""

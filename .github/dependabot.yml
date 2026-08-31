@@ -8,6 +8,12 @@ version: 2
 updates:
   - package-ecosystem: pip
     directory: "/"
+    # Onto dev, not the default branch. Feature work merges to dev and main is the
+    # release line a tag must descend from, so a bump landing straight on main puts
+    # an unreviewed dependency change between the validated candidate and the tag —
+    # and a release tag here is immutable. Bumps enter through the integration
+    # branch like everything else.
+    target-branch: dev
     schedule:
       interval: weekly
       day: monday
@@ -25,6 +31,12 @@ updates:
 
   - package-ecosystem: github-actions
     directory: "/"
+    # Onto dev, not the default branch. Feature work merges to dev and main is the
+    # release line a tag must descend from, so a bump landing straight on main puts
+    # an unreviewed dependency change between the validated candidate and the tag —
+    # and a release tag here is immutable. Bumps enter through the integration
+    # branch like everything else.
+    target-branch: dev
     schedule:
       interval: weekly
       day: monday

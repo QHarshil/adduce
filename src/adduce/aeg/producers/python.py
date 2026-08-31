@@ -28,7 +28,7 @@ from typing import TYPE_CHECKING, Any
 from ..graph import Graph
 from ..nodes import Edge, Node, Provenance, SourceLocation, Uncertainty
 from ..schema import EdgeType, NodeType, ResolutionMethod, UncertaintyKind
-from . import analyzer_version
+from . import analyzer_version, guarded_scalar
 
 if TYPE_CHECKING:  # pragma: no cover
     from ...evidence import Evidence
@@ -249,7 +249,7 @@ class PythonProducer:
             ordinals[site.file] = ordinal + 1
             value: dict[str, Any] = {"call": name, "resolved_name": site.qualname}
             if site.first_arg is not None:
-                value["first_argument"] = site.first_arg
+                value.update(guarded_scalar("first_argument", site.first_arg))
             if site.keywords:
                 value["keywords"] = sorted(site.keywords)
             self._add(

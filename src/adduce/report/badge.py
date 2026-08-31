@@ -22,6 +22,12 @@ _SVG_COLORS = {
 #: Shown when no check reached an assessment. A number here would be read as a
 #: score, and the repository does not have one.
 _UNASSESSED_MESSAGE = "not assessed"
+#: A card can carry a real score and still be unrated: the score is a score of
+#: too little source to stand behind. The badge is the most-copied artifact this
+#: tool emits and the one that reaches a reader with no surrounding context, so
+#: it says so rather than publishing the number alone.
+_UNRATED_MESSAGE = "unrated"
+_UNRATED_COLOR = "lightgrey"
 _UNASSESSED_COLOR = "lightgrey"
 
 
@@ -35,14 +41,23 @@ def _color(total: float) -> str:
     return "orange"
 
 
-def render(result: CheckResult) -> str:
+def _message_and_color(result: CheckResult) -> tuple[str, str]:
     total = result.card.total
+    if total is None:
+        return _UNASSESSED_MESSAGE, _UNASSESSED_COLOR
+    if not result.card.rated:
+        return f"{total:.0f}/100 {_UNRATED_MESSAGE}", _UNRATED_COLOR
+    return f"{total:.0f}/100", _color(total)
+
+
+def render(result: CheckResult) -> str:
+    message, color = _message_and_color(result)
     return json.dumps(
         {
             "schemaVersion": 1,
             "label": "reproducibility",
-            "message": _UNASSESSED_MESSAGE if total is None else f"{total:.0f}/100",
-            "color": _UNASSESSED_COLOR if total is None else _color(total),
+            "message": message,
+            "color": color,
         },
         indent=2,
     )
@@ -50,10 +65,9 @@ def render(result: CheckResult) -> str:
 
 def render_svg(result: CheckResult) -> str:
     """A self-contained flat badge SVG the GitHub Action can commit in-repo."""
-    total = result.card.total
     label = "reproducibility"
-    message = _UNASSESSED_MESSAGE if total is None else f"{total:.0f}/100"
-    color = _SVG_COLORS[_UNASSESSED_COLOR if total is None else _color(total)]
+    message, color_name = _message_and_color(result)
+    color = _SVG_COLORS[color_name]
     label_width = 6 * len(label) + 10
     message_width = 6 * len(message) + 10
     width = label_width + message_width
