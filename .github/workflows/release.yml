@@ -22,7 +22,9 @@ jobs:
         with:
           python-version: "3.12"
       - name: Install validation tools
-        run: python -m pip install ".[dev,release]"
+        # Constrained, not resolved: see release-constraints.txt. The gates below
+        # must answer the same way they answered in CI on this exact commit.
+        run: python -m pip install -c release-constraints.txt ".[dev,release]"
       - name: Validate annotated release tag and metadata
         shell: bash
         run: |

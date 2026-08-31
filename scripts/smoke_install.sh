@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
 # Installation smoke test: install adduce into a clean environment and exercise
-# every surface that depends on packaged data (profiles, checklists, fixer
-# templates, rule docs). The default installs from PyPI; package validation can
-# pass a locally built wheel or source distribution. Catches packaging defects
-# that tests against the checkout cannot.
+# every surface that depends on packaged data. The sets below are enumerated from
+# the installed package rather than listed here, so dropping any bundled profile,
+# checklist or fixer template fails this gate instead of shipping. That matters
+# because this script is the only check that can see inside a built artifact: the
+# test suite runs against the checkout through importlib.resources and cannot
+# observe a wheel exclusion. The default installs from PyPI; package validation
+# passes a locally built wheel or source distribution.
 set -euo pipefail
 
 VENV="$(mktemp -d)/adduce-smoke"
@@ -57,21 +60,60 @@ printf 'torch==2.1.0\n' > "$SAMPLE/requirements.txt"
 printf 'lr: 0.001\n' > "$SAMPLE/configs/main.yaml"
 printf '# sample\n\n## Installation\n\npip install -r requirements.txt\n' > "$SAMPLE/README.md"
 
-echo "==> check (profiles TOML must load)"
-"$VENV/bin/adduce" check "$SAMPLE" --format json | "$VENV/bin/python" -c "
+echo "==> check (every bundled profile must load)"
+PROFILES="$("$VENV/bin/python" -c "
+from importlib import resources
+names = sorted(
+    entry.name.removesuffix('.toml')
+    for entry in resources.files('adduce.profiles').iterdir()
+    if entry.name.endswith('.toml')
+)
+print(' '.join(names))
+")"
+test -n "$PROFILES"
+echo "    profiles: $PROFILES"
+for PROFILE in $PROFILES; do
+  "$VENV/bin/adduce" check "$SAMPLE" --profile "$PROFILE" --format json | "$VENV/bin/python" -c "
 import json, sys
 payload = json.load(sys.stdin)
 assert 0 <= payload['total'] <= 100, payload['total']
 assert payload['findings'], 'no findings produced'
-print(f\"    score {payload['total']}, {len(payload['findings'])} findings\")
+print(f\"    profile $PROFILE: score {payload['total']}, {len(payload['findings'])} findings\")
 "
+done
 
-echo "==> checklist (bundled YAML must load)"
-CHECKLIST_OUT="$("$VENV/bin/adduce" checklist "$SAMPLE" --profile neurips)"
-grep -q "NeurIPS" <<< "$CHECKLIST_OUT"
+echo "==> checklist (every bundled checklist must load)"
+CHECKLISTS="$("$VENV/bin/python" -c "
+from importlib import resources
+names = sorted(
+    entry.name.removesuffix('.yaml')
+    for entry in resources.files('adduce.checklists').iterdir()
+    if entry.name.endswith('.yaml')
+)
+print(' '.join(names))
+")"
+test -n "$CHECKLISTS"
+echo "    checklists: $CHECKLISTS"
+for CHECKLIST in $CHECKLISTS; do
+  CHECKLIST_OUT="$("$VENV/bin/adduce" checklist "$SAMPLE" --profile "$CHECKLIST")"
+  test -n "$CHECKLIST_OUT"
+  grep -qi "$CHECKLIST" <<< "$CHECKLIST_OUT"
+  echo "    checklist $CHECKLIST rendered"
+done
 
-echo "==> fix scaffold (Jinja templates must ship)"
-"$VENV/bin/adduce" fix "$SAMPLE" --scaffold seeds
+echo "==> fix scaffold (every Jinja template must ship)"
+SCAFFOLDS="$("$VENV/bin/python" -c "
+from adduce.fixers import SCAFFOLDS
+print(' '.join(sorted(SCAFFOLDS)))
+")"
+test -n "$SCAFFOLDS"
+echo "    scaffolds: $SCAFFOLDS"
+for SCAFFOLD in $SCAFFOLDS; do
+  # Each scaffold renders a different template, and a missing template raises
+  # rather than degrading, so an unrendered scaffold fails here.
+  "$VENV/bin/adduce" fix "$SAMPLE" --scaffold "$SCAFFOLD"
+  echo "    scaffold $SCAFFOLD rendered"
+done
 test -f "$SAMPLE/seed_utils.py"
 "$VENV/bin/python" -c "compile(open('$SAMPLE/seed_utils.py').read(), 'seed_utils.py', 'exec')"
 

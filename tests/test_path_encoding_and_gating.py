@@ -185,7 +185,12 @@ from adduce.model import scan_repository
 
 repo = scan_repository(Path(sys.argv[1]))
 print(json.dumps({
-    "codec": codecs.lookup(locale.getencoding()).name,
+    # locale.getencoding() is 3.11+; getpreferredencoding(False) reports the
+    # same codec on every supported interpreter.
+    "codec": codecs.lookup(
+        locale.getencoding() if hasattr(locale, "getencoding")
+        else locale.getpreferredencoding(False)
+    ).name,
     "is_repo": repo.git.is_repo,
     "head": repo.git.head_commit is not None,
     "tags": list(repo.git.tags),
