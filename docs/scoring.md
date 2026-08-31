@@ -9,8 +9,8 @@ section on this page. Profiles, suppression, and how an unrated card reads in a
 report are in the [CLI reference](cli-reference.md#scoring-profiles-suppression).
 
 **Provenance of every figure below attributed to adduce's own repository.**
-Measured 2026-08-28 against analyzer source tree
-`cae7dd33dd0077b5ecc4fe805ad707bd49e19bd2556a76204d494a5ea36ec8dd`, on python
+Measured 2026-08-31 against analyzer source tree
+`9490666122b9a271113b062d8f1d4f0443fe3af79cd2f9ce6eae44709af1a468`, on CPython
 3.14.0, darwin arm64, by `adduce check . --format json` under the default
 profile, with no rule plugins installed and the repository's own ignore file
 honoured. The telemetry counters below come from the same command with
@@ -23,14 +23,19 @@ carries it changes it. Regenerate the digest with
 
 This is a dated observation, not a maintained figure. A later tree that reports
 different counts does not make it stale; it makes it a record of a tree that no
-longer exists. Figures attributed to the synthetic corpus, to the pilot corpus,
-or to a repository other than this one come from other measurements and are
-outside the block.
+longer exists. The convention holds wherever a block appears, on this page or
+any other: a block names the tree the measurement was taken on, which for a
+released tree is normally an ancestor of it. `src/adduce/__init__.py` carries
+the version and sits inside the hashed tree, so the release commit alone moves
+the digest without touching anything a figure describes, and
+[CHANGELOG.md](../CHANGELOG.md) records what changed in between. Figures
+attributed to the synthetic corpus, to the pilot corpus, or to a repository
+other than this one come from other measurements and are outside the block.
 
 ## Statuses and their score contributions
 
 Five statuses (`rules/base.py:29-33`). `score_value` is a three-key dict lookup
-(`rules/base.py:37`); anything else returns `None`.
+(`rules/base.py:38`); anything else returns `None`.
 
 | Status | Applicable | Assessed | `score_value` |
 | --- | --- | --- | --- |
@@ -45,8 +50,8 @@ means the check does not apply to this repository; `UNKNOWN` means it applies
 and adduce could not determine the answer.
 
 The Applicable and Assessed columns are predicates on the enum, not commentary.
-`Status.is_applicable` (`rules/base.py:39-46`) and `Status.is_assessed`
-(`rules/base.py:48-55`) each test membership of a frozenset of members
+`Status.is_applicable` (`rules/base.py:40-47`) and `Status.is_assessed`
+(`rules/base.py:49-56`) each test membership of a frozenset of members
 (`rules/base.py:59-60`). Neither is derived from `score_value`, and neither may
 be: `UNKNOWN` and `NOT_APPLICABLE` both carry `None`, so a `score_value is None`
 test cannot separate them. Coverage, the category-retention branch and
