@@ -5,6 +5,7 @@ from __future__ import annotations
 from ..engine import CheckResult
 from ..rules.base import Finding, Status, summarize_items
 from ..scoring import top_fixes
+from ..text import safe_display_text
 
 _STATUS_LABEL = {
     Status.PASS: "pass",
@@ -64,7 +65,11 @@ def render(result: CheckResult) -> str:
     lines.append("|---|---:|---|")
     for cat in card.categories:
         bar = "" if cat.possible == 0 else f"{cat.percentage:.0f}%"
-        lines.append(f"| {cat.category.value} | {cat.earned:.0f}/{cat.possible:.0f} | {bar} |")
+        # ``:g`` after rounding, not ``:.0f``: a category that earned 0.2 of 1
+        # rendered as "0/1" beside its own "20%", which reads as a contradiction.
+        lines.append(
+            f"| {cat.category.value} | {round(cat.earned, 1):g}/{cat.possible:.0f} | {bar} |"
+        )
     lines.append("")
 
     fixes = top_fixes(card, limit=5)
@@ -86,7 +91,7 @@ def render(result: CheckResult) -> str:
             status += " (ignored)"
         detail = finding.message.replace("|", "\\|")
         if finding.locations:
-            detail += " — " + ", ".join(f"`{loc}`" for loc in finding.locations[:3])
+            detail += " — " + ", ".join(f"`{safe_display_text(str(loc))}`" for loc in finding.locations[:3])
         census = _item_census(finding)
         if census:
             detail += f" — {census}"

@@ -48,7 +48,7 @@ from adduce.aeg.store import (
     write_graph,
 )
 from adduce.cli import app
-from adduce.evidence import collect
+from adduce.evidence import collect, collect_portability
 from adduce.model import scan_repository
 from tests.conftest import plain
 
@@ -413,6 +413,90 @@ def test_a_repository_with_no_configuration_yields_an_empty_graph(tmp_path: Path
     assert graph.content_id == Graph().content_id
 
 
+# -- secrets are never echoed ----------------------------------------------
+
+#: Assembled at import rather than written out, so no line of this file is
+#: itself a credential shape for adduce's own scan to report.
+A_SECRET = "sk-" + "A1b2C3d4E5f6G7h8" * 3
+
+
+def test_a_secret_shaped_scalar_never_reaches_the_node(tmp_path: Path) -> None:
+    graph = built_graph(a_repository(tmp_path, f"api_key: {A_SECRET}\n"))
+    (value,) = graph.of_type(NodeType.CONFIGURATION_VALUE)
+    assert value.value == {"key": "api_key", "redacted": "scalar", "secret_kind": "OpenAI API key"}
+    assert A_SECRET not in canonical_json(value.envelope())
+
+
+def test_a_withheld_value_is_still_a_located_node_with_its_key(tmp_path: Path) -> None:
+    """Redaction may not cost the graph what the graph is for."""
+    graph = built_graph(a_repository(tmp_path, f"optim:\n  api_key: {A_SECRET}\n"))
+    (value,) = graph.of_type(NodeType.CONFIGURATION_VALUE)
+    assert value.logical_id == "configvalue:conf/config.yaml#optim.api_key"
+    assert value.value["key"] == "optim.api_key"
+    assert value.locations[0].path == "conf/config.yaml"
+    assert value.provenance.resolution_method is ResolutionMethod.DIRECT_PARSE
+    (edge,) = graph.edges_from(value.logical_id, EdgeType.REPORTED_IN)
+    assert edge.target == "configsnapshot:conf/config.yaml"
+
+
+def test_a_redaction_is_distinguishable_from_an_absent_value(tmp_path: Path) -> None:
+    graph = built_graph(a_repository(tmp_path, f"declared:\nleaked: {A_SECRET}\n"))
+    absent, redacted = sorted(graph.of_type(NodeType.CONFIGURATION_VALUE), key=lambda n: n.value["key"])
+    assert absent.value == {"key": "declared", "scalar": None}
+    assert redacted.value["redacted"] == "scalar"
+    assert "scalar" not in redacted.value
+
+
+def test_a_secret_under_an_innocuous_key_is_withheld_all_the_same(tmp_path: Path) -> None:
+    """The value decides, not the key: naming a key ``note`` hides nothing."""
+    graph = built_graph(a_repository(tmp_path, f"note: {A_SECRET}\n"))
+    (value,) = graph.of_type(NodeType.CONFIGURATION_VALUE)
+    assert value.value["secret_kind"] == "OpenAI API key"
+
+
+def test_an_ordinary_value_under_a_secret_sounding_key_is_kept(tmp_path: Path) -> None:
+    graph = built_graph(a_repository(tmp_path, "api_key_name: OPENAI_API_KEY\n"))
+    (value,) = graph.of_type(NodeType.CONFIGURATION_VALUE)
+    assert value.value == {"key": "api_key_name", "scalar": "OPENAI_API_KEY"}
+
+
+def test_a_secret_inside_a_short_list_is_withheld(tmp_path: Path) -> None:
+    graph = built_graph(a_repository(tmp_path, f"tokens:\n  - ordinary\n  - {A_SECRET}\n"))
+    (value,) = graph.of_type(NodeType.CONFIGURATION_VALUE)
+    assert value.value["redacted"] == "scalar"
+    assert A_SECRET not in canonical_json(value.envelope())
+
+
+def test_the_graph_withholds_exactly_what_the_secret_detector_reports(tmp_path: Path) -> None:
+    """One detector. A second table would drift from what ``R-PORT-004`` promises."""
+    root = a_repository(tmp_path, f"api_key: {A_SECRET}\nnickname: plain-text\nlr: 0.1\n")
+    reported = {hit.detail for hit in collect_portability(scan_repository(root)).of_kind("secret")}
+    withheld = {
+        node.value["secret_kind"]
+        for node in built_graph(root).of_type(NodeType.CONFIGURATION_VALUE)
+        if "secret_kind" in node.value
+    }
+    assert withheld == reported == {"OpenAI API key"}
+
+
+def test_a_redaction_leaves_every_other_node_byte_identical(tmp_path: Path) -> None:
+    ordinary = built_graph(a_repository(tmp_path, "optim:\n  lr: 0.1\ntoken: ordinary\n"))
+    redacted = built_graph(a_repository(tmp_path, f"optim:\n  lr: 0.1\ntoken: {A_SECRET}\n"))
+    before = {node.logical_id: node.content_id for node in ordinary.nodes}
+    after = {node.logical_id: node.content_id for node in redacted.nodes}
+    assert before.keys() == after.keys()
+    assert {key for key in before if before[key] != after[key]} == {
+        "configvalue:conf/config.yaml#token"
+    }
+
+
+def test_a_graph_holding_a_redaction_is_still_byte_identical_across_runs(tmp_path: Path) -> None:
+    root = a_repository(tmp_path, f"api_key: {A_SECRET}\nlr: 0.1\n")
+    first, second = built_graph(root), built_graph(root)
+    assert render_nodes(first) == render_nodes(second)
+    assert first.content_id == second.content_id
+
+
 # -- the command -----------------------------------------------------------
 
 runner = CliRunner(env={"COLUMNS": "300"})
@@ -448,3 +532,23 @@ def test_the_graph_command_writes_a_store_only_when_asked(tmp_path: Path) -> Non
     written = list((root / ".adduce" / "aeg").iterdir())
     assert len(written) == 1
     assert (written[0] / NODES_NAME).is_file()
+
+
+def test_the_graph_command_never_renders_a_secret(tmp_path: Path) -> None:
+    root = a_repository(tmp_path, f"api_key: {A_SECRET}\n")
+    result = runner.invoke(app, ["graph", str(root), "--format", "json"])
+    assert result.exit_code == 0
+    assert A_SECRET not in result.stdout
+    (node,) = [n for n in json.loads(result.stdout)["nodes"] if n["type"] == "ConfigurationValue"]
+    assert node["value"] == {"key": "api_key", "redacted": "scalar", "secret_kind": "OpenAI API key"}
+
+
+def test_a_stored_graph_never_holds_a_secret(tmp_path: Path) -> None:
+    """``--store`` writes into the directory the docs tell an author to commit."""
+    root = a_repository(tmp_path, f"api_key: {A_SECRET}\n")
+    assert runner.invoke(app, ["graph", str(root), "--store"]).exit_code == 0
+    (directory,) = (root / ".adduce" / "aeg").iterdir()
+    written = sorted(path.name for path in directory.iterdir())
+    assert NODES_NAME in written
+    for path in directory.iterdir():
+        assert A_SECRET not in path.read_text()

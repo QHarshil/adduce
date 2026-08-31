@@ -116,7 +116,9 @@ def _read(directory: Path, name: str, label: str) -> str | None:
 
 def _entries(text: str, label: str) -> list[dict[str, Any]]:
     entries = []
-    for number, line in enumerate(text.splitlines(), start=1):
+    # Same reason as the collectors: the number in an error message has to be
+    # the line a reader counts to.
+    for number, line in enumerate(text.split("\n"), start=1):
         if not line.strip():
             continue
         if len(line) > _MAX_ENTRY_BYTES:

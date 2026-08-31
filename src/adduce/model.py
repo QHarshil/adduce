@@ -204,7 +204,13 @@ class Repo:
     def _read_uncached(self, relative: str) -> str | None:
         target = self.root / relative
         try:
-            return target.read_text(encoding="utf-8", errors="replace")
+            # utf-8-sig, not utf-8: a byte-order mark decodes to U+FEFF, which
+            # CPython tolerates in a file it runs and ``ast.parse`` refuses in a
+            # string it is handed. Reading it through would delete the file from
+            # the evidence and flip rules that depend on it to a FAIL stating
+            # something untrue about the repository. Files without a mark decode
+            # identically either way. PowerShell and Notepad write one by default.
+            return target.read_text(encoding="utf-8-sig", errors="replace")
         except OSError:
             return None
 
@@ -244,8 +250,16 @@ def _git_query(root: Path, *operation: str) -> list[str]:
     ``core.fsmonitor=false`` is the load-bearing one: a repository may configure
     a filesystem-monitor hook, and git would otherwise execute it — letting a
     scanned repository run code inside an audit whose whole promise is that it
-    never runs repository code. ``core.quotePath=true`` keeps path encoding
-    identical across call sites.
+    never runs repository code.
+
+    ``-z`` on every path listing is the other, and it is the one that matters:
+    NUL-delimited output is never quoted and never ambiguous, where line-split
+    output both C-escapes any path that is not ASCII — ``"caf\\303\\251.py"``,
+    quotes included, which no consumer can match against a real path — and cannot
+    represent a filename containing a newline, which is legal. ``core.quotePath``
+    is set to ``false`` as well, because ``-z`` already suppresses quoting and the
+    flag then costs nothing while removing the trap from any call site that is
+    added later without it.
     """
     return [
         "git",
@@ -253,7 +267,7 @@ def _git_query(root: Path, *operation: str) -> list[str]:
         "-c",
         "core.fsmonitor=false",
         "-c",
-        "core.quotePath=true",
+        "core.quotePath=false",
         "-C",
         str(root),
         *operation,
@@ -343,12 +357,18 @@ def _collect_git_info(root: Path) -> GitInfo:
             result = subprocess.run(
                 _git_query(root, *args),
                 capture_output=True,
-                text=True,
+                # Explicit, not ``text=True``: that decodes with the host locale,
+                # which is cp1252 on a default Windows install, and refuses a
+                # byte the code page does not define. A branch or tag name is
+                # repository-controlled, so the failure is reachable, and an
+                # undecodable name is not a reason to abandon the audit.
+                encoding="utf-8",
+                errors="replace",
                 timeout=10,
                 stdin=subprocess.DEVNULL,
                 env=git_environment,
             )
-        except (OSError, subprocess.TimeoutExpired):
+        except (OSError, ValueError, subprocess.TimeoutExpired):
             return None
         return result.stdout.strip() if result.returncode == 0 else None
 
@@ -360,8 +380,12 @@ def _collect_git_info(root: Path) -> GitInfo:
     # A tag is evidence for this scanned state only when it points at HEAD.
     tags_out = run("tag", "--points-at", "HEAD")
     tags = tuple(t for t in (tags_out or "").splitlines() if t.strip())
-    tracked_out = run("ls-files")
-    tracked = frozenset((tracked_out or "").splitlines()) if tracked_out is not None else None
+    tracked_out = run("ls-files", "-z")
+    tracked = (
+        frozenset(entry for entry in tracked_out.split("\0") if entry)
+        if tracked_out is not None
+        else None
+    )
     remotes_out = run("remote", "-v")
     remotes = tuple(dict.fromkeys(line.split()[1] for line in (remotes_out or "").splitlines() if line.split()))
     return GitInfo(is_repo=True, head_commit=head, tags=tags, tracked_files=tracked, remotes=remotes)

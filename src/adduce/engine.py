@@ -14,7 +14,7 @@ from .profiles import Profile, load_profile
 from .reviewer_time import ReviewerTime
 from .reviewer_time import estimate as estimate_reviewer_time
 from .rules import BUILTIN_RULES, Category, Finding, Rule, Status, discover_rules
-from .rules.registry import RulePluginWarning, safe_label
+from .rules.registry import RulePluginWarning, normalise_rule_id, safe_label
 from .scoring import ScoreCard, score
 from .telemetry import Telemetry
 
@@ -56,6 +56,17 @@ def _apply_suppressions(finding: Finding, evidence: Evidence, config: Config) ->
 #: abort the whole audit. A pack subclassing a built-in is not a member and so
 #: stays contained, which is the safe direction to be wrong in.
 _BUILTIN_RULE_CLASSES: tuple[type[Rule], ...] = tuple(BUILTIN_RULES)
+
+#: The ids those classes ship under. A third-party rule filing under one of
+#: these takes the built-in's place in the report, the score and the baseline,
+#: so it is refused outright. Read from the classes, which are adduce's own and
+#: need no guarding, and normalised so the membership test compares real
+#: characters rather than asking a rule pack's object to compare itself.
+_BUILTIN_RULE_IDS: frozenset[str] = frozenset(
+    normalised
+    for builtin in _BUILTIN_RULE_CLASSES
+    if (normalised := normalise_rule_id(builtin.id)) is not None
+)
 
 
 def _is_third_party(rule: Rule) -> bool:
@@ -120,18 +131,45 @@ def _identify(rule: Rule) -> _RuleIdentity | None:
     score or a baseline, and synthesising them would file a result under a rule
     that does not exist.
     """
+    third_party = _is_third_party(rule)
     try:
-        return _RuleIdentity(
-            id=rule.id,
-            category=rule.category,
-            title=rule.title,
-            weight=rule.weight,
-            severity=rule.effective_severity,
-        )
+        rule_id = rule.id
+        category = rule.category
+        title = rule.title
+        weight = rule.weight
+        severity = rule.effective_severity
     except Exception:
-        if not _is_third_party(rule):
+        if not third_party:
             raise
         return None
+
+    if third_party:
+        # Reading once is not the same as the value holding still. ``id`` may be
+        # a property, so the id the registry admitted this rule under is not
+        # necessarily the id it answers with here, and the registry's collision
+        # check never sees the second answer. Normalising and refusing a
+        # built-in id closes that: whatever the rule says now, it cannot say a
+        # built-in's name. A ``str`` subclass with a lying ``__eq__`` cannot
+        # pass either, because what is kept is a plain ``str``.
+        normalised = normalise_rule_id(rule_id)
+        if normalised is None or normalised in _BUILTIN_RULE_IDS:
+            return None
+        rule_id = normalised
+        # ``category`` reaches the scorer and every reporter, which read
+        # ``Category`` members. A plain string keys a bucket nothing iterates,
+        # so the finding would leave the score untouched while still counting
+        # toward coverage, and the JSON reporter would raise on it. Declaring
+        # the wrong type is a one-character slip in a rule pack, not an attack.
+        if not isinstance(category, Category):
+            return None
+
+    return _RuleIdentity(
+        id=rule_id,
+        category=category,
+        title=title,
+        weight=weight,
+        severity=severity,
+    )
 
 
 def _degrade(identity: _RuleIdentity, reason: str, telemetry: Telemetry) -> Finding:
@@ -189,7 +227,11 @@ def _evaluate_guarded(
             raise
         label = _type_label(error, "an exception with no usable class name")
         return _degrade(identity, f"the rule raised {label}", telemetry)
-    if reported_id is None or reported_id != identity.id:
+    # ``identity.id`` is the left operand and ``str.__eq__`` is called on it
+    # directly: Python would otherwise give a ``str`` subclass's reflected
+    # ``__eq__`` the first say, and a lying one reads as a match for whatever
+    # id it is asked about.
+    if reported_id is None or identity.id.__eq__(reported_id) is not True:
         # Both leave this rule unrepresented: a missing ``return`` yields no
         # finding at all, and a finding filed under another id takes that
         # rule's place in the report, the score and the baseline.

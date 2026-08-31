@@ -329,7 +329,10 @@ def load_manifest(root: Path) -> Manifest:
         return Manifest()
     try:
         data = yaml.safe_load(source) or {}
-    except (UnicodeError, yaml.YAMLError) as exc:
+    except (UnicodeError, yaml.YAMLError, MemoryError, RecursionError) as exc:
+        # Nesting deeper than the YAML parser can walk exhausts its stack
+        # (RecursionError) or memory (MemoryError) without the document being
+        # malformed. Either way no manifest was read.
         return Manifest(path=target, error=f"could not parse {target}: {exc}")
     if not isinstance(data, dict):
         return Manifest(path=target, error=f"{target} must contain a YAML mapping")
