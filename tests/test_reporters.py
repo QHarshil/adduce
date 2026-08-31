@@ -8,6 +8,7 @@ import pytest
 
 from adduce.engine import run_check
 from adduce.report import RENDERERS, codemeta, software_heritage
+from adduce.report.badge import render_svg as RENDERERS_SVG
 from tests.test_engine import BARE, WELL_FORMED, _write
 
 
@@ -64,17 +65,50 @@ def test_latex_escapes_special_characters(tmp_path):
             assert "_" not in line.replace(r"\_", ""), line
 
 
+def _write_rated(root, files):
+    """Write ``files`` plus enough source for the score to carry a tier.
+
+    Both reporter fixtures are a handful of lines, which is below the floor a
+    tier is assigned above, so a card built from either is unrated. Colour is a
+    statement about a rated score, so a test about colour needs a rated card.
+    """
+    padded = dict(files)
+    padded["extra_module.py"] = "\n".join(f"CONSTANT_{index} = {index}" for index in range(140))
+    _write(root, padded)
+
+
 def test_badge_color_tracks_score(tmp_path):
     good_root = tmp_path / "good"
     bad_root = tmp_path / "bad"
     good_root.mkdir()
     bad_root.mkdir()
-    _write(good_root, WELL_FORMED)
-    _write(bad_root, BARE)
-    good_badge = json.loads(RENDERERS["badge"](run_check(good_root)))
-    bad_badge = json.loads(RENDERERS["badge"](run_check(bad_root)))
+    _write_rated(good_root, WELL_FORMED)
+    _write_rated(bad_root, BARE)
+    good_result = run_check(good_root)
+    bad_result = run_check(bad_root)
+    assert good_result.card.rated and bad_result.card.rated
+    good_badge = json.loads(RENDERERS["badge"](good_result))
+    bad_badge = json.loads(RENDERERS["badge"](bad_result))
     assert good_badge["color"] in {"brightgreen", "green"}
     assert bad_badge["color"] in {"yellow", "orange"}
+    assert "unrated" not in good_badge["message"]
+
+
+def test_badge_says_unrated_when_the_card_is_unrated(tmp_path):
+    """A badge must not publish a bare number the rest of the tool withholds.
+
+    The badge is the most-copied artifact adduce emits and the only one that
+    reaches a reader with no surrounding context, so it carries the same
+    qualification the terminal prints beside the score.
+    """
+    _write(tmp_path, WELL_FORMED)
+    result = run_check(tmp_path)
+    assert not result.card.rated
+    assert result.card.total is not None
+    badge = json.loads(RENDERERS["badge"](result))
+    assert "unrated" in badge["message"]
+    assert badge["color"] == "lightgrey"
+    assert "<svg" in RENDERERS_SVG(result)
 
 
 def test_repository_exports_strip_remote_credentials(tmp_path):

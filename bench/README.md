@@ -136,12 +136,12 @@ as a rule that stopped applying, became not-applicable, dropped, or improved —
 producing no finding at all is a different fact from reaching a new conclusion,
 so the two are never merged. This is where the evidence for honouring
 `.gitignore` by default comes from, and what it finds is a property of the
-checkout rather than of the analyzer. Run on 2026-08-28 against analyzer source
-tree `cae7dd33dd0077b5ecc4fe805ad707bd49e19bd2556a76204d494a5ea36ec8dd` on
-python 3.14.0, darwin arm64, `--only adduce-self` reported 389 inventoried files
-in both arms and 0 moves: that checkout carried no `corpus/clones/`, and
-everything else it ignored was a cache directory the inventory skips in both
-arms anyway.
+checkout rather than of the analyzer. Run on 2026-08-31 against analyzer source
+tree `9490666122b9a271113b062d8f1d4f0443fe3af79cd2f9ce6eae44709af1a468` on
+CPython 3.14.0, darwin arm64, `--only adduce-self` reported 394 inventoried
+files in both arms and 0 moves: that checkout carried no `corpus/clones/`, and
+everything else it ignored was a directory the inventory skips in both arms
+anyway.
 
 Both arms of `measure` pass the ignore setting explicitly, so a change to the
 shipped default cannot silently move a measurement or a baseline comparison.

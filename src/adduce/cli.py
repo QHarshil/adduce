@@ -72,6 +72,7 @@ from .safe_write import (
     snapshot_text_regular,
 )
 from .telemetry import Telemetry
+from .text import safe_display_text
 
 app = typer.Typer(
     name="adduce",
@@ -271,7 +272,12 @@ def _print_category_findings(result: CheckResult, categories: set[Category]) -> 
         style = {"pass": "green", "partial": "yellow", "fail": "red"}.get(finding.status.value, "dim")
         detail = finding.message
         if finding.locations:
-            detail += "\n  at " + ", ".join(str(loc) for loc in finding.locations[:4])
+            # Sanitised for the same reason the terminal and Markdown reporters
+            # are: this table prints repository-controlled paths, and `precision`,
+            # `drift` and `deps` all reach a terminal through it.
+            detail += "\n  at " + ", ".join(
+                safe_display_text(str(loc)) for loc in finding.locations[:4]
+            )
         if finding.remediation and finding.status not in (Status.PASS, Status.NOT_APPLICABLE):
             detail += f"\n  fix: {finding.remediation}"
         table.add_row(finding.rule_id, Text(finding.status.value, style=style), f"{finding.confidence:.0%}", detail)
@@ -403,13 +409,23 @@ def check(
                 "reached an assessment, so there is no score to compare[/red]"
             )
             exit_code = 1
-        elif result.card.total < threshold:
+        # Compare what a reader can see. Every report renders the score to one
+        # decimal, so comparing the raw float failed a run at --fail-under 88.5
+        # against a reported 88.5, and then printed both sides at zero decimals
+        # ("score 88 is below --fail-under 88"), erasing the distinction the
+        # message exists to explain.
+        elif round(result.card.total, 1) < threshold:
             err_console.print(
-                f"[red]score {result.card.total:.0f} is below --fail-under {threshold:.0f}[/red]"
+                f"[red]score {round(result.card.total, 1):g} is below "
+                f"--fail-under {threshold:g}[/red]"
             )
             exit_code = 1
     if fail_on_regression:
-        baseline_path = path / BASELINE_FILENAME
+        # result.repo.root, not the raw argument: `adduce baseline` writes to the
+        # resolved root, and safe_write refuses a path with a symlinked ancestor.
+        # On macOS $TMPDIR alone (/var -> /private/var) that made the two-step
+        # workflow this command documents fail with exit 2.
+        baseline_path = result.repo.root / BASELINE_FILENAME
         try:
             baseline_source = read_text_regular(
                 baseline_path,
@@ -435,7 +451,10 @@ def check(
                     baseline_source,
                     parse_constant=reject_non_finite_baseline,
                 )
-            except (json.JSONDecodeError, ValueError):
+            except (json.JSONDecodeError, ValueError, MemoryError, RecursionError):
+                # A baseline nested deeper than the parser can walk exhausts its
+                # stack or memory. Report it as an unusable input (exit 2), never
+                # as a regression (exit 1).
                 _generation_write_error(SafeWriteError("invalid baseline JSON"))
             if not isinstance(baseline_value, dict):
                 _generation_write_error(SafeWriteError("invalid baseline: expected an object"))
@@ -480,7 +499,12 @@ def precision(path: Annotated[Path, typer.Argument(help="Repository root to scan
     if events:
         console.print(f"[bold]Detected precision controls[/bold] ({len(events)}):")
         for event in events[:20]:
-            console.print(f"  {event.file}:{event.line}  {event.detail}")
+            # Both fields come from the scanned repository; strip the control
+            # sequences a filename or a parsed detail can carry.
+            console.print(
+                f"  {safe_display_text(str(event.file))}:{event.line}  "
+                f"{safe_display_text(str(event.detail))}"
+            )
         console.print()
     _print_category_findings(result, {Category.PRECISION})
 
@@ -762,7 +786,7 @@ def _load_ledger_records(root: Path, artifact: Path) -> tuple[dict[str, Any], bo
                 snapshot.text,
                 parse_constant=reject_non_finite,
             )
-        except (json.JSONDecodeError, ValueError) as exc:
+        except (json.JSONDecodeError, ValueError, MemoryError, RecursionError) as exc:
             raise SafeWriteError("invalid evidence ledger") from exc
         if not isinstance(data, dict) or any(
             not isinstance(key, str) or not isinstance(value, dict)
@@ -1550,18 +1574,24 @@ def artifact_diff(
                 "-c",
                 "core.fsmonitor=false",
                 "-c",
-                "core.quotePath=true",
+                # quoting off and -z on, for the same reason the scan does it:
+                # with quoting on git returns "caf\\303\\251.py" for a path that
+                # is not ASCII, and classify() then buckets that literal as
+                # "other" and the gate reports nothing substantive changed.
+                "core.quotePath=false",
                 "-C",
                 str(path),
                 "diff",
                 "--no-ext-diff",
                 "--no-textconv",
                 "--name-only",
+                "-z",
                 revision_range,
                 "--",
             ],
             capture_output=True,
-            text=True,
+            encoding="utf-8",
+            errors="replace",
             timeout=30,
             env=git_environment,
             stdin=subprocess.DEVNULL,
@@ -1577,7 +1607,7 @@ def artifact_diff(
             Text("error: Git could not evaluate the requested revision range", style="red")
         )
         raise typer.Exit(code=2)
-    changed = [line.strip() for line in completed.stdout.splitlines() if line.strip()]
+    changed = [entry for entry in completed.stdout.split("\0") if entry.strip()]
     if not changed:
         console.print(Text.assemble("no changes in ", revision_range, "."))
         raise typer.Exit()

@@ -17,7 +17,7 @@ from ...naming import canonical_hyperparameter
 from ..graph import Graph
 from ..nodes import Edge, Node, Provenance, SourceLocation
 from ..schema import EdgeType, NodeType, ResolutionMethod
-from . import analyzer_version
+from . import analyzer_version, guarded_scalar
 
 if TYPE_CHECKING:  # pragma: no cover
     from ...evidence import Evidence
@@ -105,7 +105,7 @@ class ConfigProducer:
         scalar: Any,
         location: tuple[SourceLocation, ...],
     ) -> None:
-        value: dict[str, Any] = {"key": key, "scalar": scalar}
+        value: dict[str, Any] = {"key": key, **guarded_scalar("scalar", scalar)}
         canonical = canonical_hyperparameter(key)
         if canonical:
             value["canonical_name"] = canonical

@@ -129,7 +129,7 @@ def test_offline_audit_policy_allows_only_required_read_only_git(tmp_path: Path)
         "-c",
         "core.fsmonitor=false",
         "-c",
-        "core.quotePath=true",
+        "core.quotePath=false",
         "-C",
         str(repository),
     ]
@@ -203,7 +203,7 @@ def test_checker_allows_git_audit_event_in_the_windows_popen_shape(tmp_path: Pat
         "-c",
         "core.fsmonitor=false",
         "-c",
-        "core.quotePath=true",
+        "core.quotePath=false",
         "-C",
         str(repository),
     ]
@@ -216,7 +216,7 @@ def test_checker_allows_git_audit_event_in_the_windows_popen_shape(tmp_path: Pat
     assert _allowed_git_command(None, subprocess.list2cmdline(allowed), repository)
     assert _allowed_git_command(
         None,
-        subprocess.list2cmdline([*prefix, "ls-files"]),
+        subprocess.list2cmdline([*prefix, "ls-files", "-z"]),
         repository,
     )
 
@@ -238,7 +238,7 @@ def test_checker_allows_git_audit_event_in_the_windows_popen_shape(tmp_path: Pat
     # while CreateProcess resolves the program by its own rules and launches
     # something else. Splitting is not authorisation: only a line that
     # list2cmdline would itself have produced is accepted.
-    tail = f"--no-pager -c core.fsmonitor=false -c core.quotePath=true -C {repository} ls-files"
+    tail = f"--no-pager -c core.fsmonitor=false -c core.quotePath=false -C {repository} ls-files -z"
     for crafted in (
         f'"C:\\evil\\g""it" {tail}',
         f'g""it {tail}',

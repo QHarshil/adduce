@@ -20,7 +20,7 @@ from pathlib import Path
 
 import pytest
 
-from adduce.aeg import Graph, NodeType, ResolutionMethod, UncertaintyKind
+from adduce.aeg import Graph, NodeType, ResolutionMethod, UncertaintyKind, canonical_json
 from adduce.aeg.producers import produce
 from adduce.aeg.producers.python import (
     _SEED_FUNCTIONS,
@@ -188,3 +188,31 @@ def test_each_supported_operation_reaches_the_graph(
 ) -> None:
     graph = build(a_repo(tmp_path, source))
     assert expected in {n.type for n in graph.nodes}
+
+
+# -- secrets are never echoed ----------------------------------------------
+
+#: Assembled at import rather than written out, so no line of this file is
+#: itself a credential shape for adduce's own scan to report.
+A_TOKEN = "hf_" + "A1b2C3d4E5f6" * 3
+
+
+def test_a_first_argument_that_carries_a_secret_is_withheld(tmp_path: Path) -> None:
+    """A shell command literal is repository bytes copied into a node."""
+    source = f"import subprocess\nsubprocess.run('huggingface-cli login {A_TOKEN}')\n"
+    graph = build(a_repo(tmp_path, source))
+    (node,) = graph.of_type(NodeType.EXECUTION_COMMAND)
+    assert node.value == {
+        "call": "subprocess.run",
+        "redacted": "first_argument",
+        "resolved_name": "subprocess.run",
+        "secret_kind": "Hugging Face token",
+    }
+    assert A_TOKEN not in canonical_json(node.envelope())
+
+
+def test_an_ordinary_first_argument_is_kept(tmp_path: Path) -> None:
+    graph = build(a_repo(tmp_path, "import subprocess\nsubprocess.run('ls -l')\n"))
+    (node,) = graph.of_type(NodeType.EXECUTION_COMMAND)
+    assert node.value["first_argument"] == "ls -l"
+    assert "redacted" not in node.value

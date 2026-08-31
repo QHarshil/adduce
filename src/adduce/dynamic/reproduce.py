@@ -286,12 +286,32 @@ def _copy_ignore(directory: str, names: list[str]) -> set[str]:
     mutate the original target. Neither is acceptable for the fenced runner.
     Other directories, including ``.git`` and repository-local environments,
     are copied because smoke commands may legitimately depend on them.
+
+    Git's own lock files are skipped as well. They exist only while a git
+    process holds something open — ``git`` runs auto-maintenance in the
+    background after ordinary commands — so one can vanish between the moment
+    the directory is listed and the moment it is copied, which aborts the whole
+    copy with the file missing. A lock is also the one thing that must not be
+    copied: a stale one in the workspace makes git there refuse to work.
+
+    A file that disappears anyway is skipped rather than abandoning the run. A
+    path that no longer exists cannot be part of the tree under test, and a
+    transient in the environment is not a reason to lose a reproduction.
     """
     parent = Path(directory)
     ignored = {name for name in names if (parent / name).is_symlink()}
+    ignored |= {name for name in names if name.endswith(".lock")}
     if parent.name == ".adduce":
         ignored.add("cache")
     return ignored
+
+
+def _copy_tolerating_disappearance(source: str, destination: str) -> None:
+    """Copy one file, treating a source that has gone as nothing to copy."""
+    try:
+        shutil.copy2(source, destination)
+    except FileNotFoundError:
+        return
 
 
 def _metric_value(metrics: dict[str, float], expected_name: str) -> float | None:
@@ -519,6 +539,7 @@ def reproduce(
             symlinks=False,
             ignore_dangling_symlinks=True,
             ignore=_copy_ignore,
+            copy_function=_copy_tolerating_disappearance,
         )
         shutil.copytree(
             first_workspace,
@@ -526,6 +547,7 @@ def reproduce(
             symlinks=False,
             ignore_dangling_symlinks=True,
             ignore=_copy_ignore,
+            copy_function=_copy_tolerating_disappearance,
         )
         for workspace in (first_workspace, second_workspace):
             _remove_copied_outputs(workspace, expected_outputs)

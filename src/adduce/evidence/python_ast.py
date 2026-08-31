@@ -570,7 +570,13 @@ def _module_name_for(path: PurePosixPath) -> str:
 
 def _parse_suppressions(source: str) -> dict[int, set[str]]:
     suppressions: dict[int, set[str]] = {}
-    for lineno, line in enumerate(source.splitlines(), start=1):
+    # split("\n"), not splitlines(): splitlines() also breaks on \f, \v,
+    # \x1c-\x1e, \x85, U+2028 and U+2029, none of which the CPython tokenizer
+    # treats as a line break. A file containing one would number these lines
+    # differently from the lines a finding is anchored to, which moves a
+    # suppression pragma onto some other finding and can put a reported line
+    # past the end of the file.
+    for lineno, line in enumerate(source.split("\n"), start=1):
         match = _SUPPRESS_RE.search(line)
         if match:
             ids = {part.strip() for part in match.group(1).split(",") if part.strip()}

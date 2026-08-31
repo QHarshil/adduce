@@ -201,6 +201,26 @@ _VALID_ENTRY_POINT_NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,79}\Z")
 _VALID_RULE_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.:-]{0,79}\Z")
 
 
+def normalise_rule_id(value: object) -> str | None:
+    """The real characters of a well-formed rule id, as a plain ``str``.
+
+    A rule pack supplies this value, and a ``str`` subclass may carry its own
+    ``__eq__``, ``__hash__`` and ``__str__``. Any of the three defeats a
+    comparison or a set membership test that is handed the object itself. ``re``
+    reads the string's buffer rather than asking the object anything, so the
+    matched text is the id as it actually reads, and ``group(0)`` returns it as
+    a plain ``str`` that answers honestly from here on.
+
+    None means the value is not a usable id at all.
+    """
+    if not isinstance(value, str):
+        return None
+    match = _VALID_RULE_ID.fullmatch(value)
+    if match is None:
+        return None
+    return match.group(0)
+
+
 class RulePluginWarning(UserWarning):
     """A configured rule plugin could not be used safely."""
 
@@ -344,9 +364,11 @@ def discover_rules(include_plugins: bool = True) -> list[Rule]:
         if not isinstance(rule, Rule):
             _warn_plugin(entry_point, "Rule construction returned an invalid object")
             continue
-        if not isinstance(rule_id, str) or _VALID_RULE_ID.fullmatch(rule_id) is None:
+        normalised = normalise_rule_id(rule_id)
+        if normalised is None:
             _warn_plugin(entry_point, "Rule id is invalid")
             continue
+        rule_id = normalised
         if rule_id in seen:
             _warn_plugin(
                 entry_point,
