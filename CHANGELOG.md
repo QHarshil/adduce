@@ -136,7 +136,7 @@ the preregistered validation report belong to the following release.
   lose, so built-in format shadowing is verified rather than assumed. The CI job
   sets `ADDUCE_REQUIRE_EXTERNAL_PLUGIN=1`, which turns "plugin not installed" from
   a skip into a failure; without it a broken install step would leave the job green
-  over five tests that never ran.
+  over seven tests that never ran.
 - **`py.typed` ships in both the wheel and the source distribution**, with the
   matching `Typing :: Typed` classifier. A rule pack written against the
   published extension API can now be type-checked against it; without the marker
@@ -211,7 +211,7 @@ the preregistered validation report belong to the following release.
 - **The declared minimum `typer` is now 0.16.0, not 0.12.** The old bound was not a
   true floor and nothing caught it, because every environment that ever ran
   installed a much newer typer. Measured on Python 3.10 with every other dependency
-  at its declared floor: **typer 0.12.0 fails 109 tests**, 0.15.4 fails 2, and
+  at its declared floor: **typer 0.12.0 fails 109 tests**, 0.15.4 fails 3, and
   0.16.0 passes the suite at 1,370 passed. Two separate causes — typer could not
   translate a `str | None` annotation before 0.13, and through 0.15.3 it called
   click's `make_metavar()` with an arity current click rejects. This raises a
