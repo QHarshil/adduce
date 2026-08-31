@@ -127,11 +127,12 @@ no final effectiveness claim, and the first gate in
 to "document explicitly which validation remains developmental" in place of
 completing the corpus and human-review gates.
 
-Claim extraction's current figures are developmental status, not results.
-Pooled recall is 141/296 = 47.6% over the 20 labelled pairs. Precision is
-700/1156 = 60.6% over the 6 of 34 pairs adjudicated so far, with 122
-high-confidence false positives pooled and exactly one pair at zero. The
-zero-high-confidence-false-positive acceptance criterion is not met, and no
+Claim extraction is developmental. Its recall, precision and false-positive
+counts are not stated here: protocol amendment 8 admits no effectiveness,
+calibration or false-positive figure while the unlocked development interval is
+open, and the pairs those figures were drawn from are not reproducible from this
+tree. What is settled is the verdict they supported. The
+zero-high-confidence-false-positive acceptance criterion is **not met**, and no
 project document, release note or README line should describe it as met.
 
 ## Claiming work and release gates

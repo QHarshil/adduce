@@ -134,9 +134,14 @@ anything in absolute terms.
 enumerates every rule status that moves between the two. Each move is classified
 as a rule that stopped applying, became not-applicable, dropped, or improved —
 producing no finding at all is a different fact from reaching a new conclusion,
-so the two are never merged. This is the evidence for honouring `.gitignore` by
-default, and on the adduce repository it reports 30 moves: 9 / 13 / 7 / 1 in that
-order.
+so the two are never merged. This is where the evidence for honouring
+`.gitignore` by default comes from, and what it finds is a property of the
+checkout rather than of the analyzer. Run on 2026-08-28 against analyzer source
+tree `cae7dd33dd0077b5ecc4fe805ad707bd49e19bd2556a76204d494a5ea36ec8dd` on
+python 3.14.0, darwin arm64, `--only adduce-self` reported 389 inventoried files
+in both arms and 0 moves: that checkout carried no `corpus/clones/`, and
+everything else it ignored was a cache directory the inventory skips in both
+arms anyway.
 
 Both arms of `measure` pass the ignore setting explicitly, so a change to the
 shipped default cannot silently move a measurement or a baseline comparison.

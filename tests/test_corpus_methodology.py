@@ -47,9 +47,7 @@ from corpus.scripts.label_findings import (
 from corpus.scripts.preregistration import (
     PREREGISTRATION_ANALYSIS_PLAN_PATHS,
     PreregistrationError,
-    analysis_plan_identity,
     build_preregistration,
-    builtin_rule_ids_sha256,
     validate_preregistration_bytes,
 )
 from corpus.scripts.review_allocation import (
@@ -64,7 +62,6 @@ from corpus.scripts.review_allocation import (
     validate_manifest as validate_review_allocation,
 )
 from corpus.scripts.run_contract import sha256_file
-from corpus.scripts.run_validation import _source_tree_sha256
 from corpus.scripts.sample_findings import (
     _filter_repositories,
     _fingerprint_set_sha256,
@@ -74,14 +71,29 @@ from corpus.scripts.sample_findings import (
 )
 from jsonschema import Draft202012Validator
 
-import adduce
-from adduce.rules import discover_rules
 from tests.test_corpus_tooling import _write_minimal_valid_run
 
 ROOT = Path(__file__).resolve().parent.parent
 SAMPLE_SCRIPT = ROOT / "corpus" / "scripts" / "sample_findings.py"
 LABEL_SCRIPT = ROOT / "corpus" / "scripts" / "label_findings.py"
 CLAIM_REVIEW_SCRIPT = ROOT / "corpus" / "scripts" / "claim_review.py"
+
+# Frozen by protocol amendment 8 for the duration of the unlocked development
+# interval. They are the study's material, not its machinery, and move only
+# under a further dated amendment made before the change.
+FROZEN_REPOS_SHA256 = "859fded20ca432fdd02a135b690ecaac75e5c2d457a2b7b2ea62dfc738107fd9"
+FROZEN_BADGED_PROVENANCE_SHA256 = (
+    "7119028796ce55c5fe6a4024f1ed435b2cc859fd6cdd06a12df11d21e391dd5f"
+)
+FROZEN_CLONE_MANIFEST_SHA256 = (
+    "2fcefb2503e60d4a04a0b4a343056a99ad00294ae3d5ee5c8f430d0b79435b94"
+)
+FROZEN_CLONE_SNAPSHOT_SET_SHA256 = (
+    "9a171656825240a0b8371833f69c3b25b570e9bb74c4e6bd5f5cab618de06c31"
+)
+FROZEN_CLAIM_GROUND_TRUTH_SHA256 = (
+    "9a26d06c59070173ad89f60bc221a395dd1a487132eeed7415d2cadeff63611e"
+)
 
 
 def _preregistration_fixture() -> tuple[bytes, dict[str, Any], dict[str, object]]:
@@ -2185,246 +2197,52 @@ def test_preregistration_builder_rejects_unsafe_candidate_pairs(
         )
 
 
-def _load_checked_in_preregistration() -> dict[str, Any]:
+def _load_retired_preregistration() -> dict[str, Any]:
     return json.loads(
         (ROOT / "corpus" / "pilot-r6-preregistration.json").read_text(encoding="utf-8")
     )
 
 
-#: The r6 analyzer lock is void, deliberately and exactly once.
-#:
-#: The approved plan of 2026-08-05 rebuilds the analyzer before human review
-#: begins: instrumentation, single-pass inventory, a normalized evidence graph,
-#: claim resolution, an incremental cache, framework adapters, non-expert
-#: output, and isolated dynamic execution. Every one of those changes bytes
-#: under ``src/adduce/``, which the lock hashes. Invalidating r6 now costs
-#: nothing, because no human reviewer decision exists yet; the same change after
-#: the reviews begin would cost 220 decisions. So the lock is broken once, on
-#: purpose, and re-registered at the end rather than after each phase.
-#:
-#: Only the analyzer digest is affected. Every other frozen input — the schema,
-#: all 23 analysis-plan files, the rule-ID set, the corpus inventory, and the
-#: frozen truth — is still asserted to match below, and a change to any of them
-#: is a real failure.
-#:
-#: Expiry: protocol amendment 8 registers an ``r7`` lock against the finished
-#: analyzer. At that point ``_load_checked_in_preregistration`` is repointed at
-#: the r7 file, and this record together with ``_assert_analyzer_lock_is_void``
-#: and ``_assert_analysis_plan_lock_is_void`` is deleted so the plain equality
-#: assertions return. The checks below fail if the repointing ever happens
-#: without that deletion.
-#:
-#: ``analysis_plan_files`` names each hashed analysis-plan file edited while the
-#: lock is void, against the digest the lock still carries for it. Every
-#: analysis-plan file not listed here must still match the lock exactly.
-#:
-#: ``check_builtin.py`` enforces an explicit allowlist of the git commands a
-#: corpus scan may run, and honouring ``.gitignore`` during ingestion takes two
-#: further read-only queries, so the allowlist had to name them. Its synthesised
-#: not-applicable finding now also emits ``"items": []``, once every finding
-#: was required to carry the key rather than only the ones a rule actually
-#: evaluated.
-#:
-#: ``run_contract.py`` recomputed a tier from a score and rejected any artifact
-#: where the two disagreed. A tier is now withheld when the analyzer parsed too
-#: little source for one to mean anything, so that invariant no longer holds and
-#: the contract would have rejected a correct artifact. This is not hypothetical
-#: for the pilot: ``md-ml`` carries no Python at all and comes back unrated.
-#:
-#: It moved a second time, for a separate reason. The score card's public shape
-#: gained applicability-aware coverage keys and a total that is null when no
-#: check reached an assessment at all. The contract validates payload keys
-#: exactly and reconstructs both the total and the tier, so its key set had to
-#: admit the new counts and its two reconstructions had to learn that an absent
-#: total is not a failing zero and carries a tier of its own.
-#:
-#: It moved a third time, for a separate reason. The report gained a top-level
-#: ``schema`` key naming the document's shape independently of the tool version
-#: that wrote it, and each finding gained an ``items`` key carrying the
-#: individual observations behind its verdict. The contract's exact key set
-#: had to admit both, and an item is now validated field by field: id
-#: uniqueness within the finding, status against the same states a finding
-#: itself may carry, confidence in range, and its own locations and
-#: JSON-scalar attributes, through the same location and attribute checks the
-#: finding already used, factored out so item and finding are held to one
-#: implementation rather than two that could drift apart.
-#:
-#: ``run_validation.py`` recorded a category that applied but that no check
-#: could assess as a zero in the combined CSV, where it reads exactly like a
-#: category that was assessed and earned nothing. Until a retained unassessed
-#: category became representable the contract rejected those payloads outright,
-#: so the conflation could not reach an accepted artifact; it now can. The CSV
-#: leaves that cell empty, as it already does for a category the score card
-#: drops, and the contract requires the empty cell in both directions.
-#:
-#: All three copies of ``_source_tree_sha256`` moved together, which is what
-#: brings ``audit_sentinel_generation.py`` into this list. The helper ordered
-#: files by comparing ``Path`` objects, and ``Path`` comparison casefolds on
-#: Windows and does not on POSIX, so the analyzer digest every lock is bound to
-#: depended on the host that computed it. It orders by the segments of the
-#: relative POSIX path now, the key ``scan_repository`` already uses. Both keys
-#: reproduce every digest recorded against this helper, so that choice is
-#: conservative rather than forced; the divergence that settled the question for
-#: the repository walk was measured over its inventory, not over this digest. The current ``src/adduce`` tree is unaffected and the digest is
-#: byte-identical either way, by coincidence rather than design — adding a
-#: ``README.md``, ``LICENSE`` or ``Dockerfile`` splits it in 39 of the 42
-#: placements across the package's fourteen directories, the three exceptions
-#: all being ``fixers/templates/``, whose existing names already lead with
-#: uppercase. The three copies are deliberate rather than drift — the checker
-#: runs as a sandboxed child process and imports nothing from its siblings —
-#: so a test now holds them to the same value.
-_R6_VOID: dict[str, Any] = {
-    "protocol_id": "pilot-0.1.2-r6",
-    "analyzer_source_tree_sha256": (
-        "1b24ccf68aba75cfeb75825817497dbefc9132cb5173e5e2f80fa857a7867485"
-    ),
-    "analysis_plan_files": {
-        "ANNOTATION_GUIDE.md": (
-            "df0b106bbdb2ab818c28da66283cfe13c1c30e200345431d6d9436e1174f652c"
-        ),
-        "README.md": (
-            "0ec62377e8c72ac889ed88e4e8369848dec49cf9da6443c74998b8ff18dea003"
-        ),
-        "scripts/audit_sentinel_generation.py": (
-            "59b869e0f8b25142630e1a3554a84c110c8a7b58ea539339017a853ea4d104d6"
-        ),
-        "scripts/check_builtin.py": (
-            "851240df89e4c2f90369c94efe030e960448a113cf6682cfbedeca67001e5537"
-        ),
-        "scripts/run_contract.py": (
-            "d618362baee6d13c68f6eb5725d20842b5e62cacd42d6085dfa8bb100edd732d"
-        ),
-        "scripts/run_validation.py": (
-            "b142ed944f12887ccd6ac9effaa5b322381afa55a1f71265d4ac522c10769637"
-        ),
-    },
-    "reason": "analyzer rebuilt under the approved evidence-engine plan",
-    "successor": "protocol amendment 8 plus a fresh r7 candidate pair",
-}
+# Protocol amendment 8 retires the r6 lock and opens an unlocked development
+# interval, so the assertions that pinned the analyzer digest, the analysis-plan
+# file set, the schemas, the rule-ID digest, the candidate-pair names, the
+# protocol ID, the analyzer version, the timeout and the cohort counts are gone
+# with it. What replaces the lock is four executable assertions: the two tracked
+# frozen input digests below, the gitignored study digests verified wherever the
+# local corpus is present (tests/test_review_facts.py and
+# tests/test_corpus_runner_hardening.py) and pinned here against the retired
+# record, and the refusal of an effectiveness run that binds no live lock
+# (test_effectiveness_refuses_without_a_live_preregistration_lock and its
+# siblings in tests/test_corpus_tooling.py).
+#
+# Three of the deleted pins are enforcement rather than bookkeeping and must
+# return when r7 is registered: protocol_id, adduce.version and candidate_pair.
+# Pair names alone do not distinguish one lock from another, so those three are
+# what would catch a lock regenerated in place, which the standing rule of
+# amendment 6 forbids. They are safe to omit only while no lock exists.
 
 
-def _assert_analyzer_lock_is_void(checked_in_preregistration: dict[str, Any]) -> None:
-    """Assert the recorded void, and that the record has not gone stale.
+def test_frozen_tracked_study_inputs_carry_their_registered_digests() -> None:
+    """The two frozen inputs a fresh checkout contains, held to amendment 8."""
+    assert sha256_file(ROOT / "corpus" / "repos.csv") == FROZEN_REPOS_SHA256
+    assert sha256_file(ROOT / "corpus" / "badged-provenance.csv") == (
+        FROZEN_BADGED_PROVENANCE_SHA256
+    )
 
-    Three ways this fails, each of them something a reader needs to know:
-    a successor lock is checked in and this scaffolding was left behind; the
-    record disagrees with the lock it claims to describe; or the live analyzer
-    matches r6 again, meaning the rebuild was reverted.
+
+def test_the_retired_r6_record_witnesses_the_frozen_study_digests() -> None:
+    """The r6 lock is retired and governs nothing.
+
+    It is read only as a tracked witness of what the frozen digests are. Three
+    of the five name gitignored study data that a fresh checkout does not
+    contain, and this record is the only tracked file carrying them.
     """
-    assert checked_in_preregistration["protocol_id"] == _R6_VOID["protocol_id"], (
-        "a successor lock is checked in, so the r6 void record has expired: "
-        "delete _R6_VOID and _assert_analyzer_lock_is_void, and assert the "
-        "analyzer digest matches the live tree again"
-    )
-    assert checked_in_preregistration["adduce"]["source_tree_sha256"] == (
-        _R6_VOID["analyzer_source_tree_sha256"]
-    ), "the r6 void record does not describe the lock it names"
-
-    live_analyzer_sha256 = _source_tree_sha256(Path(adduce.__file__).resolve().parent)
-    assert live_analyzer_sha256 != _R6_VOID["analyzer_source_tree_sha256"], (
-        "the live analyzer tree matches the r6 lock again, so this record is "
-        f"stale: either the rebuild was reverted, or {_R6_VOID['successor']} is due"
-    )
-
-
-def _assert_analysis_plan_lock_is_void(
-    checked_in_preregistration: dict[str, Any],
-    live_analysis_plan: dict[str, Any],
-) -> None:
-    """Assert exactly the recorded analysis-plan files moved, and nothing else.
-
-    The rollup digest cannot carry this: it changes if any of the 23 files
-    changes, so comparing it would say only that something moved. Comparing
-    file by file is what distinguishes the one deliberate edit from an
-    accidental second one, which is the failure this guard exists to catch.
-    """
-    locked: dict[str, str] = checked_in_preregistration["analysis_plan"]["files"]
-    live: dict[str, str] = live_analysis_plan["files"]
-    recorded: dict[str, str] = _R6_VOID["analysis_plan_files"]
-
-    assert set(live) == set(locked), (
-        "the analysis-plan file set itself changed, which the preregistration "
-        "contract does not permit while a lock is registered"
-    )
-    for name, locked_digest in recorded.items():
-        assert locked.get(name) == locked_digest, (
-            f"the r6 void record's locked digest for {name} is not the one the "
-            "lock carries, so the record no longer describes the lock it names"
-        )
-    moved = sorted(name for name, digest in live.items() if locked[name] != digest)
-    assert moved == sorted(recorded), (
-        "the set of changed analysis-plan files does not match the r6 void "
-        f"record: changed={moved}, recorded={sorted(recorded)}. An unrecorded "
-        "change to a hashed analysis-plan file is never acceptable; a recorded "
-        "one that has been reverted means this entry should be deleted"
-    )
-
-
-# The void record replaces a red test, so the guard that records it has to be
-# able to fail. These drive it with fabricated locks: a guard that cannot fail
-# is worse than the failure it stands in for.
-
-#: A file the record does not name, so it stands for any unrecorded change.
-_PROBE_UNRECORDED = "PILOT_PROTOCOL.md"
-
-
-def _probe_lock(**overrides: str) -> dict[str, Any]:
-    """A lock carrying every recorded file plus one the record does not name."""
-    files = dict(_R6_VOID["analysis_plan_files"])
-    files[_PROBE_UNRECORDED] = "unchanged"
-    files.update(overrides)
-    return {"analysis_plan": {"files": files}}
-
-
-def _probe_plan(*, moved: bool = True, unrecorded_moved: bool = False) -> dict[str, Any]:
-    """A live plan in which the recorded files have, or have not, moved.
-
-    Derived from the record rather than naming a file, so adding a second
-    deliberate edit does not silently stop exercising these paths.
-    """
-    files = {
-        name: ("edited" if moved else digest)
-        for name, digest in _R6_VOID["analysis_plan_files"].items()
-    }
-    files[_PROBE_UNRECORDED] = "also edited" if unrecorded_moved else "unchanged"
-    return {"files": files}
-
-
-def test_the_analysis_plan_void_guard_accepts_exactly_the_recorded_change() -> None:
-    _assert_analysis_plan_lock_is_void(_probe_lock(), _probe_plan())
-
-
-def test_the_analysis_plan_void_guard_rejects_a_reverted_recorded_change() -> None:
-    """Reverting an edit expires that entry, so the record must drop it."""
-    with pytest.raises(AssertionError, match="does not match the r6 void record"):
-        _assert_analysis_plan_lock_is_void(_probe_lock(), _probe_plan(moved=False))
-
-
-def test_the_analysis_plan_void_guard_rejects_a_second_unrecorded_change() -> None:
-    with pytest.raises(AssertionError, match="does not match the r6 void record"):
-        _assert_analysis_plan_lock_is_void(
-            _probe_lock(), _probe_plan(unrecorded_moved=True)
-        )
-
-
-def test_the_analysis_plan_void_guard_rejects_an_unrecorded_change_alone() -> None:
-    with pytest.raises(AssertionError, match="does not match the r6 void record"):
-        _assert_analysis_plan_lock_is_void(
-            _probe_lock(), _probe_plan(moved=False, unrecorded_moved=True)
-        )
-
-
-def test_the_analysis_plan_void_guard_rejects_a_record_that_drifted_from_the_lock() -> None:
-    drifted = dict.fromkeys(_R6_VOID["analysis_plan_files"], "a digest the record does not know")
-    with pytest.raises(AssertionError, match="is not the one the lock carries"):
-        _assert_analysis_plan_lock_is_void(_probe_lock(**drifted), _probe_plan())
-
-
-def test_the_analysis_plan_void_guard_rejects_a_changed_file_set() -> None:
-    shrunk = _probe_plan()
-    shrunk["files"].pop(_PROBE_UNRECORDED)
-    with pytest.raises(AssertionError, match="analysis-plan file set itself changed"):
-        _assert_analysis_plan_lock_is_void(_probe_lock(), shrunk)
+    inputs = _load_retired_preregistration()["inputs"]
+    assert inputs["repos_file_sha256"] == FROZEN_REPOS_SHA256
+    assert inputs["badged_provenance_sha256"] == FROZEN_BADGED_PROVENANCE_SHA256
+    assert inputs["claim_ground_truth_sha256"] == FROZEN_CLAIM_GROUND_TRUTH_SHA256
+    assert inputs["clone_manifest_sha256"] == FROZEN_CLONE_MANIFEST_SHA256
+    assert inputs["clone_snapshot_set_sha256"] == FROZEN_CLONE_SNAPSHOT_SET_SHA256
 
 
 def test_review_schemas_are_valid_and_accept_generated_draft_artifacts(
@@ -2442,12 +2260,15 @@ def test_review_schemas_are_valid_and_accept_generated_draft_artifacts(
     preregistration_schema = json.loads(
         (ROOT / "corpus" / "preregistration.schema.json").read_text(encoding="utf-8")
     )
-    checked_in_preregistration = _load_checked_in_preregistration()
     Draft202012Validator.check_schema(allocation_schema)
     Draft202012Validator.check_schema(claim_review_schema)
     Draft202012Validator.check_schema(finding_review_schema)
     Draft202012Validator.check_schema(preregistration_schema)
-    Draft202012Validator(preregistration_schema).validate(checked_in_preregistration)
+    # Against a freshly built preregistration, not the retired r6 record: the
+    # schema is free to change during the unlocked interval, so validating a
+    # record registered before it would turn a permitted change red.
+    built_preregistration = json.loads(_preregistration_fixture()[0])
+    Draft202012Validator(preregistration_schema).validate(built_preregistration)
 
     allocation_sources = _allocation_sources()
     allocation = build_review_allocation(
@@ -2493,59 +2314,3 @@ def test_review_schemas_are_valid_and_accept_generated_draft_artifacts(
     truth = _claim_payload(repos, clones, commit)
     claim_review = initialize_review(truth, "a" * 64, ["candidate-a", "candidate-b"])
     Draft202012Validator(claim_review_schema).validate(claim_review)
-
-
-def test_preregistration_lock_matches_live_source_tree_and_analysis_plan() -> None:
-    preregistration_schema_path = ROOT / "corpus" / "preregistration.schema.json"
-    checked_in_preregistration = _load_checked_in_preregistration()
-
-    assert checked_in_preregistration["schema_sha256"] == sha256_file(
-        preregistration_schema_path
-    )
-    live_analysis_plan = analysis_plan_identity(
-        {
-            name: (ROOT / "corpus" / name).read_bytes()
-            for name in PREREGISTRATION_ANALYSIS_PLAN_PATHS
-        }
-    )
-    # Two frozen inputs no longer match, both on purpose and both recorded: the
-    # analyzer digest, and the analysis-plan files _R6_VOID names. See it for
-    # the reason and the expiry condition. Every other frozen input is asserted
-    # equal.
-    _assert_analyzer_lock_is_void(checked_in_preregistration)
-    _assert_analysis_plan_lock_is_void(checked_in_preregistration, live_analysis_plan)
-    assert checked_in_preregistration["adduce"]["builtin_rule_ids_sha256"] == (
-        builtin_rule_ids_sha256(
-            [rule.id for rule in discover_rules(include_plugins=False)]
-        )
-    )
-    assert checked_in_preregistration["inputs"]["repos_file_sha256"] == sha256_file(
-        ROOT / "corpus" / "repos.csv"
-    )
-    assert checked_in_preregistration["inputs"]["badged_provenance_sha256"] == (
-        sha256_file(ROOT / "corpus" / "badged-provenance.csv")
-    )
-    assert checked_in_preregistration["inputs"]["claim_review_schema_sha256"] == (
-        sha256_file(ROOT / "corpus" / "claim-review.schema.json")
-    )
-    assert checked_in_preregistration["candidate_pair"] == [
-        "pilot-0.1.2-r6-a",
-        "pilot-0.1.2-r6-b",
-    ]
-    # Pinned deliberately. The pair names alone do not distinguish one lock from
-    # another: a lock regenerated in place would keep them while silently
-    # carrying a different protocol ID, analyzer version, or frozen truth. The
-    # standing rule in protocol amendment 6 forbids that, and these three
-    # assertions are what would catch it.
-    assert checked_in_preregistration["protocol_id"] == "pilot-0.1.2-r6"
-    assert checked_in_preregistration["adduce"]["version"] == "0.1.2"
-    assert checked_in_preregistration["inputs"]["claim_ground_truth_sha256"] == (
-        "9a26d06c59070173ad89f60bc221a395dd1a487132eeed7415d2cadeff63611e"
-    )
-    assert checked_in_preregistration["execution_contract"]["timeout_seconds"] == 300
-    assert checked_in_preregistration["inputs"]["repository_count"] == 15
-    assert checked_in_preregistration["inputs"]["cohort_counts"] == {
-        "badged_functional": 5,
-        "stress": 5,
-        "unvetted": 5,
-    }

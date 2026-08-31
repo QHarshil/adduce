@@ -31,6 +31,11 @@ SCAFFOLD_RELATIVE = (
     "corpus/labels/pilot-claim-review-r6-reviewer-a.json",
     "corpus/labels/pilot-claim-review-r6-reviewer-b.json",
 )
+# Frozen by protocol amendment 8 for the duration of the unlocked development
+# interval; it moves only under a further dated amendment.
+FROZEN_CLAIM_GROUND_TRUTH_SHA256 = (
+    "9a26d06c59070173ad89f60bc221a395dd1a487132eeed7415d2cadeff63611e"
+)
 
 TOP_LEVEL_KEYS = {
     "analyzer_source_tree_sha256",
@@ -484,3 +489,7 @@ def test_show_against_the_real_repository_reports_the_live_commit(
     facts = json.loads(capsys.readouterr().out)
     assert facts["git"]["commit"] == head.stdout.strip()
     assert facts["truth"]["sha256"] == _sha256(REPOSITORY_ROOT / TRUTH_RELATIVE)
+    # The gitignored half of protocol amendment 8's frozen set: verified
+    # wherever the local corpus is present, and pinned in any checkout against
+    # the retired r6 record by tests/test_corpus_methodology.py.
+    assert facts["truth"]["sha256"] == FROZEN_CLAIM_GROUND_TRUTH_SHA256
