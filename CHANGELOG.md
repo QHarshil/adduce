@@ -237,6 +237,13 @@ the preregistered validation report belong to the following release.
   resolving the floors, which is what surfaces a new rule in time to fix it, and
   the source distribution carries the file because it already carried the
   workflow that reads it.
+- **The publishing action is pinned to v1.14.2**, which is the first release
+  whose bundled Twine accepts core metadata 2.5. The build backend writes 2.5,
+  and the action runs its own Twine before uploading, so every gate in the
+  workflow could pass and the upload still be refused at the last step. The
+  release gate's own Twine cannot catch this: it is pinned to a version that
+  accepts 2.5, which is the correct pin for checking the artifact and the wrong
+  one for predicting what the publisher will do with it.
 - Dependency updates open against `dev` rather than the default branch. `main` is
   the release line a tag must descend from, so a bump landing there directly puts
   an unreviewed change between a validated candidate and an immutable tag.

@@ -114,7 +114,7 @@ def test_trusted_publishing_workflow_has_narrow_permissions_and_triggers():
         "@d3f86a106a0bac45b974a628896c90dbdf5c8093"
     )
     assert publish["steps"][1]["uses"].endswith(
-        "@ba38be9e461d3875417946c167d0b5f3d385a247"
+        "@dc37677b2e1c63e2034f94d8a5b11f265b73ba33"
     )
     assert "workflow_dispatch" not in text
     assert "pull_request_target" not in text
