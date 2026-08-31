@@ -36,6 +36,7 @@ classifiers = [
     "Programming Language :: Python :: 3.14",
     "Topic :: Software Development :: Quality Assurance",
     "Topic :: Scientific/Engineering",
+    "Typing :: Typed",
 ]
 dependencies = [
     # 0.16.0, not 0.12: the CLI annotates options as `str | None`, which typer
@@ -95,6 +96,9 @@ include = [
     "scripts",
     "bench",
     ".github/workflows/release.yml",
+    # release.yml constrains its gate tools with this file; shipping the workflow
+    # without it would leave the archive referring to something it does not carry.
+    "release-constraints.txt",
     # CONTRIBUTING.md links to each of these. The archive is checked for broken
     # links separately from the checkout, so a contributor file that ships
     # without its targets fails the build rather than shipping dead links.

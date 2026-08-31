@@ -691,6 +691,13 @@ def test_inspect_reports_an_unavailable_source_commit_rather_than_inventing_one(
     tmp_path: Path,
 ) -> None:
     assert reviewer_packet.source_commit(tmp_path) is None
+    if not (ROOT / ".git").exists():
+        # The source distribution ships this suite, and a downstream
+        # re-packager runs it from an unpacked archive. The assertion above is
+        # the product behaviour; the one below needs a git checkout to have an
+        # answer to compare against, and `git rev-parse` in a non-repository
+        # would fail the test for the absence of git rather than for a defect.
+        pytest.skip("no git checkout: the source distribution has no repository to query")
     assert reviewer_packet.source_commit(ROOT) == _git("rev-parse", "HEAD", cwd=ROOT)
 
 

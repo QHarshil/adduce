@@ -1,0 +1,25 @@
+# Pinned tool versions for the release gate in .github/workflows/release.yml.
+#
+# The release job runs ruff, mypy and pytest against a commit that CI already
+# validated with the same code and the same configuration. Resolving those tools
+# freshly at tag time means their *opinions* decide whether a release happens: a
+# ruff minor that promotes a preview rule into the selected sets, or a mypy that
+# tightens an existing check, fails the job on a tree that was green an hour
+# earlier. A release tag is immutable here — the "Release tags are immutable"
+# ruleset blocks deleting or moving refs/tags/v*, and PyPI never lets a version
+# number be reused — so that failure burns the version rather than delaying it.
+#
+# These are the versions the 0.2.0 release candidate was validated with. Bump
+# them deliberately, in a pull request, with CI green on the new set. This file
+# constrains only the release gate; ordinary CI keeps resolving the floors in
+# pyproject.toml, which is what surfaces a new rule or a new stub in time to fix
+# it.
+ruff==0.16.5
+mypy==2.3.1
+types-PyYAML==6.0.12.20260815
+pytest==9.1.1
+pytest-cov==7.1.0
+coverage==7.16.0
+jsonschema==4.26.0
+build==1.6.0
+twine==7.0.0
