@@ -101,13 +101,37 @@ here; see `bench/` for the instruments whose numbers are reproducible.
     "parser_version": "stdlib+pyyaml",
     "resolution_method": "direct_parse",
     "inputs": ["sha256:…"],
-    "analyzer_version": "0.1.2"
+    "analyzer_version": "0.2.0"
   },
   "confidence": 1.0,
   "uncertainty": null,
   "owner": "builtin"
 }
 ```
+
+## A value that looks like a secret is withheld
+
+A producer reads the repository's own bytes, so any value it copies into a node
+can be a committed credential — and `--store` writes those nodes under
+`.adduce/`, the directory authors are told to commit. A copied credential would
+then be published by the run that detected it.
+
+So a value the portability detector recognises never enters the graph: not in
+memory, not in a rendered format, not on disk. What takes its place names the
+field that was withheld and the shape it matched:
+
+```json
+"value": {"key": "hf_token", "redacted": "scalar", "secret_kind": "Hugging Face token"}
+```
+
+The withheld key is absent rather than emptied, so a reader can tell a redaction
+from an absence without the value being echoed to do it. The Python producer
+guards a resolved call's first argument the same way, under the same two keys.
+
+The detection is the one in `adduce.evidence.portability`, not a second copy of
+the patterns: the graph withholds exactly what `R-PORT-004` reports, and nothing
+else. A second table would drift, and a security-relevant classifier that
+disagrees with itself is worse than none.
 
 ## Node and edge types
 
@@ -195,10 +219,11 @@ The graph is being built producer by producer.
 | configuration | `ConfigurationSnapshot`, `ConfigurationValue`, inferred `DependencyDeclaration` |
 | python | `SourceFile`, `SeedOperation`, `ModelReference`, `DatasetReference`, `CheckpointReference`, `ExecutionCommand`, `EnvironmentConstraint` |
 
-`Symbol` is deliberately not emitted yet: nothing reads it. Adding 39,397 nodes
-at the largest stratum for no consumer is how the memory problem this project
-already has was created in the first place, so it waits for claim retrieval,
-which is what needs it.
+`Symbol` is deliberately not emitted yet: nothing reads it. Adding a node per
+symbol for no consumer is how the memory problem this project already has was
+created in the first place, so it waits for claim retrieval, which is what needs
+it. The count that made the point needed a clone this tree does not carry, so it
+is not quoted here.
 
 Rules do not yet read from the graph — they still read the evidence
 dataclasses, unchanged — so nothing in a check depends on it.

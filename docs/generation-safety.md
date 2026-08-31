@@ -126,7 +126,7 @@ The ledger also records generation provenance: `adduce_version`, command, profil
     "artifact_path": "checklist-neurips.md",
     "artifact_sha256": "...",
     "provenance": {
-      "adduce_version": "0.1.0",
+      "adduce_version": "0.2.0",
       "command": "checklist",
       "profile": "neurips",
       "mode": "default",

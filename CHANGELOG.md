@@ -6,7 +6,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-## [0.2.0] - 2026-08-30
+## [0.2.0] - 2026-08-31
 
 ### Validation status
 
@@ -63,10 +63,10 @@ the preregistered validation report belong to the following release.
   `adduce check --timings` and as a `telemetry` block in the JSON report. A
   default offline run records 23 stage durations and 9 counters. Durations differ
   between identical runs, so they are omitted unless requested and the default
-  report remains byte-for-byte stable. Measured cost on the largest corpus
-  repository, per operation rather than by subtracting two whole-run timings:
-  11.6 µs for the stage timers, 1.1 ms for counter recording over 6,282
-  inventoried files, and 3.3 µs for a snapshot — about 0.005% of a 21-second run.
+  report remains byte-for-byte stable. What the instrumentation itself costs is
+  measured per operation rather than by subtracting two whole-run timings, and
+  the figures are in [bench/README.md](bench/README.md#instrumentation-overhead)
+  with the tree, the date and the machine state they were taken under.
 - Added a benchmark harness under `bench/` with a committed baseline covering
   five real repositories, this repository, and the fourteen synthetic
   positive-control repositories. It records cold runtime, repeat runtime, peak
@@ -84,9 +84,36 @@ the preregistered validation report belong to the following release.
   applying, became not-applicable, dropped, or improved. It exists so the
   behaviour change below is reproducible rather than asserted.
 
+- **`adduce graph` and the Artifact Evidence Graph.** A new top-level command
+  reports the typed graph of what a run detected: every fact, where it came from,
+  how it was established, and how much that method is worth. `adduce graph`
+  prints counts by node type and a content id, `--format json` writes the whole
+  graph as canonical JSON, and `--store` additionally writes `nodes.jsonl` and
+  `edges.jsonl` under `.adduce/aeg/<digest>/`, through the same diff-gated write
+  boundary as every other artifact adduce produces. It is offline and
+  deterministic — re-running an unchanged producer over unchanged bytes yields
+  the same content ids — and it is **diagnostic**: building it changes nothing
+  about a check, no rule reads it, and `engine.py` holds no reference to it. It
+  is deliberately not wired into the check pipeline
+  ([ADR 0006](docs/adr/0006-aeg-remains-diagnostic.md)); wider integration waits
+  for something that needs it for correctness rather than for a diagram that
+  asserts it.
+
+  The load-bearing field is `resolution_method`. A value read out of a parsed
+  configuration file and a hint inferred from a directory name are both worth
+  recording and are recorded differently: `confidence` may be `1.0` only when
+  the method is `direct_parse` or `author_declared`, anything else is refused at
+  construction, and a method this build does not recognise is treated as an
+  inference rather than a fact. A secret-shaped configuration value is withheld
+  from the graph — the node names the field that was withheld and the kind it
+  matched, never the value. Two producers ship, configuration and Python. The
+  node and edge vocabulary, the identity and uncertainty rules, the storage
+  layout, and the parts that are declared but not yet reachable are in
+  [docs/aeg-schema.md](docs/aeg-schema.md).
+
 - **Three reference documents describing the analyzer as it is, not as designed.**
   `docs/architecture.md` walks the pipeline stage by stage and closes with a
-  20-row subsystem table; `docs/plugin-api.md` states the contract for both public
+  19-row subsystem table; `docs/plugin-api.md` states the contract for both public
   entry-point groups; `docs/scoring.md` covers how a repository becomes a number.
   Every subsystem carries one of `IMPLEMENTED`, `PARTIALLY IMPLEMENTED`,
   `PROPOSED`, `DEFERRED TO 0.3` or `REJECTED BY MEASUREMENT`, so a reader cannot
@@ -110,6 +137,11 @@ the preregistered validation report belong to the following release.
   sets `ADDUCE_REQUIRE_EXTERNAL_PLUGIN=1`, which turns "plugin not installed" from
   a skip into a failure; without it a broken install step would leave the job green
   over five tests that never ran.
+- **`py.typed` ships in both the wheel and the source distribution**, with the
+  matching `Typing :: Typed` classifier. A rule pack written against the
+  published extension API can now be type-checked against it; without the marker
+  every `adduce` import in a pack resolves to `Any`.
+
 - **A lowest-direct-dependency CI job.** The compatibility matrix installs whatever
   the resolver picks, which is the newest release of everything, so it tests the
   ceiling and never the floor. This job installs the oldest combination the project
@@ -142,20 +174,15 @@ the preregistered validation report belong to the following release.
   parent status. `Finding.to_dict()["items"]` is always present and `[]` when
   empty.
 
-  0.2 guarantees an envelope of 10,000 children on one finding. Measured on
-  this machine (python 3.14.0, darwin arm64, `bench/finding_items.py`, 5 reps,
-  each size in its own process): at 10,000 items the JSON report is 5.09 MiB,
-  construction takes about 31 ms, and resident memory grows by 8,486,912 bytes
-  holding the items. Measured headroom extends to 100,000 items on one
-  finding: the JSON report is 51.03 MiB, SARIF is 60.00 MiB, resident growth
-  is 86,999,040 bytes, and construction takes about 326 ms. Byte sizes and
-  `summarize_items` scale linearly across that range; building the parent
-  finding grows 1.16× per item, under the 1.25× per-item growth the bench's
-  `worse_than_linear` screen flags a metric at, so it is not flagged.
-  Converting items to a dict does not — `to_dict_seconds` grows 1.30× per
-  item, which the bench attributes to CPython's generational collector
-  traversing a larger live object graph rather than to any change in
-  algorithm. JSON carries every item of every finding and never truncates.
+  0.2 guarantees an envelope of 10,000 children on one finding. At that size
+  the JSON report is 5.09 MiB. Measured headroom extends to 100,000 items on
+  one finding, where the JSON report is 51.03 MiB and SARIF is 60.00 MiB. Byte
+  sizes and `summarize_items` scale linearly across that range. The timings,
+  the resident-memory figures and the per-item growth factors the bench's
+  `worse_than_linear` screen reads are in
+  [docs/plugin-api.md](docs/plugin-api.md#resource-policy), which states the
+  tree, the date and the protocol they were measured under. JSON carries every
+  item of every finding and never truncates.
   SARIF carries every item of every finding it reports, and it reports only
   actionable findings — `FAIL` and `PARTIAL`; a `PASS`, `UNKNOWN` or
   `NOT_APPLICABLE` finding produces no SARIF result, so none of its items
@@ -167,15 +194,12 @@ the preregistered validation report belong to the following release.
   child's content appears in any of them; `markdown` and `latex` show this
   line for every finding that carries items, terminal only under `--verbose`.
   Markdown's bytes are flat to within 4 bytes across the same tenfold
-  increase (711 B to 715 B); rendering time is a separate quantity and is not
-  flat, moving from 1.021 ms to 9.786 ms across the same range, growing
-  slightly less than proportionally to item count. Terminal output at its
-  default verbosity carries no item detail at all, and its near-flat cost
-  (1.021 ms to 1.045 ms across the same range) is not evidence about item
-  cost either way; `--verbose` renders the item census, and its cost grows
-  from 2.355 ms to 11.482 ms, a 4.9× increase, because the census is O(n) in
-  items. 0.2 sets no hard ceiling on
-  item count; if one is introduced later it should bound items per report,
+  increase (711 B to 715 B). Rendering time is a separate quantity and is not
+  flat. Terminal output at its default verbosity carries no item detail at
+  all, so its cost is not evidence about item cost either way; `--verbose`
+  renders the item census, whose cost is O(n) in items. Those timings are in
+  the same dated block. 0.2 sets no hard ceiling on item count; if one is
+  introduced later it should bound items per report,
   not per finding, enforced as a hard construction error rather than silent
   truncation: report size and resident memory are what it would need to
   contain. The bound exists to contain accidental or pathological plugin
@@ -188,7 +212,7 @@ the preregistered validation report belong to the following release.
   true floor and nothing caught it, because every environment that ever ran
   installed a much newer typer. Measured on Python 3.10 with every other dependency
   at its declared floor: **typer 0.12.0 fails 109 tests**, 0.15.4 fails 2, and
-  0.16.0 passes the suite at 1,574 passed. Two separate causes — typer could not
+  0.16.0 passes the suite at 1,368 passed. Two separate causes — typer could not
   translate a `str | None` annotation before 0.13, and through 0.15.3 it called
   click's `make_metavar()` with an arity current click rejects. This raises a
   declared minimum to a true one; it does not change what a normal install
@@ -202,6 +226,20 @@ the preregistered validation report belong to the following release.
   the weekly schedule still run to completion, because their results are read after
   the fact rather than watched. Every checkout sets `persist-credentials: false`,
   and pip downloads are cached against `pyproject.toml`.
+- **The release gate installs its tools through `release-constraints.txt`.** The
+  tag workflow installed `ruff`, `mypy` and `pytest` unconstrained and then ran
+  them as release gates, so the versions resolved at tag time decided whether a
+  release happened: a ruff minor that promotes a preview rule into the selected
+  sets fails the job on a commit that was green an hour earlier. A release tag
+  here cannot be moved and a version number cannot be reused on PyPI, so that
+  failure burns the version rather than delaying it. The file pins the tools
+  whose opinions decide the gate and records how to bump it. Ordinary CI keeps
+  resolving the floors, which is what surfaces a new rule in time to fix it, and
+  the source distribution carries the file because it already carried the
+  workflow that reads it.
+- Dependency updates open against `dev` rather than the default branch. `main` is
+  the release line a tag must descend from, so a bump landing there directly puts
+  an unreviewed change between a validated candidate and an immutable tag.
 
 
 - **Each source file is now read and decoded once per run, not three times.**
@@ -239,7 +277,8 @@ the preregistered validation report belong to the following release.
   `outputs/`, or vendored checkout is not part of the artifact under review, so
   it is no longer scanned and can no longer contribute findings. `--no-gitignore`
   restores the previous whole-tree scan. This changes findings on any repository
-  with an ignored tree; see the correctness fix below for the measurement. Git's
+  with an ignored tree, and `bench/runner.py finding-diff` enumerates which
+  statuses move on a given tree. Git's
   own matcher decides, so nested ignore files, negation, anchoring, and
   directory-only patterns behave exactly as git does, and a tracked file matching
   an ignore pattern is still scanned.
@@ -254,8 +293,9 @@ the preregistered validation report belong to the following release.
   a fixed cost rather than a proportional one. On a repository with nothing
   ignored it is therefore pure overhead: measured on the smallest corpus
   repository, 26 files, a run goes from 72.8 ms to 84.7 ms, and by 122 files it
-  is no longer distinguishable from noise. Repositories that do ignore a tree
-  gain far more than they pay — 24.6 s to 1.2 s in the case below.
+  is no longer distinguishable from noise. A repository that does ignore a tree
+  stops scanning it entirely, and how much that saves depends on what the ignored
+  tree holds.
 - `Repo` exposes `read_cache_stats()`, and `evidence.collect` accepts an optional
   `telemetry` keyword. Both are additive; rule and reporter plugins are
   unaffected.
@@ -263,11 +303,12 @@ the preregistered validation report belong to the following release.
   `evaluated_rules`, `considered_rules`, `applicable_rules`, `coverage_percent`,
   `analysable_lines`, and a nested `rules` object holding `assessed`, `unknown`,
   `not_applicable` and `skipped_inapplicable`, so a consumer can see how much the
-  score rests on rather than inferring it. Those four counts are the four
-  outcomes a registered rule can reach; `skipped_inapplicable` counts the rules
-  whose `applies_to` returned `False`, which produce no finding at all and enter
-  neither denominator. On this repository they read 51, 2, 16 and 9, which is why
-  96.2% coverage is not a statement about all 78 built-in rules. `ScoreCard`
+  score rests on rather than inferring it. Those counts name three of the five
+  outcomes a registered rule can reach, plus one of the two causes of a fourth:
+  `skipped_inapplicable` counts the rules whose `applies_to` returned `False`,
+  which produce no finding at all and enter neither denominator. On this
+  repository they read 50, 1, 18 and 9, which is why 98.0% coverage is not a
+  statement about all 78 built-in rules. `ScoreCard`
   gains the matching fields — `applicable_rules` and `skipped_inapplicable`, plus
   `unknown_rules`, `not_applicable_rules` and `coverage` as properties — all
   defaulted, and `score()` takes optional `analysable_lines` and
@@ -283,21 +324,21 @@ the preregistered validation report belong to the following release.
   Migration, measured on this repository:
 
   ```
-  old:  51 assessed / 69 returned findings   = 73.9 %
-  new:  51 assessed / 53 applicable findings = 96.2 %
+  old:  50 assessed / 69 returned findings   = 72.5 %
+  new:  50 assessed / 51 applicable findings = 98.0 %
   ```
 
-  **This is a denominator correction, not improved effectiveness.** The same 51
-  checks reach the same 51 assessments on the same repository, and nothing
-  further is assessed. The 16 `NOT_APPLICABLE` findings never applied and should
-  not have reduced coverage. adduce does not assess 22 percentage points more
+  **This is a denominator correction, not improved effectiveness.** The same 50
+  checks reach the same 50 assessments on the same repository, and nothing
+  further is assessed. The 18 `NOT_APPLICABLE` findings never applied and should
+  not have reduced coverage. adduce does not assess 25.6 percentage points more
   evidence than it did before, and a `coverage_percent` recorded under an earlier
   release cannot be compared with one recorded under this release.
 
   Weighted coverage stays a backlog measurement rather than a second metric, and
   **adduce reports no weighted coverage number**. On this repository it would
-  read 157.0 / 161.0 = 97.5%, a divergence of 1.3 percentage points from the
-  count-based figure. Measurement reopens the question: either more than 20% of
+  read 156.0 / 157.0 = 99.4%, a divergence of 1.3 percentage points from the
+  count-based 98.0%. Measurement reopens the question: either more than 20% of
   measured repositories diverging by more than 5 percentage points, or a corpus
   p95 absolute divergence above 10 percentage points.
 - **`ScoreCard.total` and the JSON `total` may now be `null`**, and only when no
@@ -323,6 +364,15 @@ the preregistered validation report belong to the following release.
   than a half-versioned contract. Inside this repository,
   `corpus/scripts/run_contract.py` is exactly such a consumer and was updated to
   accept the new key.
+- **The composite Action gained a `score-available` output, and `score` is now
+  empty rather than a number when nothing was assessed.** A card that reached no
+  assessment carries a null total, which the step printed as the string `None` —
+  a value, to a workflow comparing `score` against a threshold.
+  `score-available` is `"true"` when `score` holds a number and `"false"` when
+  the run assessed nothing, and a numeric comparison against `score` is
+  meaningful only in the first case. **A workflow that compares `score`
+  numerically without checking `score-available` first changes behaviour.**
+
 - `corpus/scripts/run_contract.py` no longer recomputes a tier from a score
   unconditionally. That invariant held only while a tier was a pure function of
   the score, and enforcing it would now reject a correct artifact for any
@@ -418,10 +468,10 @@ the preregistered validation report belong to the following release.
   in a different order on a different platform while several reporters name only
   the first few paths they are given. Entries are now ordered by the segments of
   their relative POSIX path, which never casefolds and so is identical on every
-  host. Measured over 49 targets — 33 synthetic cases, 15 pinned clones and a
+  host. Measured across the synthetic cases, the pinned corpus clones and a
   real clone of adduce itself: the previous ordering differs between the two
-  platforms on 48 of them, and the new ordering is byte-identical to the
-  previous POSIX ordering on all 49, so no recorded corpus output moves. A
+  platforms, and the new ordering is byte-identical to the previous POSIX
+  ordering on every target measured, so no recorded corpus output moves. A
   committed digest over a fixture that provokes the divergence pins the
   contract, so a platform that computes a different order fails the build.
 
@@ -449,12 +499,13 @@ the preregistered validation report belong to the following release.
   before any reporter ran, terminal, Markdown, LaTeX and JSON lost it identically.
   A category whose findings are all `NOT_APPLICABLE` never applied and is still
   omitted; one holding an `UNKNOWN` applied and went unanswered, and is now kept
-  with an empty score and its full findings list. Measured across the 33-case
-  synthetic corpus: **13 categories in 10 cases** were being dropped this way and
-  are now reported. `total`, `tier`, `coverage`, `evaluated_rules` and
-  `considered_rules` are unmoved — the weight accumulation is never reached — and a
-  before-and-after comparison over 34 repositories found **no change to any finding,
-  status, or score**.
+  with an empty score and its full findings list. Measured across the synthetic
+  corpus, categories holding an `UNKNOWN` and no assessment were being dropped
+  this way and are now reported; how many there are is a property of the corpus
+  measured rather than of the release. `total`, `tier`, `coverage`,
+  `evaluated_rules` and `considered_rules` are unmoved — the weight accumulation
+  is never reached — and a before-and-after comparison across the synthetic and
+  pinned-clone targets found **no change to any finding, status, or score**.
 - **Terminal output claimed "all detected checks satisfied" for a category holding
   an unassessed check.** The note was built from `PARTIAL` and `FAIL` findings only,
   so a category holding `PASS` and `UNKNOWN` produced an empty note and fell through
@@ -489,14 +540,14 @@ the preregistered validation report belong to the following release.
   scored 61.4/Bronze on source the analyzer never read.
 - The scan inventoried gitignored files, so a repository containing a vendored or
   ignored working copy could earn passing rule statuses from files that are not
-  part of its artifact. Measured on this repository, whose working tree carries
-  fifteen gitignored clones: 30 rule statuses move — 9 rules stop applying, 13
-  report not-applicable, 7 drop, and 1 improves. Nine of the thirty were
-  reporting PASS on another repository's files, among them cuDNN determinism
-  flags in a project that contains no CUDA code. The score reads 50.2 rather than
-  60.5, which is the correction, not a regression. Scanning covers 344 files
-  rather than 8,844, taking 1.2 s rather than 24.6 s at 65 MB rather than 435 MB
-  of peak resident memory. Reproduce with `bench/runner.py finding-diff`.
+  part of its artifact — cuDNN determinism flags detected in a project that
+  contains no CUDA code of its own, for one. Leaving those files out of the scan
+  moves rule statuses in both directions: rules stop applying, turn
+  not-applicable, drop a status, or improve one, and a score that falls is the
+  correction rather than a regression. What moves, and what the scan stops
+  costing, depend on what the working tree happens to carry, which is a property
+  of a checkout and not of the release, so no figure is quoted here:
+  `bench/runner.py finding-diff` enumerates it for a given tree.
 - The remote collector asked whether each line's download carried a bound
   checksum before knowing whether the line contained a download at all, running
   an extra regular expression over every line of every `.py`, `.sh`, and
@@ -505,8 +556,132 @@ the preregistered validation report belong to the following release.
   collector goes from 3.155 s to 2.398 s, and both versions return exactly the
   same 6,683 references.
 
+- **A paper's "max depth" no longer contradicts a network's layer count.** The
+  bare alias `depth` sat in the same hyperparameter group as `num_layers`, and
+  `max_depth` had no group of its own, so a paper stating "max depth 4" beside a
+  config declaring `num_layers: 12` produced a high-severity R-DRIFT-001 failure
+  asserting a contradiction that did not exist. `max_depth` is now its own group,
+  with the aliases a paper and a config actually write, which also lets the two
+  match when a config really declares it. `depth` alone is deliberately in
+  neither group: it names the number of layers in a network and the maximum depth
+  of a tree, and nothing in a paper phrase separates the two.
+
+- **A document nested deeper than a parser can walk no longer ends the run.**
+  `RecursionError` is a `RuntimeError`, so seven narrow `except` clauses missed
+  it, and a one-kilobyte configuration file made `check` print a traceback and
+  exit 1 — the code that means a quality gate failed. Every site now records the
+  file as one that yielded no evidence, or reports a named input as unusable with
+  exit 2, which is the distinction between a file adduce could not read and an
+  argument the caller must fix. The walks that follow a successful parse are
+  bounded the same way and discard what they had read, for the reason the Python
+  collector's walk already did: a partial walk reads as a complete set of
+  metrics, and result reconciliation would then compare a paper's number against
+  a log it never finished reading.
+
+- **A path is read as the bytes git reports.** With `core.quotePath` on and no
+  `-z`, git C-escapes any path that is not ASCII, so `adduce diff` reported that
+  nothing substantive changed for a commit touching only `café.py`, and
+  R-DATA-004 passed asserting no committed binaries in a repository that had
+  committed `modèle.pt`. Every path listing now passes `-z` and splits on NUL,
+  which also survives a filename containing a newline, and git output is decoded
+  as UTF-8 explicitly rather than through the host locale, which is cp1252 on a
+  default Windows install and refuses a byte that code page does not define. **A
+  repository whose paths are not ASCII can score differently than it did in
+  0.1.2**, because files those checks could not match are now seen, and an
+  undecodable branch name no longer abandons the audit.
+
+- **A byte-order mark no longer deletes a file from the evidence.** CPython runs
+  a marked source file; `ast.parse` refuses the U+FEFF it decodes to, so the file
+  was recorded as unparseable and R-DET-001 flipped to a failure stating that no
+  seeding was detected in a repository that seeds correctly. Source is read as
+  `utf-8-sig`, which decodes a file without a mark identically. **A repository
+  whose Python files carry a mark can score differently than it did in 0.1.2** —
+  PowerShell and Notepad write one by default.
+
+- **Lines are numbered the way the tokenizer numbers them.** `str.splitlines()`
+  also breaks on a form feed and five other characters that no tokenizer, editor
+  or SARIF consumer treats as a line break, so a file containing one was numbered
+  differently from the lines its findings are anchored to: a suppression pragma
+  moved silently onto another finding, and a reported line could point past the
+  end of its file. Five collectors and the graph store now split on newlines
+  only.
+
+- **A rule pack can no longer answer under a built-in's identity.** A rule's `id`
+  was read twice — once for the registry's collision check, once at evaluation —
+  so an `id` that changed between the two reads filed a finding under a built-in's
+  id with no warning at all, and a `str` subclass carrying its own `__eq__` and a
+  constant `__hash__` missed the collision bucket entirely. Admission now keeps
+  the id's real characters as a plain `str`, the engine refuses any id belonging
+  to a built-in, and every comparison is made from adduce's own side rather than
+  by asking the pack's object to compare itself. A `category` that is not a
+  `Category` member is refused there too: it kept the finding out of every
+  category's arithmetic while still counting toward coverage, and it raised in the
+  JSON reporter.
+
+- **`--fail-under` compares the score the report shows.** The gate compared the
+  unrounded total while every report renders the score to one decimal, so a run
+  reporting 88.5 failed `--fail-under 88.5`, and the message then printed both
+  sides at zero decimals — "score 88 is below --fail-under 88" — erasing the
+  distinction it exists to explain. Both sides are now the value the report
+  carries. **A gate set exactly at a repository's reported score can change
+  result.**
+
+- **The badge no longer publishes a bare number for a card the rest of the tool
+  qualifies.** A card can carry a real score and still be unrated, because the
+  score is a score of too little source to stand behind. The badge is the most
+  copied artifact adduce emits and the one that reaches a reader with no
+  surrounding context, so it now carries the same qualification the terminal
+  prints — `72/100 unrated`, in grey. A card that reached no assessment still
+  reads `not assessed`.
+
+- **`--fail-on-regression` reads the baseline from the resolved repository
+  root.** `adduce baseline` writes to the resolved root and the write boundary
+  refuses a path with a symlinked ancestor, so on macOS, where `$TMPDIR` alone
+  resolves `/var` to `/private/var`, the two-step workflow the command documents
+  failed with exit 2. A baseline nested deeper than the JSON parser can walk is
+  now reported as an unusable input rather than as a regression.
+
+- **The source distribution's Markdown link check had stopped running.** Its test
+  pinned `dist/adduce-0.1.2.tar.gz`, a filename `python -m build` can no longer
+  produce, so a routine version bump turned the gate into a vacuous pass. The
+  archive name now comes from the package version. Release metadata is immutable
+  per version, so a link that dangles only inside the archive cannot be corrected
+  after publication, which is the whole reason for the gate.
+
+- **The installation smoke test exercised three of the thirteen packaged data
+  files** while claiming to cover every surface that depends on them: one profile
+  of six, one checklist of two, one template of five. It is the only gate that can
+  see inside a built artifact, because the suite runs against the checkout through
+  `importlib.resources`. It now enumerates each set from the installed package —
+  a wheel with ten of those files removed passes the old script and fails this
+  one.
+
+- **The test suite the source distribution ships no longer fails outside a git
+  checkout.** One oracle shelled out to `git rev-parse` in the repository root,
+  which a downstream re-packager does not have. The product assertion beside it is
+  unchanged.
+
 ### Security
 
+- A secret-shaped configuration value is withheld from the evidence graph. The
+  graph's producers copied every parsed scalar into a node, and `--store` wrote
+  it into `.adduce/`, the directory adduce tells authors to commit, while the same
+  run reported that a matched secret's value is never stored or echoed. Detection
+  is now the single detector in the portability collector rather than a second
+  copy of the patterns, so the graph withholds exactly what `R-PORT-004` reports;
+  a withheld value leaves a node naming the field and the kind it matched, which
+  distinguishes a redaction from an absence without echoing anything. The Python
+  producer copied call arguments the same way and is guarded the same way. The
+  evidence graph is new in this release, so this was never present in a released
+  version.
+- Text that came from the scanned repository passes through one display sanitiser
+  before it reaches a terminal or a Markdown report. A path, a branch name, or a
+  parsed detail string is repository-controlled, and written straight out it could
+  carry control sequences that clear a screen or open a hyperlink — into the
+  terminal of whoever ran the audit, or into a Markdown report for whoever opened
+  it next. JSON and SARIF escape them; the prose formats did not. There is one
+  implementation, because a second would drift and the interesting case is always
+  the one the other copy forgot.
 - The git queries that honour `.gitignore` now set `core.fsmonitor=false`, as the
   repository-metadata queries already did. Without it, git runs a
   repository-configured filesystem-monitor hook, which would let a scanned
