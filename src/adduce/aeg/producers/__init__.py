@@ -12,9 +12,10 @@ which is what keeps all 78 rules and every third-party rule working unchanged.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
 
 from ... import __version__
+from ...evidence.portability import secret_kind
 from ..graph import Graph
 from ..schema import NodeType
 
@@ -56,3 +57,20 @@ def produce(evidence: Evidence, *, producers: tuple[Producer, ...] | None = None
 
 def analyzer_version() -> str:
     return __version__
+
+
+def guarded_scalar(field: str, scalar: Any) -> dict[str, Any]:
+    """A node value fragment carrying ``scalar``, or a record that it was withheld.
+
+    A producer reads a repository's own bytes, so any value it copies can be a
+    committed credential. A value the portability detector recognises never
+    enters the graph, in memory, in a rendered format, or on disk. What takes
+    its place names the withheld field and the kind it matched, so a reader can
+    tell a redaction from an absence without the value being echoed to do it.
+    The detection is the one in :mod:`adduce.evidence.portability`; the graph
+    withholds exactly what ``R-PORT-004`` reports and nothing else.
+    """
+    kind = secret_kind(scalar)
+    if kind is None:
+        return {field: scalar}
+    return {"redacted": field, "secret_kind": kind}

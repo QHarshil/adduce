@@ -103,7 +103,17 @@ def _parse_any(text: str, suffix: str) -> Any | None:
             return json.loads(text)
         if suffix == ".toml":
             return tomllib.loads(text)
-    except (yaml.YAMLError, json.JSONDecodeError, tomllib.TOMLDecodeError, ValueError):
+    except (
+        yaml.YAMLError,
+        json.JSONDecodeError,
+        tomllib.TOMLDecodeError,
+        ValueError,
+        MemoryError,
+        RecursionError,
+    ):
+        # A deeply nested but well-formed document exhausts the parser's stack
+        # (RecursionError) or memory (MemoryError). There is no tree to read,
+        # so the file yields no evidence.
         return None
     return None
 
@@ -130,9 +140,16 @@ def collect_config(repo: Repo) -> ConfigEvidence:
         is_deepspeed = entry.suffix == ".json" and (
             "zero_optimization" in data or ("fp16" in data and isinstance(data.get("fp16"), dict))
         )
+        try:
+            values = flatten(data)
+        except (MemoryError, RecursionError):
+            # The parser accepted the document but it nests deeper than the
+            # flattener can walk. A partial flattening would read as the file's
+            # complete set of hyperparameters, so the file is skipped entirely.
+            continue
         config = ConfigFile(
             path=rel,
-            values=flatten(data),
+            values=values,
             is_hydra=is_hydra,
             is_deepspeed=is_deepspeed,
         )

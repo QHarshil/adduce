@@ -187,7 +187,7 @@ def _allowed_git_command(
         "-c",
         "core.fsmonitor=false",
         "-c",
-        "core.quotePath=true",
+        "core.quotePath=false",
         "-C",
     ]
     if len(command) < 9 or command[1:7] != expected_prefix:
@@ -199,7 +199,10 @@ def _allowed_git_command(
         ("rev-parse", "--is-inside-work-tree"),
         ("rev-parse", "HEAD"),
         ("tag", "--points-at", "HEAD"),
-        ("ls-files",),
+        # -z, and quoting off in the prefix above: with quoting on git C-escapes
+        # any path that is not ASCII, and every consumer then compares that
+        # literal against a real path and matches nothing.
+        ("ls-files", "-z"),
         ("remote", "-v"),
         # Ingestion honours .gitignore, which takes two further read-only
         # queries: whether the scan root is itself ignored, and the set of

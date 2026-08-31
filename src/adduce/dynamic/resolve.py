@@ -24,6 +24,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
 from ..cache import Cache
+from ..text import safe_display_text
 
 if TYPE_CHECKING:
     from ..evidence.remote import RemoteRef
@@ -547,13 +548,6 @@ def display_url(url: str) -> str:
     return safe_display_text(
         urllib.parse.urlunsplit((parsed.scheme, netloc, path, query, ""))
     )
-
-
-def safe_display_text(value: str, limit: int | None = None) -> str:
-    """Remove terminal controls and normalize whitespace in untrusted diagnostics."""
-    printable = "".join(character if character.isprintable() else " " for character in value)
-    cleaned = " ".join(printable.split())
-    return cleaned[:limit] if limit is not None else cleaned
 
 
 def _cached_dict(cache: Cache, key: str) -> dict[str, object] | None:

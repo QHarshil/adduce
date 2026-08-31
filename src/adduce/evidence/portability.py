@@ -3,6 +3,10 @@
 Local absolute paths, hardcoded localhost endpoints, and committed secrets.
 Secret detection records the location and kind only — the matched value is
 never stored or echoed anywhere.
+
+:func:`secret_kinds` and :func:`secret_kind` are the one detector every other
+layer uses. A second table would drift, and a security-relevant classifier that
+disagrees with itself is worse than none.
 """
 
 from __future__ import annotations
@@ -52,6 +56,21 @@ _SECRET_PATTERNS: tuple[tuple[str, re.Pattern], ...] = (
 )
 
 
+def secret_kinds(text: str) -> tuple[str, ...]:
+    """Every well-known secret shape ``text`` matches, in table order."""
+    return tuple(kind for kind, pattern in _SECRET_PATTERNS if pattern.search(text))
+
+
+def secret_kind(value: object) -> str | None:
+    """Name the shape a single value matches, for a caller holding a value.
+
+    Rendered before matching so a secret inside a short list is caught as
+    readily as a bare string; no non-string scalar can match a pattern here.
+    """
+    kinds = secret_kinds(value if isinstance(value, str) else str(value))
+    return kinds[0] if kinds else None
+
+
 @dataclass(frozen=True)
 class PortabilityHit:
     kind: str    # abs_path | localhost | secret
@@ -88,14 +107,19 @@ class PortabilityConsumer:
     def feed(self, entry: FileEntry, text: str) -> None:
         rel = str(entry.path)
         hits = self.evidence.hits
-        for lineno, line in enumerate(text.splitlines(), start=1):
+        # split("\n"), not splitlines(): splitlines() also breaks on \f, \v,
+        # \x1c-\x1e, \x85, U+2028 and U+2029, none of which the CPython tokenizer
+        # treats as a line break. A file containing one would number these lines
+        # differently from the lines a finding is anchored to, which moves a
+        # suppression pragma onto some other finding and can put a reported line
+        # past the end of the file.
+        for lineno, line in enumerate(text.split("\n"), start=1):
             for match in _ABS_PATH_RE.finditer(line):
                 hits.append(PortabilityHit("abs_path", match.group(0), rel, lineno))
             if localhost := _LOCALHOST_RE.search(line):
                 hits.append(PortabilityHit("localhost", localhost.group(0), rel, lineno))
-            for kind, pattern in _SECRET_PATTERNS:
-                if pattern.search(line):
-                    hits.append(PortabilityHit("secret", kind, rel, lineno))
+            for kind in secret_kinds(line):
+                hits.append(PortabilityHit("secret", kind, rel, lineno))
 
 
 def collect_portability(repo: Repo) -> PortabilityEvidence:

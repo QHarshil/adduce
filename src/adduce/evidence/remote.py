@@ -189,7 +189,11 @@ def _collect_from_text(repo: Repo, evidence: RemoteEvidence) -> None:
 def _scan_text(evidence: RemoteEvidence, entry: FileEntry, text: str) -> None:
     """Scan one file's text for remote references."""
     rel = str(entry.path)
-    lines = text.splitlines()
+    # split("\n"), not splitlines(): splitlines() also breaks on \f, \v,
+    # \x1c-\x1e, \x85, U+2028 and U+2029, none of which the CPython tokenizer
+    # or a shell treats as a line break, so the number reported here would not
+    # be the line a reader counts to.
+    lines = text.split("\n")
     for lineno, line in enumerate(lines, start=1):
         url_matches = list(_URL_RE.finditer(line))
         bucket_matches = list(_BUCKET_RE.finditer(line))

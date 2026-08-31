@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import json
 
+from adduce.evidence.portability import secret_kind
 from adduce.rules.base import Status
 from adduce.rules.remote import RawUrlRule
 
@@ -271,6 +272,15 @@ def test_portability_collector(make_evidence):
     assert kinds == {"abs_path", "localhost", "secret"}
     secret = ev.portability.of_kind("secret")[0]
     assert "AKIA" not in secret.detail  # never echo the value
+
+
+def test_the_secret_detector_names_a_kind_without_echoing_the_value():
+    """The single detector every other layer reuses; a second table would drift."""
+    assert secret_kind("AKIA" + "IOSFODNN7EXAMPLE") == "AWS access key"
+    assert secret_kind(["ordinary", "hf_" + "c" * 30]) == "Hugging Face token"
+    assert secret_kind("learning rate") is None
+    assert secret_kind(0.001) is None
+    assert secret_kind(None) is None
 
 
 def test_secret_scanning_includes_documentation_and_manifest(make_evidence):

@@ -101,7 +101,12 @@ _HYPERPARAM_GROUPS: tuple[tuple[str, ...], ...] = (
     ("dropout", "dropout_rate", "drop_rate", "dropout_prob", "p_dropout"),
     ("seed", "random_seed", "random_state", "rng_seed"),
     ("hidden_size", "hidden_dim", "d_model", "hidden size", "hidden dimension", "embed_dim", "embedding_dim"),
-    ("num_layers", "n_layers", "layers", "num_hidden_layers", "depth"),
+    # "depth" alone is deliberately absent: it names the number of layers in a
+    # network and the maximum depth of a tree, and nothing in a paper phrase
+    # distinguishes them. Folding the two produced a high-severity drift FAIL
+    # asserting a contradiction that did not exist.
+    ("num_layers", "n_layers", "layers", "num_hidden_layers"),
+    ("max_depth", "max depth", "maximum depth", "tree_depth", "tree depth", "max_tree_depth"),
     ("num_heads", "n_heads", "heads", "num_attention_heads", "attention heads"),
     ("warmup_steps", "num_warmup_steps", "warmup", "warmup_ratio"),
     ("temperature", "temp", "tau"),
