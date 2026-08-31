@@ -18,7 +18,7 @@ pipx install adduce        # or: pip install adduce / uvx adduce
 adduce check .
 ```
 
-[PyPI `0.1.2`](https://pypi.org/project/adduce/0.1.2/) is the current release.
+[PyPI `0.2.0`](https://pypi.org/project/adduce/0.2.0/) is the current release.
 
 Upgrade commands per installer, and the caveat that existing installations do
 not update themselves, are in [docs/cli-reference.md](https://github.com/QHarshil/adduce/blob/main/docs/cli-reference.md#installing-and-upgrading).

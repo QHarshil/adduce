@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: QHarshil/adduce@v0.1.2
+      - uses: QHarshil/adduce@v0.2.0
         with:
           profile: neurips
           report-file: adduce-report.md   # lands in the job summary
