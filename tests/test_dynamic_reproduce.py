@@ -489,3 +489,44 @@ def test_save_report_failure_preserves_previous_report(tmp_path, monkeypatch):
 
     assert target.read_text(encoding="utf-8") == "old\n"
     assert not list(directory.glob(".reproduce-report.json.*.tmp"))
+
+
+def test_a_git_lock_file_is_not_carried_into_a_workspace(tmp_path):
+    """A lock exists only while a git process holds something open.
+
+    Git runs auto-maintenance in the background after ordinary commands, so one
+    of these can appear and vanish while the workspace is being captured. It is
+    also the one file that must not arrive in the copy: a stale lock makes git
+    in the workspace refuse to work.
+    """
+    objects = tmp_path / ".git" / "objects"
+    objects.mkdir(parents=True)
+    (objects / "maintenance.lock").write_text("", encoding="utf-8")
+    (objects / "pack").mkdir()
+
+    ignored = reproduce_module._copy_ignore(str(objects), ["maintenance.lock", "pack"])
+
+    assert ignored == {"maintenance.lock"}
+
+
+def test_a_source_that_disappears_mid_copy_does_not_abandon_the_run(tmp_path):
+    """`shutil.copytree` lists a directory and then copies it.
+
+    Anything that goes in between — a lock, an editor's temporary file, a build
+    artifact — otherwise raises at the end of the whole copy, losing the
+    reproduction over a transient that has nothing to do with the repository
+    under test.
+    """
+    destination = tmp_path / "copied.txt"
+
+    reproduce_module._copy_tolerating_disappearance(
+        str(tmp_path / "never-existed.txt"), str(destination)
+    )
+
+    assert not destination.exists()
+
+    source = tmp_path / "real.txt"
+    source.write_text("kept\n", encoding="utf-8")
+    reproduce_module._copy_tolerating_disappearance(str(source), str(destination))
+
+    assert destination.read_text(encoding="utf-8") == "kept\n"

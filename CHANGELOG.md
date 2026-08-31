@@ -212,7 +212,7 @@ the preregistered validation report belong to the following release.
   true floor and nothing caught it, because every environment that ever ran
   installed a much newer typer. Measured on Python 3.10 with every other dependency
   at its declared floor: **typer 0.12.0 fails 109 tests**, 0.15.4 fails 2, and
-  0.16.0 passes the suite at 1,368 passed. Two separate causes — typer could not
+  0.16.0 passes the suite at 1,370 passed. Two separate causes — typer could not
   translate a `str | None` annotation before 0.13, and through 0.15.3 it called
   click's `make_metavar()` with an arity current click rejects. This raises a
   declared minimum to a true one; it does not change what a normal install
