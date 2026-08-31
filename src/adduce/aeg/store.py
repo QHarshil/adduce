@@ -78,31 +78,47 @@ def write_graph(graph: Graph, root: Path) -> Path:
     """Write ``graph`` under ``root``, returning its directory.
 
     A graph already present at its content-addressed path is left untouched:
-    the bytes it would be given are the bytes it already holds.
+    the bytes it would be given are the bytes it already holds. That holds only
+    when all three files are there. The header alone used to stand in for the
+    set, so a store missing or holding a damaged ``nodes.jsonl`` was reported as
+    written and left exactly as it was — and re-running the command, which is
+    the obvious repair, repaired nothing. Every file is checked, and a partial
+    store is completed rather than declared finished.
     """
     directory = graph_directory(root, graph.content_id)
     ensure_safe_directory_tree(directory, label="evidence graph directory")
     header = directory / HEADER_NAME
-    if regular_file_exists(header, label="evidence graph header"):
+    present = {
+        name: regular_file_exists(directory / name, label=label)
+        for name, label in (
+            (HEADER_NAME, "evidence graph header"),
+            (NODES_NAME, "evidence graph nodes"),
+            (EDGES_NAME, "evidence graph edges"),
+        )
+    }
+    if all(present.values()):
         return directory
-    create_text_exclusive(
-        directory / NODES_NAME,
-        render_nodes(graph),
-        label="evidence graph nodes",
-        exact_mode=_FILE_MODE,
-    )
-    create_text_exclusive(
-        directory / EDGES_NAME,
-        render_edges(graph),
-        label="evidence graph edges",
-        exact_mode=_FILE_MODE,
-    )
-    create_text_exclusive(
-        header,
-        render_header(graph),
-        label="evidence graph header",
-        exact_mode=_FILE_MODE,
-    )
+    # Content-addressed: a file that is here already holds the bytes this graph
+    # would write, so only the missing ones are created. `create_text_exclusive`
+    # keeps that honest — it refuses a destination that appeared in between.
+    for name, label, render in (
+        (NODES_NAME, "evidence graph nodes", render_nodes),
+        (EDGES_NAME, "evidence graph edges", render_edges),
+    ):
+        if not present[name]:
+            create_text_exclusive(
+                directory / name,
+                render(graph),
+                label=label,
+                exact_mode=_FILE_MODE,
+            )
+    if not present[HEADER_NAME]:
+        create_text_exclusive(
+            header,
+            render_header(graph),
+            label="evidence graph header",
+            exact_mode=_FILE_MODE,
+        )
     return directory
 
 
