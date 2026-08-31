@@ -564,6 +564,128 @@ satisfied until the `r6` lock is generated, tracked, and clean. This amendment
 was prepared from file digests, the recorded Git history of the files it names,
 and the retained protocol text alone; no retained `r2` evaluation informed it.
 
+### Protocol amendment 8: retirement of r6 and an unlocked development interval
+
+Amended: 2026-08-28 (pre-registered before execution)
+
+The `r6` preregistration is void and is not replaced in kind. Amendments 5, 6
+and 7 each answered a byte change by re-locking: a new dated amendment, a new
+candidate-pair name, a new machine-readable lock. That is the correct answer
+when the analyzer is settled and the change is an exception. It is the wrong
+answer now, because the analyzer is being rebuilt on purpose and the exceptions
+have become the rule.
+
+The cost is visible in this protocol's own records. The void record began by
+naming two changed analysis-plan files, grew to three, then five, and now names
+six. Every
+correction to a hashed file — including two corpus documents whose text was
+simply wrong — has had to be enumerated against a lock that governs nothing.
+Enumerating every edit against a dead lock recreates preregistration while
+claiming none exists: the bookkeeping of a lock without the guarantee.
+
+This amendment opens an **unlocked development interval**, and distinguishes
+what the interval frees from what it does not. The distinction is not locked
+versus unlocked. It is **experimental data versus analysis machinery**.
+
+#### Frozen for the duration of the interval
+
+These are the study's material. Changing them after development results have
+been seen changes the experimental question retroactively, which is the precise
+harm preregistration exists to prevent. A change to any of them requires a
+further dated amendment **before** it is made.
+
+- the repository inventory and its exact pinned revisions (`corpus/repos.csv`,
+  the clone manifest, and the clone snapshot set)
+- the badged-provenance identities
+- the frozen claim ground truth `9a26d06c…`
+- any completed human decision, and the bytes its validity depends on
+
+The last clause is conditional and currently vacuous: no reviewer decision
+exists for any candidate pair, and the r4, r5 and r6 review files are empty
+scaffolds. It becomes operative the moment a decision is collected, and at that
+point the claim-review schema and anything else that decision was made against
+join the frozen set automatically, without a further amendment.
+
+#### Free for the duration of the interval
+
+These are how the study is conducted, not what it is about. They may change
+without record, without enumeration, and without amendment.
+
+- the analyzer source tree and rule implementations
+- the built-in rule-ID inventory, including adding, removing or splitting rules
+- the preregistration and report schemas
+- the run harness, the analysis scripts, and the analysis-plan documentation
+- the 300-second per-repository timeout, which amendment 7 carried as a frozen
+  parameter and which becomes free here because no figure it could shift is
+  reportable while the interval is open; `r7` locks it again
+
+Freezing these would buy little against researcher degrees of freedom while
+creating protocol bureaucracy. If the effectiveness work shows a rule must
+split, a weak rule must go, or a schema needs one more field, that is the
+interval working as intended.
+
+#### Frozen truth may be checked, not tuned against
+
+For the duration of the interval, the frozen claim ground truth may be used to
+verify integrity — that its digest still matches, that the corpus still loads,
+that a run still completes — and for nothing else.
+
+It **must not** be used to tune analyzer behaviour. Running the fifteen
+repositories for crashes, determinism, output-contract conformance and
+detector-regression comparison is permitted and expected. Repeatedly consulting
+the human answers and adjusting until those specific answers improve is not. A
+frozen test set whose bytes never move is still converted into a development set
+by being optimised against, and the resulting effectiveness figure would be
+measured on data the analyzer had been fitted to.
+
+#### Reporting restrictions, unchanged
+
+No effectiveness, calibration, false-positive, score-separation,
+badge-prediction or calibrated-tier figure may be stated, published, or carried
+into a release note while the interval is open. No candidate-pair name is
+reserved or consumed. `r7` is not pre-registered by this amendment.
+
+#### What replaces the lock
+
+Not prose. Executable assertions:
+
+1. the repository inventory digest is unchanged (`corpus/repos.csv`)
+2. the badged-provenance digest is unchanged
+3. the frozen claim ground truth digest is `9a26d06c…`
+4. effectiveness execution fails closed while no live lock exists
+
+Assertions 1, 2 and 4 run in any checkout and fail the build. The clone
+manifest, the clone snapshot set and the claim ground truth are gitignored study
+data that a fresh checkout does not contain: they are verified wherever the
+local corpus is present, and their frozen digests are pinned additionally
+against the retired `r6` record, which is tracked.
+
+The `_R6_VOID` record, and the two functions that maintain it, are deleted. The
+assertions that pinned the analyzer digest, the analysis-plan file set, the
+preregistration schema, the built-in rule-ID digest, the claim-review schema,
+the candidate-pair names, the protocol ID, the analyzer version, the timeout and
+the cohort counts are deleted with it.
+
+Three of those deletions are enforcement, not bookkeeping, and must return when
+`r7` is registered: the pins on `protocol_id`, `adduce.version` and
+`candidate_pair` are what would catch a lock regenerated in place, which
+amendment 6 forbids as a standing rule. They are safe to delete only while no
+lock exists — there is nothing to regenerate. The amendment registering `r7`
+restores them against the new lock, and is not complete without them.
+
+#### Expiry
+
+The interval ends when the 0.3 analyzer and the analysis plan are frozen. A
+further dated amendment then registers `r7` against the finished analyzer, under
+the standing rule of amendment 6: a new dated amendment and a new candidate-pair
+name, always; in-place regeneration of a lock is not permitted.
+
+The fifteen pinned repositories are retained beyond `r7` as a longitudinal pilot
+benchmark. A headline effectiveness claim at 0.3 or later is expected to rest
+additionally on a fresh independent holdout prepared after the analyzer is
+frozen, so that external validity does not depend on a corpus the project has
+had continuous access to.
+
 ## Ground truth and review
 
 Before using the pilot for detector changes:

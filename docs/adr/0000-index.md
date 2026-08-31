@@ -16,3 +16,4 @@ a record describes behaviour that does not exist yet, it says so.
 | [0005](0005-shipping-capability-while-validation-continues.md) | Shipping capability while empirical validation continues | Accepted |
 | [0006](0006-aeg-remains-diagnostic.md) | The evidence graph remains a diagnostic subsystem | Accepted |
 | [0007](0007-collection-is-partly-single-pass.md) | Collection is partly single-pass | Accepted |
+| [0008](0008-deployment-topology.md) | Deployment topology | Accepted |

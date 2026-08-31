@@ -5,10 +5,16 @@ from __future__ import annotations
 import csv
 import hashlib
 import json
+import os
+import shutil
 import subprocess
 import sys
+from collections.abc import Callable
+from fnmatch import fnmatch
 from pathlib import Path
+from typing import NamedTuple
 
+import corpus.scripts.run_contract as run_contract
 import corpus.scripts.run_validation as run_validation
 import pytest
 from corpus.scripts.claim_ground_truth import TARGETS
@@ -33,6 +39,7 @@ from corpus.scripts.run_contract import (
     finalize_run,
     finding_fingerprint,
     load_json_object_bytes,
+    reject_synthetic_protocol_in_recorded_outputs,
     sha256_file,
     validate_badged_provenance_bytes,
     validate_raw_payload,
@@ -1488,6 +1495,39 @@ def test_output_containment_rejects_descendants_of_immutable_inputs(tmp_path: Pa
         ensure_output_outside(immutable / "report.json", [immutable])
 
 
+def test_a_synthetic_protocol_cannot_govern_a_run_under_corpus_outputs(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(run_contract, "_CORPUS_DIR", tmp_path)
+    outputs = tmp_path / "outputs"
+    outputs.mkdir()
+
+    for run_dir in (outputs / "candidate-a", outputs / "x" / "y"):
+        with pytest.raises(RunContractError, match="is a fixture and cannot govern a run"):
+            reject_synthetic_protocol_in_recorded_outputs("synthetic-fixture-r3", run_dir)
+
+
+def test_a_synthetic_protocol_governs_a_run_outside_corpus_outputs(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(run_contract, "_CORPUS_DIR", tmp_path)
+    (tmp_path / "outputs").mkdir()
+
+    reject_synthetic_protocol_in_recorded_outputs("synthetic-fixture-r3", tmp_path / "elsewhere")
+
+
+def test_only_the_reserved_prefix_is_refused_under_corpus_outputs(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(run_contract, "_CORPUS_DIR", tmp_path)
+    outputs = tmp_path / "outputs"
+    outputs.mkdir()
+    run_dir = outputs / "candidate-a"
+
+    for protocol_id in ("pilot-0.1.2-r6", "synthetic", "not-synthetic-at-all", None, 123):
+        reject_synthetic_protocol_in_recorded_outputs(protocol_id, run_dir)
+
+
 def test_metadata_types_and_timestamps_are_strict(tmp_path: Path) -> None:
     run = tmp_path / "run"
     _write_minimal_valid_run(run)
@@ -1859,38 +1899,29 @@ def test_summary_excludes_an_unassessed_category_from_its_per_category_gaps(
     assert "result_reconciliation" not in text
 
 
-def test_effectiveness_runner_requires_claim_review_before_creating_output(
+class _EffectivenessFixture(NamedTuple):
+    run: Path
+    repos: Path
+    clones: Path
+    claims: Path
+    review: Path
+    sources: list[Path]
+    preregistration: Path
+    clean_identity: Callable[[], dict[str, object]]
+
+
+def _synthetic_effectiveness_fixture(
     tmp_path: Path,
-) -> None:
-    run = tmp_path / "candidate-a"
-    completed = subprocess.run(
-        [
-            sys.executable,
-            str(RUNNER),
-            "--claims",
-            str(tmp_path / "claims.json"),
-            "--out",
-            str(run),
-        ],
-        cwd=ROOT,
-        capture_output=True,
-        text=True,
-    )
-
-    assert completed.returncode != 0
-    assert "effectiveness run requires --claim-review" in completed.stderr
-    assert not run.exists()
-
-
-def test_effectiveness_runner_binds_accepted_review_before_scanning(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+    monkeypatch: pytest.MonkeyPatch,
+    run_name: str = "candidate-a",
+) -> _EffectivenessFixture:
+    """Bind a fixture lock to a clone set the effectiveness path can be driven over."""
     clones = tmp_path / "clones"
     commit = _make_git_repo(clones / "fixture")
     repos = tmp_path / "repos.csv"
     _write_repos(repos, commit)
     _write_clone_manifest(clones, repos, commit)
-    run = tmp_path / "candidate-a"
+    run = tmp_path / run_name
     claims = tmp_path / "claims.json"
     review = tmp_path / "claim-review.json"
     source_paths = _write_accepted_claim_review(
@@ -1920,7 +1951,7 @@ def test_effectiveness_runner_binds_accepted_review_before_scanning(
     )
     preregistration = tmp_path / "pilot-r4-preregistration.json"
     preregistration_payload = build_preregistration(
-        protocol_id="fixture-r3",
+        protocol_id="synthetic-fixture-r3",
         candidate_pair=[run.name, "candidate-b"],
         schema_data=harness_files["preregistration.schema.json"],
         repos_data=repos.read_bytes(),
@@ -1933,32 +1964,139 @@ def test_effectiveness_runner_binds_accepted_review_before_scanning(
         timeout_seconds=30,
     )
     write_json(preregistration, preregistration_payload)
-    monkeypatch.setattr(run_validation, "PREREGISTRATION_PATH", preregistration)
-    monkeypatch.setattr(
-        sys,
-        "argv",
+    monkeypatch.setenv(run_validation.LIVE_PREREGISTRATION_ENV, str(preregistration))
+    return _EffectivenessFixture(
+        run=run,
+        repos=repos,
+        clones=clones,
+        claims=claims,
+        review=review,
+        sources=source_paths,
+        preregistration=preregistration,
+        clean_identity=clean_committed_identity,
+    )
+
+
+def _effectiveness_argv(fixture: _EffectivenessFixture, run: Path) -> list[str]:
+    return [
+        str(RUNNER),
+        "--repos",
+        str(fixture.repos),
+        "--clones",
+        str(fixture.clones),
+        "--badged-provenance",
+        str(fixture.repos.parent / "badged-provenance.csv"),
+        "--claims",
+        str(fixture.claims),
+        "--claim-review",
+        str(fixture.review),
+        "--claim-review-source",
+        str(fixture.sources[0]),
+        "--claim-review-source",
+        str(fixture.sources[1]),
+        "--out",
+        str(run),
+        "--timeout",
+        "30",
+    ]
+
+
+def test_effectiveness_runner_requires_claim_review_before_creating_output(
+    tmp_path: Path,
+) -> None:
+    run = tmp_path / "candidate-a"
+    completed = subprocess.run(
         [
+            sys.executable,
             str(RUNNER),
-            "--repos",
-            str(repos),
-            "--clones",
-            str(clones),
-            "--badged-provenance",
-            str(repos.parent / "badged-provenance.csv"),
             "--claims",
-            str(claims),
-            "--claim-review",
-            str(review),
-            "--claim-review-source",
-            str(source_paths[0]),
-            "--claim-review-source",
-            str(source_paths[1]),
+            str(tmp_path / "claims.json"),
             "--out",
             str(run),
-            "--timeout",
-            "30",
         ],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
     )
+
+    assert completed.returncode != 0
+    assert "effectiveness run requires --claim-review" in completed.stderr
+    assert not run.exists()
+
+
+def test_effectiveness_refuses_without_a_live_preregistration_lock(tmp_path: Path) -> None:
+    run = tmp_path / "candidate-a"
+    environment = {
+        key: value
+        for key, value in os.environ.items()
+        if key != run_validation.LIVE_PREREGISTRATION_ENV
+    }
+    completed = subprocess.run(
+        [
+            sys.executable,
+            str(RUNNER),
+            "--claims",
+            str(tmp_path / "claims.json"),
+            "--claim-review",
+            str(tmp_path / "claim-review.json"),
+            "--claim-review-source",
+            str(tmp_path / "reviewer-a.json"),
+            "--claim-review-source",
+            str(tmp_path / "reviewer-b.json"),
+            "--out",
+            str(run),
+        ],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        env=environment,
+    )
+
+    assert completed.returncode != 0
+    assert "live preregistration lock" in completed.stderr
+    assert not run.exists()
+
+
+def test_a_retired_lock_on_disk_is_not_the_live_lock(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    retired = ROOT / "corpus" / "pilot-r6-preregistration.json"
+    assert retired.is_file()
+
+    monkeypatch.delenv(run_validation.LIVE_PREREGISTRATION_ENV, raising=False)
+    assert run_validation.live_preregistration_path() is None
+
+    monkeypatch.setenv(run_validation.LIVE_PREREGISTRATION_ENV, "")
+    assert run_validation.live_preregistration_path() is None
+
+    successor = tmp_path / "pilot-r7-preregistration.json"
+    monkeypatch.setenv(run_validation.LIVE_PREREGISTRATION_ENV, str(successor))
+    assert run_validation.live_preregistration_path() == successor
+
+    defaults = sorted(
+        name
+        for name, value in vars(run_validation).items()
+        if isinstance(value, Path) and fnmatch(value.name, "pilot-r*.json")
+    )
+    assert not defaults, (
+        f"{defaults} names a module-level default lock. A default lock under any "
+        "name is the regression this forbids, not just PREREGISTRATION_PATH: a "
+        "retired lock would once again bind every effectiveness run that names "
+        "no successor"
+    )
+
+
+def test_effectiveness_runner_binds_accepted_review_before_scanning(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    fixture = _synthetic_effectiveness_fixture(tmp_path, monkeypatch)
+    run = fixture.run
+    claims = fixture.claims
+    review = fixture.review
+    source_paths = fixture.sources
+    preregistration = fixture.preregistration
+    clean_committed_identity = fixture.clean_identity
+    monkeypatch.setattr(sys, "argv", _effectiveness_argv(fixture, run))
 
     def dirty_harness_identity() -> dict[str, object]:
         identity = clean_committed_identity()
@@ -2007,6 +2145,67 @@ def test_effectiveness_runner_binds_accepted_review_before_scanning(
     _rehash_completed_run(run, "inputs/preregistration.json")
     with pytest.raises(RunContractError, match="preregistration violates its contract"):
         validate_run(run)
+
+
+def test_effectiveness_refuses_a_lock_whose_bound_value_was_altered(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    fixture = _synthetic_effectiveness_fixture(tmp_path, monkeypatch)
+    locked = json.loads(fixture.preregistration.read_text(encoding="utf-8"))
+    altered = "0" * 63 + "1"
+    alterations = (
+        (("inputs", "claim_ground_truth_sha256"), "frozen inputs differ"),
+        (("adduce", "source_tree_sha256"), "analyzer identity differs"),
+        (("analysis_plan", "sha256"), "analysis plan differs"),
+    )
+
+    for attempt, ((block, field), match) in enumerate(alterations, 1):
+        payload = json.loads(json.dumps(locked))
+        assert payload[block][field] != altered
+        payload[block][field] = altered
+        write_json(fixture.preregistration, payload)
+        run = tmp_path / f"attempt-{attempt}" / fixture.run.name
+        monkeypatch.setattr(sys, "argv", _effectiveness_argv(fixture, run))
+
+        with pytest.raises(SystemExit, match=match):
+            run_validation.main()
+        assert not run.exists()
+
+
+def test_effectiveness_refuses_to_record_a_fixture_run_under_corpus_outputs(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The runner will not produce the run at all, so there is nothing to file."""
+    fixture = _synthetic_effectiveness_fixture(tmp_path, monkeypatch)
+    recorded = tmp_path / "outputs" / fixture.run.name
+    monkeypatch.setattr(run_contract, "_CORPUS_DIR", tmp_path)
+    monkeypatch.setattr(sys, "argv", _effectiveness_argv(fixture, recorded))
+
+    with pytest.raises(SystemExit, match="cannot govern a run recorded under corpus/outputs"):
+        run_validation.main()
+
+    assert not recorded.exists()
+    assert not (tmp_path / "outputs").exists()
+
+
+def test_run_contract_refuses_a_fixture_run_validated_from_corpus_outputs(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A fixture run that reached the tracked tree by other means still fails."""
+    fixture = _synthetic_effectiveness_fixture(tmp_path, monkeypatch)
+    monkeypatch.setattr(sys, "argv", _effectiveness_argv(fixture, fixture.run))
+    assert run_validation.main() == 0
+    validate_run(fixture.run)
+
+    recorded = tmp_path / "outputs" / fixture.run.name
+    shutil.copytree(fixture.run, recorded)
+    monkeypatch.setattr(run_contract, "_CORPUS_DIR", tmp_path)
+
+    with pytest.raises(RunContractError) as refusal:
+        validate_run(recorded)
+
+    assert "cannot govern a run recorded under corpus/outputs" in str(refusal.value)
+    assert "violates its contract" not in str(refusal.value)
 
 
 def test_runner_rejects_clone_changed_after_manifest(tmp_path: Path) -> None:

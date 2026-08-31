@@ -79,10 +79,12 @@ partial result is the failure mode this project exists to avoid.
 ## Node envelope
 
 The envelope is the **serialization** contract. It is not how a node is held in
-memory: materialising it per node was measured at 1,417 bytes against 211 for
-the lean in-memory form, which at the scale of a large repository's call sites
-is the difference between 522 MB and 78 MB. Nodes are held lean; the envelope
-is built at the boundary.
+memory: materialising one envelope per node costs several times what the lean
+in-memory form costs, and at the scale of a large repository's call sites that
+multiple is the difference between holding the graph and not. Nodes are held
+lean; the envelope is built at the boundary. The measurement that settled this
+was taken with an instrument that is not in the tree, so no figure is quoted
+here; see `bench/` for the instruments whose numbers are reproducible.
 
 ```json
 {
@@ -163,10 +165,11 @@ with whatever could be read.
 
 A call site is not a node. adduce indexes every call so that a rule can ask
 about any qualified name, and almost none of that index is evidence about
-anything: over the largest corpus repository, 7,657 of 386,146 call sites are
-reachable through everything the 78 rules ask for — 1.98%, and 0.34% at the
-medium stratum — while the most frequent names are `super`, `len` and
-`isinstance`.
+anything: over a large repository only a small fraction of call sites is
+reachable through everything the 78 built-in rules ask for, while the most
+frequent names are `super`, `len` and `isinstance`. The fractions that
+established this were measured with an instrument that is not in the tree, so
+they are not quoted here.
 
 So the graph carries resolved operations, and the general call index stays in
 the evidence layer where `ev.py.calls` can still answer for a name no producer

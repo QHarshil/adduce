@@ -24,6 +24,7 @@ from corpus.scripts.clone_repos import (
     clone_one,
     repository_tree_sha256,
 )
+from corpus.scripts.preregistration import clone_snapshot_set_sha256
 from corpus.scripts.run_contract import (
     BADGED_PROVENANCE_FIELDS,
     RunContractError,
@@ -48,6 +49,14 @@ ROOT = Path(__file__).resolve().parent.parent
 CHECKER = ROOT / "corpus" / "scripts" / "check_builtin.py"
 RUNNER = ROOT / "corpus" / "scripts" / "run_validation.py"
 FROZEN_CLONES_DIR = ROOT / "corpus" / "clones" / "pilot-2026-07-13"
+# Frozen by protocol amendment 8 for the duration of the unlocked development
+# interval; they move only under a further dated amendment.
+FROZEN_CLONE_MANIFEST_SHA256 = (
+    "2fcefb2503e60d4a04a0b4a343056a99ad00294ae3d5ee5c8f430d0b79435b94"
+)
+FROZEN_CLONE_SNAPSHOT_SET_SHA256 = (
+    "9a171656825240a0b8371833f69c3b25b570e9bb74c4e6bd5f5cab618de06c31"
+)
 
 
 def _git(*args: str, cwd: Path) -> str:
@@ -310,10 +319,8 @@ def test_effectiveness_runs_require_a_clean_committed_analyzer() -> None:
             require_reconstructable_analyzer(identity, "effectiveness")
 
 
-def test_corpus_git_identity_requires_every_declared_file_tracked_and_clean(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+def _committed_corpus(tmp_path: Path) -> tuple[Path, Path, Path, str]:
+    """A one-file corpus harness and one lock, both tracked and clean at HEAD."""
     repository = tmp_path / "repository"
     corpus = repository / "corpus"
     corpus.mkdir(parents=True)
@@ -325,9 +332,16 @@ def test_corpus_git_identity_requires_every_declared_file_tracked_and_clean(
     _git("config", "user.email", "corpus@example.invalid", cwd=repository)
     _git("add", ".", cwd=repository)
     _git("commit", "-qm", "freeze corpus contract", cwd=repository)
-    commit = _git("rev-parse", "HEAD", cwd=repository)
+    return repository, corpus, preregistration, _git("rev-parse", "HEAD", cwd=repository)
+
+
+def test_corpus_git_identity_requires_every_declared_file_tracked_and_clean(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    repository, corpus, preregistration, commit = _committed_corpus(tmp_path)
     monkeypatch.setattr(run_validation, "CORPUS_DIR", corpus)
-    monkeypatch.setattr(run_validation, "PREREGISTRATION_PATH", preregistration)
+    monkeypatch.setenv(run_validation.LIVE_PREREGISTRATION_ENV, str(preregistration))
     monkeypatch.setattr(run_validation, "REQUIRED_HARNESS_PATHS", ("protocol.txt",))
 
     identity = _corpus_git_identity()
@@ -367,6 +381,54 @@ def test_corpus_git_identity_requires_every_declared_file_tracked_and_clean(
         ("protocol.txt", "untracked.txt"),
     )
     assert _corpus_git_identity()["corpus_harness_git_tracked"] is False
+
+    _write(corpus / "protocol.txt", "frozen protocol\n")
+    _write(preregistration, '{"retired": true}\n')
+    monkeypatch.setattr(run_validation, "REQUIRED_HARNESS_PATHS", ("protocol.txt",))
+    monkeypatch.delenv(run_validation.LIVE_PREREGISTRATION_ENV)
+    assert _corpus_git_identity() == {
+        "corpus_harness_git_commit": commit,
+        "corpus_harness_git_dirty": False,
+        "corpus_harness_git_tracked": True,
+    }
+
+
+def test_corpus_git_identity_audits_the_live_preregistration_lock(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A resolved lock is audited with the harness, so it cannot be unregistered.
+
+    This is the only thing forcing a live lock to be tracked and clean at the
+    analyzer commit. Without it any readable path is accepted as a lock, and the
+    run records a clean harness while binding a lock registered nowhere.
+    """
+    repository, corpus, preregistration, commit = _committed_corpus(tmp_path)
+    monkeypatch.setattr(run_validation, "CORPUS_DIR", corpus)
+    monkeypatch.setattr(run_validation, "REQUIRED_HARNESS_PATHS", ("protocol.txt",))
+
+    monkeypatch.setenv(run_validation.LIVE_PREREGISTRATION_ENV, str(preregistration))
+    _write(preregistration, '{"edited": true}\n')
+    assert _corpus_git_identity() == {
+        "corpus_harness_git_commit": commit,
+        "corpus_harness_git_dirty": True,
+        "corpus_harness_git_tracked": True,
+    }
+    _git("checkout", "--", "corpus/preregistration.json", cwd=repository)
+
+    untracked = corpus / "successor.json"
+    _write(untracked, "{}\n")
+    monkeypatch.setenv(run_validation.LIVE_PREREGISTRATION_ENV, str(untracked))
+    assert _corpus_git_identity()["corpus_harness_git_tracked"] is False
+
+    outside = tmp_path / "outside-lock.json"
+    _write(outside, "{}\n")
+    monkeypatch.setenv(run_validation.LIVE_PREREGISTRATION_ENV, str(outside))
+    assert _corpus_git_identity() == {
+        "corpus_harness_git_commit": None,
+        "corpus_harness_git_dirty": None,
+        "corpus_harness_git_tracked": False,
+    }
 
 
 def test_malformed_scanner_output_is_a_contract_failure(
@@ -608,6 +670,12 @@ def test_runner_accepts_the_real_frozen_corpus_despite_its_stale_clone_tool_dige
     # coincidental one: assert it rather than assume it.
     assert declared != live_clone_tool_sha256
     assert set(loaded) == {row["id"] for row in rows}
+
+    # The gitignored half of protocol amendment 8's frozen set: verified
+    # wherever the local corpus is present, and pinned in any checkout against
+    # the retired r6 record by tests/test_corpus_methodology.py.
+    assert hashlib.sha256(manifest_data).hexdigest() == FROZEN_CLONE_MANIFEST_SHA256
+    assert clone_snapshot_set_sha256(manifest_data) == FROZEN_CLONE_SNAPSHOT_SET_SHA256
 
 
 _MISSING_CLONE_TOOL_DIGEST = object()
