@@ -552,3 +552,42 @@ def test_a_stored_graph_never_holds_a_secret(tmp_path: Path) -> None:
     assert NODES_NAME in written
     for path in directory.iterdir():
         assert A_SECRET not in path.read_text()
+
+
+def test_store_completes_a_directory_that_lost_a_file(tmp_path: Path) -> None:
+    """Re-running `--store` is the obvious repair, so it has to repair.
+
+    The header alone used to stand in for the whole set, so a store whose
+    `nodes.jsonl` had been deleted was reported as written and left broken, and
+    `read_graph` refused it from then on.
+    """
+    graph = a_graph()
+    directory = write_graph(graph, tmp_path)
+    (directory / NODES_NAME).unlink()
+
+    again = write_graph(graph, tmp_path)
+
+    assert again == directory
+    assert (directory / NODES_NAME).is_file()
+    reloaded = read_graph(directory)
+    assert reloaded is not None
+    assert reloaded.content_id == graph.content_id
+
+
+def test_store_leaves_a_damaged_file_detectable_rather_than_claiming_success(
+    tmp_path: Path,
+) -> None:
+    """A present-but-wrong file is corruption, not an incomplete write.
+
+    Content addressing means a file that is there already holds the right bytes.
+    One that does not is a damaged store, and the reader keeps refusing it
+    rather than the writer papering over it.
+    """
+    graph = a_graph()
+    directory = write_graph(graph, tmp_path)
+    (directory / NODES_NAME).write_text("GARBAGE\n", encoding="utf-8")
+
+    write_graph(graph, tmp_path)
+
+    with pytest.raises(SchemaError, match="evidence graph nodes"):
+        read_graph(directory)
