@@ -10,11 +10,16 @@ report are in the [CLI reference](cli-reference.md#scoring-profiles-suppression)
 
 **Provenance of every figure below attributed to adduce's own repository.**
 Measured 2026-08-31 against analyzer source tree
-`9490666122b9a271113b062d8f1d4f0443fe3af79cd2f9ce6eae44709af1a468`, on CPython
+`9e384ca4813e32be342ce443f4815b186b522157f5868f1a31bd7d8e234b30f7`, on CPython
 3.14.0, darwin arm64, by `adduce check . --format json` under the default
 profile, with no rule plugins installed and the repository's own ignore file
-honoured. The telemetry counters below come from the same command with
-`--timings` added, which reports them and moves no other figure on the card.
+honoured, **on a commit that carries no tag**. That last condition is part of
+the measurement, not a detail of it: `R-VER-002` asks whether a local tag points
+at `HEAD`, so the same tree scanned at a release tag returns one more `PASS` and
+one less `FAIL` than the mix below, and a score of 50.8 rather than 50.2.
+
+The telemetry counters below come from the same command with `--timings` added,
+which reports them and moves no other figure on the card.
 One block governs the page, because dating individual numbers invites a page
 whose figures were taken against different trees. The digest, not a commit
 hash, identifies what was measured: writing a commit hash into the commit that
