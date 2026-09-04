@@ -34,15 +34,22 @@ keep them true for the whole assignment.
 The coordinator hands you a self-contained directory containing this guide,
 the checklist, a packet manifest, the frozen claim file, the claim-review and
 reviewer-workspace schemas, an empty review scaffold bound to this study, and
-a verification wrapper. Check the packet before you start:
+a verification wrapper. Check the packet before you start, from inside it:
 
 ```console
-python -B corpus/scripts/reviewer_packet.py verify --packet <your-packet-dir>
+cd <your-packet-dir>
+python -B verify_packet.py
 ```
 
 Exit 0 means the packet is complete and its contents match the manifest. If it
 does not exit 0, ask the coordinator for a replacement rather than editing
 anything by hand.
+
+That wrapper reports `repository_bindings=unchecked`, and the word is load
+bearing: it confirms the packet's own files, not that the repositories you are
+about to read are the pinned ones. Checking those needs the clones, which the
+packet does not carry — so verify each `repo_commit` yourself, as below, and
+treat a mismatch as a reason to stop and ask.
 
 ## The ten claims and the pinned repositories
 
@@ -50,10 +57,21 @@ There are ten claims, one per repository, and both reviewers review all ten.
 The work is not split between you; the point of the design is two independent
 judgements on the same material.
 
-Each claim names its repository and a 40-character `repo_commit`. The pinned,
-read-only clone of that repository is at
-`corpus/clones/pilot-2026-07-13/<repo_id>`, already checked out at that
-commit. Every claim's source is that repository's `README.md` at the pinned
+Each claim names its repository and a 40-character `repo_commit`. The clones are
+**not** in your packet; the coordinator delivers them separately, by the route
+they told you, as a read-only directory per repository already checked out at
+the pinned commit. In the coordinator's own tree they live under
+`corpus/clones/<pilot-label>/<repo_id>`, which is where any path in their
+instructions refers to — your copy may sit anywhere.
+
+Before reading a repository, confirm it is the pinned state:
+
+```console
+git -C <your-clone-dir>/<repo_id> rev-parse HEAD
+```
+
+That must print the claim's `repo_commit` exactly. If it does not, stop and ask
+the coordinator; do not proceed against a different commit. Every claim's source is that repository's `README.md` at the pinned
 commit. Do not fetch, pull, or check out a different commit; the clones are
 frozen study inputs and the decision is about the pinned state. You may consult
 the upstream project for context, but the evidence you cite must be locatable
@@ -248,8 +266,18 @@ python -B corpus/scripts/claim_review_entry.py declare \
   --affirm-no-personal-conflict
 ```
 
-Record the claim-level decision with `record-claim`, and each link with
-`record-link`. Pass `--evidence` once per locator:
+Record the claim-level decision with `record-claim`, and each of the ten links
+with `record-link`. Both are required: a claim is not finishable until it has
+one claim-level decision and ten link decisions. Pass `--evidence` once per
+locator.
+
+```console
+python -B corpus/scripts/claim_review_entry.py record-claim \
+  --workspace <your-reviewer-id>.review-workspace.json --claim-id <claim-id> \
+  --decision verified \
+  --rationale "<what you checked and why the record holds>" \
+  --evidence "<path:line>"
+```
 
 ```console
 python -B corpus/scripts/claim_review_entry.py record-link \
