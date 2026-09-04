@@ -238,3 +238,38 @@ def test_the_action_reports_an_absent_score_as_empty_never_as_none(
     )
     assert completed.stdout.strip() == expected
     assert completed.stdout.strip() != "None"
+
+
+def test_the_contract_job_comment_states_the_number_of_tests_it_guards():
+    """The count in the comment has to be the count in the file.
+
+    `ADDUCE_REQUIRE_EXTERNAL_PLUGIN` turns "plugin not installed" from a skip
+    into a failure, and the comment explains what a broken install step would
+    otherwise leave green. That number was wrong twice: once in the changelog,
+    which was corrected, and once here, which was missed because the first fix
+    did not look for other copies. Pinning it means the next person who adds a
+    contract test is told to update the prose.
+    """
+    contract = ROOT / "tests" / "contract" / "test_external_plugin_contract.py"
+    workflow = ROOT / ".github" / "workflows" / "ci.yml"
+    number_words = {
+        1: "one", 2: "two", 3: "three", 4: "four", 5: "five",
+        6: "six", 7: "seven", 8: "eight", 9: "nine", 10: "ten",
+    }
+
+    defined = len(
+        [
+            line
+            for line in contract.read_text(encoding="utf-8").splitlines()
+            if line.startswith("def test_")
+        ]
+    )
+    assert defined in number_words, (
+        f"{defined} contract tests; extend number_words to keep this assertion honest"
+    )
+
+    text = workflow.read_text(encoding="utf-8")
+    assert f"the {number_words[defined]} tests that never ran" in text, (
+        f"ci.yml states a different count than the {defined} tests "
+        f"{contract.name} defines"
+    )
