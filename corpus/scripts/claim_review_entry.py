@@ -426,13 +426,23 @@ class ClaimProgress:
         return self.declared and self.claim_decision_recorded and not self.missing_targets
 
     def missing_description(self) -> str:
+        """Name what is missing and the command that supplies it.
+
+        A reviewer reads this message at the point of being blocked, so it
+        carries the subcommand rather than leaving them to find it: the
+        claim-level decision and the link decisions come from different
+        commands, and the one that is easy to miss is the claim-level one.
+        """
         parts = []
         if not self.declared:
-            parts.append("missing declarations")
+            parts.append("missing declarations (record them with `declare`)")
         if not self.claim_decision_recorded:
-            parts.append("missing claim decision")
+            parts.append("missing claim decision (record it with `record-claim`)")
         if self.missing_targets:
-            parts.append(f"missing link decisions for {', '.join(self.missing_targets)}")
+            parts.append(
+                "missing link decisions for "
+                f"{', '.join(self.missing_targets)} (record each with `record-link`)"
+            )
         return "; ".join(parts)
 
 

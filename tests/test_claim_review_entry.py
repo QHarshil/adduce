@@ -41,6 +41,13 @@ STATUS_JSON_KEYS = frozenset(
 FIRST_CLAIM = review_fixtures.synthetic_claim_id(0)
 SECOND_CLAIM = review_fixtures.synthetic_claim_id(1)
 
+_MISSING_EVERYTHING = (
+    "missing declarations (record them with `declare`); "
+    "missing claim decision (record it with `record-claim`); "
+    "missing link decisions for " + ", ".join(TARGETS)
+    + " (record each with `record-link`)"
+)
+
 
 class Bench(NamedTuple):
     root: Path
@@ -125,10 +132,8 @@ def test_init_records_no_decisions_and_no_declarations(
     main(["status", "--workspace", str(bench.workspace)])
     assert capsys.readouterr().out.splitlines() == [
         "workspace valid: claims=2 completed=0 decisions=0/22 declarations=0/2",
-        f"cannot finalize {FIRST_CLAIM}: missing declarations; missing claim decision; "
-        "missing link decisions for " + ", ".join(TARGETS),
-        f"cannot finalize {SECOND_CLAIM}: missing declarations; missing claim decision; "
-        "missing link decisions for " + ", ".join(TARGETS),
+        f"cannot finalize {FIRST_CLAIM}: {_MISSING_EVERYTHING}",
+        f"cannot finalize {SECOND_CLAIM}: {_MISSING_EVERYTHING}",
     ]
 
 
@@ -403,7 +408,8 @@ def test_status_counts_track_fill_level_and_expose_a_stable_json_key_set(
     lines = capsys.readouterr().out.splitlines()
     assert lines[0] == "workspace valid: claims=2 completed=0 decisions=8/22 declarations=1/2"
     assert lines[1] == (
-        f"cannot finalize {FIRST_CLAIM}: missing link decisions for environment, seed, commit"
+        f"cannot finalize {FIRST_CLAIM}: missing link decisions for environment, seed, "
+        "commit (record each with `record-link`)"
     )
 
     for target in ("environment", "seed", "commit"):
@@ -500,7 +506,8 @@ def test_a_partial_claim_cannot_finalize_and_the_error_names_the_missing_targets
             bench.workspace, bench.truth_path, FIRST_CLAIM, bench.clock
         )
     assert (
-        f"cannot finalize {FIRST_CLAIM}: missing link decisions for environment, seed, commit"
+        f"cannot finalize {FIRST_CLAIM}: missing link decisions for environment, seed, "
+        "commit (record each with `record-link`)"
         in str(error.value)
     )
     assert _document(bench.workspace)["claims"][0]["finalized_at"] is None
