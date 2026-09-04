@@ -253,7 +253,7 @@ jobs:
     #
     # ADDUCE_REQUIRE_EXTERNAL_PLUGIN turns "plugin not installed" from a skip
     # into a failure. Without it a broken install step would leave this job green
-    # over five tests that never ran.
+    # over the seven tests that never ran.
     #
     # Only the contract file runs. The fixture deliberately registers a reporter
     # named `json` to prove a built-in format cannot be shadowed, so every import
