@@ -1,3 +1,14 @@
+# Dependabot SECURITY updates are deliberately off; vulnerability alerts stay on.
+# Security updates scan the whole dependency graph, which here includes five
+# positive-control fixtures under corpus/synthetic/ that pin specific versions
+# so that a rule fires on them. The collector parses any file named
+# `requirements.txt`, so those fixtures cannot be renamed out of the graph, and
+# a security update against one edits a measurement input to fix a repository
+# that is not installed anywhere. Security updates also open against the default
+# branch, bypassing the target-branch below. Alerts still tell us about a real
+# advisory in the six dependencies this project actually installs, and the weekly
+# version updates below act on them.
+#
 # Dependency updates are opened here and merged by hand. Auto-merge is not
 # enabled and must not be: the validation corpus preregisters a SHA-256 over the
 # analyzer's exact dependency versions (`adduce.dependency_versions_sha256` in
