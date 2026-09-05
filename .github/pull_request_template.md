@@ -2,6 +2,8 @@
 
 <!-- Two or three sentences. Link the issue if there is one. -->
 
+- [ ] This targets `dev`. `main` is the release line and moves only at a release.
+
 ## Design constraint touched
 
 <!-- Name the numbered constraint from CONTRIBUTING.md this PR touches and say
