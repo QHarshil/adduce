@@ -85,10 +85,26 @@ fields directly. These reports are the most valuable input the project gets.
 
 ## Pull requests
 
+**Open against `dev`, not `main`.** `main` is the release line: it moves only at
+a release, and a release tag has to be an ancestor of it. Work from a named
+branch in your fork rather than its `main`, so you can keep more than one change
+in flight and rebase without rewriting your own default branch.
+
+The first time you open a pull request here, the checks will not start on their
+own. GitHub holds workflow runs from new contributors until a maintainer
+approves them, so a pull request sitting with no checks is waiting on us, not on
+you. Say so on the pull request if it has been a while.
+
 - Keep changes focused; one rule or one fix per PR.
 - The coverage, Ruff, mypy, build, and Twine checks from the development setup
   must pass.
-- New behaviour needs tests; changed behaviour needs updated tests.
+- New behaviour needs tests; changed behaviour needs updated tests. A test that
+  passes both before and after your change is not evidence: revert your source
+  edit, watch the test fail, then restore it. This matters most for a defect
+  that only appears on one platform: reproduce the condition rather than the
+  platform, so the test can run everywhere. A Windows-only path-comparison
+  defect, for instance, is reachable on any host by making the comparison
+  behave the way Windows does.
 - Complete the [pull request template](.github/pull_request_template.md).
 
 Issues use forms: [bug report](.github/ISSUE_TEMPLATE/bug_report.yml),
