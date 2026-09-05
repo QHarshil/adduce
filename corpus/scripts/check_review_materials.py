@@ -22,7 +22,7 @@ import re
 import sys
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any, cast
 
 if __package__:
@@ -500,13 +500,26 @@ def scan_packet(packet: Path) -> tuple[tuple[Finding, ...], int]:
     if packet.is_symlink() or not packet.is_dir():
         raise ReviewMaterialsError(f"packet is not a directory: {packet}")
     try:
-        entries = sorted(packet.rglob("*"))
+        # Order by the segments of the path relative to the packet root, the
+        # key the repository walk settled on.  Path comparison casefolds on
+        # Windows and does not on POSIX, so sorting Path objects made the
+        # order of the findings printed below depend on the host that scanned
+        # the packet.  Segments rather than the whole string: a separator never
+        # takes part in a segment comparison, so a name that differs only in
+        # case falls in the same place everywhere.
+        entries = sorted(
+            (
+                (PurePosixPath(entry.relative_to(packet).as_posix()), entry)
+                for entry in packet.rglob("*")
+            ),
+            key=lambda entry: entry[0].parts,
+        )
     except OSError as exc:
         raise ReviewMaterialsError(f"cannot read packet {packet}: {exc}") from exc
     findings: list[Finding] = []
     scanned = 0
-    for entry in entries:
-        relative = entry.relative_to(packet).as_posix()
+    for relative_posix, entry in entries:
+        relative = relative_posix.as_posix()
         display = entry.as_posix()
         marker = coordinator_document_marker(relative)
         if marker is not None:
