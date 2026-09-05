@@ -162,6 +162,12 @@ existing issue that you are working on it. Maintainers coordinate on the issue
 when two people are heading for the same change, so the duplicated effort costs
 a comment rather than a discarded branch.
 
+Say so on the issue and wait to be assigned before you open a pull request. An
+issue with an assignee is taken: opening a competing pull request against it
+wastes your evening and puts a maintainer in the position of choosing between
+two people who both did the work. If nobody has answered you within a few days,
+say so again on the issue rather than assuming it is free.
+
 Saying so records intent; it does not reserve the work. Release gates are
 capability-based: the gate is that the capability exists, is tested, and is
 correct, never that a particular contributor opened a pull request. Maintainers
