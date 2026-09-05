@@ -6,8 +6,9 @@ import hashlib
 import json
 import re
 import shutil
-from pathlib import Path
-from typing import Any, NamedTuple
+from collections.abc import Iterator
+from pathlib import Path, PurePosixPath, PureWindowsPath
+from typing import Any, NamedTuple, cast
 
 import pytest
 from corpus.scripts import reviewer_packet
@@ -23,6 +24,7 @@ from corpus.scripts.check_review_materials import (
     UNLISTED_MANIFEST_ROLE_RULE,
     main,
     rule_identifiers,
+    scan_packet,
     scan_text,
 )
 from corpus.scripts.run_contract import sha256_file, write_json
@@ -364,3 +366,76 @@ def test_every_reported_rule_has_a_documented_reason():
 def test_no_rule_is_scoped_to_the_coordinator_only_role():
     assert RULES
     assert all(COORDINATOR_ONLY_ROLE not in rule.roles for rule in RULES)
+
+ANSWER_MAP_NOTE = "Working note.\nClaim one resolves R U N R R N N U R R.\n"
+#: Names that separate the two candidate ordering rules. The uppercase leading
+#: name divides the POSIX and Windows flavours, which casefold differently.
+FLAVOUR_SENSITIVE_NOTES = ("NOTES.md", "notes-b.md")
+
+
+def write_flavour_sensitive_notes(packet: Path) -> None:
+    """Add scannable notes whose order differs between ordering flavours."""
+    for relative in FLAVOUR_SENSITIVE_NOTES:
+        path = packet / relative
+        path.write_text(ANSWER_MAP_NOTE, encoding="utf-8")
+
+
+def reported_order(packet: Path, scanned: Path | None = None) -> list[str]:
+    """The relative paths the packet's findings are reported in."""
+    findings, _ = scan_packet(scanned if scanned is not None else packet)
+    return [Path(found.path).relative_to(packet).as_posix() for found in findings]
+
+
+class WindowsOrderedPath:
+    """A real path that sorts the way it would on Windows, so the casefolding
+    condition can be reproduced on a POSIX CI runner. Borrowed from #49,
+    which introduced it for this same defect."""
+
+    def __init__(self, real: Path, root: Path) -> None:
+        self._real = real
+        self._root = root
+
+    def __lt__(self, other: "WindowsOrderedPath") -> bool:
+        return PureWindowsPath(self._real.relative_to(self._root)) < PureWindowsPath(
+            other._real.relative_to(other._root)
+        )
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self._real, name)
+
+    def __truediv__(self, other: str) -> Path:
+        return self._real / other
+
+    def relative_to(self, other: object) -> Path:
+        return self._real.relative_to(self._root)
+
+    def rglob(self, pattern: str) -> "Iterator[WindowsOrderedPath]":
+        for path in self._real.rglob(pattern):
+            yield WindowsOrderedPath(path, self._root)
+
+
+def test_packet_findings_are_ordered_by_posix_segments_not_by_host_flavour(tmp_path):
+    """Reproduces the Windows condition (Path comparison casefolds) on any
+    platform, so the ordering contract is exercised where CI can see it."""
+    packet = build_packet(tmp_path)
+    write_flavour_sensitive_notes(packet)
+    posix_order = sorted(FLAVOUR_SENSITIVE_NOTES, key=PurePosixPath)
+    windows_order = sorted(FLAVOUR_SENSITIVE_NOTES, key=PureWindowsPath)
+
+    # Guards the test against going vacuous: the assertions below only say
+    # something while the two flavours still order these names differently.
+    assert posix_order != windows_order
+
+    windows_host = cast(Path, WindowsOrderedPath(packet, packet))
+    assert reported_order(packet, windows_host) == posix_order
+    assert reported_order(packet) == posix_order
+
+
+def test_scan_packet_orders_by_posix_segments(tmp_path):
+    packet = build_packet(tmp_path)
+    (packet / "notes-x.md").write_text(ANSWER_MAP_NOTE, encoding="utf-8")
+    (packet / "notes" / "inner.md").parent.mkdir(parents=True)
+    (packet / "notes" / "inner.md").write_text(ANSWER_MAP_NOTE, encoding="utf-8")
+    entries = scan_packet(packet)[0]
+    relative = [entry.path for entry in entries]
+    assert relative == sorted(relative, key=lambda p: PurePosixPath(p).parts)
