@@ -20,3 +20,4 @@ a record describes behaviour that does not exist yet, it says so.
 | [0007](0007-collection-is-partly-single-pass.md) | Collection is partly single-pass | Accepted |
 | [0008](0008-deployment-topology.md) | Deployment topology | Accepted |
 | [0009](0009-developmental-measurements-while-the-corpus-is-unlocked.md) | Developmental measurements are withheld while the corpus interval is unlocked | Accepted |
+| [0010](0010-the-first-study-measures-a-development-set.md) | The first human study measures a development set | Accepted |
