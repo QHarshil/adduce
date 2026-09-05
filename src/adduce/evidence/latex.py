@@ -79,6 +79,29 @@ _MAX_CAPTION_CHARS = 300
 #: to recognise.
 _CITATION_RE = re.compile(r"~?\\[a-zA-Z]*cite[a-zA-Z*]*\s*(?:\[[^\]]*\]\s*){0,2}\{")
 
+#: Attribution written as prose rather than as a citation command. A related-work
+#: table often names its rows "ResNet-50 (He et al.)" or "(Huang et al., 2017)"
+#: with no ``\cite`` anywhere, and those rows carry someone else's numbers.
+#:
+#: This only ever demotes. A row matching here loses the certainty it would
+#: otherwise get from a metric-named header; nothing is promoted and no claim is
+#: removed, so a false match costs confidence rather than inventing or losing a
+#: measurement. That asymmetry is why a deliberately loose pattern is safe here
+#: and would not be in a detector whose positive result asserted something.
+_PROSE_ATTRIBUTION_RE = re.compile(
+    r"\bet\s+al\.?"          # "ResNet-50 (He et al.)"
+    r"|\((?:19|20)\d{2}[a-z]?\)"  # "Kim and Park (2019)", "(2019a)"
+    r"|\(\s*[A-Z][\w.'-]+[^)]*,\s*(?:19|20)\d{2}[a-z]?\s*\)",  # "(He et al., 2016)"
+)
+
+
+def _attributes_to_others(leading_cell: str) -> bool:
+    """Whether a table row's leading cell credits work that is not this artifact's."""
+    return (
+        _CITATION_RE.search(leading_cell) is not None
+        or _PROSE_ATTRIBUTION_RE.search(leading_cell) is not None
+    )
+
 _PRECISION_RE = re.compile(
     r"\b(fp16|bf16|bfloat16|float16|tf32|fp32|mixed[- ]precision|half[- ]precision|amp)\b", re.IGNORECASE
 )
@@ -307,7 +330,7 @@ def _parse_tables(text: str, file: str) -> list[TableCell]:
                 # The label only, and before the cleanup: a citation beside a
                 # number is a note on that number, while a citation in the row
                 # label names the paper the whole row came from.
-                cited.append(_CITATION_RE.search(cleaned.split("&")[0]) is not None)
+                cited.append(_attributes_to_others(cleaned.split("&")[0]))
         if len(rows) < 2:
             continue
         header = rows[0]

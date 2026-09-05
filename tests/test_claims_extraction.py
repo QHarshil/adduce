@@ -863,6 +863,34 @@ def test_a_header_that_lines_up_with_its_body_still_names_the_columns():
     ]
 
 
+def test_a_row_credited_in_prose_is_attributed_without_a_cite_command():
+    """A related-work table often credits its rows in prose and cites nothing.
+
+    `\\cite` is a convention, not a requirement. A table reading
+    "ResNet-50 (He et al.)" carries someone else's number just as plainly as one
+    using the command, and treating only the command as attribution made those
+    rows certain claims of this artifact at confidence 1.0.
+
+    This signal only demotes. A row matching here loses certainty; nothing is
+    promoted and no claim is dropped, so a loose pattern costs confidence rather
+    than inventing or losing a measurement. A row genuinely named for a year,
+    "ImageNet (2012)", is demoted too. That is the trade this asymmetry buys.
+    """
+    tex = (
+        "\\section{Related Work}\n"
+        "\\begin{tabular}{lc}\n"
+        "Method & Accuracy \\\\\n"
+        "ResNet-50 (He et al.) & 92.4 \\\\\n"
+        "Kim and Park (2019) & 90.1 \\\\\n"
+        "Ours & 93.7 \\\\\n"
+        "\\end{tabular}\n"
+    )
+
+    attributed = {c.value: c.prior_work for c in _parse_tables(tex, "main.tex")}
+
+    assert attributed == {92.4: True, 90.1: True, 93.7: False}
+
+
 def test_a_citation_beside_a_number_is_not_an_attribution_of_the_row():
     """It is a note on that number. Only the leading cell names the row's owner."""
     tex = (
