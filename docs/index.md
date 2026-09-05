@@ -14,6 +14,7 @@ online/execution layers. Start with the root
 | [Scoring](scoring.md) | Rule weights, category renormalisation, assessment coverage, tier thresholds, and the unrated floor |
 | [CLI reference](cli-reference.md) | Installing and upgrading, every command, `reproduce`/`pin-remotes`, reviewer-time estimates, scoring/profiles/suppression |
 | [Continuous integration](continuous-integration.md) | The composite GitHub Action, SARIF upload, pre-commit hook, baseline ratchet |
+| [Claim extraction](claims.md) | What a claim is, where a number may be read from, how restatements are clustered, and what is deliberately not read |
 | [Evidence graph](aeg-schema.md) | The typed evidence IR: identity, provenance, resolution methods, versioning, and `adduce graph` |
 | [Extending adduce](extending.md) | Writing a rule or reporter plugin via entry points |
 | [Plugin API](plugin-api.md) | The supported surface of the `adduce.rules` and `adduce.reporters` entry-point groups, and its stability policy |
