@@ -6,7 +6,7 @@ import hashlib
 import json
 import re
 import shutil
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any, NamedTuple
 
 import pytest
@@ -23,6 +23,7 @@ from corpus.scripts.check_review_materials import (
     UNLISTED_MANIFEST_ROLE_RULE,
     main,
     rule_identifiers,
+    scan_packet,
     scan_text,
 )
 from corpus.scripts.run_contract import sha256_file, write_json
@@ -364,3 +365,29 @@ def test_every_reported_rule_has_a_documented_reason():
 def test_no_rule_is_scoped_to_the_coordinator_only_role():
     assert RULES
     assert all(COORDINATOR_ONLY_ROLE not in rule.roles for rule in RULES)
+
+
+def test_packet_entry_order_is_host_independent(tmp_path, capsys):
+    """Case-differing names must not reorder findings between hosts (#36)."""
+    packet = build_packet(tmp_path)
+    (packet / "Zeta.md").write_text(
+        "Zeta note.\nClaim one resolves R U N R R N N U R R.\n", encoding="utf-8"
+    )
+    (packet / "zeta-b.md").write_text(
+        "Zeta-b note.\nClaim one resolves R U N R R N N U R R.\n", encoding="utf-8"
+    )
+    assert main(["check", "--packet", str(packet)]) == 1
+    reported = parse(capsys.readouterr().out)
+    paths = [Path(found.path).name for found in reported]
+    assert paths == ["Zeta.md", "zeta-b.md"]
+
+
+def test_scan_packet_orders_by_posix_segments(tmp_path):
+    packet = build_packet(tmp_path)
+    (packet / "Alpha").mkdir()
+    (packet / "alpha").mkdir()
+    (packet / "Alpha" / "x.txt").write_text("one\n", encoding="utf-8")
+    (packet / "alpha" / "y.txt").write_text("two\n", encoding="utf-8")
+    entries = scan_packet(packet)[0]
+    relative = [entry.path for entry in entries]
+    assert relative == sorted(relative, key=lambda p: PurePosixPath(p).parts)
