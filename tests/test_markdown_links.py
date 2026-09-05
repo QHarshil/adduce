@@ -293,3 +293,17 @@ def test_the_extracted_source_distribution_has_no_broken_local_links(tmp_path):
     assert (extracted / "docs" / "index.md").is_file()
     problems = check_markdown_links(extracted)
     assert problems == [], "\n".join(problems)
+
+
+def test_document_order_is_by_posix_segments(tmp_path):
+    """Diagnostics come out in document order regardless of host casefolding (#35)."""
+    root = write(
+        tmp_path,
+        {
+            "docs/Zeta.md": "[broken](./missing-target.md)\n",
+            "docs/zeta-b.md": "[broken](./missing-target.md)\n",
+        },
+    )
+    diagnostics = check_markdown_links(root)
+    reported = [d.split(":")[0] for d in diagnostics]
+    assert reported == ["docs/Zeta.md", "docs/zeta-b.md"]

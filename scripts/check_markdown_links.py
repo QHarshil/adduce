@@ -27,7 +27,7 @@ import argparse
 import re
 import sys
 from dataclasses import dataclass
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from urllib.parse import unquote, urlsplit
 
 _ROOT_DOCUMENTS = ("CHANGELOG.md", "CONTRIBUTING.md", "README.md", "SECURITY.md")
@@ -109,7 +109,12 @@ def _documents(root: Path) -> list[Path]:
                 continue
             if path.is_file():
                 found.append(path)
-    return sorted(found)
+    # Order by the segments of the path relative to the scan root, not by the
+    # Path objects themselves: Path comparison casefolds on Windows and does
+    # not on POSIX, so sorting Path objects made the documented "document and
+    # line order" depend on the host that ran the gate. Same precedent as
+    # check_review_materials.py, run_validation.py and model.py.
+    return sorted(found, key=lambda path: PurePosixPath(path.relative_to(root).as_posix()).parts)
 
 
 def _lines_outside_fences(lines: list[str]) -> list[tuple[int, str]]:

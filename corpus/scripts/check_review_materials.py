@@ -22,7 +22,7 @@ import re
 import sys
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any, cast
 
 if __package__:
@@ -500,7 +500,14 @@ def scan_packet(packet: Path) -> tuple[tuple[Finding, ...], int]:
     if packet.is_symlink() or not packet.is_dir():
         raise ReviewMaterialsError(f"packet is not a directory: {packet}")
     try:
-        entries = sorted(packet.rglob("*"))
+        # Order by the segments of the relative POSIX path, not by the Path
+        # objects themselves: Path comparison casefolds on Windows and does
+        # not on POSIX, so sorting Path objects made the printed order depend
+        # on the host. Same precedent as run_validation.py and model.py.
+        entries = sorted(
+            packet.rglob("*"),
+            key=lambda path: PurePosixPath(path.relative_to(packet).as_posix()).parts,
+        )
     except OSError as exc:
         raise ReviewMaterialsError(f"cannot read packet {packet}: {exc}") from exc
     findings: list[Finding] = []
