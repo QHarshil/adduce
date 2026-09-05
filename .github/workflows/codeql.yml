@@ -1,0 +1,42 @@
+name: codeql
+
+# Static security analysis, separate from ci.yml on purpose: its findings go to
+# code scanning rather than to a pass/fail gate, and it runs on a schedule as
+# well as on changes, because a new query can find something in code that has
+# not been touched for months.
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+  schedule:
+    - cron: "41 5 * * 2"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  analyze:
+    name: Analyze Python
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: github/codeql-action/init@486fec2a3ea2626afcd8c7e9208b4f515078dd7e # codeql-bundle-v2.26.4
+        with:
+          languages: python
+          # security-and-quality over the default: this repository's own subject
+          # matter is analysis quality, so the quality queries are worth the
+          # extra runtime.
+          queries: security-and-quality
+      - uses: github/codeql-action/analyze@486fec2a3ea2626afcd8c7e9208b4f515078dd7e # codeql-bundle-v2.26.4
+        with:
+          category: "/language:python"

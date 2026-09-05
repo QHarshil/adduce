@@ -91,6 +91,9 @@ fields directly. These reports are the most valuable input the project gets.
 - New behaviour needs tests; changed behaviour needs updated tests.
 - Complete the [pull request template](.github/pull_request_template.md).
 
+Participation here is covered by the
+[Code of Conduct](CODE_OF_CONDUCT.md).
+
 Issues use forms: [bug report](.github/ISSUE_TEMPLATE/bug_report.yml),
 [false positive](.github/ISSUE_TEMPLATE/false_positive.yml), and
 [API change](.github/ISSUE_TEMPLATE/api_change.yml) for anything touching either

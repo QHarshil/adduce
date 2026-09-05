@@ -102,6 +102,7 @@ include = [
     # CONTRIBUTING.md links to each of these. The archive is checked for broken
     # links separately from the checkout, so a contributor file that ships
     # without its targets fails the build rather than shipping dead links.
+    "CODE_OF_CONDUCT.md",
     ".github/CODEOWNERS",
     ".github/dependabot.yml",
     ".github/pull_request_template.md",
