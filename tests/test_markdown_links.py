@@ -4,10 +4,10 @@ from __future__ import annotations
 
 import re
 import tarfile
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 
 import pytest
-from scripts.check_markdown_links import MarkdownScanError, check_markdown_links, main
+from scripts.check_markdown_links import MarkdownScanError, _documents, check_markdown_links, main
 
 from adduce import __version__
 
@@ -22,6 +22,81 @@ def write(root: Path, files: dict[str, str]) -> Path:
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(content, encoding="utf-8")
     return root
+
+
+def test_documents_use_case_sensitive_segment_order_on_every_host(tmp_path):
+    expected = [
+        "README.md",
+        "corpus/Zebra.md",
+        "corpus/apple.md",
+        "docs/Zebra.md",
+        "docs/apple/child.md",
+        "docs/apple.md",
+    ]
+    # Keep both wrong orders distinguishable if these fixture names change.
+    assert sorted(expected, key=PureWindowsPath) != expected
+    assert sorted(expected) != expected
+    write(tmp_path, dict.fromkeys(reversed(expected), "# Document\n"))
+
+    class WindowsOrderedPath:
+        """Exercise Windows comparison semantics without requiring a Windows host."""
+
+        def __init__(self, path):
+            self.path = path
+
+        def __truediv__(self, name):
+            return type(self)(self.path / name)
+
+        def __lt__(self, other):
+            return PureWindowsPath(self.path) < PureWindowsPath(other.path)
+
+        def is_file(self):
+            return self.path.is_file()
+
+        def is_dir(self):
+            return self.path.is_dir()
+
+        def rglob(self, pattern):
+            return [type(self)(path) for path in reversed(list(self.path.rglob(pattern)))]
+
+        def relative_to(self, other):
+            return self.path.relative_to(other.path)
+
+    root = WindowsOrderedPath(tmp_path)
+    actual = [path.relative_to(root).as_posix() for path in _documents(root)]
+    assert actual == expected
+
+
+def test_diagnostics_follow_document_segments_then_line_order(tmp_path, capsys):
+    write(
+        tmp_path,
+        {
+            "docs/apple.md": "[last](missing-last.md)\n",
+            "docs/apple/child.md": "[nested](missing-nested.md)\n",
+            "docs/Zebra.md": "intro\n[first](missing-first.md)\n\n[second](missing-second.md)\n",
+            "README.md": "[root](missing-root.md)\n",
+        },
+    )
+    expected = [
+        "README.md:1: link target does not exist: missing-root.md",
+        "docs/Zebra.md:2: link target does not exist: missing-first.md",
+        "docs/Zebra.md:4: link target does not exist: missing-second.md",
+        "docs/apple/child.md:1: link target does not exist: missing-nested.md",
+        "docs/apple.md:1: link target does not exist: missing-last.md",
+    ]
+    assert check_markdown_links(tmp_path) == expected
+    assert main(["--root", str(tmp_path)]) == 1
+    reported = capsys.readouterr()
+    assert reported.out == ""
+    assert reported.err.splitlines() == [*expected, "5 broken markdown link(s)"]
+
+
+def test_an_empty_document_tree_passes(tmp_path, capsys):
+    assert check_markdown_links(tmp_path) == []
+    assert main(["--root", str(tmp_path)]) == 0
+    reported = capsys.readouterr()
+    assert reported.out == "every local markdown link resolves\n"
+    assert reported.err == ""
 
 
 def test_a_resolving_relative_link_passes(tmp_path):
