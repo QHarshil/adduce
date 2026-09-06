@@ -109,7 +109,7 @@ def _documents(root: Path) -> list[Path]:
                 continue
             if path.is_file():
                 found.append(path)
-    return sorted(found)
+    return sorted(found, key=lambda path: path.relative_to(root).parts)
 
 
 def _lines_outside_fences(lines: list[str]) -> list[tuple[int, str]]:
