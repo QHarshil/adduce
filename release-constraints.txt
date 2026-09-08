@@ -14,7 +14,7 @@
 # constrains only the release gate; ordinary CI keeps resolving the floors in
 # pyproject.toml, which is what surfaces a new rule or a new stub in time to fix
 # it.
-ruff==0.16.5
+ruff==0.16.6
 mypy==2.3.1
 types-PyYAML==6.0.12.20260815
 pytest==9.1.1
