@@ -3,7 +3,7 @@
   "provenance": {
     "generated_at": "2026-08-07T21:11:38+00:00",
     "adduce_version": "0.1.2",
-    "git_commit": "01bc5cf3a3aa4ea505eae64eeede8f854807e5b6",
+    "git_commit": "e410c0229757679ce2f2d9ab10696b9f843fc05b",
     "git_dirty": true,
     "python": "3.14.0",
     "platform": "darwin",
