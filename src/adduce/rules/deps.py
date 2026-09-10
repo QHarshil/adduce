@@ -164,14 +164,14 @@ class UnusedDependencyRule(Rule):
         imported_dists = {dist_for_import(root).lower() for root in ev.py.imports}
         imported_dists |= {root.lower().replace("_", "-") for root in ev.py.imports}
         notebook_dists = {dist_for_import(root).lower() for root in ev.notebooks.all_imports}
-        unused = [
-            d.name
+        unused = {
+            d.name.lower().replace("_", "-")
             for d in ev.deps.dependencies
             if d.name.lower() not in self._NEVER_FLAG
             and d.name.lower().replace("_", "-") not in imported_dists
             and d.name.lower().replace("_", "-") not in notebook_dists
             and not d.name.startswith(("git+", "http"))
-        ]
+        }
         if not unused:
             return self.finding(Status.PASS, confidence=0.6, message="Every declared dependency appears to be imported somewhere.")
         return self.finding(

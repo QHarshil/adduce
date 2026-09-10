@@ -5,9 +5,11 @@ from __future__ import annotations
 
 import json
 
+import pytest
+
 from adduce.rules.base import Status
 from adduce.rules.checkpoint import OptimizerStateRule, RngStateRule
-from adduce.rules.deps import GhostDependencyRule, NotebookOnlyImportRule
+from adduce.rules.deps import GhostDependencyRule, NotebookOnlyImportRule, UnusedDependencyRule
 from adduce.rules.drift import HyperparameterDriftRule, MissingHyperparameterRule, values_match
 from adduce.rules.notebook import ExecutionOrderRule, PipInstallCellRule
 from adduce.rules.portability import AbsolutePathRule, SecretsRule
@@ -304,6 +306,74 @@ def test_ghost_dependency_respects_naming_map(make_evidence):
         }
     )
     assert GhostDependencyRule().evaluate(ev).status is Status.PASS
+
+
+@pytest.mark.parametrize(
+    ("requirements", "project_dependencies", "expected"),
+    [
+        ("requests==2.31.0\n", ["requests==2.31.0"], ["requests"]),
+        ("scikit_learn==1.4.0\n", ["Scikit-Learn==1.4.0"], ["scikit-learn"]),
+        ("zebra\nrequests\n", ["requests", "attrs"], ["attrs", "requests", "zebra"]),
+        (
+            "pkg-i\npkg-h\npkg-g\npkg-f\npkg-e\npkg-d\npkg-c\npkg-b\npkg-a\n",
+            ["pkg-a"],
+            [f"pkg-{letter}" for letter in "abcdefghi"],
+        ),
+    ],
+    ids=["two-manifests", "normalized-names", "distinct-sorted", "listing-limit"],
+)
+def test_unused_dependencies_count_distinct_distributions(
+    make_evidence, requirements, project_dependencies, expected
+):
+    ev = make_evidence(
+        {
+            "requirements.txt": requirements,
+            "pyproject.toml": f"[project]\ndependencies = {json.dumps(project_dependencies)}\n",
+            "main.py": "pass\n",
+        }
+    )
+    assert len(ev.deps.dependencies) > len(expected)
+
+    finding = UnusedDependencyRule().evaluate(ev)
+
+    assert finding.status is Status.PARTIAL
+    assert finding.confidence == 0.4
+    assert finding.weight == 1
+    assert finding.message == (
+        f"{len(expected)} declared dependenc(ies) never appear as imports: "
+        + ", ".join(expected[:8])
+        + " (heuristic; plugins and CLI tools are used without imports)."
+    )
+
+
+@pytest.mark.parametrize(
+    ("requirements", "status", "confidence"),
+    [
+        ("", Status.NOT_APPLICABLE, 0.7),
+        (
+            "numpy\nnumpy\nseaborn\nseaborn\npytest\npytest\n"
+            "git+https://example.com/lib.git\nhttps://example.com/lib.whl\n",
+            Status.PASS,
+            0.6,
+        ),
+    ],
+    ids=["empty", "filtered"],
+)
+def test_unused_dependencies_preserve_empty_and_filtered_results(
+    make_evidence, requirements, status, confidence
+):
+    ev = make_evidence(
+        {
+            "requirements.txt": requirements,
+            "main.py": "import numpy\n",
+            "analysis.ipynb": json.dumps(
+                {"cells": [{"cell_type": "code", "source": ["import seaborn\n"]}]}
+            ),
+        }
+    )
+    finding = UnusedDependencyRule().evaluate(ev)
+    assert finding.status is status
+    assert finding.confidence == confidence
 
 
 def test_notebook_only_import_rule(make_evidence):
