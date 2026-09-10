@@ -653,7 +653,7 @@ def test_runner_rechecks_origin_and_acquisition_digest(tmp_path: Path) -> None:
     reason="local-only frozen corpus acquisition is not present in this checkout",
 )
 def test_runner_accepts_the_real_frozen_corpus_despite_its_stale_clone_tool_digest() -> None:
-    """The 2026-07-13 acquisition predates 8799e09's clone_repos.py fix; must not refuse.
+    """The 2026-07-13 acquisition predates 4fc0459's clone_repos.py fix; must not refuse.
 
     A later patch to the clone harness cannot retroactively alter bytes an
     earlier version already acquired, so a disagreement here is evidence
