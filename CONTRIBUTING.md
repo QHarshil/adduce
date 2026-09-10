@@ -116,6 +116,21 @@ Issues use forms: [bug report](.github/ISSUE_TEMPLATE/bug_report.yml),
 entry-point group or an output contract. Reviewers per area are listed in
 [`.github/CODEOWNERS`](.github/CODEOWNERS).
 
+## Commit messages
+
+Subject: imperative, 72 characters or fewer, no `type:` prefix. `Count distinct
+unused dependencies` reads the way this log reads; `fix: dedupe deps` does not.
+
+Body: optional, and worth writing only when the subject cannot carry the
+reason. One short paragraph, saying what was wrong and what changed.
+
+Longer material has better homes. Reasoning and measurements belong in the pull
+request, decisions in an ADR, behaviour in `docs/`, and the issue reference on
+its own line as `Fixes #NN`. A commit body that runs to several paragraphs is
+usually a pull request description in the wrong file.
+
+Maintainers hold to this. No pull request is blocked over it.
+
 ## Dependency updates
 
 Dependency updates arrive as Dependabot pull requests
