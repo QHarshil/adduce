@@ -4,6 +4,9 @@ precision, results, run history, portability."""
 from __future__ import annotations
 
 import json
+from pathlib import Path
+
+import pytest
 
 from adduce.evidence.portability import secret_kind
 from adduce.rules.base import Status
@@ -308,3 +311,86 @@ def test_plural_keyword_is_a_count_not_a_value(make_evidence):
     # "3 seeds" is a count and must not be extracted; "seed 42" is a value.
     assert all(v.value != 3 for v in seeds)
     assert any(v.value == 42 for v in seeds)
+
+
+@pytest.mark.parametrize(
+    ("prose", "expected"),
+    [
+        # A learning rate scaled by the batch: the number after the keyword is
+        # the fraction's denominator, and the paper states its batch size
+        # elsewhere.
+        (r"multiply the learning rate by $\frac{\mbox{batch size}}{256}$", None),
+        (r"$\frac{\mathrm{lr}}{\mathrm{batchsize}}{512}$", None),
+        # A revision macro, where the keyword ends the old text and the number
+        # opens the new. A newline between the braces is still one command's
+        # two arguments.
+        (r"\oldnew{two 3-layers}{a 3-layer} perceptron", None),
+        # A closing brace alone is not a boundary: these are real statements.
+        (r"\textbf{batch size:} 512", 512.0),
+        (r"\textbf{Batch size}: 16", 16.0),
+        # And neither is a brace closing with anything at all between it and
+        # the next opening. This is why the rule is adjacency and not "a group
+        # closed somewhere": a table header closing and an italic cell opening
+        # is not one command's two arguments, and 28.6 is a real BLEU.
+        (r"BLEU} & {\it 28.6}", 28.6),
+        # A boundary *after* the number is not a boundary before it. This is
+        # the shape that separates examining the gap from examining the whole
+        # window: a paper states its batch size in one clause and the scaling
+        # fraction in the next, so a window-wide search would refuse the real
+        # value because of a fraction it has already passed.
+        (r"\textbf{Batch size}: 16, then scale by $\frac{lr}{512}$", 16.0),
+    ],
+)
+def test_a_number_in_a_sibling_group_is_not_the_keywords_value(prose, expected, make_evidence):
+    r"""A keyword ending one argument and a number opening the next is not a statement.
+
+    The distinction is a group closing *and another opening*, not a brace.
+    Reading the divisor of a scaling rule reported a batch size the paper does
+    not state, which is a wrong number rather than a missing one, and it
+    reaches an R-DRIFT-001 verdict.
+    """
+    names = {"batch_size", "num_layers", "bleu"}
+    latex = make_evidence({"paper/main.tex": prose}).latex
+    read = [v.value for v in (*latex.hyperparameters, *latex.metrics) if v.name in names]
+    assert read == ([] if expected is None else [expected])
+
+
+def test_the_group_boundary_fixture_agrees_with_its_own_config():
+    """The synthetic case reads one batch size, and it is the one both sides state."""
+    from adduce.evidence.latex import _HYPERPARAM_PATTERNS, _extract_keyword_values
+
+    case = Path(__file__).resolve().parent.parent / "corpus" / "synthetic"
+    text = (case / "synthetic_group_boundary_value" / "paper" / "main.tex").read_text(
+        encoding="utf-8"
+    )
+    values = _extract_keyword_values(text, "main.tex", _HYPERPARAM_PATTERNS, "hyperparameter")
+    assert [v.value for v in values if v.name == "batch_size"] == [4096.0]
+
+
+@pytest.mark.parametrize(
+    ("literal", "expected"),
+    [
+        # The trailing zero a float cannot remember, which is the whole point.
+        ("0.30", 2),
+        ("0.3", 1),
+        ("28", 0),
+        ("28.000", 3),
+        # Scientific notation prints no fractional digits and yet states a
+        # precision its decimal expansion is what expresses, so counting its
+        # printed digits would claim a tolerance orders of magnitude too wide.
+        ("1e-4", None),
+        (r"10^{-3}", None),
+        ("", None),
+    ],
+)
+def test_printed_decimals_counts_what_the_paper_printed(literal, expected):
+    from adduce.evidence.latex import _printed_decimals
+
+    assert _printed_decimals(literal) == expected
+
+
+def test_a_paper_value_records_the_precision_it_was_printed_at(make_evidence):
+    """``decimals`` comes from the source text, because the float cannot carry it."""
+    ev = make_evidence({"paper/main.tex": "We use a learning rate of 0.30 in every run.\n"})
+    rates = ev.latex.hyperparameter_values()["learning_rate"]
+    assert [(v.value, v.decimals) for v in rates] == [(0.3, 2)]

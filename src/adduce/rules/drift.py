@@ -23,15 +23,34 @@ from ..naming import canonical_hyperparameter
 from .base import Category, Finding, Location, Rule, Status
 
 
-def values_match(paper: float, code: float) -> bool:
-    """Rounding-aware comparison: the paper value is allowed to be a rounded
-    representation of the code value."""
+def values_match(paper: float, code: float, *, decimals: int | None = None) -> bool:
+    """Rounding-aware comparison: the paper value may be a rounded code value.
+
+    The tolerance is half of the last place the paper printed, so how many
+    places that was decides the answer. Pass *decimals* when the parse recorded
+    it: a paper printing ``0.30`` has said the value is 0.3 to a hundredth, and
+    code using 0.34 disagrees with it, while a paper printing ``0.3`` is agreed
+    with by anything from 0.25 to 0.35.
+
+    **Inferring it from the float instead is wrong in one direction and the
+    defect shipped.** ``f"{0.30:.10f}".rstrip("0")`` is ``"0.3"``, so a printed
+    ``0.30`` was read as one decimal and given ten times the tolerance the
+    paper stated — ``values_match(0.30, 0.34)`` was ``True``, and the drift
+    rule reported agreement between a paper and code that disagree. A trailing
+    zero is exactly the digit a float cannot remember, so it has to come from
+    the source text; see :func:`~adduce.evidence.latex._printed_decimals`.
+
+    *decimals* stays optional because the inference is right whenever the paper
+    printed no trailing zero, and several callers compare two values neither of
+    which came from a parse that recorded one.
+    """
     if paper == code:
         return True
     if code != 0 and abs(paper - code) / abs(code) < 1e-6:
         return True
-    text = f"{paper:.10f}".rstrip("0")
-    decimals = len(text.split(".")[1]) if "." in text and text.split(".")[1] else 0
+    if decimals is None:
+        text = f"{paper:.10f}".rstrip("0")
+        decimals = len(text.split(".")[1]) if "." in text and text.split(".")[1] else 0
     return abs(code - paper) <= 0.5 * 10.0 ** (-decimals) + 1e-12
 
 
@@ -122,7 +141,10 @@ class HyperparameterDriftRule(Rule):
             highest_ranked = [c for c in candidates if c.authority == top_authority]
             for statement in statements:
                 checked += 1
-                if not any(values_match(statement.value, c.value) for c in highest_ranked):
+                if not any(
+                    values_match(statement.value, c.value, decimals=statement.decimals)
+                    for c in highest_ranked
+                ):
                     drifted.append((name, statement.value, highest_ranked[0]))
         if checked == 0:
             return self.finding(
