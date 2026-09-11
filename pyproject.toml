@@ -140,6 +140,10 @@ no_implicit_optional = true
 warn_return_any = true
 disallow_untyped_defs = false
 ignore_missing_imports = true
+# The dev-set pairs tree holds fetched third-party clones. It is gitignored, so
+# it is absent in CI, but mypy does not consult .gitignore and would otherwise
+# type-check somebody else's repository on any machine that has fetched one.
+exclude = "^bench/dev/pairs/"
 
 [[tool.mypy.overrides]]
 module = [

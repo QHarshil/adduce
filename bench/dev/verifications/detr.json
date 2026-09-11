@@ -1,0 +1,1411 @@
+{
+ "schema": "adduce-dev-verifications/1",
+ "pair_id": "detr",
+ "verified_from": "pdf",
+ "verifications": [
+  {
+   "extraction": {
+    "metric": "m",
+    "value": 39.6,
+    "where": "src/ablations.tex:73",
+    "text": "M 39.6"
+   },
+   "verdict": "real_own_result",
+   "notes": "The extraction's 'where' points at the dead ablations.tex file (see the sibling not_in_paper verdicts on this same table), but this specific value, AP_M=39.6, is not unique to it: Table 2 (table:enc_layers, experiments.tex:111) reports AP_M=39.6 for the '0 encoder layers' row of DETR's own model, a genuinely rendered own-ablation result. Confirmed by re-running extraction with ablations.tex deleted: this (metric, value) pair survives, sourced from table:enc_layers instead. Judged on the pair, not the location."
+  },
+  {
+   "extraction": {
+    "metric": "s",
+    "value": 13.7,
+    "where": "src/ablations.tex:73",
+    "text": "S 13.7"
+   },
+   "verdict": "real_own_result",
+   "notes": "The extraction's 'where' points at the dead ablations.tex file, but this value, AP_S=13.7, is not unique to it: the rendered loss-ablation table's own 'class+l1 only' row (experiments.tex:289) also reports AP_S=13.7 for DETR's own ablation model. Confirmed by re-running extraction with ablations.tex deleted: this (metric, value) pair survives, sourced from experiments.tex:284 instead. Judged on the pair, not the location."
+  },
+  {
+   "extraction": {
+    "metric": "l",
+    "value": 54.2,
+    "where": "src/experiments.tex:107",
+    "text": "0: L = 54.2"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 2 (table:enc_layers), '0 encoder layers' row: own ablation of DETR's own model varying encoder depth; the table has no baseline/citation row."
+  },
+  {
+   "extraction": {
+    "metric": "l",
+    "value": 58.6,
+    "where": "src/experiments.tex:107",
+    "text": "3: L = 58.6"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 2 (table:enc_layers), '3 encoder layers' row: own ablation of DETR's own model varying encoder depth; the table has no baseline/citation row."
+  },
+  {
+   "extraction": {
+    "metric": "l",
+    "value": 60.2,
+    "where": "src/experiments.tex:107",
+    "text": "6: L = 60.2"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 2 (table:enc_layers), '6 encoder layers' row: own ablation of DETR's own model varying encoder depth; the table has no baseline/citation row. (the 6-layer row is DETR's main config, restated as the reference row of the pos-encoding and loss ablation tables)"
+  },
+  {
+   "extraction": {
+    "metric": "l",
+    "value": 61.9,
+    "where": "src/experiments.tex:107",
+    "text": "12: L = 61.9"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 2 (table:enc_layers), '12 encoder layers' row: own ablation of DETR's own model varying encoder depth; the table has no baseline/citation row."
+  },
+  {
+   "extraction": {
+    "metric": "m",
+    "value": 43.8,
+    "where": "src/experiments.tex:107",
+    "text": "3: M = 43.8"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 2 (table:enc_layers), '3 encoder layers' row: own ablation of DETR's own model varying encoder depth; the table has no baseline/citation row."
+  },
+  {
+   "extraction": {
+    "metric": "m",
+    "value": 44.3,
+    "where": "src/experiments.tex:107",
+    "text": "6: M = 44.3"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 2 (table:enc_layers), '6 encoder layers' row: own ablation of DETR's own model varying encoder depth; the table has no baseline/citation row."
+  },
+  {
+   "extraction": {
+    "metric": "m",
+    "value": 44.9,
+    "where": "src/experiments.tex:107",
+    "text": "12: M = 44.9"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 2 (table:enc_layers), '12 encoder layers' row: own ablation of DETR's own model varying encoder depth; the table has no baseline/citation row."
+  },
+  {
+   "extraction": {
+    "metric": "map",
+    "value": 36.7,
+    "where": "src/experiments.tex:107",
+    "text": "0: AP = 36.7"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 2 (table:enc_layers), '0 encoder layers' row: own ablation of DETR's own model varying encoder depth; the table has no baseline/citation row."
+  },
+  {
+   "extraction": {
+    "metric": "map",
+    "value": 40.1,
+    "where": "src/experiments.tex:107",
+    "text": "3: AP = 40.1"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 2 (table:enc_layers), '3 encoder layers' row: own ablation of DETR's own model varying encoder depth; the table has no baseline/citation row."
+  },
+  {
+   "extraction": {
+    "metric": "map",
+    "value": 40.6,
+    "where": "src/experiments.tex:107",
+    "text": "6: AP = 40.6"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 2 (table:enc_layers), '6 encoder layers' row: own ablation of DETR's own model varying encoder depth; the table has no baseline/citation row. (the 6-layer row is DETR's main config, restated as the reference row of the pos-encoding and loss ablation tables)"
+  },
+  {
+   "extraction": {
+    "metric": "map",
+    "value": 41.6,
+    "where": "src/experiments.tex:107",
+    "text": "12: AP = 41.6"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 2 (table:enc_layers), '12 encoder layers' row: own ablation of DETR's own model varying encoder depth; the table has no baseline/citation row."
+  },
+  {
+   "extraction": {
+    "metric": "s",
+    "value": 16.8,
+    "where": "src/experiments.tex:107",
+    "text": "0: S = 16.8"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 2 (table:enc_layers), '0 encoder layers' row: own ablation of DETR's own model varying encoder depth; the table has no baseline/citation row."
+  },
+  {
+   "extraction": {
+    "metric": "s",
+    "value": 18.5,
+    "where": "src/experiments.tex:107",
+    "text": "3: S = 18.5"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 2 (table:enc_layers), '3 encoder layers' row: own ablation of DETR's own model varying encoder depth; the table has no baseline/citation row."
+  },
+  {
+   "extraction": {
+    "metric": "s",
+    "value": 19.8,
+    "where": "src/experiments.tex:107",
+    "text": "12: S = 19.8"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 2 (table:enc_layers), '12 encoder layers' row: own ablation of DETR's own model varying encoder depth; the table has no baseline/citation row."
+  },
+  {
+   "extraction": {
+    "metric": "s",
+    "value": 19.9,
+    "where": "src/experiments.tex:107",
+    "text": "6: S = 19.9"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 2 (table:enc_layers), '6 encoder layers' row: own ablation of DETR's own model varying encoder depth; the table has no baseline/citation row. (the 6-layer row is DETR's main config, restated as the reference row of the pos-encoding and loss ablation tables)"
+  },
+  {
+   "extraction": {
+    "metric": "l",
+    "value": 57.9,
+    "where": "src/experiments.tex:284",
+    "text": "L 57.9"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table (table:cost), 'class+l1 only / class+GIoU only (tied at 57.9)' row: own ablation of DETR's own model varying loss terms; 'baseline' in the caption is the paper's own full-loss row, not a citation."
+  },
+  {
+   "extraction": {
+    "metric": "m",
+    "value": 39.8,
+    "where": "src/experiments.tex:284",
+    "text": "M 39.8"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table (table:cost), 'class+l1 only' row: own ablation of DETR's own model varying loss terms; 'baseline' in the caption is the paper's own full-loss row, not a citation."
+  },
+  {
+   "extraction": {
+    "metric": "m",
+    "value": 43.2,
+    "where": "src/experiments.tex:284",
+    "text": "M 43.2"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table (table:cost), 'class+GIoU only' row: own ablation of DETR's own model varying loss terms; 'baseline' in the caption is the paper's own full-loss row, not a citation."
+  },
+  {
+   "extraction": {
+    "metric": "map",
+    "value": 35.8,
+    "where": "src/experiments.tex:284",
+    "text": "AP 35.8"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table (table:cost), 'class+l1 only' row: own ablation of DETR's own model varying loss terms; 'baseline' in the caption is the paper's own full-loss row, not a citation."
+  },
+  {
+   "extraction": {
+    "metric": "map",
+    "value": 39.9,
+    "where": "src/experiments.tex:284",
+    "text": "AP 39.9"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table (table:cost), 'class+GIoU only' row: own ablation of DETR's own model varying loss terms; 'baseline' in the caption is the paper's own full-loss row, not a citation."
+  },
+  {
+   "extraction": {
+    "metric": "map",
+    "value": 31.1,
+    "where": "src/experiments.tex:402",
+    "text": "DETR: AP = 31.1"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table (table:panoptic_numbers), DETR row, map column: DETR's own panoptic-segmentation result."
+  },
+  {
+   "extraction": {
+    "metric": "map",
+    "value": 31.9,
+    "where": "src/experiments.tex:402",
+    "text": "DETR-DC5: AP = 31.9"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table (table:panoptic_numbers), DETR-DC5 row, map column: DETR's own panoptic-segmentation result."
+  },
+  {
+   "extraction": {
+    "metric": "map",
+    "value": 33.0,
+    "where": "src/experiments.tex:402",
+    "text": "DETR-R101: AP = 33"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table (table:panoptic_numbers), DETR-R101 row, map column: DETR's own panoptic-segmentation result."
+  },
+  {
+   "extraction": {
+    "metric": "map",
+    "value": 34.3,
+    "where": "src/experiments.tex:402",
+    "text": "UPSnet: AP = 34.3"
+   },
+   "verdict": "baseline",
+   "notes": "Table (table:panoptic_numbers), UPSNet/UPSNet-M (tied at 34.3) row, map column: quoted comparison figure ('UPSNet uses the 1x schedule' -- no retraining by these authors is claimed)."
+  },
+  {
+   "extraction": {
+    "metric": "map",
+    "value": 37.7,
+    "where": "src/experiments.tex:402",
+    "text": "PanopticFPN++: AP = 37.7"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table (table:panoptic_numbers), PanopticFPN++ R50 row, map column: the caption states 'We retrained PanopticFPN with the same data-augmentation as DETR, on a 18x schedule for fair comparison' -- the authors' own rerun of prior work, produced by this paper."
+  },
+  {
+   "extraction": {
+    "metric": "map",
+    "value": 39.7,
+    "where": "src/experiments.tex:402",
+    "text": "PanopticFPN++: AP = 39.7"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table (table:panoptic_numbers), PanopticFPN++ R101 row, map column: the caption states 'We retrained PanopticFPN with the same data-augmentation as DETR, on a 18x schedule for fair comparison' -- the authors' own rerun of prior work, produced by this paper."
+  },
+  {
+   "extraction": {
+    "metric": "pq",
+    "value": 42.4,
+    "where": "src/experiments.tex:402",
+    "text": "PanopticFPN++: PQ = 42.4"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table (table:panoptic_numbers), PanopticFPN++ R50 row, pq column: the caption states 'We retrained PanopticFPN with the same data-augmentation as DETR, on a 18x schedule for fair comparison' -- the authors' own rerun of prior work, produced by this paper."
+  },
+  {
+   "extraction": {
+    "metric": "pq",
+    "value": 42.5,
+    "where": "src/experiments.tex:402",
+    "text": "UPSnet: PQ = 42.5"
+   },
+   "verdict": "baseline",
+   "notes": "Table (table:panoptic_numbers), UPSNet row, pq column: quoted comparison figure ('UPSNet uses the 1x schedule' -- no retraining by these authors is claimed)."
+  },
+  {
+   "extraction": {
+    "metric": "pq",
+    "value": 43.0,
+    "where": "src/experiments.tex:402",
+    "text": "UPSnet-M: PQ = 43"
+   },
+   "verdict": "baseline",
+   "notes": "Table (table:panoptic_numbers), UPSNet-M row, pq column: quoted comparison figure ('UPSNet uses the 1x schedule' -- no retraining by these authors is claimed)."
+  },
+  {
+   "extraction": {
+    "metric": "pq",
+    "value": 43.4,
+    "where": "src/experiments.tex:402",
+    "text": "DETR: PQ = 43.4"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table (table:panoptic_numbers), DETR row, pq column: DETR's own panoptic-segmentation result."
+  },
+  {
+   "extraction": {
+    "metric": "pq",
+    "value": 44.1,
+    "where": "src/experiments.tex:402",
+    "text": "PanopticFPN++: PQ = 44.1"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table (table:panoptic_numbers), PanopticFPN++ R101 row, pq column: the caption states 'We retrained PanopticFPN with the same data-augmentation as DETR, on a 18x schedule for fair comparison' -- the authors' own rerun of prior work, produced by this paper."
+  },
+  {
+   "extraction": {
+    "metric": "pq",
+    "value": 44.6,
+    "where": "src/experiments.tex:402",
+    "text": "DETR-DC5: PQ = 44.6"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table (table:panoptic_numbers), DETR-DC5 row, pq column: DETR's own panoptic-segmentation result."
+  },
+  {
+   "extraction": {
+    "metric": "pq",
+    "value": 45.1,
+    "where": "src/experiments.tex:402",
+    "text": "DETR-R101: PQ = 45.1"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table (table:panoptic_numbers), DETR-R101 row, pq column: DETR's own panoptic-segmentation result."
+  },
+  {
+   "extraction": {
+    "metric": "pq^st",
+    "value": 32.3,
+    "where": "src/experiments.tex:402",
+    "text": "PanopticFPN++: PQ^st = 32.3"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table (table:panoptic_numbers), PanopticFPN++ R50 row, pq^st column: the caption states 'We retrained PanopticFPN with the same data-augmentation as DETR, on a 18x schedule for fair comparison' -- the authors' own rerun of prior work, produced by this paper."
+  },
+  {
+   "extraction": {
+    "metric": "pq^st",
+    "value": 33.4,
+    "where": "src/experiments.tex:402",
+    "text": "UPSnet: PQ^st = 33.4"
+   },
+   "verdict": "baseline",
+   "notes": "Table (table:panoptic_numbers), UPSNet row, pq^st column: quoted comparison figure ('UPSNet uses the 1x schedule' -- no retraining by these authors is claimed)."
+  },
+  {
+   "extraction": {
+    "metric": "pq^st",
+    "value": 33.6,
+    "where": "src/experiments.tex:402",
+    "text": "PanopticFPN++: PQ^st = 33.6"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table (table:panoptic_numbers), PanopticFPN++ R101 row, pq^st column: the caption states 'We retrained PanopticFPN with the same data-augmentation as DETR, on a 18x schedule for fair comparison' -- the authors' own rerun of prior work, produced by this paper."
+  },
+  {
+   "extraction": {
+    "metric": "pq^st",
+    "value": 34.1,
+    "where": "src/experiments.tex:402",
+    "text": "UPSnet-M: PQ^st = 34.1"
+   },
+   "verdict": "baseline",
+   "notes": "Table (table:panoptic_numbers), UPSNet-M row, pq^st column: quoted comparison figure ('UPSNet uses the 1x schedule' -- no retraining by these authors is claimed)."
+  },
+  {
+   "extraction": {
+    "metric": "pq^st",
+    "value": 36.3,
+    "where": "src/experiments.tex:402",
+    "text": "DETR: PQ^st = 36.3"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table (table:panoptic_numbers), DETR row, pq^st column: DETR's own panoptic-segmentation result."
+  },
+  {
+   "extraction": {
+    "metric": "pq^st",
+    "value": 37.0,
+    "where": "src/experiments.tex:402",
+    "text": "DETR-R101: PQ^st = 37"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table (table:panoptic_numbers), DETR-R101 row, pq^st column: DETR's own panoptic-segmentation result."
+  },
+  {
+   "extraction": {
+    "metric": "pq^st",
+    "value": 37.3,
+    "where": "src/experiments.tex:402",
+    "text": "DETR-DC5: PQ^st = 37.3"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table (table:panoptic_numbers), DETR-DC5 row, pq^st column: DETR's own panoptic-segmentation result."
+  },
+  {
+   "extraction": {
+    "metric": "pq^th",
+    "value": 48.2,
+    "where": "src/experiments.tex:402",
+    "text": "DETR: PQ^th = 48.2"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table (table:panoptic_numbers), DETR row, pq^th column: DETR's own panoptic-segmentation result."
+  },
+  {
+   "extraction": {
+    "metric": "pq^th",
+    "value": 48.6,
+    "where": "src/experiments.tex:402",
+    "text": "UPSnet: PQ^th = 48.6"
+   },
+   "verdict": "baseline",
+   "notes": "Table (table:panoptic_numbers), UPSNet row, pq^th column: quoted comparison figure ('UPSNet uses the 1x schedule' -- no retraining by these authors is claimed)."
+  },
+  {
+   "extraction": {
+    "metric": "pq^th",
+    "value": 48.9,
+    "where": "src/experiments.tex:402",
+    "text": "UPSnet-M: PQ^th = 48.9"
+   },
+   "verdict": "baseline",
+   "notes": "Table (table:panoptic_numbers), UPSNet-M row, pq^th column: quoted comparison figure ('UPSNet uses the 1x schedule' -- no retraining by these authors is claimed)."
+  },
+  {
+   "extraction": {
+    "metric": "pq^th",
+    "value": 49.2,
+    "where": "src/experiments.tex:402",
+    "text": "PanopticFPN++: PQ^th = 49.2"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table (table:panoptic_numbers), PanopticFPN++ R50 row, pq^th column: the caption states 'We retrained PanopticFPN with the same data-augmentation as DETR, on a 18x schedule for fair comparison' -- the authors' own rerun of prior work, produced by this paper."
+  },
+  {
+   "extraction": {
+    "metric": "pq^th",
+    "value": 49.4,
+    "where": "src/experiments.tex:402",
+    "text": "DETR-DC5: PQ^th = 49.4"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table (table:panoptic_numbers), DETR-DC5 row, pq^th column: DETR's own panoptic-segmentation result."
+  },
+  {
+   "extraction": {
+    "metric": "pq^th",
+    "value": 50.5,
+    "where": "src/experiments.tex:402",
+    "text": "DETR-R101: PQ^th = 50.5"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table (table:panoptic_numbers), DETR-R101 row, pq^th column: DETR's own panoptic-segmentation result."
+  },
+  {
+   "extraction": {
+    "metric": "pq^th",
+    "value": 51.0,
+    "where": "src/experiments.tex:402",
+    "text": "PanopticFPN++: PQ^th = 51"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table (table:panoptic_numbers), PanopticFPN++ R101 row, pq^th column: the caption states 'We retrained PanopticFPN with the same data-augmentation as DETR, on a 18x schedule for fair comparison' -- the authors' own rerun of prior work, produced by this paper."
+  },
+  {
+   "extraction": {
+    "metric": "rq",
+    "value": 51.6,
+    "where": "src/experiments.tex:402",
+    "text": "PanopticFPN++: RQ = 51.6"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table (table:panoptic_numbers), PanopticFPN++ R50 row, rq column: the caption states 'We retrained PanopticFPN with the same data-augmentation as DETR, on a 18x schedule for fair comparison' -- the authors' own rerun of prior work, produced by this paper."
+  },
+  {
+   "extraction": {
+    "metric": "rq",
+    "value": 52.5,
+    "where": "src/experiments.tex:402",
+    "text": "UPSnet: RQ = 52.5"
+   },
+   "verdict": "baseline",
+   "notes": "Table (table:panoptic_numbers), UPSNet row, rq column: quoted comparison figure ('UPSNet uses the 1x schedule' -- no retraining by these authors is claimed)."
+  },
+  {
+   "extraction": {
+    "metric": "rq",
+    "value": 52.8,
+    "where": "src/experiments.tex:402",
+    "text": "UPSnet-M: RQ = 52.8"
+   },
+   "verdict": "baseline",
+   "notes": "Table (table:panoptic_numbers), UPSNet-M row, rq column: quoted comparison figure ('UPSNet uses the 1x schedule' -- no retraining by these authors is claimed)."
+  },
+  {
+   "extraction": {
+    "metric": "rq",
+    "value": 53.3,
+    "where": "src/experiments.tex:402",
+    "text": "PanopticFPN++: RQ = 53.3"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table (table:panoptic_numbers), PanopticFPN++ R101 row, rq column: the caption states 'We retrained PanopticFPN with the same data-augmentation as DETR, on a 18x schedule for fair comparison' -- the authors' own rerun of prior work, produced by this paper."
+  },
+  {
+   "extraction": {
+    "metric": "rq",
+    "value": 53.8,
+    "where": "src/experiments.tex:402",
+    "text": "DETR: RQ = 53.8"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table (table:panoptic_numbers), DETR row, rq column: DETR's own panoptic-segmentation result."
+  },
+  {
+   "extraction": {
+    "metric": "rq",
+    "value": 55.0,
+    "where": "src/experiments.tex:402",
+    "text": "DETR-DC5: RQ = 55"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table (table:panoptic_numbers), DETR-DC5 row, rq column: DETR's own panoptic-segmentation result."
+  },
+  {
+   "extraction": {
+    "metric": "rq",
+    "value": 55.5,
+    "where": "src/experiments.tex:402",
+    "text": "DETR-R101: RQ = 55.5"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table (table:panoptic_numbers), DETR-R101 row, rq column: DETR's own panoptic-segmentation result."
+  },
+  {
+   "extraction": {
+    "metric": "rq^st",
+    "value": 40.6,
+    "where": "src/experiments.tex:402",
+    "text": "PanopticFPN++: RQ^st = 40.6"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table (table:panoptic_numbers), PanopticFPN++ R50 row, rq^st column: the caption states 'We retrained PanopticFPN with the same data-augmentation as DETR, on a 18x schedule for fair comparison' -- the authors' own rerun of prior work, produced by this paper."
+  },
+  {
+   "extraction": {
+    "metric": "rq^st",
+    "value": 41.7,
+    "where": "src/experiments.tex:402",
+    "text": "UPSnet: RQ^st = 41.7"
+   },
+   "verdict": "baseline",
+   "notes": "Table (table:panoptic_numbers), UPSNet row, rq^st column: quoted comparison figure ('UPSNet uses the 1x schedule' -- no retraining by these authors is claimed)."
+  },
+  {
+   "extraction": {
+    "metric": "rq^st",
+    "value": 42.1,
+    "where": "src/experiments.tex:402",
+    "text": "PanopticFPN++: RQ^st = 42.1"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table (table:panoptic_numbers), PanopticFPN++ R101 row, rq^st column: the caption states 'We retrained PanopticFPN with the same data-augmentation as DETR, on a 18x schedule for fair comparison' -- the authors' own rerun of prior work, produced by this paper."
+  },
+  {
+   "extraction": {
+    "metric": "rq^st",
+    "value": 42.3,
+    "where": "src/experiments.tex:402",
+    "text": "UPSnet-M: RQ^st = 42.3"
+   },
+   "verdict": "baseline",
+   "notes": "Table (table:panoptic_numbers), UPSNet-M row, rq^st column: quoted comparison figure ('UPSNet uses the 1x schedule' -- no retraining by these authors is claimed)."
+  },
+  {
+   "extraction": {
+    "metric": "rq^st",
+    "value": 45.3,
+    "where": "src/experiments.tex:402",
+    "text": "DETR: RQ^st = 45.3"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table (table:panoptic_numbers), DETR row, rq^st column: DETR's own panoptic-segmentation result."
+  },
+  {
+   "extraction": {
+    "metric": "rq^st",
+    "value": 46.0,
+    "where": "src/experiments.tex:402",
+    "text": "DETR-R101: RQ^st = 46"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table (table:panoptic_numbers), DETR-R101 row, rq^st column: DETR's own panoptic-segmentation result."
+  },
+  {
+   "extraction": {
+    "metric": "rq^st",
+    "value": 46.5,
+    "where": "src/experiments.tex:402",
+    "text": "DETR-DC5: RQ^st = 46.5"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table (table:panoptic_numbers), DETR-DC5 row, rq^st column: DETR's own panoptic-segmentation result."
+  },
+  {
+   "extraction": {
+    "metric": "rq^th",
+    "value": 58.8,
+    "where": "src/experiments.tex:402",
+    "text": "PanopticFPN++: RQ^th = 58.8"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table (table:panoptic_numbers), PanopticFPN++ R50 row, rq^th column: the caption states 'We retrained PanopticFPN with the same data-augmentation as DETR, on a 18x schedule for fair comparison' -- the authors' own rerun of prior work, produced by this paper."
+  },
+  {
+   "extraction": {
+    "metric": "rq^th",
+    "value": 59.5,
+    "where": "src/experiments.tex:402",
+    "text": "DETR: RQ^th = 59.5"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table (table:panoptic_numbers), DETR row, rq^th column: DETR's own panoptic-segmentation result."
+  },
+  {
+   "extraction": {
+    "metric": "rq^th",
+    "value": 59.6,
+    "where": "src/experiments.tex:402",
+    "text": "UPSnet: RQ^th = 59.6"
+   },
+   "verdict": "baseline",
+   "notes": "Table (table:panoptic_numbers), UPSNet row, rq^th column: quoted comparison figure ('UPSNet uses the 1x schedule' -- no retraining by these authors is claimed)."
+  },
+  {
+   "extraction": {
+    "metric": "rq^th",
+    "value": 59.7,
+    "where": "src/experiments.tex:402",
+    "text": "UPSnet-M: RQ^th = 59.7"
+   },
+   "verdict": "baseline",
+   "notes": "Table (table:panoptic_numbers), UPSNet-M row, rq^th column: quoted comparison figure ('UPSNet uses the 1x schedule' -- no retraining by these authors is claimed)."
+  },
+  {
+   "extraction": {
+    "metric": "rq^th",
+    "value": 60.6,
+    "where": "src/experiments.tex:402",
+    "text": "DETR-DC5: RQ^th = 60.6"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table (table:panoptic_numbers), PanopticFPN++ R101 / DETR-DC5 (tied at 60.6) row, rq^th column: the caption states 'We retrained PanopticFPN with the same data-augmentation as DETR, on a 18x schedule for fair comparison' -- the authors' own rerun of prior work, produced by this paper."
+  },
+  {
+   "extraction": {
+    "metric": "rq^th",
+    "value": 61.7,
+    "where": "src/experiments.tex:402",
+    "text": "DETR-R101: RQ^th = 61.7"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table (table:panoptic_numbers), DETR-R101 row, rq^th column: DETR's own panoptic-segmentation result."
+  },
+  {
+   "extraction": {
+    "metric": "sq",
+    "value": 78.0,
+    "where": "src/experiments.tex:402",
+    "text": "UPSnet: SQ = 78"
+   },
+   "verdict": "baseline",
+   "notes": "Table (table:panoptic_numbers), UPSNet row, sq column: quoted comparison figure ('UPSNet uses the 1x schedule' -- no retraining by these authors is claimed)."
+  },
+  {
+   "extraction": {
+    "metric": "sq",
+    "value": 79.1,
+    "where": "src/experiments.tex:402",
+    "text": "UPSnet-M: SQ = 79.1"
+   },
+   "verdict": "baseline",
+   "notes": "Table (table:panoptic_numbers), UPSNet-M row, sq column: quoted comparison figure ('UPSNet uses the 1x schedule' -- no retraining by these authors is claimed)."
+  },
+  {
+   "extraction": {
+    "metric": "sq",
+    "value": 79.3,
+    "where": "src/experiments.tex:402",
+    "text": "DETR: SQ = 79.3"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table (table:panoptic_numbers), DETR / PanopticFPN++ R50 (tied at 79.3) row, sq column: DETR's own panoptic-segmentation result."
+  },
+  {
+   "extraction": {
+    "metric": "sq",
+    "value": 79.5,
+    "where": "src/experiments.tex:402",
+    "text": "PanopticFPN++: SQ = 79.5"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table (table:panoptic_numbers), PanopticFPN++ R101 row, sq column: the caption states 'We retrained PanopticFPN with the same data-augmentation as DETR, on a 18x schedule for fair comparison' -- the authors' own rerun of prior work, produced by this paper."
+  },
+  {
+   "extraction": {
+    "metric": "sq",
+    "value": 79.8,
+    "where": "src/experiments.tex:402",
+    "text": "DETR-DC5: SQ = 79.8"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table (table:panoptic_numbers), DETR-DC5 row, sq column: DETR's own panoptic-segmentation result."
+  },
+  {
+   "extraction": {
+    "metric": "sq",
+    "value": 79.9,
+    "where": "src/experiments.tex:402",
+    "text": "DETR-R101: SQ = 79.9"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table (table:panoptic_numbers), DETR-R101 row, sq column: DETR's own panoptic-segmentation result."
+  },
+  {
+   "extraction": {
+    "metric": "sq^st",
+    "value": 74.0,
+    "where": "src/experiments.tex:402",
+    "text": "PanopticFPN++: SQ^st = 74"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table (table:panoptic_numbers), PanopticFPN++ R101 row, sq^st column: the caption states 'We retrained PanopticFPN with the same data-augmentation as DETR, on a 18x schedule for fair comparison' -- the authors' own rerun of prior work, produced by this paper."
+  },
+  {
+   "extraction": {
+    "metric": "sq^st",
+    "value": 74.8,
+    "where": "src/experiments.tex:402",
+    "text": "PanopticFPN++: SQ^st = 74.8"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table (table:panoptic_numbers), PanopticFPN++ R50 row, sq^st column: the caption states 'We retrained PanopticFPN with the same data-augmentation as DETR, on a 18x schedule for fair comparison' -- the authors' own rerun of prior work, produced by this paper."
+  },
+  {
+   "extraction": {
+    "metric": "sq^st",
+    "value": 75.9,
+    "where": "src/experiments.tex:402",
+    "text": "UPSnet: SQ^st = 75.9"
+   },
+   "verdict": "baseline",
+   "notes": "Table (table:panoptic_numbers), UPSNet row, sq^st column: quoted comparison figure ('UPSNet uses the 1x schedule' -- no retraining by these authors is claimed)."
+  },
+  {
+   "extraction": {
+    "metric": "sq^st",
+    "value": 78.2,
+    "where": "src/experiments.tex:402",
+    "text": "UPSnet-M: SQ^st = 78.2"
+   },
+   "verdict": "baseline",
+   "notes": "Table (table:panoptic_numbers), UPSNet-M row, sq^st column: quoted comparison figure ('UPSNet uses the 1x schedule' -- no retraining by these authors is claimed)."
+  },
+  {
+   "extraction": {
+    "metric": "sq^st",
+    "value": 78.5,
+    "where": "src/experiments.tex:402",
+    "text": "DETR: SQ^st = 78.5"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table (table:panoptic_numbers), DETR / DETR-R101 (tied at 78.5) row, sq^st column: DETR's own panoptic-segmentation result."
+  },
+  {
+   "extraction": {
+    "metric": "sq^st",
+    "value": 78.7,
+    "where": "src/experiments.tex:402",
+    "text": "DETR-DC5: SQ^st = 78.7"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table (table:panoptic_numbers), DETR-DC5 row, sq^st column: DETR's own panoptic-segmentation result."
+  },
+  {
+   "extraction": {
+    "metric": "sq^th",
+    "value": 79.4,
+    "where": "src/experiments.tex:402",
+    "text": "UPSnet: SQ^th = 79.4"
+   },
+   "verdict": "baseline",
+   "notes": "Table (table:panoptic_numbers), UPSNet row, sq^th column: quoted comparison figure ('UPSNet uses the 1x schedule' -- no retraining by these authors is claimed)."
+  },
+  {
+   "extraction": {
+    "metric": "sq^th",
+    "value": 79.7,
+    "where": "src/experiments.tex:402",
+    "text": "UPSnet-M: SQ^th = 79.7"
+   },
+   "verdict": "baseline",
+   "notes": "Table (table:panoptic_numbers), UPSNet-M row, sq^th column: quoted comparison figure ('UPSNet uses the 1x schedule' -- no retraining by these authors is claimed)."
+  },
+  {
+   "extraction": {
+    "metric": "sq^th",
+    "value": 79.8,
+    "where": "src/experiments.tex:402",
+    "text": "DETR: SQ^th = 79.8"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table (table:panoptic_numbers), DETR row, sq^th column: DETR's own panoptic-segmentation result."
+  },
+  {
+   "extraction": {
+    "metric": "sq^th",
+    "value": 80.5,
+    "where": "src/experiments.tex:402",
+    "text": "DETR-DC5: SQ^th = 80.5"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table (table:panoptic_numbers), DETR-DC5 row, sq^th column: DETR's own panoptic-segmentation result."
+  },
+  {
+   "extraction": {
+    "metric": "sq^th",
+    "value": 80.9,
+    "where": "src/experiments.tex:402",
+    "text": "DETR-R101: SQ^th = 80.9"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table (table:panoptic_numbers), DETR-R101 row, sq^th column: DETR's own panoptic-segmentation result."
+  },
+  {
+   "extraction": {
+    "metric": "sq^th",
+    "value": 82.4,
+    "where": "src/experiments.tex:402",
+    "text": "PanopticFPN++: SQ^th = 82.4"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table (table:panoptic_numbers), PanopticFPN++ R50 row, sq^th column: the caption states 'We retrained PanopticFPN with the same data-augmentation as DETR, on a 18x schedule for fair comparison' -- the authors' own rerun of prior work, produced by this paper."
+  },
+  {
+   "extraction": {
+    "metric": "sq^th",
+    "value": 83.2,
+    "where": "src/experiments.tex:402",
+    "text": "PanopticFPN++: SQ^th = 83.2"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table (table:panoptic_numbers), PanopticFPN++ R101 row, sq^th column: the caption states 'We retrained PanopticFPN with the same data-augmentation as DETR, on a 18x schedule for fair comparison' -- the authors' own rerun of prior work, produced by this paper."
+  },
+  {
+   "extraction": {
+    "metric": "map",
+    "value": 8.0,
+    "where": "src/experiments.tex:434",
+    "text": "8 mAP"
+   },
+   "verdict": "not_in_paper",
+   "notes": "Prose: 'despite a severe deficit of up to 8 mAP compared to the baselines on the mask AP computation' -- a rounded comparative gap between DETR's and the baselines' mask AP, not an absolute value. No row or column of table:panoptic_numbers (or anywhere else in the paper) reports mAP=8; it is not a value any entity achieves, own or baseline."
+  },
+  {
+   "extraction": {
+    "metric": "iou",
+    "value": 2.0,
+    "where": "src/supplementary.tex:48",
+    "text": "iou} = 2"
+   },
+   "verdict": "hyperparameter",
+   "notes": "src/supplementary.tex:48 ('Losses' subsubsection): '...with $\\lambda_{\\rm L1} = 5$ and $\\lambda_{\\rm iou} = 2$ weights respectively.' lambda_iou=2 is the GIoU loss weighting coefficient, a real number the paper states, but a training hyperparameter, not a reported IoU result. The extractor's metric name ('iou') collides with the IoU evaluation metric only in name."
+  },
+  {
+   "extraction": {
+    "metric": "l",
+    "value": 52.0,
+    "where": "src/table1_alt.tex:11",
+    "text": "Faster RCNN-FPN: L = 52"
+   },
+   "verdict": "baseline",
+   "notes": "Table 1 (table:frcnn), Faster RCNN-FPN row, l column: top-section Faster R-CNN figure, quoted from 'Detectron2 Model Zoo' (experiments.tex:66) -- a citation, no producer in this repository."
+  },
+  {
+   "extraction": {
+    "metric": "l",
+    "value": 52.5,
+    "where": "src/table1_alt.tex:11",
+    "text": "Faster RCNN-DC5: L = 52.5"
+   },
+   "verdict": "baseline",
+   "notes": "Table 1 (table:frcnn), Faster RCNN-DC5 row, l column: top-section Faster R-CNN figure, quoted from 'Detectron2 Model Zoo' (experiments.tex:66) -- a citation, no producer in this repository."
+  },
+  {
+   "extraction": {
+    "metric": "l",
+    "value": 53.4,
+    "where": "src/table1_alt.tex:11",
+    "text": "Faster RCNN-FPN+: L = 53.4"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 1 (table:frcnn), Faster RCNN-FPN+ row, l column: middle-section '+' row -- the caption/prose (experiments.tex:68-69) states these are 'the same models but trained with the 9x schedule...and the described enhancements' (GIoU loss, random-crop augmentation): the authors' own rerun of Faster R-CNN, produced by this repository."
+  },
+  {
+   "extraction": {
+    "metric": "l",
+    "value": 54.6,
+    "where": "src/table1_alt.tex:11",
+    "text": "Faster RCNN-R101-FPN: L = 54.6"
+   },
+   "verdict": "baseline",
+   "notes": "Table 1 (table:frcnn), Faster RCNN-R101-FPN row, l column: top-section Faster R-CNN figure, quoted from 'Detectron2 Model Zoo' (experiments.tex:66) -- a citation, no producer in this repository."
+  },
+  {
+   "extraction": {
+    "metric": "l",
+    "value": 55.0,
+    "where": "src/table1_alt.tex:11",
+    "text": "Faster RCNN-DC5+: L = 55"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 1 (table:frcnn), Faster RCNN-DC5+ row, l column: middle-section '+' row -- the caption/prose (experiments.tex:68-69) states these are 'the same models but trained with the 9x schedule...and the described enhancements' (GIoU loss, random-crop augmentation): the authors' own rerun of Faster R-CNN, produced by this repository."
+  },
+  {
+   "extraction": {
+    "metric": "l",
+    "value": 56.0,
+    "where": "src/table1_alt.tex:11",
+    "text": "Faster RCNN-R101-FPN+: L = 56"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 1 (table:frcnn), Faster RCNN-R101-FPN+ row, l column: middle-section '+' row -- the caption/prose (experiments.tex:68-69) states these are 'the same models but trained with the 9x schedule...and the described enhancements' (GIoU loss, random-crop augmentation): the authors' own rerun of Faster R-CNN, produced by this repository."
+  },
+  {
+   "extraction": {
+    "metric": "l",
+    "value": 61.1,
+    "where": "src/table1_alt.tex:11",
+    "text": "-DC5: L = 61.1"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 1 (table:frcnn), DETR-DC5 / DETR (tied at 61.1) row, l column: DETR's own result."
+  },
+  {
+   "extraction": {
+    "metric": "l",
+    "value": 61.8,
+    "where": "src/table1_alt.tex:11",
+    "text": "-R101: L = 61.8"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 1 (table:frcnn), DETR-R101 row, l column: DETR's own result."
+  },
+  {
+   "extraction": {
+    "metric": "l",
+    "value": 62.3,
+    "where": "src/table1_alt.tex:11",
+    "text": "-DC5-R101: L = 62.3"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 1 (table:frcnn), DETR-DC5-R101 row, l column: DETR's own result."
+  },
+  {
+   "extraction": {
+    "metric": "m",
+    "value": 43.5,
+    "where": "src/table1_alt.tex:11",
+    "text": "Faster RCNN-DC5: M = 43.5"
+   },
+   "verdict": "baseline",
+   "notes": "Table 1 (table:frcnn), Faster RCNN-DC5 / Faster RCNN-FPN (tied at 43.5) row, m column: top-section Faster R-CNN figure, quoted from 'Detectron2 Model Zoo' (experiments.tex:66) -- a citation, no producer in this repository."
+  },
+  {
+   "extraction": {
+    "metric": "m",
+    "value": 45.4,
+    "where": "src/table1_alt.tex:11",
+    "text": "Faster RCNN-FPN+: M = 45.4"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 1 (table:frcnn), Faster RCNN-FPN+ row, m column: middle-section '+' row -- the caption/prose (experiments.tex:68-69) states these are 'the same models but trained with the 9x schedule...and the described enhancements' (GIoU loss, random-crop augmentation): the authors' own rerun of Faster R-CNN, produced by this repository."
+  },
+  {
+   "extraction": {
+    "metric": "m",
+    "value": 45.6,
+    "where": "src/table1_alt.tex:11",
+    "text": "Faster RCNN-R101-FPN: M = 45.6"
+   },
+   "verdict": "baseline",
+   "notes": "Table 1 (table:frcnn), Faster RCNN-R101-FPN row, m column: top-section Faster R-CNN figure, quoted from 'Detectron2 Model Zoo' (experiments.tex:66) -- a citation, no producer in this repository."
+  },
+  {
+   "extraction": {
+    "metric": "m",
+    "value": 45.8,
+    "where": "src/table1_alt.tex:11",
+    "text": "M 45.8"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 1 (table:frcnn), DETR row, m column: DETR's own result."
+  },
+  {
+   "extraction": {
+    "metric": "m",
+    "value": 45.9,
+    "where": "src/table1_alt.tex:11",
+    "text": "Faster RCNN-DC5+: M = 45.9"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 1 (table:frcnn), Faster RCNN-DC5+ row, m column: middle-section '+' row -- the caption/prose (experiments.tex:68-69) states these are 'the same models but trained with the 9x schedule...and the described enhancements' (GIoU loss, random-crop augmentation): the authors' own rerun of Faster R-CNN, produced by this repository."
+  },
+  {
+   "extraction": {
+    "metric": "m",
+    "value": 47.3,
+    "where": "src/table1_alt.tex:11",
+    "text": "-DC5: M = 47.3"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 1 (table:frcnn), DETR-DC5 row, m column: DETR's own result."
+  },
+  {
+   "extraction": {
+    "metric": "m",
+    "value": 48.0,
+    "where": "src/table1_alt.tex:11",
+    "text": "-R101: M = 48"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 1 (table:frcnn), DETR-R101 row, m column: DETR's own result."
+  },
+  {
+   "extraction": {
+    "metric": "m",
+    "value": 48.1,
+    "where": "src/table1_alt.tex:11",
+    "text": "Faster RCNN-R101-FPN+: M = 48.1"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 1 (table:frcnn), Faster RCNN-R101-FPN+ row, m column: middle-section '+' row -- the caption/prose (experiments.tex:68-69) states these are 'the same models but trained with the 9x schedule...and the described enhancements' (GIoU loss, random-crop augmentation): the authors' own rerun of Faster R-CNN, produced by this repository."
+  },
+  {
+   "extraction": {
+    "metric": "m",
+    "value": 49.5,
+    "where": "src/table1_alt.tex:11",
+    "text": "-DC5-R101: M = 49.5"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 1 (table:frcnn), DETR-DC5-R101 row, m column: DETR's own result."
+  },
+  {
+   "extraction": {
+    "metric": "map",
+    "value": 39.0,
+    "where": "src/table1_alt.tex:11",
+    "text": "Faster RCNN-DC5: AP = 39"
+   },
+   "verdict": "baseline",
+   "notes": "Table 1 (table:frcnn), Faster RCNN-DC5 row, map column: top-section Faster R-CNN figure, quoted from 'Detectron2 Model Zoo' (experiments.tex:66) -- a citation, no producer in this repository."
+  },
+  {
+   "extraction": {
+    "metric": "map",
+    "value": 40.2,
+    "where": "src/table1_alt.tex:11",
+    "text": "Faster RCNN-FPN: AP = 40.2"
+   },
+   "verdict": "baseline",
+   "notes": "Table 1 (table:frcnn), Faster RCNN-FPN row, map column: top-section Faster R-CNN figure, quoted from 'Detectron2 Model Zoo' (experiments.tex:66) -- a citation, no producer in this repository."
+  },
+  {
+   "extraction": {
+    "metric": "map",
+    "value": 41.1,
+    "where": "src/table1_alt.tex:11",
+    "text": "Faster RCNN-DC5+: AP = 41.1"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 1 (table:frcnn), Faster RCNN-DC5+ row, map column: middle-section '+' row -- the caption/prose (experiments.tex:68-69) states these are 'the same models but trained with the 9x schedule...and the described enhancements' (GIoU loss, random-crop augmentation): the authors' own rerun of Faster R-CNN, produced by this repository."
+  },
+  {
+   "extraction": {
+    "metric": "map",
+    "value": 42.0,
+    "where": "src/table1_alt.tex:11",
+    "text": "AP 42.0"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 1 (table:frcnn), DETR (also tied with baseline Faster RCNN-R101-FPN and rerun Faster RCNN-FPN+, all at 42.0), map column: DETR's own AP, explicitly corroborated by prose (experiments.tex:79) 'we can conclude that DETR can be competitive with Faster R-CNN...achieving 42 AP on the COCO val subset.' The cluster this extraction summarises also collides numerically with a baseline row and a rerun row at the same value; judged on the value's confirmed own-result identity per the prose."
+  },
+  {
+   "extraction": {
+    "metric": "map",
+    "value": 43.3,
+    "where": "src/table1_alt.tex:11",
+    "text": "-DC5: AP = 43.3"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 1 (table:frcnn), DETR-DC5 row, map column: DETR's own result."
+  },
+  {
+   "extraction": {
+    "metric": "map",
+    "value": 43.5,
+    "where": "src/table1_alt.tex:11",
+    "text": "-R101: AP = 43.5"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 1 (table:frcnn), DETR-R101 row, map column: DETR's own result."
+  },
+  {
+   "extraction": {
+    "metric": "map",
+    "value": 44.0,
+    "where": "src/table1_alt.tex:11",
+    "text": "Faster RCNN-R101-FPN+: AP = 44"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 1 (table:frcnn), Faster RCNN-R101-FPN+ row, map column: middle-section '+' row -- the caption/prose (experiments.tex:68-69) states these are 'the same models but trained with the 9x schedule...and the described enhancements' (GIoU loss, random-crop augmentation): the authors' own rerun of Faster R-CNN, produced by this repository."
+  },
+  {
+   "extraction": {
+    "metric": "map",
+    "value": 44.9,
+    "where": "src/table1_alt.tex:11",
+    "text": "-DC5-R101: AP = 44.9"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 1 (table:frcnn), DETR-DC5-R101 row, map column: DETR's own result."
+  },
+  {
+   "extraction": {
+    "metric": "s",
+    "value": 20.5,
+    "where": "src/table1_alt.tex:11",
+    "text": "S 20.5"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 1 (table:frcnn), DETR row, s column: DETR's own result."
+  },
+  {
+   "extraction": {
+    "metric": "s",
+    "value": 21.4,
+    "where": "src/table1_alt.tex:11",
+    "text": "Faster RCNN-DC5: S = 21.4"
+   },
+   "verdict": "baseline",
+   "notes": "Table 1 (table:frcnn), Faster RCNN-DC5 row, s column: top-section Faster R-CNN figure, quoted from 'Detectron2 Model Zoo' (experiments.tex:66) -- a citation, no producer in this repository."
+  },
+  {
+   "extraction": {
+    "metric": "s",
+    "value": 21.9,
+    "where": "src/table1_alt.tex:11",
+    "text": "-R101: S = 21.9"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 1 (table:frcnn), DETR-R101 row, s column: DETR's own result."
+  },
+  {
+   "extraction": {
+    "metric": "s",
+    "value": 22.5,
+    "where": "src/table1_alt.tex:11",
+    "text": "-DC5: S = 22.5"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 1 (table:frcnn), DETR-DC5 row, s column: DETR's own result."
+  },
+  {
+   "extraction": {
+    "metric": "s",
+    "value": 22.9,
+    "where": "src/table1_alt.tex:11",
+    "text": "Faster RCNN-DC5+: S = 22.9"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 1 (table:frcnn), Faster RCNN-DC5+ row, s column: middle-section '+' row -- the caption/prose (experiments.tex:68-69) states these are 'the same models but trained with the 9x schedule...and the described enhancements' (GIoU loss, random-crop augmentation): the authors' own rerun of Faster R-CNN, produced by this repository."
+  },
+  {
+   "extraction": {
+    "metric": "s",
+    "value": 23.7,
+    "where": "src/table1_alt.tex:11",
+    "text": "-DC5-R101: S = 23.7"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 1 (table:frcnn), DETR-DC5-R101 row, s column: DETR's own result."
+  },
+  {
+   "extraction": {
+    "metric": "s",
+    "value": 24.2,
+    "where": "src/table1_alt.tex:11",
+    "text": "Faster RCNN-FPN: S = 24.2"
+   },
+   "verdict": "baseline",
+   "notes": "Table 1 (table:frcnn), Faster RCNN-FPN row, s column: top-section Faster R-CNN figure, quoted from 'Detectron2 Model Zoo' (experiments.tex:66) -- a citation, no producer in this repository."
+  },
+  {
+   "extraction": {
+    "metric": "s",
+    "value": 25.2,
+    "where": "src/table1_alt.tex:11",
+    "text": "Faster RCNN-R101-FPN: S = 25.2"
+   },
+   "verdict": "baseline",
+   "notes": "Table 1 (table:frcnn), Faster RCNN-R101-FPN row, s column: top-section Faster R-CNN figure, quoted from 'Detectron2 Model Zoo' (experiments.tex:66) -- a citation, no producer in this repository."
+  },
+  {
+   "extraction": {
+    "metric": "s",
+    "value": 26.6,
+    "where": "src/table1_alt.tex:11",
+    "text": "Faster RCNN-FPN+: S = 26.6"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 1 (table:frcnn), Faster RCNN-FPN+ row, s column: middle-section '+' row -- the caption/prose (experiments.tex:68-69) states these are 'the same models but trained with the 9x schedule...and the described enhancements' (GIoU loss, random-crop augmentation): the authors' own rerun of Faster R-CNN, produced by this repository."
+  },
+  {
+   "extraction": {
+    "metric": "s",
+    "value": 27.2,
+    "where": "src/table1_alt.tex:11",
+    "text": "Faster RCNN-R101-FPN+: S = 27.2"
+   },
+   "verdict": "real_own_result",
+   "notes": "Table 1 (table:frcnn), Faster RCNN-R101-FPN+ row, s column: middle-section '+' row -- the caption/prose (experiments.tex:68-69) states these are 'the same models but trained with the 9x schedule...and the described enhancements' (GIoU loss, random-crop augmentation): the authors' own rerun of Faster R-CNN, produced by this repository."
+  },
+  {
+   "extraction": {
+    "metric": "l",
+    "value": 60.2,
+    "where": "src/experiments.tex:284",
+    "text": "L 60.2",
+    "row_label": null,
+    "column_label": "L"
+   },
+   "verdict": "real_own_result",
+   "notes": "Rendered PDF p13, Table 4, last row, AP_L column = 60.2 -- the authors' own full-loss DETR ablation model. Also reported for the 6-encoder-layer row of the authors' Table 2 (p10)."
+  },
+  {
+   "extraction": {
+    "metric": "m",
+    "value": 44.3,
+    "where": "src/experiments.tex:284",
+    "text": "M 44.3",
+    "row_label": null,
+    "column_label": "M"
+   },
+   "verdict": "real_own_result",
+   "notes": "Rendered PDF p13, Table 4, last row, AP_M column = 44.3 -- the authors' own full-loss DETR ablation model. Also reported for the 6-encoder-layer row of the authors' Table 2 (p10)."
+  },
+  {
+   "extraction": {
+    "metric": "map",
+    "value": 40.6,
+    "where": "src/experiments.tex:284",
+    "text": "AP 40.6",
+    "row_label": null,
+    "column_label": "AP"
+   },
+   "verdict": "real_own_result",
+   "notes": "Rendered PDF p13, Table 4 ('Effect of loss components on AP'), last row, AP column = 40.6. The caption reads 'We train two models turning off l1 loss, and GIoU loss ... Our baseline (last row) combines both losses' -- every row of this table is a model the authors trained, and 'baseline' here names the paper's own full-loss DETR, not prior work. The same value is also stated in prose on p10 ('achieves 40.6 and 42.0 AP on short and long schedules respectively') and appears in the authors' own Table 2 (6 encoder layers) and Table 3 (last row)."
+  },
+  {
+   "extraction": {
+    "metric": "s",
+    "value": 19.9,
+    "where": "src/experiments.tex:284",
+    "text": "S 19.9",
+    "row_label": null,
+    "column_label": "S"
+   },
+   "verdict": "real_own_result",
+   "notes": "Rendered PDF p13, Table 4, AP_S column = 19.9 -- printed twice in that table (the class+GIoU row and the full-loss last row). Both are models the authors trained for this loss ablation, so the cell is DETR's own measurement either way."
+  },
+  {
+   "extraction": {
+    "metric": "map",
+    "value": 34.3,
+    "where": "src/experiments.tex:402",
+    "text": "UPSnet-M: AP = 34.3",
+    "row_label": "UPSnet-M",
+    "column_label": "AP"
+   },
+   "verdict": "baseline",
+   "notes": "Rendered PDF p16, Table 5, UPSnet-M row, AP column = 34.3 (UPSnet R50 prints the same 34.3 one row above). UPSNet is prior work, cited as [51] in the caption; the only retraining the caption claims is of PanopticFPN ('We retrained PanopticFPN with the same data-augmentation as DETR'), while 'UPSNet uses the 1x schedule, UPSNet-M is the version with multiscale test-time augmentations' describes a quoted configuration. Attributed to a citation, so baseline."
+  },
+  {
+   "extraction": {
+    "metric": "rq^th",
+    "value": 60.6,
+    "where": "src/experiments.tex:402",
+    "text": "PanopticFPN++: RQ^th = 60.6",
+    "row_label": "PanopticFPN++",
+    "column_label": "RQ^th"
+   },
+   "verdict": "real_own_result",
+   "notes": "Rendered PDF p16, Table 5, PanopticFPN++ R101 row, RQ^th column = 60.6 (DETR-DC5 prints 60.6 in the same column). PanopticFPN++ was retrained by these authors per the caption, so this is their own measurement."
+  },
+  {
+   "extraction": {
+    "metric": "sq",
+    "value": 79.3,
+    "where": "src/experiments.tex:402",
+    "text": "PanopticFPN++: SQ = 79.3",
+    "row_label": "PanopticFPN++",
+    "column_label": "SQ"
+   },
+   "verdict": "real_own_result",
+   "notes": "Rendered PDF p16, Table 5, PanopticFPN++ R50 row, SQ column = 79.3 (DETR R50 prints 79.3 in the same column). The caption states 'We retrained PanopticFPN with the same data-augmentation as DETR, on a 18x schedule for fair comparison', so the PanopticFPN++ rows are the authors' own reimplementation of prior work and count as their own result."
+  },
+  {
+   "extraction": {
+    "metric": "sq^st",
+    "value": 78.5,
+    "where": "src/experiments.tex:402",
+    "text": "DETR-R101: SQ^st = 78.5",
+    "row_label": "DETR-R101",
+    "column_label": "SQ^st"
+   },
+   "verdict": "real_own_result",
+   "notes": "Rendered PDF p16, Table 5, DETR-R101 row, SQ^st column = 78.5 (DETR R50 prints 78.5 in the same column). DETR's own panoptic-segmentation result."
+  },
+  {
+   "extraction": {
+    "metric": "l",
+    "value": 61.1,
+    "where": "src/table1_alt.tex:11",
+    "text": "DETR-DC5: L = 61.1",
+    "row_label": "DETR-DC5",
+    "column_label": "L"
+   },
+   "verdict": "real_own_result",
+   "notes": "Rendered PDF p9, Table 1, DETR-DC5 row (bottom section), AP_L column = 61.1; the DETR row prints 61.1 in the same column. DETR's own result."
+  },
+  {
+   "extraction": {
+    "metric": "m",
+    "value": 43.5,
+    "where": "src/table1_alt.tex:11",
+    "text": "Faster RCNN-FPN: M = 43.5",
+    "row_label": "Faster RCNN-FPN",
+    "column_label": "M"
+   },
+   "verdict": "baseline",
+   "notes": "Rendered PDF p9, Table 1, Faster RCNN-FPN row (top section), AP_M column = 43.5; Faster RCNN-DC5 prints 43.5 in the same column. The caption and prose state 'The top section shows results for Faster R-CNN models in Detectron2 [50]' / 'In the top section we show Faster R-CNN results from Detectron2 Model Zoo [50] for models trained with the 3x schedule' -- a cell attributed to a citation, so baseline. (Distinct from the DETR-R101 AP of 43.5 in the bottom section, which is already adjudicated separately.)"
+  },
+  {
+   "extraction": {
+    "metric": "map",
+    "value": 42.0,
+    "where": "src/table1_alt.tex:11",
+    "text": "Faster RCNN-FPN+: AP = 42",
+    "row_label": "Faster RCNN-FPN+",
+    "column_label": "AP"
+   },
+   "verdict": "real_own_result",
+   "notes": "Rendered PDF p9, Table 1, Faster RCNN-FPN+ row (middle section), AP column = 42.0. The caption and prose say the middle section is 'Faster R-CNN models with GIoU [38], random crops train-time augmentation, and the long 9x training schedule' / 'In the middle section we show results (with a \"+\") for the same models but trained' by these authors -- the authors' own strengthened reimplementation of Faster R-CNN, so their own result."
+  },
+  {
+   "extraction": {
+    "metric": "map",
+    "value": 42.0,
+    "where": "src/table1_alt.tex:11",
+    "text": "Faster RCNN-R101-FPN: AP = 42",
+    "row_label": "Faster RCNN-R101-FPN",
+    "column_label": "AP"
+   },
+   "verdict": "baseline",
+   "notes": "Rendered PDF p9, Table 1, Faster RCNN-R101-FPN row (top section), AP column = 42.0. Top section is quoted from the Detectron2 Model Zoo [50], so baseline. Three rows print AP 42.0 in this table (this one, the retrained Faster RCNN-FPN+ and DETR); only this one is in the quoted top section."
+  }
+ ]
+}

@@ -1,0 +1,29 @@
+\documentclass{article}
+\begin{document}
+\section{Results}
+
+\begin{table}
+\begin{tabular}{lcc}
+System & Accuracy & F1 \\
+\hline
+\multicolumn{3}{c}{Published} \\
+BiDAF~\cite{seo2017bidirectional} & 82.3 & 88.5 \\
+R.M. Reader & 84.1 & 90.9 \\
+\multicolumn{3}{c}{Ours} \\
+TinyNet & 91.3 & 93.7 \\
+\end{tabular}
+\caption{Test-set results against previously published systems.}
+\end{table}
+
+\begin{table}
+\begin{tabular}{lcc}
+System & Accuracy & F1 \\
+\hline
+\multicolumn{3}{c}{ImageNet-22K pre-trained} \\
+Swin-T~\citep{liu2021swin} & 81.3 & 85.2 \\
+TinyNet & 88.9 & 90.4 \\
+\end{tabular}
+\caption{Results for a single pre-training corpus.}
+\end{table}
+
+\end{document}
