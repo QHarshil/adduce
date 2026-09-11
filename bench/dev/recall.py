@@ -2040,7 +2040,12 @@ def main(argv: list[str] | None = None) -> int:
             before = load_inventory(arguments.before)
             after = load_inventory(arguments.after)
         except RecallInputError as exc:
-            compare_parser.error(str(exc))
+            # ``error`` is typed ``NoReturn`` and raises ``SystemExit``, so the
+            # names below are always bound by the time they are read. Returned
+            # rather than called for a statement, because an analyser that does
+            # not model ``NoReturn`` reads the fall-through as reachable and
+            # reports both names as possibly uninitialised.
+            return compare_parser.error(str(exc))
         comparison = build_inventory_comparison(
             before, after, before_path=arguments.before, after_path=arguments.after
         )
