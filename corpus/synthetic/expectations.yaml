@@ -110,3 +110,41 @@
     R-DRIFT-001: not-applicable
   forbid:
     R-DRIFT-001: fail
+
+- case: synthetic_printed_precision
+  # The paper prints 0.30 and the config holds 0.34, which disagree to the
+  # hundredth the paper printed. Inferring the tolerance from the parsed float
+  # lost the trailing zero, widened it to a tenth, and reported agreement. The
+  # weight decay is the control: it agrees exactly and must keep agreeing once
+  # the tolerance tightens. Asserted here directly, unlike the paper-side cases:
+  # a drift rule reads prose hyperparameters, so this fix moves a verdict.
+  expect:
+    R-DRIFT-001: fail
+    R-DRIFT-003: pass
+  forbid:
+    R-DRIFT-001: pass
+
+- case: synthetic_group_boundary_value
+  # The paper states a batch size of 4096 and the config holds 4096, so the two
+  # agree. Reading the divisor of a scaling formula as a second, conflicting
+  # batch size made R-DRIFT-001 accuse them of drifting apart -- a wrong number
+  # about the paper, not a missing one, and one that reaches a verdict.
+  expect:
+    R-DRIFT-001: pass
+    R-DRIFT-003: pass
+  forbid:
+    R-DRIFT-001: fail
+    R-DRIFT-003: partial
+
+- case: synthetic_spaced_config_key
+  # The config states the learning rate the paper states, under a key written
+  # the way a paper abbreviates rather than the way a config nests. Resolving a
+  # dotted key on an unstripped terminal segment left that key naming nothing,
+  # so the paper's learning rate was reported as having no counterpart in code.
+  # The weight decay beside it is the control -- an ordinary key, resolved
+  # either way -- and `encoder` is the second, a key naming no hyperparameter.
+  expect:
+    R-DRIFT-001: pass
+    R-DRIFT-003: pass
+  forbid:
+    R-DRIFT-003: partial

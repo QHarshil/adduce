@@ -117,6 +117,9 @@ class PaperValue:
     raw: str           # the matched source text
     file: str
     line: int
+    #: How many digits the paper printed after the decimal point, or ``None``
+    #: where that is not a meaningful question — see :func:`_printed_decimals`.
+    decimals: int | None = None
 
 
 @dataclass(frozen=True)
@@ -169,6 +172,72 @@ class LatexEvidence:
         return grouped
 
 
+_PRINTED_DECIMALS_RE = re.compile(r"\A\d+(?:\.(?P<fraction>\d+))?\Z")
+
+
+def _printed_decimals(literal: str) -> int | None:
+    """How many digits *literal* printed after the point, or ``None``.
+
+    A paper that prints ``0.30`` has said something a paper printing ``0.3``
+    has not: that the value is 0.3 to a hundredth. The comparison in
+    :func:`~adduce.rules.drift.values_match` allows the code's value to differ
+    by half of the last printed place, so the difference between those two is
+    the difference between a tolerance of 0.005 and one of 0.05.
+
+    **Inferring it from the parsed float instead is wrong in one direction, and
+    that is the defect this exists to close.** A float cannot remember a
+    trailing zero: ``f"{0.30:.10f}".rstrip("0")`` is ``"0.3"``, so a printed
+    ``0.30`` was read as one decimal and given ten times the tolerance the
+    paper stated. A paper stating 0.30 against code using 0.34 read as
+    agreement. No amount of formatting recovers the digit; it has to come from
+    the source text.
+
+    ``None`` where the question is not meaningful, and the caller then infers
+    what it always did. Scientific notation is the case: ``1e-4`` prints no
+    fractional digits at all, yet states a value to a precision its decimal
+    expansion is what expresses, so counting its printed digits would claim a
+    tolerance of 0.5 on a number four orders of magnitude smaller. The same
+    goes for anything this cannot parse as a plain decimal.
+    """
+    match = _PRINTED_DECIMALS_RE.match(literal.strip().lstrip("+-"))
+    if match is None:
+        return None
+    fraction = match.group("fraction")
+    return len(fraction) if fraction else 0
+
+
+#: One argument of a command closing and the next opening. Adjacent up to
+#: whitespace, because that is what two arguments of one command always are.
+_SIBLING_GROUP_RE = re.compile(r"\}\s*\{")
+
+
+def _crosses_group_boundary(gap: str) -> bool:
+    r"""Whether *gap* leaves the keyword's argument for the next one.
+
+    A keyword at the end of one brace group and a number at the start of the
+    next are not a statement, they are two arguments of one command, and the
+    number belongs to the argument the keyword is not in. The shape that
+    matters is a fraction: a paper writes ``$\frac{\mbox{batch size}}{256}$``
+    to say the learning rate scales with the batch, and the denominator was
+    read as the batch size — a wrong number about the paper, not merely a
+    missing one.
+
+    **Adjacent up to whitespace, and the narrowness is the whole design.** Two
+    arguments of one command are written against each other; a brace that
+    closes and one that opens with anything between them is two different
+    pieces of markup, and the number after it is routinely real. Allowing any
+    text between the braces takes real values with it: a table header closing
+    and an italic cell opening (``BLEU} & {\it 28.6``) is not one command's two
+    arguments at all.
+
+    Only the gap between the keyword and the number is examined. Searching the
+    whole window instead is wrong in a way every test still passes: a brace
+    opening *after* the number sets a boundary *before* it, so ``Batch size}:
+    16`` and ``learning rate:} 0.003`` are refused along with the fractions.
+    """
+    return _SIBLING_GROUP_RE.search(gap) is not None
+
+
 def _parse_number(match: re.Match) -> float | None:
     try:
         if match.group("exp_only") is not None:
@@ -208,8 +277,10 @@ def _extract_keyword_values(
                 plural = text[kw_match.end() : kw_match.end() + 1] == "s" and not kw_match.group(0).endswith("s")
                 head = text[max(0, kw_match.start() - 16) : kw_match.start()]
                 before = re.search(r"(?<![\w.-])(\d+(?:\.\d+)?)\s*$", head)
+                literal: str | None = None
                 if before and not plural:
                     value = float(before.group(1))
+                    literal = before.group(1)
                     raw = (before.group(1) + " " + kw_match.group(0)).strip()
                 if value is None:
                     # "learning rate of 1e-4": number shortly after the keyword.
@@ -217,12 +288,17 @@ def _extract_keyword_values(
                     connector = re.match(r"[\s\S]{0,24}?(?:of|is|was|to|=|at|:)?\s*\$?", tail)
                     search_from = connector.end() if connector else 0
                     num_match = _NUMBER_RE.search(tail, search_from)
-                    if num_match and num_match.start() <= search_from + 16:
+                    if (
+                        num_match
+                        and num_match.start() <= search_from + 16
+                        and not _crosses_group_boundary(tail[: num_match.start()])
+                    ):
                         # Reject numbers glued to a word ("CIFAR-10") — those
                         # are names, not values.
                         preceding = tail[num_match.start() - 1 : num_match.start()]
                         if preceding == "" or not (preceding.isalpha() or preceding in "-_"):
                             value = _parse_number(num_match)
+                            literal = num_match.group(0)
                             raw = (kw_match.group(0) + tail[: num_match.end()]).strip()
                 if value is None:
                     continue
@@ -234,6 +310,7 @@ def _extract_keyword_values(
                         raw=raw[:120],
                         file=file,
                         line=_line_of(text, kw_match.start()),
+                        decimals=None if literal is None else _printed_decimals(literal),
                     )
                 )
     return values
