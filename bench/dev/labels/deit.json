@@ -1,0 +1,626 @@
+{
+  "schema": "adduce-dev-labels/1",
+  "pair_id": "deit",
+  "arxiv_id": "2012.12877",
+  "arxiv_version": "2",
+  "labelled_from": "pdf",
+  "labeller_passes": 1,
+  "sampled": true,
+  "sampling_seed": 20260810,
+  "target_sample_size": 15,
+  "sampling_method": "Every own-result cell in frame_locations was assigned a contiguous 1-based index in reading order -- location order above, which is page order and, within a page, linear reading order (DeiT is typeset single-column throughout, so there is no two-column split to track). Within a table, indexing is row-major and, for a row, left-to-right across that row's own-result columns only; non-own columns (citation baselines, hyperparameters) are skipped without leaving a gap. That gives a population of 1..256. Ownership in this paper is a genuine per-cell question, not a per-row one, exactly the case the brief warns about: Table 5's caption states throughput is measured by the authors 'for each model' -- convnets and competing transformers included -- while the accuracy columns beside it are citation baselines for every row except the RegNetY-4/8/16GF rows (marked with a star, explicitly 'optimized with a similar optimization procedure as ours') and the DeiT rows themselves; the same throughput-is-ours-for-every-row pattern was confirmed for Table 7 by cross-checking that its im/sec values for ResNet-50, RegNetY-8GF, EfficientNet-B7, ViT-B/16 and ViT-L/16 are exact reprints of Table 5's own-measured figures, so Table 7's im/sec column is own throughout even on rows whose accuracy columns are citations; its DeiT-B / DeiT-B-384 / DeiT-B-distilled / DeiT-B-distilled-384 rows are fully own across all eight columns. Table 2's 'Teacher acc.' column is own for every row, including the RegNetY variants, because Sec. 5.2 states the default RegNetY-16GF teacher 'reaches 82.9% top-1 accuracy on ImageNet' after being 'trained with the same data and same data-augmentation as DeiT' -- a reproduction the authors ran, not a citation -- and Table 5's star note extends that to the whole RegNetY family. Table 4's disagreement matrix is a symmetric 6x6 grid; the six diagonal 0.000 entries are excluded as tautological (a classifier's disagreement with itself is structurally zero, not a measurement), leaving 30 off-diagonal cells, each counted individually even though the matrix is symmetric and several values are printed twice at mirrored positions -- each printed grid position is its own cell. A delta counts only where no absolute is printed beside it in the same passage: Sec. 5.3's '+6.3% top-1' improvement over ImageNet1k-only ViT counts (no absolute for that ViT ablation is given in the sentence), but its 'outperforms by 1% (top-1 acc.)... (85.2% vs 84.15%)' does not count the 1%, because both absolutes are printed in the same breath; the two absolutes are handled separately (85.2% counted as a new own-result printed instance in this location, 84.15% excluded as a ViT-paper citation, repeated wherever it recurs). Training time is treated as a result on the same footing as throughput (speed presented as an outcome): '53 hours' / '20 hours' (Introduction, p2) and their restatement in Sec. 6's 'Training time' paragraph (p17, plus '37 hours' and a '20% slower' delta against RegNetY-16GF) count, as does the Introduction's 'three days' and footnote 1's 'two days'; bare bounds ('less than 3 days', printed twice, Abstract and Sec. 6) are excluded as non-point values, the same reasoning used to exclude a range. Table 8's asterisked '4.3*' / '3.4*' entries are counted (a number is printed; the footnote flags training instability, it does not withhold a value). Two identical numbers can be genuinely separate cells: 85.2% is printed as a new instance in the Abstract, in Sec. 5.2 and again in Sec. 5.3, and each is its own cell in its own location; the same holds for the training-hours figures and for DeiT-B / DeiT-B-384's Table 5 row values reappearing in Table 10 at very slightly different measured precision (e.g. 292.3 vs 291.05 for the nominally same 224-squared configuration) -- two separate measurement runs, both own, both counted. random.seed(20260810); random.sample(range(1,257),15) drew {1, 3, 23, 25, 28, 49, 57, 139, 157, 166, 182, 197, 214, 216, 244}; each label below records its draw as frame_index. Page images were rendered for pages 9, 11, 12, 14 and 15 -- the five pages that between them carry the highest-density and least text-attributable draws (Table 2, Table 4, Table 5, Table 7 and Table 8, the last needing the checkmark grid read visually since Table 8's on/off columns do not extract to text at all) -- and every row/column attribution on those pages was checked against the image. Draws landing on pages 1, 2, 3 and 9 are prose sentences, which read reliably from text alone; draws on pages 10, 13 and 17 (Table 3, the unnumbered CIFAR-10-from-scratch table, and Table 10) are small, fully-populated grids whose text dump prints an unambiguous row-label-then-values sequence with no blank cells to misplace, cross-checked internally against numbers the paper restates elsewhere (e.g. Table 10's 224-squared row against Table 5's DeiT-B row), so no image was spent on them, keeping total renders at 5 of 8 candidate table pages.",
+  "frame": {
+    "Abstract": 2,
+    "Section 1, Introduction (prose, before Figure 1)": 0,
+    "Figure 1, throughput vs accuracy plot": 0,
+    "Section 1, Introduction -- training time restated (prose)": 2,
+    "Section 1, Contributions bullets + footnote 1 (prose)": 2,
+    "Section 2, Related work (prose)": 0,
+    "Section 3, Vision transformer: overview (prose + equations)": 0,
+    "Section 4, Distillation through attention -- setup and equations (prose)": 0,
+    "Figure 2, distillation procedure diagram": 0,
+    "Section 4, Distillation token -- class/distillation token similarity (prose)": 2,
+    "Section 4, Distillation token -- two-class-token control experiment (prose)": 1,
+    "Section 4, Fine-tuning with distillation / joint classifiers (prose)": 0,
+    "Section 5.1, Transformer models (prose)": 0,
+    "Table 1, Variants of DeiT architecture": 3,
+    "Table 2, Teacher model comparison for distillation": 15,
+    "Section 5.2, Distillation -- best model vs ViT-B JFT-300M (prose)": 1,
+    "Section 5.2, Distillation -- convnet teachers restated (prose)": 1,
+    "Table 3, Distillation experiments, 300 epochs": 24,
+    "Section 5.2, Comparison of distillation methods restated (prose)": 2,
+    "Section 5.2, Agreement with teacher and inductive bias (prose)": 0,
+    "Table 4, Disagreement analysis matrix": 30,
+    "Section 5.2, Number of epochs (prose)": 0,
+    "Section 5.3, Efficiency vs accuracy -- ViT1k improvement delta (prose)": 1,
+    "Section 5.3, Efficiency vs accuracy -- outperforms ViT-B JFT300M restated (prose)": 1,
+    "Table 5, Throughput and accuracy on ImageNet/Real/V2": 77,
+    "Figure 3, distillation vs number of epochs plot": 0,
+    "Section 5.4, Transfer learning intro (prose)": 0,
+    "Section 5.4, Comparison vs training from scratch -- CIFAR-10 inline table": 3,
+    "Section 5.4, Comparison vs training from scratch restated (prose)": 2,
+    "Table 6, Datasets used for our different tasks": 0,
+    "Table 7, Transfer learning comparison": 40,
+    "Section 6, Training details and ablation intro (prose)": 0,
+    "Section 6, Initialization and hyper-parameters (prose + footnote 2)": 0,
+    "Table 8, Ablation study on training methods": 26,
+    "Section 6, Data-Augmentation (prose)": 0,
+    "Table 9, Ingredients and hyper-parameters for DeiT and ViT-B": 0,
+    "Section 6, Regularization and Optimizers (prose)": 0,
+    "Section 6, Exponential Moving Average (prose)": 1,
+    "Section 6, Fine-tuning at different resolution (prose)": 0,
+    "Table 10, Performance at varying fine-tuning sizes": 16,
+    "Section 6, Training time (prose)": 4,
+    "Section 7, Conclusion (prose)": 0,
+    "Acknowledgements": 0,
+    "References": 0
+  },
+  "frame_locations": [
+    {
+      "label": "Abstract",
+      "page": 1,
+      "own_result_cells": 2,
+      "notes": "Two own-result restatements of headline numbers, each a later table value printed again here: 'achieves top-1 accuracy of 83.1% (single-crop) on ImageNet with no external data' (DeiT-B, fine-tuned at 384, matches Table 5 / Table 3's B↑384 column) and 'we obtain up to 85.2% accuracy' (DeiT-B⚗↑384 / 1000 epochs, matches Table 3 / Table 5's best row). '86M parameters' is a hyperparameter. 'hundreds of millions of images' describes prior work's data scale, not a DeiT number. 'less than 3 days' is a bound, not a point value, and is excluded (as is its second printed instance in Sec. 6)."
+    },
+    {
+      "label": "Section 1, Introduction (prose, before Figure 1)",
+      "page": 1,
+      "own_result_cells": 0,
+      "notes": "Qualitative background on CNN dominance and the ViT precedent; no number restates a result."
+    },
+    {
+      "label": "Figure 1, throughput vs accuracy plot",
+      "page": 2,
+      "own_result_cells": 0,
+      "notes": "Scatter/line plot of throughput vs. ImageNet top-1 for DeiT, DeiT⚗ and EfficientNet variants; the extracted text carries only the caption, no per-point numeric labels, consistent with a plot rather than an embedded table (contrast Table 5, which prints the same comparison numerically)."
+    },
+    {
+      "label": "Section 1, Introduction -- training time restated (prose)",
+      "page": 2,
+      "own_result_cells": 2,
+      "notes": "'we train a vision transformer on a single 8-GPU node in two to three days (53 hours of pre-training, and optionally 20 hours of fine-tuning)' -- 53 and 20 hours are own point-value training-time results, restated later in Sec. 6's 'Training time' paragraph (p17) as separate printed instances. 'two to three days' is a range and is excluded."
+    },
+    {
+      "label": "Section 1, Contributions bullets + footnote 1 (prose)",
+      "page": 3,
+      "own_result_cells": 2,
+      "notes": "'They are learned on a single node with 4 GPUs in three days' (DeiT-S/DeiT-Ti) and footnote 1's 'We can accelerate the learning of the larger model DeiT-B by training it on 8 GPUs in two days' are both own point-value training-time claims, distinct hardware/model configurations from the page-2 figures."
+    },
+    {
+      "label": "Section 2, Related work (prose)",
+      "page": 3,
+      "own_result_cells": 0,
+      "notes": "Citation-driven history of image classification, transformers and knowledge distillation, spanning pages 3-4. '2012's AlexNet' is a year, not a measurement; the illustrative 'cat' example carries no number."
+    },
+    {
+      "label": "Section 3, Vision transformer: overview (prose + equations)",
+      "page": 4,
+      "own_result_cells": 0,
+      "notes": "Architecture exposition (MSA, transformer block, patch embedding, class token) and its defining equations, pages 4-6. Patch size 16x16, N=14x14, embedding dimension 3x16x16=768 are architecture-spec hyperparameters, matching Table 1's own hyperparameter columns."
+    },
+    {
+      "label": "Section 4, Distillation through attention -- setup and equations (prose)",
+      "page": 6,
+      "own_result_cells": 0,
+      "notes": "Defines soft distillation (Eq. 2) and hard-label distillation (Eq. 3) in symbols only, spanning pages 6-7; tau, lambda and epsilon=0.1 are named but not valued here (values given later, Sec. 6 / Table 9) and are hyperparameters throughout."
+    },
+    {
+      "label": "Figure 2, distillation procedure diagram",
+      "page": 7,
+      "own_result_cells": 0,
+      "notes": "Schematic of the distillation token interacting with class and patch tokens through self-attention; no numeric value is printed in the figure itself."
+    },
+    {
+      "label": "Section 4, Distillation token -- class/distillation token similarity (prose)",
+      "page": 7,
+      "own_result_cells": 2,
+      "notes": "'the average cosine similarity between these tokens equal to 0.06' and, at the last layer, 'their similarity is high (cos=0.93)' -- both the authors' own measurement of their trained model's internal representations, a genuine own result rather than a hyperparameter or citation."
+    },
+    {
+      "label": "Section 4, Distillation token -- two-class-token control experiment (prose)",
+      "page": 8,
+      "own_result_cells": 1,
+      "notes": "A separate control (two class tokens instead of one class + one distillation token) 'converge towards the same vector (cos=0.999)' -- own, a distinct experiment from the class/distillation-token pair on page 7."
+    },
+    {
+      "label": "Section 4, Fine-tuning with distillation / joint classifiers (prose)",
+      "page": 8,
+      "own_result_cells": 0,
+      "notes": "Describes the fine-tuning recipe and the late-fusion joint classifier qualitatively; no value is stated (evaluated in Sec. 5)."
+    },
+    {
+      "label": "Section 5.1, Transformer models (prose)",
+      "page": 8,
+      "own_result_cells": 0,
+      "notes": "Naming convention plus D=768, h=12, d=64, spanning pages 8-9, restates Table 1's hyperparameters; no result."
+    },
+    {
+      "label": "Table 1, Variants of DeiT architecture",
+      "page": 9,
+      "own_result_cells": 3,
+      "notes": "Model / ViT model / embedding dimension / #heads / #layers / #params / training resolution are architecture-spec hyperparameters; only 'throughput (im/sec)' per row (DeiT-Ti 2536, DeiT-S 940, DeiT-B 292) is a result, per the speed-as-outcome rule. All three rows are the authors' own models -- no baseline row in this table. Confirmed against the page image."
+    },
+    {
+      "label": "Table 2, Teacher model comparison for distillation",
+      "page": 9,
+      "own_result_cells": 15,
+      "notes": "5 rows (DeiT-B, RegNetY-4/8/12/16GF as teacher) x 3 own columns (Teacher 'acc.', Student pretrain, Student ↑384) = 15. The Student columns are DeiT-B⚗'s own accuracy under each teacher, unambiguously own. The Teacher 'acc.' column is also own for every row: Sec. 5.2 states the default RegNetY-16GF teacher was 'trained with the same data and same data-augmentation as DeiT' and 'reaches 82.9% top-1 accuracy', and Table 5's star footnote extends the same own-reproduction status to the RegNetY-4/8/16GF family (RegNetY-12GF appears only here, trained the same way per this section's framing). Confirmed against the page image."
+    },
+    {
+      "label": "Section 5.2, Distillation -- best model vs ViT-B JFT-300M (prose)",
+      "page": 9,
+      "own_result_cells": 1,
+      "notes": "'Our best model on ImageNet-1k is 85.2% top-1 accuracy outperforms the best Vit-B model pre-trained on JFT-300M at resolution 384 (84.15%)' -- 85.2% is DeiT's own best configuration restated in a new location (own); 84.15% is a citation of Dosovitskiy et al.'s JFT-300M-pretrained ViT-B and is excluded, as is the following sentence's '88.55%' (ViT-H on JFT-300M, 'for reference'). Confirmed against the page image."
+    },
+    {
+      "label": "Section 5.2, Distillation -- convnet teachers restated (prose)",
+      "page": 9,
+      "own_result_cells": 1,
+      "notes": "'This teacher reaches 82.9% top-1 accuracy on ImageNet' restates Table 2's RegNetY-16GF row in a new location; own, on the same own-reproduction basis as Table 2. Confirmed against the page image."
+    },
+    {
+      "label": "Table 3, Distillation experiments, 300 epochs",
+      "page": 10,
+      "own_result_cells": 24,
+      "notes": "6 rows (no distillation, usual/soft distillation, hard distillation, DeiT⚗ class-only, DeiT⚗ distil-only, DeiT⚗ class+distillation) x 4 own columns (Ti 224, S 224, B 224, B↑384) = 24. Every row is a DeiT variant the authors trained themselves; the table carries no baseline row. 'label'/'teacher' are check/soft/hard indicator columns, not results. Row/column order read from the clean, unambiguous text dump (each row label immediately followed by its 4 values in header order); no page image rendered for this page."
+    },
+    {
+      "label": "Section 5.2, Comparison of distillation methods restated (prose)",
+      "page": 10,
+      "own_result_cells": 2,
+      "notes": "'hard distillation reaches 83.0% at resolution 224x224, compared to the soft distillation accuracy of 81.8%' restates two Table 3 cells (hard-distillation B224, usual-distillation B224) as new printed instances; both own."
+    },
+    {
+      "label": "Section 5.2, Agreement with teacher and inductive bias (prose)",
+      "page": 10,
+      "own_result_cells": 0,
+      "notes": "Qualitative framing for Table 4 ('we analyze in Table 4 the decision agreement...'), spanning pages 10-11, and its qualitative discussion; no value is restated outside the table."
+    },
+    {
+      "label": "Table 4, Disagreement analysis matrix",
+      "page": 11,
+      "own_result_cells": 30,
+      "notes": "Symmetric 6x6 grid (groundtruth, convnet/RegNetY, DeiT, DeiT⚗-class, DeiT⚗-distil, DeiT⚗-class+distil) of pairwise decision-disagreement rates, computed by the authors over their own models and teacher. The 6 diagonal 0.000 entries are excluded as tautological self-comparisons rather than measurements (a classifier disagrees with itself at rate 0 by construction, the same reasoning used elsewhere to exclude a stated theoretical floor); the 30 off-diagonal entries are each counted as their own printed cell, including both mirrored copies of a symmetric pair, since each occupies a distinct grid position on the page. Confirmed against the page image."
+    },
+    {
+      "label": "Section 5.2, Number of epochs (prose)",
+      "page": 11,
+      "own_result_cells": 0,
+      "notes": "'With 300 epochs, our distilled network DeiT-B⚗ is already better than DeiT-B' -- qualitative, points to Figure 3, no value stated."
+    },
+    {
+      "label": "Section 5.3, Efficiency vs accuracy -- ViT1k improvement delta (prose)",
+      "page": 11,
+      "own_result_cells": 1,
+      "notes": "'a major improvement (+6.3% top-1 in a comparable setting) over previous ViT models trained on Imagenet1k only' -- no absolute is printed in this sentence (the ViT1k-only ablation numbers are Dosovitskiy et al.'s own, not restated here), so the delta itself is the reported own number, per the rule that an unaccompanied delta counts. Confirmed against the page image."
+    },
+    {
+      "label": "Section 5.3, Efficiency vs accuracy -- outperforms ViT-B JFT300M restated (prose)",
+      "page": 11,
+      "own_result_cells": 1,
+      "notes": "'It also outperforms by 1% (top-1 acc.) the Vit-B model pre-trained on JFT300M at resolution 384 (85.2% vs 84.15%)' -- here the delta ('by 1%') has both absolutes printed beside it in the same sentence and is excluded; 85.2% counts again as a third printed instance of DeiT's best own result (after the Abstract and Sec. 5.2); 84.15% is again the ViT-paper citation and excluded. Confirmed against the page image."
+    },
+    {
+      "label": "Table 5, Throughput and accuracy on ImageNet/Real/V2",
+      "page": 12,
+      "own_result_cells": 77,
+      "notes": "32 rows (18 convnets, 2 ViT baselines, 12 DeiT variants). The caption states throughput is measured by the authors 'for each model' on their own V100 -- own for every row, 32 cells. Accuracy (ImNet/Real/V2 top-1, up to 3 populated columns per row; several rows have V2 and/or Real blank, marked '-') is a citation baseline for ResNet-*, EfficientNet-* and both ViT rows, but own for RegNetY-4/8/16GF (marked with a star, 'optimized with a similar optimization procedure as ours') and for all 12 DeiT rows (fully populated, 3 columns each) -- 15 rows x 3 = 45 own accuracy cells. 32+45=77. This is the per-cell, caption-gated ownership case the brief flags. Confirmed against the page image, including the exact blank ('-') cells."
+    },
+    {
+      "label": "Figure 3, distillation vs number of epochs plot",
+      "page": 13,
+      "own_result_cells": 0,
+      "notes": "Line plot of accuracy vs. training epochs for DeiT-B/DeiT-B⚗, with a dotted reference line for no-distillation saturation ('saturates after 400 epochs'); no numeric value is printed on the plot itself."
+    },
+    {
+      "label": "Section 5.4, Transfer learning intro (prose)",
+      "page": 13,
+      "own_result_cells": 0,
+      "notes": "Points to Table 6 and Table 7 without restating any of their values."
+    },
+    {
+      "label": "Section 5.4, Comparison vs training from scratch -- CIFAR-10 inline table",
+      "page": 13,
+      "own_result_cells": 3,
+      "notes": "Unnumbered table introduced by 'We get the following results on the small CIFAR-10': Method row RegNetY-16GF / DeiT-B / DeiT-B⚗, Top-1 row 98.0 / 97.5 / 98.5. 'We investigate the performance when training from scratch... We get the following results' -- the authors trained all three models from scratch on CIFAR-10 themselves for this specific experiment (not a citation of the RegNetY paper), so all 3 are own, on the same basis given for an authors' own reimplementation. Small, fully-populated 1-row table, unambiguous in the text dump; no page image rendered."
+    },
+    {
+      "label": "Section 5.4, Comparison vs training from scratch restated (prose)",
+      "page": 14,
+      "own_result_cells": 2,
+      "notes": "'The results are not as good as with Imagenet pre-training (98.5% vs 99.1%)' -- the paragraph starts on page 13 and this clause is printed on page 14. 98.5% restates the CIFAR-10-scratch inline table's DeiT-B⚗ cell in a new location; 99.1% restates DeiT-B⚗'s CIFAR-10 (with ImageNet pre-training) cell from Table 7. Both own, both new printed instances."
+    },
+    {
+      "label": "Table 6, Datasets used for our different tasks",
+      "page": 14,
+      "own_result_cells": 0,
+      "notes": "Train size / test size / #classes for seven datasets -- dataset statistics throughout, no result. Confirmed against the page image."
+    },
+    {
+      "label": "Table 7, Transfer learning comparison",
+      "page": 14,
+      "own_result_cells": 40,
+      "notes": "12 rows x up to 8 columns (ImageNet, CIFAR-10, CIFAR-100, Flowers, Cars, iNat-18, iNat-19, im/sec). Non-DeiT rows (Grafit ResNet-50/RegNetY-8GF, ResNet-152[10], EfficientNet-B7[48], ViT-B/32, ViT-B/16, ViT-L/32, ViT-L/16) have citation-baseline accuracy columns but an own im/sec column: confirmed by exact cross-match against Table 5's own-measured throughput for every row that also appears there (e.g. ResNet-50 1226.1, EfficientNet-B7 55.1, ViT-B/16 85.9, ViT-L/16 27.3 are identical to Table 5), and the two rows absent from Table 5 (ViT-B/32 394.5, ViT-L/32 124.1) are new own measurements made the same way. That gives 1 own cell per non-DeiT row (8 rows x 1 = 8). The 4 DeiT rows (DeiT-B, DeiT-B↑384, DeiT-B⚗, DeiT-B⚗↑384) are fully populated and entirely own (4 x 8 = 32). 8+32=40. Confirmed against the page image, including the exact blank ('-') cells per row."
+    },
+    {
+      "label": "Section 6, Training details and ablation intro (prose)",
+      "page": 14,
+      "own_result_cells": 0,
+      "notes": "Qualitative introduction to Sec. 6; no value."
+    },
+    {
+      "label": "Section 6, Initialization and hyper-parameters (prose + footnote 2)",
+      "page": 14,
+      "own_result_cells": 0,
+      "notes": "Describes weight initialization qualitatively, spanning pages 14-15. Footnote 2 -- 'The timm implementation already included a training procedure that improved the accuracy of ViT-B from 77.91% to 79.35% top-1' -- credits an existing third-party (timm/Wightman, ref. [55]) training-procedure improvement rather than a DeiT contribution; treated as background on prior work the authors build on, not an own result, and excluded on that basis."
+    },
+    {
+      "label": "Table 8, Ablation study on training methods",
+      "page": 15,
+      "own_result_cells": 26,
+      "notes": "13 rows (default 'none: DeiT-B', 2 optimizer rows, 5 data-augmentation rows, 5 regularization rows) x 2 own columns (pre-trained 224², fine-tuned 384²) = 26. Every row is the authors' own ablation run; no baseline. The default row's '81.8 ±0.2' / '83.1 ±0.1' contribute their point values only. The two asterisked regularization-row values (4.3*, 3.4*, erasing/stochastic-depth removed) are counted -- an actual number is printed, unlike a non-numeric placeholder; the footnote only flags that training struggled, not that no value exists. Row identity for the data-augmentation and regularization groups (which single ingredient is on/off) is only readable from the checkmark grid, which does not extract to text at all; confirmed against the page image."
+    },
+    {
+      "label": "Section 6, Data-Augmentation (prose)",
+      "page": 15,
+      "own_result_cells": 0,
+      "notes": "Qualitative summary of which augmentations help ('Auto-Augment, Rand-Augment and random erasing improve the results... One exception is dropout'); no value restated outside Table 8."
+    },
+    {
+      "label": "Table 9, Ingredients and hyper-parameters for DeiT and ViT-B",
+      "page": 16,
+      "own_result_cells": 0,
+      "notes": "Epochs, batch size, optimizer, learning rate, decay schedule, weight decay, warmup, label smoothing, dropout, stochastic depth, repeated augmentation, gradient clipping, RandAugment/Mixup/CutMix/erasing probabilities -- hyperparameters throughout for both ViT-B and DeiT-B, no result."
+    },
+    {
+      "label": "Section 6, Regularization and Optimizers (prose)",
+      "page": 16,
+      "own_result_cells": 0,
+      "notes": "Describes the learning-rate-scaling formula, the cross-validated search ranges (3 learning rates, 3 weight decays) and the choice of AdamW qualitatively; no accuracy or other outcome value is stated in this paragraph (Table 8 carries the corresponding results)."
+    },
+    {
+      "label": "Section 6, Exponential Moving Average (prose)",
+      "page": 16,
+      "own_result_cells": 1,
+      "notes": "'the EMA model has an edge of is 0.1 accuracy points, but when fine-tuned the two models reach the same (improved) performance' -- a delta with no absolute printed beside it in this paragraph (Table 8's regularization rows 4-5, which this describes, are a separate location); own, counted once."
+    },
+    {
+      "label": "Section 6, Fine-tuning at different resolution (prose)",
+      "page": 16,
+      "own_result_cells": 0,
+      "notes": "Describes bicubic positional-embedding interpolation and the AdamW-vs-SGD fine-tuning choice qualitatively, spanning pages 16-17, referring back to Table 8 for the comparable performance; no new value."
+    },
+    {
+      "label": "Table 10, Performance at varying fine-tuning sizes",
+      "page": 17,
+      "own_result_cells": 16,
+      "notes": "4 rows (fine-tuning size 160²/224²/320²/384², all DeiT-B pre-trained at 224²) x 4 own columns (throughput, ImageNet/Real/V2 top-1) = 16. No baseline row; every value is the authors' own model at a different fine-tuning resolution. The 224² and 384² rows print near-identical figures to Table 5's DeiT-B/DeiT-B↑384 rows from what is evidently a separate measurement pass (e.g. throughput 291.05 here vs. 292.3 in Table 5) -- both instances counted, consistent with treating each printed occurrence as its own cell. Small, fully-populated table, unambiguous in the text dump; no page image rendered."
+    },
+    {
+      "label": "Section 6, Training time (prose)",
+      "page": 17,
+      "own_result_cells": 4,
+      "notes": "'A typical training of 300 epochs takes 37 hours with 2 nodes or 53 hours on a single node for the DeiT-B' (37h, 53h; 53h is a second printed instance, after the Introduction) 'a similar training with a RegNetY-16GF... is 20% slower' (delta, no absolute for the RegNetY-16GF training time is given) 'This takes 20 hours on a single node (8 GPU)' (20h, second instance) -- 4 own cells. 'less than 3 days' (bound), '300 epochs' and '25 epochs' (hyperparameters) are excluded."
+    },
+    {
+      "label": "Section 7, Conclusion (prose)",
+      "page": 17,
+      "own_result_cells": 0,
+      "notes": "Entirely qualitative summary and outlook, spanning pages 17-18; no number is printed."
+    },
+    {
+      "label": "Acknowledgements",
+      "page": 18,
+      "own_result_cells": 0,
+      "notes": "Named thanks only; no number."
+    },
+    {
+      "label": "References",
+      "page": 19,
+      "own_result_cells": 0,
+      "notes": "Bibliography, pages 19-22; publication years are not measurements."
+    }
+  ],
+  "labels": [
+    {
+      "id": "L1",
+      "frame_index": 1,
+      "metric": "top-1 accuracy",
+      "value": 83.1,
+      "units": "%",
+      "dataset": "ImageNet",
+      "split": "val, single-crop, fine-tuned at 384 (DeiT-B↑384)",
+      "role": "result",
+      "is_own_result": true,
+      "confident": true,
+      "location": {
+        "kind": "prose",
+        "label": "Abstract",
+        "page": 1,
+        "row": null,
+        "column": null
+      },
+      "notes": "'Our reference vision transformer (86M parameters) achieves top-1 accuracy of 83.1% (single-crop) on ImageNet with no external data.' 86M is the hyperparameter naming DeiT-B; 83.1% matches DeiT-B↑384's ImageNet top-1 in Table 3 (B↑384 column, no-distillation row) and Table 5/Table 10 -- an own result restated in this new location (the Abstract)."
+    },
+    {
+      "id": "L2",
+      "frame_index": 3,
+      "metric": "pre-training time",
+      "value": 53,
+      "units": "hours",
+      "dataset": "ImageNet",
+      "split": "training (single 8-GPU node)",
+      "role": "result",
+      "is_own_result": true,
+      "confident": true,
+      "location": {
+        "kind": "prose",
+        "label": "Section 1, Introduction",
+        "page": 2,
+        "row": null,
+        "column": null
+      },
+      "notes": "'we train a vision transformer on a single 8-GPU node in two to three days (53 hours of pre-training, and optionally 20 hours of fine-tuning)'. Treated as a result on the same footing as throughput (speed/time presented as an outcome), for the authors' own DeiT-B training run. '20 hours' in the same sentence is a separate cell (frame_index 4, not drawn); 'two to three days' is a range and is excluded from the frame."
+    },
+    {
+      "id": "L3",
+      "frame_index": 23,
+      "metric": "top-1 acc.",
+      "value": 83.1,
+      "units": "%",
+      "dataset": "ImageNet",
+      "split": "val",
+      "role": "result",
+      "is_own_result": true,
+      "confident": true,
+      "location": {
+        "kind": "table",
+        "label": "Table 2",
+        "page": 9,
+        "row": "RegNetY-12GF",
+        "column": "Student: DeiT-B⚗, pretrain"
+      },
+      "notes": "Caption: 'We compare on ImageNet [42] the performance (top-1 acc., %) of the student as a function of the teacher model used for distillation.' This is the distilled DeiT-B⚗ student's own accuracy (224², before the 384 fine-tune) when RegNetY-12GF is used as its teacher -- unambiguously own, the student is the authors' own model regardless of which teacher supplied it. Confirmed against the page image: row 'RegNetY-12GF' reads 82.4 | 83.1 | 84.1."
+    },
+    {
+      "id": "L4",
+      "frame_index": 25,
+      "metric": "acc.",
+      "value": 82.9,
+      "units": "%",
+      "dataset": "ImageNet",
+      "split": "val",
+      "role": "result",
+      "is_own_result": true,
+      "confident": true,
+      "location": {
+        "kind": "table",
+        "label": "Table 2",
+        "page": 9,
+        "row": "RegNetY-16GF",
+        "column": "Teacher, acc."
+      },
+      "notes": "The default teacher's own accuracy, restated verbatim two paragraphs later: 'This teacher reaches 82.9% top-1 accuracy on ImageNet.' Own because the teacher itself is the authors' reproduction ('that we trained with the same data and same data-augmentation as DeiT'), not a citation of the RegNetY paper's published figure -- the same reproduction-is-own reasoning that applies to Table 5's starred RegNetY rows. Confirmed against the page image."
+    },
+    {
+      "id": "L5",
+      "frame_index": 28,
+      "metric": "top-1 accuracy",
+      "value": 85.2,
+      "units": "%",
+      "dataset": "ImageNet-1k",
+      "split": "val",
+      "role": "result",
+      "is_own_result": true,
+      "confident": true,
+      "location": {
+        "kind": "prose",
+        "label": "Section 5.2, Distillation",
+        "page": 9,
+        "row": null,
+        "column": null
+      },
+      "notes": "'Our best model on ImageNet-1k is 85.2% top-1 accuracy outperforms the best Vit-B model pre-trained on JFT-300M at resolution 384 (84.15%).' 85.2% is DeiT-B⚗↑384/1000 epochs, the paper's best own configuration (matches Table 3/Table 5), restated here as a new printed instance; 84.15% is Dosovitskiy et al.'s own JFT-300M-pretrained ViT-B figure, a citation baseline and excluded, as is the next sentence's 88.55% (ViT-H on JFT-300M)."
+    },
+    {
+      "id": "L6",
+      "frame_index": 49,
+      "metric": "ImageNet top-1",
+      "value": 84.4,
+      "units": "%",
+      "dataset": "ImageNet",
+      "split": "val, fine-tuned at 384 (B↑384)",
+      "role": "result",
+      "is_own_result": true,
+      "confident": true,
+      "location": {
+        "kind": "table",
+        "label": "Table 3",
+        "page": 10,
+        "row": "DeiT⚗: distil. embedding",
+        "column": "B↑384"
+      },
+      "notes": "Caption: 'Distillation experiments on Imagenet with DeiT, 300 epochs of pre-training... We separately report the performance when classifying with only one of the class or distillation embeddings.' This row classifies using only the distillation-token embedding; DeiT-B↑384, 84.4%. Entirely the authors' own model variant, no baseline row in this table. Row/column read from the text dump's clean row-label-then-4-values sequence (Ti224/S224/B224/B↑384 header order); no page image rendered for this page."
+    },
+    {
+      "id": "L7",
+      "frame_index": 57,
+      "metric": "rate of different decisions",
+      "value": 0.182,
+      "units": null,
+      "dataset": "ImageNet",
+      "split": "val",
+      "role": "result",
+      "is_own_result": true,
+      "confident": true,
+      "location": {
+        "kind": "table",
+        "label": "Table 4",
+        "page": 11,
+        "row": "groundtruth",
+        "column": "DeiT"
+      },
+      "notes": "Caption: 'we report the fraction of sample classified differently for all classifier pairs, i.e., the rate of different decisions.' This cell is the disagreement rate between DeiT (no distillation) and the ImageNet ground-truth labels -- equivalently, DeiT's own top-1 error rate on this evaluation set, computed by the authors over their own model. Diagonal (self-comparison) entries are excluded elsewhere in this table as tautological; this is an off-diagonal, genuine measurement. Confirmed against the page image."
+    },
+    {
+      "id": "L8",
+      "frame_index": 139,
+      "metric": "acc. top-1",
+      "value": 86.8,
+      "units": "%",
+      "dataset": "ImageNet-Real",
+      "split": "val",
+      "role": "result",
+      "is_own_result": true,
+      "confident": true,
+      "location": {
+        "kind": "table",
+        "label": "Table 5",
+        "page": 12,
+        "row": "DeiT-S⚗",
+        "column": "Real top-1"
+      },
+      "notes": "DeiT-S⚗ (224²), own model, own measurement -- both throughput and accuracy are own for every DeiT row in this table. Confirmed against the page image: row 'DeiT-S⚗' reads #param 22M | size 224² | 936.2 | 81.2 | 86.8 | 70.0 (ImNet/Real/V2 = 81.2/86.8/70.0)."
+    },
+    {
+      "id": "L9",
+      "frame_index": 157,
+      "metric": "image throughput",
+      "value": 85.8,
+      "units": "image/s",
+      "dataset": null,
+      "split": null,
+      "role": "result",
+      "is_own_result": true,
+      "confident": true,
+      "location": {
+        "kind": "table",
+        "label": "Table 5",
+        "page": 12,
+        "row": "DeiT-B⚗↑384",
+        "column": "image throughput (image/s)"
+      },
+      "notes": "Caption: 'The throughput is measured as the number of images that we can process per second on one 16GB V100 GPU... we take the largest possible batch size for the usual resolution of the model and calculate the average time over 30 runs.' A hardware speed measurement, own for this row regardless of accuracy-column ownership elsewhere in the table (this row is DeiT-B⚗↑384 itself, so both throughput and accuracy are own). No dataset/split applies to a raw throughput figure; the resolution (384²) is recorded in the column instead. Confirmed against the page image."
+    },
+    {
+      "id": "L10",
+      "frame_index": 166,
+      "metric": "Top-1",
+      "value": 97.5,
+      "units": "%",
+      "dataset": "CIFAR-10",
+      "split": "test, trained from scratch (no ImageNet pre-training)",
+      "role": "result",
+      "is_own_result": true,
+      "confident": true,
+      "location": {
+        "kind": "table",
+        "label": "Section 5.4, CIFAR-10-from-scratch inline table",
+        "page": 13,
+        "row": "Top-1",
+        "column": "DeiT-B"
+      },
+      "notes": "Unnumbered table: 'Method: RegNetY-16GF | DeiT-B | DeiT-B⚗. Top-1: 98.0 | 97.5 | 98.5.' Introduced by 'We investigate the performance when training from scratch on a small dataset, without Imagenet pre-training... We get the following results' -- the authors ran all three models themselves for this bespoke CIFAR-10-from-scratch experiment, so DeiT-B's 97.5 (and RegNetY-16GF's 98.0 beside it) are own. Restated the next page as '98.5% vs 99.1%' for DeiT-B⚗ specifically (a different location/cell)."
+    },
+    {
+      "id": "L11",
+      "frame_index": 182,
+      "metric": "top-1 accuracy",
+      "value": 92.1,
+      "units": "%",
+      "dataset": "Stanford Cars",
+      "split": "test",
+      "role": "result",
+      "is_own_result": true,
+      "confident": true,
+      "location": {
+        "kind": "table",
+        "label": "Table 7",
+        "page": 14,
+        "row": "DeiT-B",
+        "column": "Cars"
+      },
+      "notes": "DeiT-B's transfer-learning accuracy on Stanford Cars, own (DeiT-B is the authors' own model; the whole DeiT-B row is fully populated: 81.8|99.1|90.8|98.4|92.1|73.2|77.7|292.3, matching Table 6's dataset list ImageNet/CIFAR-10/CIFAR-100/Flowers/Cars/iNat-18/iNat-19/im-sec). The column header is just 'Cars' (no explicit 'acc.' label anywhere in this table); metric recorded as 'top-1 accuracy' by convention with Table 6's classification-dataset framing and cross-checked against this same row's ImageNet cell (81.8) and im/sec cell (292.3), both exact matches to Table 5's explicit 'ImageNet top-1' and throughput figures for DeiT-B. Confirmed against the page image."
+    },
+    {
+      "id": "L12",
+      "frame_index": 197,
+      "metric": "top-1 accuracy",
+      "value": 98.8,
+      "units": "%",
+      "dataset": "Oxford Flowers-102",
+      "split": "test",
+      "role": "result",
+      "is_own_result": true,
+      "confident": true,
+      "location": {
+        "kind": "table",
+        "label": "Table 7",
+        "page": 14,
+        "row": "DeiT-B⚗",
+        "column": "Flowers"
+      },
+      "notes": "DeiT-B⚗'s transfer-learning accuracy on Flowers-102, own, same basis as L11 (fully populated DeiT row: 83.4|99.1|91.3|98.8|92.9|73.7|78.4|290.9). Confirmed against the page image."
+    },
+    {
+      "id": "L13",
+      "frame_index": 214,
+      "metric": "top-1 accuracy",
+      "value": 81.8,
+      "units": "%",
+      "dataset": "ImageNet",
+      "split": "val, pre-trained at 224²",
+      "role": "result",
+      "is_own_result": true,
+      "confident": true,
+      "location": {
+        "kind": "table",
+        "label": "Table 8",
+        "page": 15,
+        "row": "optimizer: adamw (pre-training) / SGD (fine-tuning)",
+        "column": "pre-trained 224²"
+      },
+      "notes": "Second optimizer-ablation row: pre-training optimizer unchanged (adamw, same as the default row), fine-tuning done with SGD instead of adamw. Pre-trained-224² accuracy is therefore identical to the default row's 81.8 (only the fine-tuning stage differs), matching the later prose 'These optimizers have a similar performance for the fine-tuning stage, see Table 8.' Own -- an ablation the authors ran on their own model. Row identity confirmed against the page image's checkmark grid (Rand-Augment/AutoAug/Mixup/CutMix/Erasing/Stoch.Depth/Repeated Aug. all match the default row's pattern; only the Pre-training/Fine-tuning optimizer columns differ)."
+    },
+    {
+      "id": "L14",
+      "frame_index": 216,
+      "metric": "top-1 accuracy",
+      "value": 79.6,
+      "units": "%",
+      "dataset": "ImageNet",
+      "split": "val, pre-trained at 224²",
+      "role": "result",
+      "is_own_result": true,
+      "confident": true,
+      "location": {
+        "kind": "table",
+        "label": "Table 8",
+        "page": 15,
+        "row": "data augmentation: w/o Rand-Augment",
+        "column": "pre-trained 224²"
+      },
+      "notes": "First data-augmentation-ablation row: Rand-Augment turned off (bold cross), AutoAug/Mixup/CutMix/Erasing/Stoch.Depth/Repeated Aug. left at the default row's settings (AutoAug off, the rest on). Own -- an ablation the authors ran on their own model. Row identity confirmed against the page image's checkmark grid; this specific on/off pattern does not extract to text at all, so the image was necessary here."
+    },
+    {
+      "id": "L15",
+      "frame_index": 244,
+      "metric": "acc. top-1",
+      "value": 71.5,
+      "units": "%",
+      "dataset": "ImageNet V2 matched frequency",
+      "split": "val, matched frequency",
+      "role": "result",
+      "is_own_result": true,
+      "confident": true,
+      "location": {
+        "kind": "table",
+        "label": "Table 10",
+        "page": 17,
+        "row": "224²",
+        "column": "V2 acc. top-1"
+      },
+      "notes": "Caption: 'Performance of DeiT trained at size 224² for varying finetuning sizes on ImageNet-1k, ImageNet-Real and ImageNet-v2 matched frequency.' The 224² row (no fine-tuning applied, same resolution as pre-training) reads throughput 291.05 | ImNet 81.8 | Real 86.7 | V2 71.5 -- essentially a second measurement of DeiT-B's base configuration, already printed in Table 5 (throughput 292.3, otherwise identical). Own, no baseline row in this table. Row/column read from the text dump's clean row-label-then-4-values sequence; no page image rendered for this page."
+    }
+  ]
+}

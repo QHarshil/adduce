@@ -67,3 +67,7 @@ research/calibration/derived/
 research/calibration/labels/
 research/calibration/models/
 research/calibration/reports/
+
+# Dev-set paper+code pairs (the pins in bench/dev/pairs.csv are tracked; the
+# fetched third-party clones, e-print sources and PDFs are not)
+bench/dev/pairs/
