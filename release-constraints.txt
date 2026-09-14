@@ -16,7 +16,7 @@
 # it.
 ruff==0.16.6
 mypy==2.3.1
-types-PyYAML==6.0.12.20260815
+types-PyYAML==6.0.12.20260906
 pytest==9.1.1
 pytest-cov==7.1.0
 coverage==7.16.0
