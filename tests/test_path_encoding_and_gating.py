@@ -510,6 +510,22 @@ def test_canonical_hyperparameter_separates_max_depth_from_num_layers():
     assert canonical_hyperparameter("layers") == "num_layers"
 
 
+def test_a_dotted_key_resolves_when_its_separator_is_followed_by_a_space():
+    """A separator plus a space is how a paper abbreviates, not how a config nests.
+
+    The terminal segment was taken unstripped, so ``optim. lr`` yielded
+    ``" lr"`` and resolved to nothing where ``lr`` resolves. One word named a
+    hyperparameter or named none according to a character that is no part of
+    it, and a value the repository holds was reported as absent from it.
+    """
+    assert canonical_hyperparameter("optim. lr") == "learning_rate"
+    assert canonical_hyperparameter("optim.lr") == "learning_rate"
+    assert canonical_hyperparameter("opt. weight decay") == "weight_decay"
+    # The stripping resolves the segment, it does not widen the vocabulary: a
+    # terminal naming nothing still names nothing.
+    assert canonical_hyperparameter("model. encoder") is None
+
+
 _TREE_PAPER = (
     "\\documentclass{article}\n"
     "\\begin{document}\n"

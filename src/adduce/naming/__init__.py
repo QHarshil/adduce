@@ -136,12 +136,20 @@ for _group in _HYPERPARAM_GROUPS:
 
 
 def canonical_hyperparameter(name: str) -> str | None:
-    """Map a config key or paper phrase to its canonical hyperparameter, if known."""
+    """Map a config key or paper phrase to its canonical hyperparameter, if known.
+
+    The terminal segment is stripped as the whole name is. A separator followed
+    by a space is how a paper abbreviates rather than how a config nests, so
+    ``optim. lr`` split to ``" lr"``, which resolved to nothing where ``lr``
+    resolves to ``learning_rate``: one word named a hyperparameter or named
+    none according to a character that is no part of it, and a learning rate
+    the config stated outright was reported as having no counterpart in code.
+    """
     key = name.strip().lower()
     if key in HYPERPARAM_SYNONYMS:
         return HYPERPARAM_SYNONYMS[key]
     # Dotted config keys resolve on their terminal segment (optim.lr -> lr).
-    terminal = key.rsplit(".", 1)[-1].rsplit("/", 1)[-1]
+    terminal = key.rsplit(".", 1)[-1].rsplit("/", 1)[-1].strip()
     return HYPERPARAM_SYNONYMS.get(terminal)
 
 

@@ -32,6 +32,22 @@ def test_values_match_rounding_awareness():
     assert values_match(50, 50.0)
 
 
+def test_a_printed_trailing_zero_tightens_the_tolerance():
+    """The tolerance is half the last place the paper printed, and a float forgets it.
+
+    ``0.30`` and ``0.3`` are different statements: the first says the value is
+    0.3 to a hundredth, the second only to a tenth. Both parse to the same
+    float, so inferring the places from it gave both the wider tolerance and
+    reported 0.34 as agreeing with a paper that printed 0.30.
+    """
+    assert values_match(0.30, 0.34)  # inferred: one decimal, tolerance 0.05
+    assert not values_match(0.30, 0.34, decimals=2)
+    assert values_match(0.30, 0.34, decimals=1)
+    assert values_match(0.30, 0.302, decimals=2)
+    # ``None`` keeps every caller that has no parse to read it from unchanged.
+    assert values_match(0.814, 0.8137, decimals=None)
+
+
 def test_hyperparameter_drift_detected(make_evidence):
     ev = make_evidence(
         {
