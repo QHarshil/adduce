@@ -1,0 +1,1053 @@
+{
+  "schema": "adduce-dev-labels/1",
+  "pair_id": "clip",
+  "arxiv_id": "2103.00020",
+  "arxiv_version": "1",
+  "labelled_from": "pdf",
+  "labeller_passes": 1,
+  "sampled": true,
+  "sampling_seed": 20260810,
+  "target_sample_size": 15,
+  "sampling_method": "CLIP is a two-column ICML-style paper, so reading order has to say how the columns are resolved. The order used is: page order; within a page, a float that spans both columns is read at its vertical position (top-of-page floats before both columns), and otherwise the left column top-to-bottom then the right column top-to-bottom, with a single-column float read where it sits in its own column. That order was checked against page images for pages 8, 21, 40 and 44 -- page 8 reads as left-column prose, then Figure 5 at the top of the right column, then the prose below it; page 21 reads as Table 3 (top left), Table 4 (top right), Table 5 (full width), then Section 7.1 left then right; page 44 reads as Appendix B and Appendix C down the left column, then Table 12 and Appendix D down the right -- and follows the block order of the page-text rendering elsewhere. Within a table, cells are indexed row-major and left-to-right across that row's own-result columns only; within a figure that prints per-item values, cells are indexed in the figure's drawn order (for the horizontal bar charts, top bar first: Figure 5 was verified against the page image and runs StanfordCars +28.9 at the top down to EuroSAT -37.1 at the bottom, which is the reverse of the order the text dump emits its labels in). That assigns every own-result cell in frame_locations a contiguous 1-based index, giving a population of 1..2441. Ownership is the decision this paper turns on, and it is settled per cell rather than per row. CLIP re-evaluates a large amount of prior work itself, and Appendices A.2 and A.3 are the evidence: A.2 lists the released checkpoints the authors downloaded (nine EfficientNets plus ten noisy-student variants, six Instagram ResNeXts, twelve BiT-S/BiT-M, four ImageNet-21k ViTs, seven SimCLRv2, two BYOL, two MoCo, VirTex, three original ResNets) and A.3 gives the logistic regression they fitted on each one's penultimate features. Every one of Table 10's 1782 cells is therefore an own result -- the authors' own rerun of a prior model -- and no citation appears anywhere in that table's body. The same reading makes Table 14's 'ES Best' row own (it 'reports the best performance across the 56 non-CLIP models in our evaluation suite', and 98.9 / 58.6 / 59.0 are traceable to Table 10's NS L2-475 and Instagram FixRes rows; the superscripts h and i name which model reached the score, not where the number came from), and makes Table 15's linear 'NS ENet-L2' row own despite its citation superscript, because the caption says outright that 'linear CLIP and linear NS ENet-L2 are trained and evaluated on a single frame subsampled version of each dataset'. Table 3, Table 4 and Table 5's 'Linear Probe Instagram' rows are own for the same reason, and the 'FairFace Model' rows in Tables 3 and 4 are read as own too: Section 7.1 frames the comparison as 'the classification tests we ran', and footnote 7 records that the FairFace model had to be reconciled to a binary White / Non-White race split that its own paper does not report. That last one is the frame's least certain call; it is worth 6 of 2441 cells. In the other direction, ownership is refused wherever a citation carries the number: Table 1's 'Visual N-Grams' row, Table 13's nine non-CLIP rows (the caption states 'For all other models, best results from the paper are reported'), Table 14's SOTA / JOINT / CBoW rows, Table 15's five finetune and zero-shot baseline rows, Table 16's two Taori-suite rows, Table 17's four cited geolocalization systems, Figure 13's 'ImageNet ResNet101' row, and the Introduction's 11.5% / 88.4% / 50% / 5%. Deltas: a delta counts only where no absolute is printed beside it. That excludes Table 12's two Delta columns (each the difference of the two absolutes printed immediately to its left), Figure 13's Delta Score row (each delta printed directly under the two absolutes it is computed from), and the 9.2% in 'increases its ImageNet accuracy by 9.2% to 85.4% overall'. It includes, as printed reported numbers with no absolute beside them, all 27 of Figure 5's bars, all 27 of Figure 11's bars, all 16 of Figure 14's bars, and the prose deltas at 1.3%, 3.5%, almost 5%, 14.5%, 7.7%, almost 5% (page 9), 2.6%, 5%, 14.7%, 4.7/3.8/2.8/1.9%, 5%, 2.3%, 0.7 points and 10 points. Where the same measurement is restated at a different location it is counted again, following the convention that each printed instance at a new location is its own printed number; where a figure's caption restates a value already printed in that same figure's body (Figure 7's 184, Figure 14's 9.2%, Figure 4's 5 points and 4x, Figure 2's 3x and 4x) it is not counted twice, since caption and plot are one location. Excluded as not result cells, consistently throughout: ranges and bounds ('by over 20%', '10% to 25%', '97-100%', 'between 1 and 2 points', 'within 1%', 'up to +/-20%', the 95th-percentile interval 0.93-1.79 and every bracketed confidence interval); tallies of how many datasets a model wins on, which are counts rather than measurements -- this removes 'wins on 16 of the 27 datasets', '21 of the 27 datasets', '9 datasets have no detected overlap', '5 of the 7 datasets' and, in a table, Table 12's Dataset 'Wins' row; multipliers written as English words rather than digits ('twice the compute', 'three times slower', 'more than doubles the accuracy'), on the same footing as bit's exclusion of 'around half'; dataset statistics, which here include the 400M pair count, all per-dataset class and split sizes in Table 9, and the data-overlap rates (median 2.2%, average 3.2%, Country211's 21.5%, Birdsnap's 12.1%) -- a contamination rate is a property of the data, the same call that excluded bit's near-duplicate counts, while the accuracy shifts those overlaps cause (0.6%, 0.2%, 20%) are counted; hyperparameters and training cost, including the RN50x64's '18 days to train on 592 V100 GPUs' and the '405 years' illustration; and Figure 21's 36 'correct rank' / 'correct probability' pairs, which report the model's output on one randomly chosen image each in an explicitly qualitative figure rather than a measured outcome on a dataset (a reviewer who disagrees would add 72 cells there). Figures 1, 3, 6, 9, 10, 12, 15, 16, 18, 19, 20 and 22 print only axis-tick calibration, legends and names and count 0; the unusual thing about this paper is how many of its figures do print values, and Figures 2, 4, 5, 7, 8, 11, 13, 14 and 17 together contribute 109 cells. The Abstract contributes 0: it states no numeric performance value of its own. random.seed(20260810); random.sample(range(1, 2442), 15) drew {3, 19, 200, 222, 392, 449, 1109, 1323, 1454, 1573, 1711, 1725, 1948, 2355, 2436}; each label below records its draw as frame_index. Nine of the fifteen land in Table 10 (page 40), two in Table 5 (page 21), one in Table 12 (page 44), one in Figure 5 (page 8) and two in prose (pages 4 and 47). Page images were rendered for exactly four pages of the same unchanged PDF -- 8, 21, 40 and 44 -- and every row-and-column attribution below was checked against them; page 21 was also what settled Table 5's cell count, since only the page image shows that two of its three combined rows leave the Average cell blank (70 printed cells, not 72). The two prose draws are sequential and needed no image.",
+  "frame": {
+    "Abstract (page 1)": 0,
+    "Section 1, Introduction (page 1)": 0,
+    "Figure 1, Summary of our approach (page 2)": 0,
+    "Section 1 cont'd, Introduction (page 2)": 0,
+    "Figure 2, CLIP is much more efficient at zero-shot transfer (page 3)": 2,
+    "Section 2.1, Natural Language Supervision (page 3)": 0,
+    "Section 2.2, Creating a Sufficiently Large Dataset (page 3)": 0,
+    "Section 2.2 cont'd (page 4)": 0,
+    "Section 2.3, Selecting an Efficient Pre-Training Method (page 4)": 1,
+    "Section 2.4, Choosing and Scaling a Model (page 4)": 0,
+    "Figure 3, Numpy-like pseudocode (page 5)": 0,
+    "Section 2.4 cont'd (page 5)": 0,
+    "Section 2.5, Training (page 5)": 0,
+    "Section 3.1.1, Motivation (page 6)": 0,
+    "Section 3.1.2, Using CLIP for Zero-Shot Transfer (page 6)": 0,
+    "Section 3.1.3, Initial Comparison to Visual N-Grams (page 6)": 2,
+    "Table 1, Comparing CLIP to prior zero-shot transfer image classification results (page 7)": 3,
+    "Section 3.1.3 cont'd (page 7)": 1,
+    "Section 3.1.4, Prompt Engineering and Ensembling (page 7, left column)": 0,
+    "Figure 4, Prompt engineering and ensembling improve zero-shot performance (page 7)": 2,
+    "Section 3.1.4 cont'd (page 7, right column)": 1,
+    "Section 3.1.4 cont'd (page 8)": 2,
+    "Section 3.1.5, Analysis of Zero-Shot CLIP Performance (page 8, left column)": 0,
+    "Figure 5, Zero-Shot CLIP vs. Linear Probe on ResNet50 (page 8)": 27,
+    "Section 3.1.5 cont'd (page 8, right column)": 3,
+    "Figure 6, Zero-shot CLIP outperforms few-shot linear probes (page 9)": 0,
+    "Section 3.1.5 cont'd (page 9)": 1,
+    "Figure 7, The data efficiency of zero-shot transfer varies widely (page 10)": 28,
+    "Section 3.1.5 cont'd (page 10, left column)": 4,
+    "Figure 8, Zero-shot performance is correlated with linear probe performance (page 10)": 1,
+    "Section 3.1.5 cont'd (page 10, right column)": 1,
+    "Figure 9, Zero-shot CLIP performance scales smoothly (page 11)": 0,
+    "Section 3.1.5 cont'd (page 11)": 0,
+    "Section 3.2, Representation Learning (page 11)": 2,
+    "Figure 10, Linear probe performance of CLIP models (page 12)": 0,
+    "Section 3.2 cont'd (page 12)": 3,
+    "Figure 11, Logistic Regression on CLIP vs. EfficientNet L2 NS (page 13)": 27,
+    "Section 3.2 cont'd (page 13)": 0,
+    "Section 3.3, Robustness to Natural Distribution Shift (page 13)": 0,
+    "Figure 12, CLIP's features are more robust to task shift (page 14)": 0,
+    "Section 3.3 cont'd (page 14)": 4,
+    "Figure 13, Zero-shot CLIP is much more robust to distribution shift (page 15)": 7,
+    "Section 3.3 cont'd (page 15)": 6,
+    "Figure 14, Supervised adaptation to ImageNet (page 16)": 16,
+    "Section 3.3 cont'd (page 16)": 0,
+    "Section 4, Comparison to Human Performance (page 16)": 1,
+    "Figure 15, Few-shot CLIP also increases effective robustness (page 17)": 0,
+    "Section 4 cont'd (page 17, left column)": 2,
+    "Table 2, Comparison of human performance on Oxford IIT Pets (page 17)": 16,
+    "Section 4 cont'd (page 17, right column)": 0,
+    "Section 5, Data Overlap Analysis (page 17)": 0,
+    "Figure 16, The hardest problems for CLIP (page 18)": 0,
+    "Section 5 cont'd (page 18)": 4,
+    "Section 6, Limitations (page 18)": 0,
+    "Figure 17, Few statistically significant improvements due to detected data overlap (page 19)": 1,
+    "Section 6 cont'd (page 19)": 2,
+    "Section 6 cont'd (page 20)": 0,
+    "Section 7, Broader Impacts (page 20)": 0,
+    "Table 3, Percent accuracy on Race, Gender, Age -- FairFace 'White' (page 21)": 12,
+    "Table 4, Percent accuracy on Race, Gender, Age -- FairFace 'Non-White' (page 21)": 12,
+    "Table 5, Percent accuracy on gender classification by FairFace race category (page 21)": 70,
+    "Section 7.1, Bias (page 21)": 0,
+    "Table 6, Percent of images classified into crime-related and non-human categories by race (page 22)": 14,
+    "Table 7, Percent of images classified into crime-related and non-human categories by age (page 22)": 18,
+    "Section 7.1 cont'd (page 22)": 8,
+    "Section 7.1 cont'd (page 23)": 1,
+    "Figure 18, CLIP performance on Member of Congress images (page 24)": 0,
+    "Section 7.2, Surveillance (page 24)": 3,
+    "Table 8, CelebA Zero-Shot Top-1 Identity Recognition Accuracy (page 25)": 12,
+    "Section 7.2 cont'd (page 25)": 2,
+    "Section 7.3, Future Work (page 25)": 0,
+    "Section 8, Related Work (pages 25-27)": 0,
+    "Section 9, Conclusion (page 27)": 0,
+    "Acknowledgments (page 27)": 0,
+    "References (pages 27-36)": 0,
+    "Appendix A.1, Datasets (page 37)": 0,
+    "Appendix A.2, Models (pages 37-38)": 0,
+    "Figure 19, Two example images from the Rendered SST2 dataset (page 38)": 0,
+    "Appendix A.3, Evaluation (page 38)": 0,
+    "Appendix A.4, Results (page 38)": 0,
+    "Table 9, Datasets examined for linear probes (page 39)": 0,
+    "Table 10, Linear probe performance of various pre-trained models over 27 datasets (page 40)": 1782,
+    "Figure 20, Linear probe performance plotted for each of the 27 datasets (pages 41-42)": 0,
+    "Figure 21, Visualization of predictions from 36 CLIP zero-shot classifiers (page 42)": 0,
+    "Table 11, Zero-shot performance of CLIP models over 27 datasets (page 43)": 243,
+    "Figure 22, CLIP's zero-shot performance compared to linear-probe ResNet performance (page 43)": 0,
+    "Appendix B, Zero-Shot Prediction (page 44)": 0,
+    "Appendix C, Duplicate Detector (page 44)": 1,
+    "Table 12, CLIP performs similarly when trained on only YFCC100M (page 44)": 32,
+    "Appendix D, Dataset Ablation on YFCC100M (page 44)": 0,
+    "Appendix D cont'd (page 45)": 0,
+    "Appendix E, Selected Task and Dataset Results (page 45)": 0,
+    "Appendix E.1, Image and Text Retrieval (page 45)": 0,
+    "Appendix E.2, Optical Character Recognition (page 45)": 3,
+    "Table 13, CLIP improves zero-shot retrieval (page 46)": 12,
+    "Table 14, OCR performance on 5 datasets (page 46)": 12,
+    "Appendix E.3, Action Recognition in Videos (page 46, left column)": 0,
+    "Table 15, Action recognition performance on 3 video datasets (page 46)": 8,
+    "Appendix E.3 cont'd (page 46, right column)": 0,
+    "Table 16, Detailed ImageNet robustness performance (page 47)": 20,
+    "Appendix E.3 cont'd (page 47)": 1,
+    "Table 17, Geolocalization performance on the IM2GPS test set (page 47)": 5,
+    "Appendix E.4, Geolocalization (page 47)": 0,
+    "Appendix E.5, Robustness to Distribution Shift (page 47)": 0,
+    "Appendix F, Model Hyperparameters, Tables 18-20 (page 48)": 0
+  },
+  "frame_locations": [
+    {
+      "label": "Abstract (page 1)",
+      "page": 1,
+      "own_result_cells": 0,
+      "notes": "'a dataset of 400 million (image, text) pairs', 'over 30 different existing computer vision datasets', 'any of the 1.28 million training examples it was trained on' -- dataset_statistic and dataset counts throughout. Unusually for a headline paper, the abstract states no numeric performance value of its own ('we match the accuracy of the original ResNet-50 on ImageNet zero-shot' is stated without a figure), so this location carries no result cell."
+    },
+    {
+      "label": "Section 1, Introduction (page 1)",
+      "page": 1,
+      "own_result_cells": 0,
+      "notes": "Motivating survey of NLP pre-training; no numeric value stated on this page."
+    },
+    {
+      "label": "Figure 1, Summary of our approach (page 2)",
+      "page": 2,
+      "own_result_cells": 0,
+      "notes": "Three-panel schematic of contrastive pre-training, zero-shot classifier construction and zero-shot prediction. Symbolic only (I1*T1, T_N, 'A photo of a {object}.'); no measured value printed."
+    },
+    {
+      "label": "Section 1 cont'd, Introduction (page 2)",
+      "page": 2,
+      "own_result_cells": 0,
+      "notes": "Every figure here belongs to prior work and is explicitly cited: 'Li et al. (2017) reach only 11.5% accuracy on ImageNet in a zero-shot setting', 'the 88.4% accuracy of the current state of the art (Xie et al., 2020)', 'the 50% accuracy of classic computer vision approaches (Deng et al., 2012)', 'increased accuracy by over 5%' (Mahajan et al., 2018) -- baselines, not own results. '1000 and 18291 classes', '400 million (image, text) pairs', 'a series of eight models spanning almost 2 orders of magnitude of compute' are dataset_statistic / setup."
+    },
+    {
+      "label": "Figure 2, CLIP is much more efficient at zero-shot transfer (page 3)",
+      "page": 3,
+      "own_result_cells": 2,
+      "notes": "Zero-shot ImageNet accuracy against images processed for three objectives. Axis ticks are calibration, but two annotations print measured outcomes: '3X efficiency' (transformer language model vs. bag-of-words prediction) and '4X efficiency' (bag-of-words prediction vs. the contrastive CLIP objective). Both are the authors' own ablation. The caption restates the same two values ('learns 3x slower', 'improves efficiency another 4x') and is not counted twice. 2 own cells."
+    },
+    {
+      "label": "Section 2.1, Natural Language Supervision (page 3)",
+      "page": 3,
+      "own_result_cells": 0,
+      "notes": "Terminological discussion of what counts as natural language supervision; no number."
+    },
+    {
+      "label": "Section 2.2, Creating a Sufficiently Large Dataset (page 3)",
+      "page": 3,
+      "own_result_cells": 0,
+      "notes": "'approximately 100,000 training photos each', 'up to 3.5 billion Instagram photos', 'at 100 million photos', 'shrunk by a factor of 6 to only 15 million photos', '400 million (image, text) pairs', 'a set of 500,000 queries' -- dataset_statistic throughout."
+    },
+    {
+      "label": "Section 2.2 cont'd (page 4)",
+      "page": 4,
+      "own_result_cells": 0,
+      "notes": "'up to 20,000 (image, text) pairs per query' -- dataset construction, dataset_statistic."
+    },
+    {
+      "label": "Section 2.3, Selecting an Efficient Pre-Training Method (page 4)",
+      "page": 4,
+      "own_result_cells": 1,
+      "notes": "'Mahajan et al. (2018) required 19 GPU years ... Xie et al. (2020) required 33 TPUv3 core-years' are cited prior-work training costs (baseline). 'a 63 million parameter transformer language model, which already uses twice the compute of its ResNet-50 image encoder, learns to recognize ImageNet classes three times slower' states its multipliers as English words, not printed digits, and is not counted. One own cell: 'observed a further 4x efficiency improvement in the rate of zero-shot transfer to ImageNet'."
+    },
+    {
+      "label": "Section 2.4, Choosing and Scaling a Model (page 4)",
+      "page": 4,
+      "own_result_cells": 0,
+      "notes": "ResNet-D / antialiased blur pooling / attention pooling architecture description; no measured value."
+    },
+    {
+      "label": "Figure 3, Numpy-like pseudocode (page 5)",
+      "page": 5,
+      "own_result_cells": 0,
+      "notes": "Pseudocode listing of the CLIP objective; no measured value."
+    },
+    {
+      "label": "Section 2.4 cont'd (page 5)",
+      "page": 5,
+      "own_result_cells": 0,
+      "notes": "'a 63M-parameter 12-layer 512-wide model with 8 attention heads', '49,152 vocab size', 'max sequence length was capped at 76' -- hyperparameter throughout."
+    },
+    {
+      "label": "Section 2.5, Training (page 5)",
+      "page": 5,
+      "own_result_cells": 0,
+      "notes": "Full training recipe: 5 ResNets and 3 Vision Transformers, 4x/16x/64x compute scaling, 32 epochs, Adam with decoupled weight decay, cosine schedule, temperature initialised to 0.07 and clipped at 100, minibatch 32,768, mixed precision. 'The largest ResNet model, RN50x64, took 18 days to train on 592 V100 GPUs while the largest Vision Transformer took 12 days on 256 V100 GPUs' is recorded here as training cost / setup rather than a reported outcome, on the same footing as the epoch count beside it; no result cell."
+    },
+    {
+      "label": "Section 3.1.1, Motivation (page 6)",
+      "page": 6,
+      "own_result_cells": 0,
+      "notes": "Defines the broader sense of zero-shot used in the paper and describes Visual N-Grams' method ('142,806 visual n-grams') -- a property of prior work's model, not a result."
+    },
+    {
+      "label": "Section 3.1.2, Using CLIP for Zero-Shot Transfer (page 6)",
+      "page": 6,
+      "own_result_cells": 0,
+      "notes": "Describes the zero-shot classifier construction ('32,768 total classes defined via natural language descriptions' -- a restatement of the batch size, hyperparameter). No result value."
+    },
+    {
+      "label": "Section 3.1.3, Initial Comparison to Visual N-Grams (page 6)",
+      "page": 6,
+      "own_result_cells": 2,
+      "notes": "'The best CLIP model improves accuracy on ImageNet from a proof of concept 11.5% to 76.2%' -- 11.5% is Visual N-Grams' quoted figure (baseline), 76.2% is CLIP's own (1 cell). 'this model has a 95% top-5 accuracy, matching Inception-V4 (Szegedy et al., 2016)' -- 95% is CLIP's own top-5 (1 cell); no Inception-V4 figure is printed. '1.28 million crowd-labeled training examples' is dataset_statistic. 2 own cells."
+    },
+    {
+      "label": "Table 1, Comparing CLIP to prior zero-shot transfer image classification results (page 7)",
+      "page": 7,
+      "own_result_cells": 3,
+      "notes": "Caption: 'Comparing CLIP to prior zero-shot transfer image classification results. CLIP improves performance on all three datasets by a large amount. This improvement reflects many differences in the 4 years since the development of Visual N-Grams (Li et al., 2017).' Two rows over three columns (aYahoo, ImageNet, SUN). The 'Visual N-Grams' row (72.4, 11.5, 23.0) is quoted from Li et al. (2017) and is a baseline; the 'CLIP' row (98.4, 76.2, 58.5) is own. 3 own cells."
+    },
+    {
+      "label": "Section 3.1.3 cont'd (page 7)",
+      "page": 7,
+      "own_result_cells": 1,
+      "notes": "'we train on a dataset that is 10x larger, use a vision model that requires nearly 100x more compute per prediction, likely used over 1000x their training compute' -- setup/cost comparisons, not outcomes. 'we trained a CLIP ResNet-50 on the same YFCC100M dataset ... and found it matched their reported ImageNet performance within a V100 GPU day' prints no value. 'on SUN, CLIP more than doubles the accuracy' has no digit. One own cell: 'On aYahoo, CLIP achieves a 95% reduction in the number of errors' -- a relative error reduction whose absolute (98.4) sits in Table 1, a different location. 'over 30 datasets', 'over 50 existing computer vision systems' are counts."
+    },
+    {
+      "label": "Section 3.1.4, Prompt Engineering and Ensembling (page 7, left column)",
+      "page": 7,
+      "own_result_cells": 0,
+      "notes": "Polysemy and prompt-template discussion; the only numbers are class names and template text. No value."
+    },
+    {
+      "label": "Figure 4, Prompt engineering and ensembling improve zero-shot performance (page 7)",
+      "page": 7,
+      "own_result_cells": 2,
+      "notes": "Average score over 36 datasets against model GFLOPs, for prompt-engineered/ensembled versus contextless class names. Axis ticks (6.1, 9.9, 21.5, 75.3, 265.9 GFLOPs; 45-70 score) are calibration. Two annotations print measured outcomes: '4X efficiency gain' and '5 point improvement'. The caption restates both ('by almost 5 points on average across 36 datasets', 'similar to the gain from using 4 times more compute') and is not counted twice. 2 own cells."
+    },
+    {
+      "label": "Section 3.1.4 cont'd (page 7, right column)",
+      "page": 7,
+      "own_result_cells": 1,
+      "notes": "'just using this prompt improves accuracy on ImageNet by 1.3%' -- one own delta; no absolute is printed beside it. 1 own cell."
+    },
+    {
+      "label": "Section 3.1.4 cont'd (page 8)",
+      "page": 8,
+      "own_result_cells": 2,
+      "notes": "'we ensemble 80 different context prompts and this improves performance by an additional 3.5% over the single default prompt' (80 prompts is a hyperparameter; 3.5% is 1 own cell) and 'prompt engineering and ensembling improve ImageNet accuracy by almost 5%' (1 own cell -- distinct from Figure 4's '5 point improvement', which is the average across 36 datasets rather than ImageNet). 2 own cells."
+    },
+    {
+      "label": "Section 3.1.5, Analysis of Zero-Shot CLIP Performance (page 8, left column)",
+      "page": 8,
+      "own_result_cells": 0,
+      "notes": "Introduces the linear-probe-on-ResNet-50 baseline and the 27-dataset suite; no value printed before Figure 5."
+    },
+    {
+      "label": "Figure 5, Zero-Shot CLIP vs. Linear Probe on ResNet50 (page 8)",
+      "page": 8,
+      "own_result_cells": 27,
+      "notes": "Horizontal bar chart, x-axis 'Delta Score (%)', one bar per dataset in the 27-dataset suite, each labelled with its printed delta. Verified against the page image: the bars run top-to-bottom from StanfordCars (+28.9) down to EuroSAT (-37.1), and the 27 cells are indexed in that drawn order. Every bar is a delta between zero-shot CLIP (Table 11) and a linear probe on ResNet-50 features (Table 10); neither absolute is printed in this figure, so all 27 count. Both sides of the subtraction are the authors' own measurements -- the ResNet-50 linear probe is their own logistic regression on a released checkpoint (Appendix A.2/A.3) -- so all 27 are own. Checked arithmetically at three points against Tables 10 and 11 (ImageNet +1.9 = 76.2-74.3; StanfordCars +28.9 = 78.8-49.9; SST2 +12.4 = 67.9-55.5). The caption's '16 datasets' and '27 dataset eval suite' are tallies, not cells. 27 own cells."
+    },
+    {
+      "label": "Section 3.1.5 cont'd (page 8, right column)",
+      "page": 8,
+      "own_result_cells": 3,
+      "notes": "'wins on 16 of the 27 datasets' is a tally, excluded. 'outperforms logistic regression on ResNet-50 features by over 20%' and 'underperforms by over 10%' are bounds, not point values. Three own cells: 'On STL10, CLIP achieves 99.3% overall'; 'On Kinetics700, CLIP outperforms a ResNet-50 by 14.5%'; 'outperforms a ResNet-50's features by 7.7% on UCF101' (the latter two are deltas restated from Figure 5, a different location)."
+    },
+    {
+      "label": "Figure 6, Zero-shot CLIP outperforms few-shot linear probes (page 9)",
+      "page": 9,
+      "own_result_cells": 0,
+      "notes": "Average score against labelled examples per class for zero-shot CLIP, linear-probe CLIP, BiT-M, SimCLRv2 and ResNet50. Axis-tick calibration and legend only; no per-point value printed."
+    },
+    {
+      "label": "Section 3.1.5 cont'd (page 9)",
+      "page": 9,
+      "own_result_cells": 1,
+      "notes": "'zero-shot CLIP matches the performance of 4-shot logistic regression', 'roughly matches ... the best performing 16-shot classifier' state settings, not values. One own cell: 'the Noisy Student EfficientNet-L2 outperforms it in a fully supervised setting by almost 5% on average across 27 datasets' -- a delta between two of the authors' own linear probes (Table 10), with no absolute beside it."
+    },
+    {
+      "label": "Figure 7, The data efficiency of zero-shot transfer varies widely (page 10)",
+      "page": 10,
+      "own_result_cells": 28,
+      "notes": "Horizontal bar chart printing, for each of 26 datasets, the number of labelled examples per class a linear classifier on the same CLIP feature space needs to match the zero-shot classifier: 0.9, 0.9, 1.5, 1.5, 1.6, 2.0, 2.6, 2.7, 2.9, 2.9, 3.5, 3.9, 4.8, 6.0, 9.8, 12.0, 12.7, 13.6, 14.4, 14.7, 16.0, 32, 48, 64, 81, 184. Two further printed values, 'Median: 5.4' and 'Mean: 20.8', are inside the plot. All 28 are the authors' own estimates. The caption's restatement of 184 is the same printed value at the same location and is not counted twice. 28 own cells."
+    },
+    {
+      "label": "Section 3.1.5 cont'd (page 10, left column)",
+      "page": 10,
+      "own_result_cells": 4,
+      "notes": "'from less than 1 labeled example per class to 184' -- 'less than 1' is a bound (excluded), 184 counts (restated from Figure 7, a different location). 'with a median of 5.4' and 'the mean estimated data efficiency is 20.8 examples per class' count. 'the 20% of datasets where supervised classifiers require many labeled examples' is a proportion of datasets, a tally. 'underperform fully supervised classifiers by 10% to 25%' is a range, not a cell. 'There is a positive correlation of 0.82' counts; the 'p-value < 10^-6' beside it is a bound. 4 own cells."
+    },
+    {
+      "label": "Figure 8, Zero-shot performance is correlated with linear probe performance (page 10)",
+      "page": 10,
+      "own_result_cells": 1,
+      "notes": "Scatter of zero-shot against linear-probe performance across 27 datasets, with the datasets named but no per-point value printed. One printed measured value: 'r = 0.82'. The caption's 'shifted 10 to 25 points lower', 'On only 5 datasets', '(<=3 point difference)' are a range, a tally and a bound. 1 own cell."
+    },
+    {
+      "label": "Section 3.1.5 cont'd (page 10, right column)",
+      "page": 10,
+      "own_result_cells": 1,
+      "notes": "'only approaches fully supervised performance on 5 datasets' and 'both ... are over 90%' are a tally and a bound. One own cell: the regression slope, 'for every 1% improvement in fully supervised performance, zero-shot performance improves by 1.28%' -- the 1% is the reference increment, 1.28 is the estimate. The '95th-percentile confidence intervals ... (0.93-1.79)' is a range, not a cell."
+    },
+    {
+      "label": "Figure 9, Zero-shot CLIP performance scales smoothly (page 11)",
+      "page": 11,
+      "own_result_cells": 0,
+      "notes": "Average zero-shot error against model GFLOPs for the five ResNet CLIP models; axis-tick calibration and model names only. The caption's '39 evals on 36 different datasets' and '44x range of compute' are counts and a setup range."
+    },
+    {
+      "label": "Section 3.1.5 cont'd (page 11)",
+      "page": 11,
+      "own_result_cells": 0,
+      "notes": "Closing discussion of per-evaluation variance; no value."
+    },
+    {
+      "label": "Section 3.2, Representation Learning (page 11)",
+      "page": 11,
+      "own_result_cells": 2,
+      "notes": "'Studying 66 different models on 27 different datasets requires tuning 1782 different evaluations' is a setup count. Two own cells: 'CLIP vision transformers are about 3x more compute efficient than CLIP ResNets' and 'This model outperforms the best existing model across this evaluation suite by an average of 2.6%' (a delta over the authors' own Table 10 linear probes, no absolute beside it)."
+    },
+    {
+      "label": "Figure 10, Linear probe performance of CLIP models (page 12)",
+      "page": 12,
+      "own_result_cells": 0,
+      "notes": "Two scatter panels (Kornblith et al.'s 12 datasets; all 27 datasets) of average score against forward-pass GFLOPs for every model family. Axis ticks and legend only. The caption directs the reader to Table 10 for individual scores, and they are counted there."
+    },
+    {
+      "label": "Section 3.2 cont'd (page 12)",
+      "page": 12,
+      "own_result_cells": 3,
+      "notes": "'The improvement in average score of the best model over previous systems increases from 2.6% to 5%' -- two own deltas (2.6 restated from page 11, a different location; 5 new). 'CLIP outperforms the Noisy Student EfficientNet-L2 on 21 of the 27 datasets' is a tally. 'the 14.7% improvement on GTSRB' counts (restated from Figure 11, a different location). 3 own cells."
+    },
+    {
+      "label": "Figure 11, Logistic Regression on CLIP vs. EfficientNet L2 NS (page 13)",
+      "page": 13,
+      "own_result_cells": 27,
+      "notes": "Horizontal bar chart, x-axis 'Delta Score (%)', printing one delta per dataset for all 27 datasets: -3.0, -2.4, -1.7, -1.2, -0.8, -0.5, +0.0, +0.5, +0.5, +0.6, +0.9, +1.3, +1.4, +1.4, +2.3, +3.1, +3.2, +3.9, +4.5, +5.1, +6.2, +6.5, +14.7, +15.9, +18.8, +22.7, +23.6. Both sides are the authors' own linear probes from Table 10 (checked: GTSRB +14.7 = 92.4-77.7; ImageNet -3.0 = 85.4-88.4), and no absolute is printed in the figure, so all 27 count as own. Cells are indexed in the chart's drawn order. The caption's '21 out of 27 datasets' is a tally."
+    },
+    {
+      "label": "Section 3.2 cont'd (page 13)",
+      "page": 13,
+      "own_result_cells": 0,
+      "notes": "One closing clause about PatchCamelyon and CLEVRCounts; no value."
+    },
+    {
+      "label": "Section 3.3, Robustness to Natural Distribution Shift (page 13)",
+      "page": 13,
+      "own_result_cells": 0,
+      "notes": "Summarises Taori et al. (2020)'s framework and its 7 natural distribution shifts. 'A ResNet-101 makes 5 times as many mistakes when evaluated on these natural distribution shifts' is recorded as a baseline: ResNet-101's distribution-shift accuracies are the figures Taori et al. (2020)'s suite supplies, quoted rather than measured here (Table 16's caption states the comparison is 'with the current state of the art results reported in Taori et al. (2020)'s evaluation suite'). No own cell."
+    },
+    {
+      "label": "Figure 12, CLIP's features are more robust to task shift (page 14)",
+      "page": 14,
+      "own_result_cells": 0,
+      "notes": "Two scatter panels of transfer score against ImageNet score across model families; axis ticks and legend only, no per-point value printed."
+    },
+    {
+      "label": "Section 3.3 cont'd (page 14)",
+      "page": 14,
+      "own_result_cells": 4,
+      "notes": "Four own cells. 'reduce the size of the gap between ImageNet accuracy and accuracy under distribution shift by up to 75%' (75; recorded as a printed measured maximum rather than a range). 'adapting CLIP to the ImageNet distribution increases its ImageNet accuracy by 9.2% to 85.4% overall' -- only 85.4 counts, the 9.2 delta has its absolute printed beside it in the same breath. 'It is surprising to see a 9.2% increase in accuracy' counts (a fresh instance one paragraph later with no absolute beside it); 'roughly 3 years of improvement in SOTA' is not a measurement. 'Performance decreases by 4.7% on' -- the sentence breaks across the page here and 4.7 is the last printed value on page 14."
+    },
+    {
+      "label": "Figure 13, Zero-shot CLIP is much more robust to distribution shift (page 15)",
+      "page": 15,
+      "own_result_cells": 7,
+      "notes": "(Left) robustness scatter, axis ticks only. (Right) a banana-class panel printing top-1 accuracy for six datasets (ImageNet, ImageNetV2, ImageNet-A, ImageNet-R, ObjectNet, ImageNet Sketch) for two rows, 'ImageNet ResNet101' (76.2, 64.3, 2.7, 37.7, 32.6, 25.2) and 'Zero-Shot CLIP' (76.2, 70.1, 77.1, 88.9, 72.3, 60.2), plus a 'Delta Score' row (0%, +5.8%, +74.4%, +51.2%, +39.7%, +35.0%). The ResNet-101 row is quoted from Taori et al. (2020)'s suite and is a baseline; the Delta Score row is excluded because both absolutes are printed directly above each delta in the same figure. The six Zero-Shot CLIP values are own and are indexed in dataset order, followed by the caption's 'shrink this robustness gap by up to 75%', which is printed only in the caption and not in the figure body. 7 own cells."
+    },
+    {
+      "label": "Section 3.3 cont'd (page 15)",
+      "page": 15,
+      "own_result_cells": 6,
+      "notes": "The sentence broken at the page turn resumes: 'ImageNet-R, 3.8% on ObjectNet, 2.8% on ImageNet Sketch, and 1.9% on ImageNet-A' -- three own deltas (their absolutes are nowhere printed beside them; the same values appear in Figure 14, a different location). Then 'How is it possible to improve accuracy by 9.2% on the ImageNet dataset' (1), 'In Figure 14 we see that this improves average effective robustness by 5%' (1), and 'Curiously, accuracy on ObjectNet also increases by 2.3%' (1). 6 own cells."
+    },
+    {
+      "label": "Figure 14, Supervised adaptation to ImageNet (page 16)",
+      "page": 16,
+      "own_result_cells": 16,
+      "notes": "(Left) robustness scatter, axis ticks only. (Right) two bar panels of per-dataset change from the zero-shot ImageNet classifier: 'Adapt to ImageNet' (-4.7, -3.8, -2.8, -1.9, -0.5, +0.6, +5.8, +9.2) and 'Adapt to class shift' (0, 0, 0, 0, 0, +2.3, +8.3, +26.9). All 16 are printed deltas with no absolute printed beside them and are the authors' own; the five printed zeroes are printed values and count. Cells are indexed panel by panel in drawn order. The caption's '9.2%' is the same value already printed in the left panel of the pair and is not counted twice. 16 own cells."
+    },
+    {
+      "label": "Section 3.3 cont'd (page 16)",
+      "page": 16,
+      "own_result_cells": 0,
+      "notes": "Closing discussion of effective robustness and of NLP analogues; no value."
+    },
+    {
+      "label": "Section 4, Comparison to Human Performance (page 16)",
+      "page": 16,
+      "own_result_cells": 1,
+      "notes": "'five different humans', '3669 images', '37 cat or dog breeds' are dataset_statistic. One own cell: 'High human accuracy of 94% on the STL-10 dataset (Coates et al., 2011)' -- the citation names the dataset, and the 94% is the accuracy of this paper's own human workers, reported as a motivation check."
+    },
+    {
+      "label": "Figure 15, Few-shot CLIP also increases effective robustness (page 17)",
+      "page": 17,
+      "own_result_cells": 0,
+      "notes": "Robustness scatter over 0-shot through all-shot logistic regression on CLIP features; axis ticks and shot labels only, no printed per-point value."
+    },
+    {
+      "label": "Section 4 cont'd (page 17, left column)",
+      "page": 17,
+      "own_result_cells": 2,
+      "notes": "'97-100% accuracy on the subset of attention check images' is a range, not a cell. Two own cells: 'humans went from a performance average of 54% to 76% with just one training example per class' -- both are printed absolutes (they round Table 2's 53.7 and 75.7, a different location)."
+    },
+    {
+      "label": "Table 2, Comparison of human performance on Oxford IIT Pets (page 17)",
+      "page": 17,
+      "own_result_cells": 16,
+      "notes": "Caption: 'Comparison of human performance on Oxford IIT Pets. As in Parkhi et al. (2012), the metric is average per-class classification accuracy.' Four rows (Zero-shot human, Zero-shot CLIP, One-shot human, Two-shot human) over four columns (Accuracy, Majority Vote on Full Dataset, Accuracy on Guesses, Majority Vote Accuracy on Guesses). No row carries a citation on its value: the human rows are this paper's own crowd study (Section 4: 'we evaluated humans on one of our tasks') and the CLIP row is its own model. 16 own cells."
+    },
+    {
+      "label": "Section 4 cont'd (page 17, right column)",
+      "page": 17,
+      "own_result_cells": 0,
+      "notes": "Discussion of the human/CLIP error correlation and of Figure 16; no value."
+    },
+    {
+      "label": "Section 5, Data Overlap Analysis (page 17)",
+      "page": 17,
+      "own_result_cells": 0,
+      "notes": "Describes the Overlap/Clean/All split procedure and the '99.5% Clopper-Pearson confidence intervals' test setting -- methodology, no result value."
+    },
+    {
+      "label": "Figure 16, The hardest problems for CLIP (page 18)",
+      "page": 18,
+      "own_result_cells": 0,
+      "notes": "Per-breed accuracy curves for Zero-Shot CLIP, One-Shot Human and Zero-Shot Human across the 37 Oxford Pets classes; axis-tick calibration and class names only, no printed per-point value."
+    },
+    {
+      "label": "Section 5 cont'd (page 18)",
+      "page": 18,
+      "own_result_cells": 4,
+      "notes": "'Out of 35 datasets studied, 9 datasets have no detected overlap' and 'only 7 datasets above this threshold', 'only 2 are statistically significant' are tallies. 'a median overlap of 2.2% and an average overlap of 3.2%', 'the second largest overlap at 12.1%', 'The largest overlap is for Country211 at 21.5%' are properties of the data rather than performance outcomes and are recorded as dataset_statistic, on the same footing as a near-duplicate count. 'rarely shifted by more than 0.1%' is a bound. Four own cells: 'The max detected improvement is only 0.6% on Birdsnap'; 'there is only a 0.2% increase in accuracy on Country211'; 'it achieves near 100% accuracy on its proxy training task'; 'Kinetics-700 has an apparent 20% accuracy drop on Overlap'."
+    },
+    {
+      "label": "Section 6, Limitations (page 18)",
+      "page": 18,
+      "own_result_cells": 0,
+      "notes": "Opening sentence only on this page; no value."
+    },
+    {
+      "label": "Figure 17, Few statistically significant improvements due to detected data overlap (page 19)",
+      "page": 19,
+      "own_result_cells": 1,
+      "notes": "Two scatter panels of accuracy difference against detected overlap, with dataset names and a p-value legend but no printed per-point value. One own cell in the caption: 'the largest estimated increase being only 0.6% on Birdsnap' -- printed only in the caption, not in the plot body. The caption's 'up to +/-20% apparent differences' is a bound and 'only 5 datasets out of 35', 'only 6 datasets' are tallies."
+    },
+    {
+      "label": "Section 6 cont'd (page 19)",
+      "page": 19,
+      "own_result_cells": 2,
+      "notes": "Two own cells: 'we estimate around a 1000x increase in compute is required for zero-shot CLIP to reach overall state-of-the-art performance' and 'CLIP only achieves 88% accuracy on the handwritten digits of MNIST'."
+    },
+    {
+      "label": "Section 6 cont'd (page 20)",
+      "page": 20,
+      "own_result_cells": 0,
+      "notes": "'it would take 405 years to iterate through the 12.8 billion images seen over 32 training epochs' is an illustrative arithmetic restatement of the epoch count, not a measured outcome; '27 datasets' is a count. No result cell."
+    },
+    {
+      "label": "Section 7, Broader Impacts (page 20)",
+      "page": 20,
+      "own_result_cells": 0,
+      "notes": "Qualitative framing of capability and bias analysis; no value."
+    },
+    {
+      "label": "Table 3, Percent accuracy on Race, Gender, Age -- FairFace 'White' (page 21)",
+      "page": 21,
+      "own_result_cells": 12,
+      "notes": "Caption: 'Percent accuracy on Race, Gender, and Age classification of images in FairFace category White'. Four rows (FairFace Model, Linear Probe CLIP, Zero-Shot CLIP, Linear Probe Instagram) over three columns (Race, Gender, Age). No citation appears anywhere in the table. 'Linear Probe Instagram' is the authors' own logistic regression on the released ResNeXt-101 32x48d checkpoint, and the 'FairFace Model' row is read as own for the same reason: Section 7.1 says the comparison is over 'the classification tests we ran', and footnote 7 records that the FairFace model had to be reconciled to a binary White / Non-White race split, which is not the slicing its own paper reports. All 12 counted as own; confirmed against the page image."
+    },
+    {
+      "label": "Table 4, Percent accuracy on Race, Gender, Age -- FairFace 'Non-White' (page 21)",
+      "page": 21,
+      "own_result_cells": 12,
+      "notes": "Same four rows and three columns as Table 3, for the six FairFace race categories grouped as 'Non-White'. Same ownership reading. 12 own cells; confirmed against the page image."
+    },
+    {
+      "label": "Table 5, Percent accuracy on gender classification by FairFace race category (page 21)",
+      "page": 21,
+      "own_result_cells": 70,
+      "notes": "Caption: 'Percent accuracy on gender classification of images by FairFace race category.' Eight value columns (Black, White, Indian, Latino, Middle Eastern, Southeast Asian, East Asian, Average) and three model groups (Linear Probe CLIP, Zero-Shot CLIP, Linear Probe Instagram), each with a Male row, a Female row and an unlabelled third row combining them. The page image is what settles the count: the Linear Probe CLIP third row prints all eight values, but the Zero-Shot CLIP and Linear Probe Instagram third rows leave the Average cell blank, so the table holds 8+8+8 + 8+8+7 + 8+8+7 = 70 printed cells, not 72. Indexed row-major within each model group in the printed order Male, Female, combined. All own (see Table 3's note on Linear Probe Instagram)."
+    },
+    {
+      "label": "Section 7.1, Bias (page 21)",
+      "page": 21,
+      "own_result_cells": 0,
+      "notes": "Sets up the FairFace probe and the LR CLIP / ZS CLIP naming; '2 gender categories and 7 race categories' is dataset_statistic. No value."
+    },
+    {
+      "label": "Table 6, Percent of images classified into crime-related and non-human categories by race (page 22)",
+      "page": 22,
+      "own_result_cells": 14,
+      "notes": "Caption: 'Percent of images classified into crime-related and non-human categories by FairFace Race category. The label set included 7 FairFace race categories each for men and women (for a total of 14), as well as 3 crime-related categories and 4 non-human categories.' Two rows (Crime-related Categories, Non-human Categories) over seven race columns; every value is this paper's own ZS CLIP probe. 14 own cells."
+    },
+    {
+      "label": "Table 7, Percent of images classified into crime-related and non-human categories by age (page 22)",
+      "page": 22,
+      "own_result_cells": 18,
+      "notes": "Two rows (Default Label Set; Default Label Set + 'child' category) over nine age columns (0-2 through over 70). Own throughout -- this is the paper's own class-design ablation. 18 own cells."
+    },
+    {
+      "label": "Section 7.1 cont'd (page 22)",
+      "page": 22,
+      "own_result_cells": 8,
+      "notes": "'model performance on gender classification is above 95% for all race categories' is a bound; '10,000 images from the FairFace dataset' is dataset_statistic; the bracketed confidence intervals ('between 4.6% and 5.4%', '[12.6% and 16.4%]') are ranges. Eight own cells: 4.9% misclassified into a non-human class; approximately 14% for 'Black' images; 14% for people aged 0-20; 16.5% of male images and 9.8% of female images misclassified into crime-related classes; approximately 18% for people aged 0-20, approximately 12% for 20-60, and 0% for over 70."
+    },
+    {
+      "label": "Section 7.1 cont'd (page 23)",
+      "page": 23,
+      "own_result_cells": 1,
+      "notes": "'a label set of 300 occupations', 'threshold values at 0.5% and 4.0%', 'the higher 4% threshold' are setup and hyperparameter; 'only four occupations' is a tally. One own cell: 'We found that the model got 100% accuracy on the images' (gender prediction on the Members of Congress images)."
+    },
+    {
+      "label": "Figure 18, CLIP performance on Member of Congress images (page 24)",
+      "page": 24,
+      "own_result_cells": 0,
+      "notes": "Two horizontal bar panels of label frequency by gender for the 20 most gendered labels. Axis-tick calibration (0-100%) and label names only; no per-bar value is printed. The caption's 'threshold at 0.5%' is a hyperparameter."
+    },
+    {
+      "label": "Section 7.2, Surveillance (page 24)",
+      "page": 24,
+      "own_result_cells": 3,
+      "notes": "'515 surveillance images captured from 12 different video sequences', 'at least 6 options' are dataset_statistic and setup. Three own cells: 'the model had a top-1 accuracy of 91.8% on the CCTV images for the initial evaluation'; 'The accuracy dropped significantly to 51.1% for the second evaluation'; 'with the model incorrectly choosing the close answer 40.7% of the time'. 'the zero-shot model performed poorly, with results near random' prints no digit."
+    },
+    {
+      "label": "Table 8, CelebA Zero-Shot Top-1 Identity Recognition Accuracy (page 25)",
+      "page": 25,
+      "own_result_cells": 12,
+      "notes": "Four CLIP model rows (L/14, RN50x64, RN50x16, RN50x4) over three class-set-size columns (100 Classes, 1k Classes, 2k Classes). Own throughout. 12 own cells."
+    },
+    {
+      "label": "Section 7.2 cont'd (page 25)",
+      "page": 25,
+      "own_result_cells": 2,
+      "notes": "'out of 100 possible classes', '8k celebrity images', '1k celebrity names' are setup and dataset_statistic. Two own cells: 'the model had 59.2% top-1 accuracy' and 'this performance dropped to 43.3%' -- both restate Table 8's L/14 row at a different location."
+    },
+    {
+      "label": "Section 7.3, Future Work (page 25)",
+      "page": 25,
+      "own_result_cells": 0,
+      "notes": "Bulleted programme for community characterisation work; no value."
+    },
+    {
+      "label": "Section 8, Related Work (pages 25-27)",
+      "page": 25,
+      "own_result_cells": 0,
+      "notes": "Survey of natural-language supervision, retrieval, webly supervised and joint vision-language work. The only numbers are prior datasets' sizes ('between 1 and 10 million training examples') -- dataset_statistic about other papers."
+    },
+    {
+      "label": "Section 9, Conclusion (page 27)",
+      "page": 27,
+      "own_result_cells": 0,
+      "notes": "Qualitative summary; no value."
+    },
+    {
+      "label": "Acknowledgments (page 27)",
+      "page": 27,
+      "own_result_cells": 0,
+      "notes": "Acknowledgements and software credits; no value."
+    },
+    {
+      "label": "References (pages 27-36)",
+      "page": 27,
+      "own_result_cells": 0,
+      "notes": "Bibliography; page and volume numbers only."
+    },
+    {
+      "label": "Appendix A.1, Datasets (page 37)",
+      "page": 37,
+      "own_result_cells": 0,
+      "notes": "Names the 12 Kornblith datasets and the 15 additions, and describes the construction of Country211 ('211 countries ... at least 300 photos with GPS coordinates ... 200 photos for training and 100 photos for testing') and Rendered SST2 ('448x448 resolution') -- dataset_statistic and construction settings throughout."
+    },
+    {
+      "label": "Appendix A.2, Models (pages 37-38)",
+      "page": 37,
+      "own_result_cells": 0,
+      "notes": "The roster of checkpoints the authors downloaded and probed themselves: LM RN50, five CLIP-RN, four CLIP-ViT, nine EfficientNets plus ten noisy-student variants, six Instagram ResNeXts, twelve BiT-S/BiT-M, four ViT, seven SimCLRv2, two BYOL, two MoCo, VirTex and three original ResNets. This is the location that settles ownership for Table 10: every non-CLIP row there is this paper's own linear probe of a released checkpoint, not a quoted number. No value printed here."
+    },
+    {
+      "label": "Figure 19, Two example images from the Rendered SST2 dataset (page 38)",
+      "page": 38,
+      "own_result_cells": 0,
+      "notes": "Two rendered-sentence example images; no measured value."
+    },
+    {
+      "label": "Appendix A.3, Evaluation (page 38)",
+      "page": 38,
+      "own_result_cells": 0,
+      "notes": "The linear-probe protocol: penultimate-layer features, scikit-learn L-BFGS logistic regression, maximum 1,000 iterations, L2 sweep from 10^-6 to 10^6 over 96 logarithmically spaced steps. Entirely hyperparameter."
+    },
+    {
+      "label": "Appendix A.4, Results (page 38)",
+      "page": 38,
+      "own_result_cells": 0,
+      "notes": "'achieved the state of the art in 21 of the 27 datasets' is a tally; the scores themselves are in Table 10 and counted there."
+    },
+    {
+      "label": "Table 9, Datasets examined for linear probes (page 39)",
+      "page": 39,
+      "own_result_cells": 0,
+      "notes": "Twenty-seven rows of Classes / Train size / Test size / Evaluation metric. Every cell is dataset_statistic or a metric name, not a performance outcome, so this location contributes 0. It is nonetheless the authority for what each Table 10 and Table 11 column measures (accuracy, mean per class, 11-point mAP, mean(top1, top5), ROC AUC), and the labels below cite it for their metric names."
+    },
+    {
+      "label": "Table 10, Linear probe performance of various pre-trained models over 27 datasets (page 40)",
+      "page": 40,
+      "own_result_cells": 1782,
+      "notes": "Caption: 'Linear probe performance of various pre-trained models over 27 datasets. Scores within the 99.5% Clopper-Pearson confidence interval of each dataset's top score are shown in bold.' Sixty-six model rows over twenty-seven dataset columns, fully populated -- 1782 cells, matching Section 3.2's own arithmetic ('Studying 66 different models on 27 different datasets requires tuning 1782 different evaluations'). Every cell is an own result, including the BiT, Instagram, EfficientNet, SimCLRv2, BYOL, MoCo, ViT, VirTex and ResNet rows: Appendix A.2 lists the released checkpoints the authors downloaded and Appendix A.3 gives the logistic regression they fitted themselves, so these are the authors' own reruns of prior models, not quoted figures. No citation appears anywhere in the table body. Indexed row-major in the printed row order (LM RN50; CLIP-RN 50, 101, 50x4, 50x16, 50x64; CLIP-ViT B/32, B/16, L/14, L/14-336px; EfficientNet B0-B8; EfficientNet Noisy Student B0-B7, L2-475, L2-800; Instagram 32x8d, 32x16d, 32x32d, 32x48d, FixRes-v1, FixRes-v2; BiT-S x6; BiT-M x6; ViT B/32, B/16, L/16, H/14; SimCLRv2 x7; BYOL 50x1, 200x2; MoCo v1, v2; VirTex; ResNet 50, 101, 152) and left-to-right in the printed column order (Food101, CIFAR10, CIFAR100, Birdsnap, SUN397, Cars, Aircraft, VOC2007, DTD, Pets, Caltech101, Flowers, MNIST, FER2013, STL10*, EuroSAT, RESISC45, GTSRB, KITTI, Country211, PCAM, UCF101, Kinetics700, CLEVR, HatefulMemes, SST, ImageNet). Confirmed against the page image, which is also where every drawn cell below was checked."
+    },
+    {
+      "label": "Figure 20, Linear probe performance plotted for each of the 27 datasets (pages 41-42)",
+      "page": 41,
+      "own_result_cells": 0,
+      "notes": "Twenty-seven small-multiple scatter panels; the caption states they use 'the data from Table 10', and no per-point value is printed. Axis-tick calibration only."
+    },
+    {
+      "label": "Figure 21, Visualization of predictions from 36 CLIP zero-shot classifiers (page 42)",
+      "page": 42,
+      "own_result_cells": 0,
+      "notes": "Thirty-six panels, each a randomly selected single image with its top-5 class prompts, a 0-100 probability axis with no printed bar values, and a line of the form 'correct rank: 1/101   correct probability: 90.15%'. Those 72 numbers describe the model's output on one randomly chosen image each -- the caption is explicit that 'All examples are random' and that the figure is a 'qualitative summary / overview' -- so they are recorded as per-example illustration rather than a reported performance outcome on a dataset, and this location contributes 0. A reviewer who disagrees would add 72 cells here."
+    },
+    {
+      "label": "Table 11, Zero-shot performance of CLIP models over 27 datasets (page 43)",
+      "page": 43,
+      "own_result_cells": 243,
+      "notes": "Nine CLIP model rows (RN50, RN101, RN50x4, RN50x16, RN50x64, ViT-B/32, ViT-B/16, ViT-L/14, ViT-L/14-336px) over the same twenty-seven dataset columns, fully populated: 243 own cells. No baseline row appears in this table."
+    },
+    {
+      "label": "Figure 22, CLIP's zero-shot performance compared to linear-probe ResNet performance (page 43)",
+      "page": 43,
+      "own_result_cells": 0,
+      "notes": "Twenty-seven small-multiple panels; axis-tick calibration and legend only, no printed per-point value."
+    },
+    {
+      "label": "Appendix B, Zero-Shot Prediction (page 44)",
+      "page": 44,
+      "own_result_cells": 0,
+      "notes": "Two sentences pointing at Figure 21, Table 11 and Figure 22; no value."
+    },
+    {
+      "label": "Appendix C, Duplicate Detector (page 44)",
+      "page": 44,
+      "own_result_cells": 1,
+      "notes": "'a fixed temperature of 0.07', 'a total batch size of 1,712', 'approximately 30 million images' are hyperparameter and dataset_statistic. One own cell: 'At the end of training it achieves nearly 100% accuracy on its proxy training task' (a second printed instance of the same claim made in Section 5, a different location)."
+    },
+    {
+      "label": "Table 12, CLIP performs similarly when trained on only YFCC100M (page 44)",
+      "page": 44,
+      "own_result_cells": 32,
+      "notes": "Caption: 'CLIP performs similarly when trained on only YFCC100M. Comparing a ResNet-50 trained on only YFCC100M with a same sized subset of WIT ...'. Nine printed rows (Birdsnap, Country211, Flowers102, GTSRB, UCF101, Stanford Cars, ImageNet, Dataset Average, Dataset 'Wins') over six columns: Linear Classifier {YFCC, WIT, Delta} and Zero Shot {YFCC, WIT, Delta}. Both models were trained by the authors, so ownership is not in question. The two Delta columns are excluded throughout: each is the row-wise difference of the two absolutes printed immediately to its left in the same table. The Dataset 'Wins' row (10, 15, -5, 19, 18, +1) is excluded as a tally of datasets won rather than a measured performance value, the same treatment given to 'wins on 16 of the 27 datasets' in the body text. That leaves 8 rows x 4 columns = 32 own cells, indexed row-major in the printed order Linear YFCC, Linear WIT, Zero Shot YFCC, Zero Shot WIT. Confirmed against the page image."
+    },
+    {
+      "label": "Appendix D, Dataset Ablation on YFCC100M (page 44)",
+      "page": 44,
+      "own_result_cells": 0,
+      "notes": "'We train each model for 32 epochs' is a hyperparameter; 'can vary widely - sometimes by over 10%' is a bound. No cell."
+    },
+    {
+      "label": "Appendix D cont'd (page 45)",
+      "page": 45,
+      "own_result_cells": 0,
+      "notes": "'YFCC100M is only 3.7% of the overall WIT data blend' -- dataset_statistic."
+    },
+    {
+      "label": "Appendix E, Selected Task and Dataset Results (page 45)",
+      "page": 45,
+      "own_result_cells": 0,
+      "notes": "One-paragraph preamble; no value."
+    },
+    {
+      "label": "Appendix E.1, Image and Text Retrieval (page 45)",
+      "page": 45,
+      "own_result_cells": 0,
+      "notes": "'boosts CLIP's zero-shot R@1 performance between 1 and 2 points' is a range, not a cell. The retrieval numbers themselves are in Table 13."
+    },
+    {
+      "label": "Appendix E.2, Optical Character Recognition (page 45)",
+      "page": 45,
+      "own_result_cells": 3,
+      "notes": "'the 80% accuracy of a continuous bag of words baseline' and 'the 97.5% of the current SOTA' are cited baselines (Table 14's CBoW and SOTA rows); '840 billion tokens' is dataset_statistic; 'all other 56 models' is a tally. Three own cells: 'CLIP's 51% accuracy on full number SVHN'; 'Fitting a linear classifier on CLIP's representation of rendered sentences achives 80.5% accuracy'; 'CLIP is only 0.7 points behind the current single model SOTA' (a delta whose absolutes, 77.3 and 78.0, sit in Table 14, a different location)."
+    },
+    {
+      "label": "Table 13, CLIP improves zero-shot retrieval (page 46)",
+      "page": 46,
+      "own_result_cells": 12,
+      "notes": "Text and image retrieval R@1/R@5/R@10 on Flickr30k and MSCOCO, twelve value columns. The caption settles ownership: 'For all other models, best results from the paper are reported regardless of model size / variant' -- so every row other than CLIP (Unicoder-VL, Uniter, VILLA, Oscar, ERNIE-ViL in the Finetune block; Visual N-Grams, ImageBERT, Unicoder-VL, Uniter in the Zero-Shot block, each carrying a lettered citation) is a baseline. Only the CLIP row (88.0, 98.7, 99.4, 58.4, 81.5, 88.1, 68.7, 90.6, 95.2, 37.8, 62.4, 72.2) is own. 12 own cells."
+    },
+    {
+      "label": "Table 14, OCR performance on 5 datasets (page 46)",
+      "page": 46,
+      "own_result_cells": 12,
+      "notes": "Five columns (MNIST, SVHN, IIIT5K 1k, Hateful Memes, SST-2). Ownership is per row, and the caption is what carries it: the 'SOTA' row and the JOINT and CBoW rows all carry lettered citations and are baselines (7 printed values). The 'Linear' block is own: 'Raw Pixels' 92.5 is the authors' own logistic-regression-on-pixels baseline (1); 'ES Best' 98.9, 58.6, 59.0 is explicitly 'the best performance across the 56 non-CLIP models in our evaluation suite' and each value is traceable to this paper's own Table 10 -- the superscripts h and i name which model reached it, not where the number came from (3); 'CLIP' 99.2, 77.3, 80.5 (3). The 'ZS CLIP' row contributes 5. 12 own cells."
+    },
+    {
+      "label": "Appendix E.3, Action Recognition in Videos (page 46, left column)",
+      "page": 46,
+      "own_result_cells": 0,
+      "notes": "Motivating paragraph and the single-frame subsampling caveat; no value."
+    },
+    {
+      "label": "Table 15, Action recognition performance on 3 video datasets (page 46)",
+      "page": 46,
+      "own_result_cells": 8,
+      "notes": "Four columns (UCF101 Top-1, K700 AVG, RareAct mWAP, RareAct mWSAP). The caption is the ownership evidence for the cell-level split: 'Note that linear CLIP and linear NS ENet-L2 are trained and evaluated on a single frame subsampled version of each dataset and not directly comparable to prior work' -- so the 'NS ENet-L2' row inside the Linear block (89.4, 68.2, both traceable to this paper's Table 10) is own despite its citation superscript, exactly as the 'linear CLIP' row beside it is. Own: NS ENet-L2 linear (2), CLIP linear (2), ZS CLIP (4). Baselines: R(2+1)D-BERT, NS ENet-L2 finetune, HT100M S3D, Baseline I3D, MMV FAC, and the zero-shot HT100M S3D row. 8 own cells."
+    },
+    {
+      "label": "Appendix E.3 cont'd (page 46, right column)",
+      "page": 46,
+      "own_result_cells": 0,
+      "notes": "One sentence introducing Table 15's datasets; no value."
+    },
+    {
+      "label": "Table 16, Detailed ImageNet robustness performance (page 47)",
+      "page": 47,
+      "own_result_cells": 20,
+      "notes": "Ten columns (ImageNet, ImageNetV2, ImageNet-A, ImageNet-R, ObjectNet, ImageNet-Sketch Top-1, and ImageNet-Vid and Youtube-BB at PM0 and PM10). The two top rows, 'NS EfficientNet-L2' and 'FixResNeXt101-32x48d V2', carry lettered citations and are, per Appendix E.5, 'the current state of the art results reported in Taori et al. (2020)'s evaluation suite' -- baselines. 'Linear Probe CLIP' and 'Zero-Shot CLIP' are own: 20 own cells."
+    },
+    {
+      "label": "Appendix E.3 cont'd (page 47)",
+      "page": 47,
+      "own_result_cells": 1,
+      "notes": "'its performance is within 1% of the fully supervised I3D baseline' is a bound; '545000 labeled videos' and '100 million instructional videos' are dataset_statistic. One own cell: 'CLIP improves over the prior state of the art, a S3D model ..., by 10 points' -- a delta whose absolutes are in Table 15, a different location."
+    },
+    {
+      "label": "Table 17, Geolocalization performance on the IM2GPS test set (page 47)",
+      "page": 47,
+      "own_result_cells": 5,
+      "notes": "Caption: 'Geolocalization performance on the IM2GPS test set. Metric is percent of images localized within a given radius. Models are ordered by average performance.' Five radius columns (1km, 25km, 200km, 750km, 2500km) and five rows; ISNs, CPlaNet, Deep-Ret+ and PlaNet all carry lettered citations and are baselines. Only the CLIP row (13.9, 32.9, 43.0, 62.0, 79.3) is own. 5 own cells."
+    },
+    {
+      "label": "Appendix E.4, Geolocalization (page 47)",
+      "page": 47,
+      "own_result_cells": 0,
+      "notes": "'querying only 1 million images' is a setup figure; the results are in Table 17."
+    },
+    {
+      "label": "Appendix E.5, Robustness to Distribution Shift (page 47)",
+      "page": 47,
+      "own_result_cells": 0,
+      "notes": "'improves the state of the art on 5 of the 7 datasets' is a tally; the numbers are in Table 16."
+    },
+    {
+      "label": "Appendix F, Model Hyperparameters, Tables 18-20 (page 48)",
+      "page": 48,
+      "own_result_cells": 0,
+      "notes": "Tables 18, 19 and 20 give batch size, vocabulary size, epochs, temperature, weight decay, warm-up, Adam constants, learning rates, embedding dimensions, input resolutions and block/layer/width/head counts. Entirely hyperparameter."
+    }
+  ],
+  "labels": [
+    {
+      "id": "L1",
+      "frame_index": 3,
+      "metric": "efficiency improvement in the rate of zero-shot transfer to ImageNet",
+      "value": 4,
+      "units": "x",
+      "dataset": "ImageNet",
+      "split": "val, zero-shot",
+      "role": "result",
+      "is_own_result": true,
+      "confident": true,
+      "location": {
+        "kind": "prose",
+        "label": "Section 2.3, Selecting an Efficient Pre-Training Method",
+        "page": 4,
+        "row": null,
+        "column": null
+      },
+      "notes": "'Starting with the same bag-of-words encoding baseline, we swapped the predictive objective for a contrastive objective in Figure 2 and observed a further 4x efficiency improvement in the rate of zero-shot transfer to ImageNet.' Printed as '4x'. The paper's own ablation of its own objective against its own bag-of-words baseline, so own; recorded as a result on the README's rule that speed and throughput figures presented as outcomes are results. Distinct from Figure 2's '4X efficiency' annotation on page 3, which is the same measurement printed at a different location and is counted there as its own cell. The earlier multiplier in this section ('learns to recognize ImageNet classes three times slower') is written as a word rather than a digit and is not a cell."
+    },
+    {
+      "id": "L2",
+      "frame_index": 19,
+      "metric": "Δ Score",
+      "value": 12.4,
+      "units": "%",
+      "dataset": "SST2 (Rendered SST2)",
+      "split": "test",
+      "role": "result",
+      "is_own_result": true,
+      "confident": true,
+      "location": {
+        "kind": "figure",
+        "label": "Figure 5",
+        "page": 8,
+        "row": "SST2",
+        "column": "Δ Score (%)"
+      },
+      "notes": "Figure 5, 'Zero-Shot CLIP vs. Linear Probe on ResNet50', x-axis 'Delta Score (%)'. Printed as '+12.4'. Fifth bar from the top of the chart; confirmed against the page image, where the bars run StanfordCars +28.9, Country211 +23.2, Food101 +22.5, Kinetics700 +14.5, SST2 +12.4, ... down to EuroSAT -37.1. A delta with no absolute printed in the figure, so it counts; both sides of the subtraction are the authors' own measurements and check out arithmetically against the appendix tables -- Table 11's ViT-L/14-336px Rendered SST2 zero-shot score is 67.9 and Table 10's ResNet-50 SST linear probe is 55.5, and 67.9 - 55.5 = 12.4. Table 9 names Rendered SST2's evaluation metric as accuracy, so the underlying quantity is an accuracy difference; the metric is recorded as the figure prints it."
+    },
+    {
+      "id": "L3",
+      "frame_index": 200,
+      "metric": "Percent accuracy on gender classification",
+      "value": 96.2,
+      "units": "%",
+      "dataset": "FairFace",
+      "split": "Southeast Asian race category, male images",
+      "role": "result",
+      "is_own_result": true,
+      "confident": true,
+      "location": {
+        "kind": "table",
+        "label": "Table 5",
+        "page": 21,
+        "row": "Linear Probe CLIP, Male",
+        "column": "Southeast Asian"
+      },
+      "notes": "Caption: 'Percent accuracy on gender classification of images by FairFace race category.' Sixth of the eight columns (Black, White, Indian, Latino, Middle Eastern, Southeast Asian, East Asian, Average) in the first of Table 5's nine rows. Confirmed against the page image: the Linear Probe CLIP Male row reads 96.9 96.4 98.7 96.5 98.9 96.2 96.9 97.2. 'LR CLIP' is the paper's own logistic regression fitted to FairFace on top of CLIP's features (Section 7.1), so unambiguously own; no citation appears anywhere in this table."
+    },
+    {
+      "id": "L4",
+      "frame_index": 222,
+      "metric": "Percent accuracy on gender classification",
+      "value": 97.2,
+      "units": "%",
+      "dataset": "FairFace",
+      "split": "Latino race category, male images",
+      "role": "result",
+      "is_own_result": true,
+      "confident": true,
+      "location": {
+        "kind": "table",
+        "label": "Table 5",
+        "page": 21,
+        "row": "Zero-Shot CLIP, Male",
+        "column": "Latino"
+      },
+      "notes": "Fourth column of the fourth printed row (Zero-Shot CLIP, Male). Confirmed against the page image: that row reads 96.3 96.4 97.7 97.2 98.3 95.5 96.8 96.9. Own throughout. Note that the same value 97.2 also appears in the Linear Probe CLIP Male row at the Average column and in its Female row at Middle Eastern; the page image is what fixes which cell index 222 is."
+    },
+    {
+      "id": "L5",
+      "frame_index": 392,
+      "metric": "accuracy",
+      "value": 95.9,
+      "units": "%",
+      "dataset": "EuroSAT",
+      "split": "test, linear probe on frozen features",
+      "role": "result",
+      "is_own_result": true,
+      "confident": true,
+      "location": {
+        "kind": "table",
+        "label": "Table 10",
+        "page": 40,
+        "row": "CLIP-RN 101",
+        "column": "EuroSAT"
+      },
+      "notes": "Table 10 is indexed row-major; this is row 3 (CLIP-RN, '101'), column 16 (EuroSAT). Confirmed against the page image: the CLIP-RN 101 row reads 88.9 91.1 73.5 58.6 75.1 84.0 50.7 88.0 76.3 91.0 92.0 96.4 98.4 65.2 97.8 95.9 ... and 95.9 is the sixteenth value. Table 10 prints no metric name; Table 9 gives EuroSAT's evaluation metric as 'accuracy'. The authors' own CLIP ResNet-101, linear-probed under Appendix A.3's protocol."
+    },
+    {
+      "id": "L6",
+      "frame_index": 449,
+      "metric": "accuracy",
+      "value": 69.2,
+      "units": "%",
+      "dataset": "KITTI",
+      "split": "test, linear probe on frozen features",
+      "role": "result",
+      "is_own_result": true,
+      "confident": true,
+      "location": {
+        "kind": "table",
+        "label": "Table 10",
+        "page": 40,
+        "row": "CLIP-RN 50x16",
+        "column": "KITTI"
+      },
+      "notes": "Row 5 (CLIP-RN, '50x16'), column 19 (KITTI). Confirmed against the page image: the 50x16 row reads 93.3 92.2 74.9 72.8 79.2 88.7 62.7 89.0 79.1 93.5 93.7 98.3 98.9 68.7 98.6 97.0 91.4 89.0 69.2 ... and 69.2 is the nineteenth value. Table 9 gives KITTI's evaluation metric as 'accuracy'. Own."
+    },
+    {
+      "id": "L7",
+      "frame_index": 1109,
+      "metric": "accuracy",
+      "value": 63.8,
+      "units": "%",
+      "dataset": "Birdsnap",
+      "split": "test, linear probe on frozen features",
+      "role": "result",
+      "is_own_result": true,
+      "confident": true,
+      "location": {
+        "kind": "table",
+        "label": "Table 10",
+        "page": 40,
+        "row": "Instagram 32x8d",
+        "column": "Birdsnap"
+      },
+      "notes": "Row 30 (Instagram, '32x8d'), column 4 (Birdsnap). Confirmed against the page image: that row reads 84.8 95.9 80.9 63.8 ... This is the ownership case the brief warns about. The model is Mahajan et al. (2018)'s Instagram-pretrained ResNeXt-101 32x8d, a prior model, but the number is the authors' own: Appendix A.2 records that they 'use the four models (32x8d, 32x16d, 32x32d, 32x48d) released by (Mahajan et al., 2018)' and Appendix A.3 gives the scikit-learn L-BFGS logistic regression they fitted on its penultimate features. An own rerun of a prior model is an own result, and no citation appears in Table 10's body."
+    },
+    {
+      "id": "L8",
+      "frame_index": 1323,
+      "metric": "accuracy",
+      "value": 92.8,
+      "units": "%",
+      "dataset": "CIFAR10",
+      "split": "test, linear probe on frozen features",
+      "role": "result",
+      "is_own_result": true,
+      "confident": true,
+      "location": {
+        "kind": "table",
+        "label": "Table 10",
+        "page": 40,
+        "row": "BiT-S R101x1",
+        "column": "CIFAR10"
+      },
+      "notes": "Row 38 (BiT-S, 'R101x1'), column 2 (CIFAR10). Confirmed against the page image: that row reads 73.5 92.8 77.4 58.4 ... Same ownership reading as L7 -- Kolesnikov et al. (2019)'s released BiT-S checkpoint, linear-probed by this paper. Not to be confused with the BiT-M R101x1 row further down (95.7 at CIFAR10); the page image separates the two blocks by their rotated 'BiT-S' and 'BiT-M' group labels."
+    },
+    {
+      "id": "L9",
+      "frame_index": 1454,
+      "metric": "ROC AUC",
+      "value": 54.5,
+      "units": "%",
+      "dataset": "Hateful Memes",
+      "split": "dev, linear probe on frozen features",
+      "role": "result",
+      "is_own_result": true,
+      "confident": true,
+      "location": {
+        "kind": "table",
+        "label": "Table 10",
+        "page": 40,
+        "row": "BiT-M R50x1",
+        "column": "HatefulMemes"
+      },
+      "notes": "Row 42 (BiT-M, 'R50x1'), column 25 (HatefulMemes). Confirmed against the page image: that row reads 83.3 94.9 82.2 70.9 69.9 59.0 55.6 86.8 77.3 91.5 93.9 99.4 98.0 60.6 98.4 97.5 87.4 68.6 68.2 16.6 82.5 79.4 53.2 49.4 54.5 53.4 76.7, and 54.5 is the twenty-fifth value. Table 10 prints no metric name; Table 9 gives Hateful Memes' evaluation metric as 'ROC AUC', which the table prints on a 0-100 scale like the accuracies beside it, hence the recorded units. Table 14's caption confirms the split ('Hateful Memes which reports ROC AUC on the dev set'). Own -- this paper's linear probe of a released BiT-M checkpoint."
+    },
+    {
+      "id": "L10",
+      "frame_index": 1573,
+      "metric": "accuracy",
+      "value": 79.9,
+      "units": "%",
+      "dataset": "Describable Textures (DTD)",
+      "split": "test, linear probe on frozen features",
+      "role": "result",
+      "is_own_result": true,
+      "confident": true,
+      "location": {
+        "kind": "table",
+        "label": "Table 10",
+        "page": 40,
+        "row": "BiT-M R152x4",
+        "column": "DTD"
+      },
+      "notes": "Row 47 (BiT-M, 'R152x4'), column 9 (DTD). Confirmed against the page image: that row reads 87.2 97.6 88.2 72.4 75.0 49.1 43.4 87.1 79.9 ... and 79.9 is the ninth value. Table 9 gives Describable Textures' evaluation metric as 'accuracy'. Own, per L7's reading."
+    },
+    {
+      "id": "L11",
+      "frame_index": 1711,
+      "metric": "mean per class",
+      "value": 92.9,
+      "units": "%",
+      "dataset": "Oxford Flowers 102",
+      "split": "test, linear probe on frozen features",
+      "role": "result",
+      "is_own_result": true,
+      "confident": true,
+      "location": {
+        "kind": "table",
+        "label": "Table 10",
+        "page": 40,
+        "row": "SimCLRv2 R50x1",
+        "column": "Flowers"
+      },
+      "notes": "Row 52 (SimCLRv2, 'R50x1'), column 12 (Flowers). Confirmed against the page image: that row reads 76.4 93.2 77.9 48.6 64.1 56.3 51.7 84.4 77.0 88.3 91.8 92.9 ... and 92.9 is the twelfth value. Table 9 names Oxford Flowers 102's evaluation metric as 'mean per class', not plain accuracy, and it is recorded here as printed there. Own: Appendix A.2 records that the authors 'use the seven pretrain-only checkpoints with selective kernels' released by the SimCLRv2 project and probed them themselves."
+    },
+    {
+      "id": "L12",
+      "frame_index": 1725,
+      "metric": "accuracy",
+      "value": 53.8,
+      "units": "%",
+      "dataset": "Rendered SST2",
+      "split": "test, linear probe on frozen features",
+      "role": "result",
+      "is_own_result": true,
+      "confident": true,
+      "location": {
+        "kind": "table",
+        "label": "Table 10",
+        "page": 40,
+        "row": "SimCLRv2 R50x1",
+        "column": "SST"
+      },
+      "notes": "Same row as L11 (SimCLRv2 R50x1), column 26 (SST). Confirmed against the page image: the row's last three values are 53.9 53.8 73.8, so SST is 53.8 and ImageNet is 73.8. Table 9 gives Rendered SST2's evaluation metric as 'accuracy'. Own, per L11."
+    },
+    {
+      "id": "L13",
+      "frame_index": 1948,
+      "metric": "accuracy",
+      "value": 35.9,
+      "units": "%",
+      "dataset": "Stanford Cars",
+      "split": "test, linear probe on frozen features",
+      "role": "result",
+      "is_own_result": true,
+      "confident": true,
+      "location": {
+        "kind": "table",
+        "label": "Table 10",
+        "page": 40,
+        "row": "MoCo v1",
+        "column": "Cars"
+      },
+      "notes": "Row 61 (MoCo, 'v1'), column 6 (Cars). Confirmed against the page image: that row reads 65.9 85.0 63.1 27.5 52.6 35.9 ... and 35.9 is the sixth value. Table 9 gives Stanford Cars' evaluation metric as 'accuracy'. Own: Appendix A.2 records that the authors 'include the MoCo-v1 (He et al., 2020) and the MoCo-v2 (Chen et al., 2020d) checkpoints' in the linear-probe suite."
+    },
+    {
+      "id": "L14",
+      "frame_index": 2355,
+      "metric": "accuracy",
+      "value": 5.2,
+      "units": "%",
+      "dataset": "Country211",
+      "split": "test, zero-shot",
+      "role": "result",
+      "is_own_result": true,
+      "confident": true,
+      "location": {
+        "kind": "table",
+        "label": "Table 12",
+        "page": 44,
+        "row": "Country211",
+        "column": "Zero Shot, YFCC"
+      },
+      "notes": "Caption: 'CLIP performs similarly when trained on only YFCC100M. Comparing a ResNet-50 trained on only YFCC100M with a same sized subset of WIT ...'. Confirmed against the page image: the Country211 row reads 23.1 17.3 +5.8 | 5.2 5.3 +0.1 across Linear Classifier {YFCC, WIT, Delta} and Zero Shot {YFCC, WIT, Delta}, and this is the Zero Shot YFCC cell. Table 12's indexing skips the two Delta columns (each is the difference of the two absolutes printed immediately to its left) and the Dataset 'Wins' row, so this is the seventh of the location's 32 cells. Both compared models were trained from scratch by the authors, so ownership is not in question. Table 9 gives Country211's evaluation metric as 'accuracy'."
+    },
+    {
+      "id": "L15",
+      "frame_index": 2436,
+      "metric": "improvement over the prior state of the art",
+      "value": 10,
+      "units": "points",
+      "dataset": "RareAct",
+      "split": "zero-shot",
+      "role": "result",
+      "is_own_result": true,
+      "confident": true,
+      "location": {
+        "kind": "prose",
+        "label": "Appendix E.3, Action Recognition in Videos (cont'd)",
+        "page": 47,
+        "row": null,
+        "column": null
+      },
+      "notes": "'CLIP improves over the prior state of the art, a S3D model trained on automatically extracted captions from 100 million instructional videos, by 10 points.' A delta, counted because no absolute is printed beside it -- both absolutes are in Table 15 on page 46, a different location. Own: the improvement is CLIP's own zero-shot RareAct result over the quoted HT100M S3D baseline. One thing a reviewer should note: the sentence does not say which of RareAct's two metrics it means, and Table 15 reports both -- the mWSAP delta is exactly 44.8 - 34.8 = 10.0 and the mWAP delta is 40.7 - 30.5 = 10.2, so '10 points' matches mWSAP exactly and rounds mWAP. The metric is recorded as the sentence prints it rather than resolved to one of the two."
+    }
+  ]
+}

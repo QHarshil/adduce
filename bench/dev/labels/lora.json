@@ -1,0 +1,668 @@
+{
+  "schema": "adduce-dev-labels/1",
+  "pair_id": "lora",
+  "arxiv_id": "2106.09685",
+  "arxiv_version": "2",
+  "labelled_from": "pdf",
+  "labeller_passes": 1,
+  "sampled": true,
+  "sampling_seed": 20260810,
+  "target_sample_size": 15,
+  "sampling_method": "Every own-result cell in frame_locations was assigned a contiguous 1-based index in reading order, giving a population of 1..483. This paper (ICLR 2022 submission format) is single-column throughout, so PyMuPDF's linear text extraction order is the true reading order with no column-interleaving risk. Location order is strict page order, top-to-bottom; where a subsection's prose and the table it introduces sit on different pages (Appendix F.2's intro prose is on page 22 but Table 15, which it introduces, starts on page 23), the physically earlier page indexes first regardless of which subsection 'owns' the table -- this is why Appendix F.3's one counted cell (page 22) is indexed before Table 15 and Table 16 (page 23) even though F.3 as a subsection follows F.2. Within a table the walk is row-major: printed rows top-to-bottom, left-to-right across that row's own-result columns, skipping baseline rows and hyperparameter columns (Rank r, # Trainable Parameters, weight-type labels) in between. No table in this paper prints a caption-level delta the way ELECTRA's Table 1 caption did, so no location's count includes a caption cell.\n\nOwnership. Tables 2, 3 and 4's citation baselines are marked '*' ('* indicates numbers published in prior works', Table 2's and Table 3's captions) and are excluded; rows marked with a dagger are, per Table 2's caption, 'runs configured in a setup similar to Houlsby et al. (2019) for a fair comparison' -- the authors' own reimplementation of a prior baseline under a matched protocol, hence own results despite naming a prior method (RoBlarge (AdptP) dagger, RoBlarge (AdptH) dagger, RoBlarge (LoRA) dagger; the dagger is spelled out in this file to keep it plain ASCII). Table 2 prints 'RoBlarge (LoRA)' at 0.8M twice, once without and once with the dagger, with different digits in MRPC/QNLI/RTE/STS-B/Avg -- Section 5.2 explains these are two different evaluation protocols (the dagger run restricts sequence length and MRPC/RTE/STS-B initialization to match Houlsby et al. (2019)), not a duplicate print, so both rows are counted separately as own. Table 4 (GPT-3, page 8) prints no '*' or dagger anywhere, and its surrounding prose gives no citation for WikiSQL/MNLI-m/SAMSum at this scale, so every row is own; Table 8 (Appendix A, page 17) is the one place ownership is per cell rather than per row within a single method name: its 'GPT-3 Few-Shot' row states RTE is 'taken... from the GPT-3 paper (Brown et al., 2020)' (a citation, excluded) while the same row's MNLI-m entry is the authors' own eval ('For MNLI-matched, we use two demonstrations per class...'), so that row contributes 1 of its 2 cells.\n\nTables 13, 14, 15, 16 and 18 (Appendices F and H) print no '*' and no dagger anywhere -- confirmed against the rendered page images (p21, p22, p23, p26), not assumed from the absent text-extracted glyph alone, because the bolding these tables use to mark the best score per column also does not survive text extraction, and the two needed to be told apart visually. Table 14's caption states this explicitly ('less than 0.01 for all the experiments we ran'); Table 13's caption is worded more thinly ('...for all adaption approaches'), but its intro prose ('We also repeat our experiment on DART and WebNLG following the setup of Li & Liang (2021)') and the total absence of any citation marker on the Fine-Tune/AdapterL/FTTop2/PrefLayer rows that carry '*' in Tables 2 and 3 support the same reading: these appendix tables are complete own reruns, including the Fine-Tune and prior-method rows, distinct from the body tables (2, 3) where the identical method names are baselines. This is the single largest judgement call in this file, since Tables 13 and 14 alone are 132 of the 483 cells; it is recorded here so it can be checked.\n\nValue convention. GLUE/E2E/DART/WebNLG-style cells print 'mean+/-std over seeds/trials' (e.g. '70.4+/-.1', '1449.4+/-0.8'); per this set's convention the point value is the cell and the +/- figure is not separately indexed. Table 5's and Table 6's '(+/-0.5%)'/'(+/-0.1%)' annotations are printed once per row label, not per cell ('we report [it] in the first column' -- Table 5's caption), so they are a stated measurement precision for the whole row and are not a cell. Table 4's caption states a similar once-per-table fluctuation band and is excluded on the same footing. Table 13/14's MET and TER values print without a leading zero ('.39', '.46'); JSON requires a leading zero for a numeric literal, so any such value is stored as e.g. 0.39, with the print convention noted on the label it applies to.\n\nSplit tokens. WebNLG's Table 14 prints three sub-columns (U/S/A -- unseen/seen/all categories, per its own caption) under each of BLEU/MET/TER; these are three already-separate printed cells, not one combined token, so no splitting judgement is needed there (unlike SAMSum's 'R1/R2/RL' in Table 4, which is one token for three metrics and is split into three cells per this set's rule). Table 4's SAMSum column ('52.0/28.0/44.5') is exactly that combined-token case and contributes 3 cells per row, one per Rouge variant.\n\nExclusions. Ratios and multipliers describing parameter/compute/memory budgets ('reduce... by 10,000 times', 'GPU memory requirement by 3 times', 'up to 2/3', 'up to 3 times', the '(+2.2%)' printed beside an already-counted absolute latency in Table 1, '21.5 ~= 6.91/0.32' in Section 7.3, and the restated 'as large as 20'/'only around 2' in Section H.4) are excluded throughout, matching this set's treatment of ELECTRA's '30x more compute'/'1/20th the parameters': a resource-budget ratio is not a performance delta and is excluded regardless of whether an absolute is printed beside it, whereas an absolute speed/latency/memory figure presented as an outcome is counted as a result (Table 1's per-cell latencies; Section 4.2's VRAM/checkpoint-size worked example for GPT-3 175B -- 1.2TB, 350GB, 35MB; footnote 5's two throughput figures, 32.5 and 43.1 tokens/s) and a genuine delta with no absolute printed beside it in that instance is counted once per printed instance ('a 25% speedup during training on GPT-3 175B compared to full fine-tuning' has no absolute alongside it in that sentence, and is a different figure from footnote 5's own ratio of 43.1/32.5 = +32.6%, so the two are not the same claim restated and both are counted). Section 7.1's '18M (roughly 35MB if stored in FP16)' and Table 5's header '# of Trainable Parameters = 18M' are the parameter budget the ablation is run under, i.e. hyperparameter, not result, matching this file's uniform exclusion of every '# Trainable Parameters'/'|Theta|' column in Tables 1-4, 13-16 -- LoRA-specific instruction: this column is a headline number in the paper's own framing but is still an architecture/parameter-count spec, and is recorded as hyperparameter throughout, never silently dropped from this note.\n\nRestated values. Appendix F.3 states 'PrefixEmbed performing only slightly better than random chance (37.6% vs. 33.3%)': 37.6 is an exact restatement of Table 16's PrefixEmbed/MNLI-100 cell and, per this set's rule that each printed instance is its own cell (established for ELECTRA's thrice-printed 'five points' delta), it counts again at its own location; 33.3% is 1/3 restated as a percentage ('random chance' for 3-way NLI) with no producing run behind it, so it is not own-result and is not indexed at all (excluded outright, not merely marked unconfident).\n\nTable 7 (page 12, Frobenius norms of projected weight matrices at GPT-3's 48th layer) is this file's least certain role call: role is limited to result/hyperparameter/dataset_statistic, and a matrix-norm diagnostic from the authors' own trained model fits none cleanly; by elimination, and because it is the authors' own empirical measurement presented as a finding ('We draw several conclusions from Table 7...'), it is counted as result, but every cell drawn from it is marked confident:false, matching ELECTRA's precedent for its Appendix G footnote 10 (a measured property whose role was the least certain judgement in that file).\n\nrandom.seed(20260810); random.sample(range(1, 484), 15) drew {1, 3, 25, 28, 49, 57, 166, 182, 197, 214, 216, 244, 295, 305, 481}; each label below records its draw as frame_index.",
+  "frame": {
+    "Abstract": 0,
+    "Section 1, Introduction + Figure 1": 0,
+    "Section 2, Problem Statement": 0,
+    "Section 3, Aren't Existing Solutions Good Enough?": 0,
+    "Table 1": 9,
+    "Section 4.1, Low-Rank-Parametrized Update Matrices": 0,
+    "Section 4.2, Applying LoRA to Transformer / Practical Benefits and Limitations": 6,
+    "Section 5 intro + 5.1, Baselines": 0,
+    "Table 2": 72,
+    "Section 5.2, RoBERTa Base/Large + 5.3, DeBERTa XXL": 0,
+    "Table 3": 25,
+    "Section 5.4, GPT-2 Medium/Large": 0,
+    "Table 4": 40,
+    "Section 5.5, Scaling Up to GPT-3 175B + Figure 2": 0,
+    "Section 6, Related Works": 0,
+    "Section 7, Understanding the Low-Rank Updates (intro)": 0,
+    "Section 7.1, Which Weight Matrices in Transformer Should We Apply LoRA To? (intro)": 0,
+    "Table 5": 14,
+    "Section 7.1 (continued discussion)": 0,
+    "Section 7.2, What is the Optimal Rank r for LoRA? (intro)": 0,
+    "Table 6": 30,
+    "Section 7.2 (continued) + footnote 6": 0,
+    "Subspace similarity between different r (prose) + Figure 3": 0,
+    "Subspace similarity between random seeds (prose) + Section 7.3 intro + Figure 4": 0,
+    "Table 7": 9,
+    "Section 7.3 (continued discussion)": 0,
+    "Section 8, Conclusion and Future Work": 0,
+    "Appendix A, Large Language Models Still Need Parameter Updates (prose)": 0,
+    "Table 8 (Appendix A)": 3,
+    "Appendix B, Inference Latency Introduced by Adapter Layers + Figure 5": 0,
+    "Appendix C, Dataset Details": 0,
+    "Appendix D, Hyperparameters Used in Experiments (Tables 9-12)": 0,
+    "Appendix E, Combining LoRA with Prefix Tuning": 0,
+    "Appendix F.1, Additional Experiments on GPT-2 (intro)": 0,
+    "Table 13": 33,
+    "Table 14": 99,
+    "Appendix F.2, Additional Experiments on GPT-3 (prose)": 0,
+    "Appendix F.3, Low-Data Regime (prose)": 1,
+    "Section G, Measuring Similarity Between Subspaces (intro)": 0,
+    "Table 15": 60,
+    "Table 16": 16,
+    "Section G (continued, Projection Metric definition)": 0,
+    "Section H, Additional Experiments on Low-Rank Matrices (intro)": 0,
+    "Section H.1, Correlation Between LoRA Modules + Figure 6": 0,
+    "Section H.2, Effect of r on GPT-2 (intro)": 0,
+    "Section H.3, Correlation Between W and Delta W": 0,
+    "Figure 7": 0,
+    "Section H.4, Amplification Factor": 0,
+    "Table 18": 66,
+    "Figure 8": 0
+  },
+  "frame_locations": [
+    {
+      "label": "Abstract",
+      "page": 1,
+      "own_result_cells": 0,
+      "notes": "No absolute value printed. 'reduce the number of trainable parameters by 10,000 times', 'the GPU memory requirement by 3 times' are parameter/memory ratios, excluded throughout this file (see sampling_method)."
+    },
+    {
+      "label": "Section 1, Introduction + Figure 1",
+      "page": 1,
+      "own_result_cells": 0,
+      "notes": "Figure 1 is the reparametrization diagram (W0, A, B, dimensions d and r); no data value. Prose restates the abstract's ratios ('10,000 times', 'GPU memory ... 3 times', 'hardware barrier to entry by up to 3 times') and gives r=1-or-2, d=12,288 as architecture dimensions, all excluded (ratios, or hyperparameter)."
+    },
+    {
+      "label": "Section 2, Problem Statement",
+      "page": 2,
+      "own_result_cells": 0,
+      "notes": "Formal setup (Phi, Theta, the two optimization objectives). No numeric result; '0.01% of |Phi0|' is a ratio describing the parameter budget, not a result."
+    },
+    {
+      "label": "Section 3, Aren't Existing Solutions Good Enough?",
+      "page": 3,
+      "own_result_cells": 0,
+      "notes": "Prior-work discussion motivating Table 1 and prefix-tuning's limitations. References 'Table 1' and '<1% of the original model' (a ratio) but prints no value itself."
+    },
+    {
+      "label": "Table 1",
+      "page": 4,
+      "own_result_cells": 9,
+      "notes": "'Inference latency of a single forward pass in GPT-2 medium measured in milliseconds, averaged over 100 trials.' No citation marker anywhere in the table; the surrounding prose ('we see a noticeable increase in latency when using adapters... Table 1') describes the authors' own measurement, so all 3 rows x 3 columns = 9 cells are own. Rows (mean+/-std ms): Fine-Tune/LoRA 1449.4+/-0.8, 338.0+/-0.6, 19.8+/-2.7 (one row because fine-tuning and LoRA add no extra latency by construction); AdapterL 1482.0+/-1.0 (+2.2%), 354.8+/-0.5 (+5.0%), 23.9+/-2.1 (+20.7%); AdapterH 1492.2+/-1.0 (+3.0%), 366.3+/-0.5 (+8.4%), 25.8+/-2.2 (+30.3%). Columns are (batch=32,seq=512), (batch=16,seq=256), (batch=1,seq=128). The parenthetical percentages are deltas printed beside an already-printed absolute and are excluded; |Theta| (0.5M/11M/11M) is excluded as adapter parameter count (hyperparameter)."
+    },
+    {
+      "label": "Section 4.1, Low-Rank-Parametrized Update Matrices",
+      "page": 4,
+      "own_result_cells": 0,
+      "notes": "Method definition (h = W0x + BAx) and initialization scheme. No numeric result; footnotes 2 and 3 are qualitative asides with no value."
+    },
+    {
+      "label": "Section 4.2, Applying LoRA to Transformer / Practical Benefits and Limitations",
+      "page": 5,
+      "own_result_cells": 6,
+      "notes": "'Practical Benefits and Limitations' paragraph: 'we reduce that VRAM usage by up to 2/3' (ratio, excluded) then 'On GPT-3 175B, we reduce the VRAM consumption during training from 1.2TB to 350GB' -- two absolute memory figures presented as an outcome of applying LoRA to GPT-3, counted (own, no citation). 'the checkpoint size is reduced by roughly 10,000x (from 350GB to 35MB)' -- 10,000x is a ratio (excluded), 35MB is a new absolute (counted; 350GB here repeats the prior sentence's own figure, not indexed again since it is the same printed instance, not a new location). 'We also observe a 25% speedup during training on GPT-3 175B compared to full fine-tuning[5]' -- a delta with no absolute beside it in this sentence, counted. Footnote 5: 'the training throughput for full fine-tuning is 32.5 tokens/s per V100 GPU; ... the throughput is 43.1 tokens/s per V100 GPU for LoRA' -- two absolute throughput figures, both own, counted. Footnote 4's '354GB'/'35TB' are pure arithmetic over the checkpoint-size figures already counted in this paragraph and are not separately indexed. Total: 1.2TB, 350GB, 35MB, 25%, 32.5 tokens/s, 43.1 tokens/s = 6 cells. No task dataset applies to any of these (GPT-3 175B engineering figures, not a benchmark result), so dataset/split are null throughout this location."
+    },
+    {
+      "label": "Section 5 intro + 5.1, Baselines",
+      "page": 5,
+      "own_result_cells": 0,
+      "notes": "Experimental setup and method descriptions (FT, FTTop2, BitFit, PreEmbed, PreLayer, AdapterH/L/P/D). Only formulas for |Theta| (parameter counts), no reported outcome."
+    },
+    {
+      "label": "Table 2",
+      "page": 6,
+      "own_result_cells": 72,
+      "notes": "'RoBERTabase, RoBERTalarge, and DeBERTaXXL with different adaptation methods on the GLUE benchmark.' 8 own rows (no '*') x 9 score columns (MNLI, SST-2, MRPC, CoLA, QNLI, QQP, RTE, STS-B, Avg.) = 72. RoBbase (LoRA) 0.3M: 87.5+/-.3, 95.1+/-.2, 89.7+/-.7, 63.4+/-1.2, 93.3+/-.3, 90.8+/-.1, 86.6+/-.7, 91.5+/-.2, 87.2. RoBlarge (LoRA) 0.8M [no dagger]: 90.6+/-.2, 96.2+/-.5, 90.9+/-1.2, 68.2+/-1.9, 94.9+/-.3, 91.6+/-.1, 87.4+/-2.5, 92.6+/-.2, 89.0. RoBlarge (AdptP) dagger 3.0M: 90.2+/-.3, 96.1+/-.3, 90.2+/-.7, 68.3+/-1.0, 94.8+/-.2, 91.9+/-.1, 83.8+/-2.9, 92.1+/-.7, 88.4. RoBlarge (AdptP) dagger 0.8M: 90.5+/-.3, 96.6+/-.2, 89.7+/-1.2, 67.8+/-2.5, 94.8+/-.3, 91.7+/-.2, 80.1+/-2.9, 91.9+/-.4, 87.9. RoBlarge (AdptH) dagger 6.0M: 89.9+/-.5, 96.2+/-.3, 88.7+/-2.9, 66.5+/-4.4, 94.7+/-.2, 92.1+/-.1, 83.4+/-1.1, 91.0+/-1.7, 87.8. RoBlarge (AdptH) dagger 0.8M: 90.3+/-.3, 96.3+/-.5, 87.7+/-1.7, 66.3+/-2.0, 94.7+/-.2, 91.5+/-.1, 72.9+/-2.9, 91.5+/-.5, 86.4. RoBlarge (LoRA) dagger 0.8M: 90.6+/-.2, 96.2+/-.5, 90.2+/-1.0, 68.2+/-1.9, 94.8+/-.3, 91.6+/-.2, 85.2+/-1.1, 92.3+/-.5, 88.6. DeBXXL (LoRA) 4.7M: 91.9+/-.2, 96.9+/-.2, 92.6+/-.6, 72.4+/-1.1, 96.0+/-.1, 92.9+/-.1, 94.9+/-.4, 93.0+/-.2, 91.3. Excluded baselines (all carry '*'): RoBbase (FT) 125.0M, RoBbase (BitFit) 0.1M, RoBbase (AdptD) 0.3M and 0.9M, RoBlarge (FT) 355.0M, DeBXXL (FT) 1500.0M. '# Trainable Parameters' is excluded as hyperparameter (LoRA-specific instruction: recorded, not dropped, despite being a headline figure)."
+    },
+    {
+      "label": "Section 5.2, RoBERTa Base/Large + 5.3, DeBERTa XXL",
+      "page": 7,
+      "own_result_cells": 0,
+      "notes": "Describes the RoBERTa/DeBERTa setup and the dagger protocol (sequence length 128, MRPC/RTE/STS-B initialized from the pre-trained model rather than the MNLI checkpoint). No numeric result printed outside Table 2."
+    },
+    {
+      "label": "Table 3",
+      "page": 7,
+      "own_result_cells": 25,
+      "notes": "'GPT-2 medium (M) and large (L) with different adaptation methods on the E2E NLG Challenge.' Caption: '* indicates numbers published in prior works. Confidence intervals are shown for experiments we ran.' 5 own rows (no '*') x 5 columns (BLEU, NIST, MET, ROUGE-L, CIDEr) = 25. GPT-2 M (AdapterH) 11.09M: 67.3+/-.6, 8.50+/-.07, 46.0+/-.2, 70.7+/-.2, 2.44+/-.01. GPT-2 M (LoRA) 0.35M: 70.4+/-.1, 8.85+/-.02, 46.8+/-.2, 71.8+/-.1, 2.53+/-.02. GPT-2 L (AdapterL) 0.88M: 69.1+/-.1, 8.68+/-.03, 46.3+/-.0, 71.4+/-.2, 2.49+/-.0. GPT-2 L (AdapterL) 23.00M: 68.9+/-.3, 8.70+/-.04, 46.1+/-.1, 71.3+/-.2, 2.45+/-.02. GPT-2 L (LoRA) 0.77M: 70.4+/-.1, 8.89+/-.02, 46.8+/-.2, 72.0+/-.2, 2.47+/-.02. Excluded baselines (all carry '*'): GPT-2 M (FT) 354.92M, GPT-2 M (AdapterL) 0.37M and 11.09M, GPT-2 M (FTTop2) 25.19M, GPT-2 M (PreLayer) 0.35M, GPT-2 L (FT) 774.03M, GPT-2 L (PreLayer) 0.77M."
+    },
+    {
+      "label": "Section 5.4, GPT-2 Medium/Large",
+      "page": 7,
+      "own_result_cells": 0,
+      "notes": "Setup for Table 3 (matches Li & Liang (2021)); points forward to Section F.1 for DART/WebNLG. No value printed here."
+    },
+    {
+      "label": "Table 4",
+      "page": 8,
+      "own_result_cells": 40,
+      "notes": "'Performance of different adaptation methods on GPT-3 175B.' No '*' or dagger anywhere in this table; the fluctuation band in the caption ('+/-0.5%' etc.) is stated once for the whole table, not per cell, and is excluded on that basis. 8 rows x 5 cells (WikiSQL, MNLI-m, and SAMSum's 'R1/R2/RL' split into 3 separate metric cells per this file's combined-token rule) = 40. GPT-3 (FT): 73.8, 89.5, 52.0, 28.0, 44.5. GPT-3 (BitFit): 71.3, 91.0, 51.3, 27.4, 43.5. GPT-3 (PreEmbed): 63.1, 88.6, 48.3, 24.2, 40.5. GPT-3 (PreLayer): 70.1, 89.5, 50.8, 27.3, 43.5. GPT-3 (AdapterH) 7.1M: 71.9, 89.8, 53.0, 28.9, 44.8. GPT-3 (AdapterH) 40.1M: 73.2, 91.5, 53.2, 29.0, 45.1. GPT-3 (LoRA) 4.7M: 73.4, 91.7, 53.8, 29.8, 45.9. GPT-3 (LoRA) 37.7M: 74.0, 91.6, 53.4, 29.2, 45.1. '# Trainable Parameters' (175,255.8M etc.) excluded as hyperparameter."
+    },
+    {
+      "label": "Section 5.5, Scaling Up to GPT-3 175B + Figure 2",
+      "page": 8,
+      "own_result_cells": 0,
+      "notes": "Figure 2 plots the same WikiSQL/MNLI-matched points that Section F.2's Table 15 tabulates ('See Section F.2 for more details on the plotted data points'), so its values are counted at Table 15, not here, to avoid double-counting a chart of already-tabulated numbers. Prose repeats the 10,000x ratio (excluded) and gives no new absolute value."
+    },
+    {
+      "label": "Section 6, Related Works",
+      "page": 8,
+      "own_result_cells": 0,
+      "notes": "Prior-work survey (Transformer LMs, prompt engineering, parameter-efficient adaptation, low-rank structure in deep learning). '175B parameters' describes GPT-3's architecture (hyperparameter/spec), not a result; no outcome value."
+    },
+    {
+      "label": "Section 7, Understanding the Low-Rank Updates (intro)",
+      "page": 9,
+      "own_result_cells": 0,
+      "notes": "States the three questions the section answers and repeats the 10,000x ratio (excluded). No value."
+    },
+    {
+      "label": "Section 7.1, Which Weight Matrices in Transformer Should We Apply LoRA To? (intro)",
+      "page": 10,
+      "own_result_cells": 0,
+      "notes": "'We set a parameter budget of 18M (roughly 35MB if stored in FP16) ... which corresponds to r=8 ... or r=4 ..., for all 96 layers.' 18M/35MB/r=8/r=4/96 layers are the ablation's fixed parameter budget and architecture depth, i.e. hyperparameter, matching Table 5's own header ('# of Trainable Parameters = 18M'); not a result."
+    },
+    {
+      "label": "Table 5",
+      "page": 10,
+      "own_result_cells": 14,
+      "notes": "'Validation accuracy on WikiSQL and MultiNLI after applying LoRA to different types of attention weights in GPT-3, given the same number of trainable parameters.' No baseline row at all -- this is entirely the authors' own weight-type ablation. 2 rows (WikiSQL, MultiNLI) x 7 columns (Wq, Wk, Wv, Wo, Wq+Wk, Wq+Wv, Wq+Wk+Wv+Wo) = 14. WikiSQL (+/-0.5%): 70.4, 70.0, 73.0, 73.2, 71.4, 73.7, 73.7. MultiNLI (+/-0.1%): 91.0, 90.8, 91.0, 91.3, 91.3, 91.3, 91.7. The '+/-0.5%'/'+/-0.1%' figures are stated once per row ('we report the standard deviation ... in the first column') and are not separate cells. 'Rank r' (8,8,8,8,4,4,2) is excluded as hyperparameter."
+    },
+    {
+      "label": "Section 7.1 (continued discussion)",
+      "page": 10,
+      "own_result_cells": 0,
+      "notes": "Qualitative discussion of Table 5's finding (adapting Wq and Wv beats a single weight type at larger rank). No new value."
+    },
+    {
+      "label": "Section 7.2, What is the Optimal Rank r for LoRA? (intro)",
+      "page": 10,
+      "own_result_cells": 0,
+      "notes": "States which weight-type groups are compared in Table 6. No value."
+    },
+    {
+      "label": "Table 6",
+      "page": 10,
+      "own_result_cells": 30,
+      "notes": "'Validation accuracy on WikiSQL and MultiNLI with different rank r.' No baseline row -- entirely the authors' own rank ablation. 2 metric groups (WikiSQL, MultiNLI) x 3 weight-type rows (Wq; Wq,Wv; Wq,Wk,Wv,Wo) x 5 rank columns (r=1,2,4,8,64) = 30. WikiSQL(+/-0.5%): Wq 68.8,69.6,70.5,70.4,70.0; Wq,Wv 73.4,73.3,73.7,73.8,73.5; Wq,Wk,Wv,Wo 74.1,73.7,74.0,74.0,73.9. MultiNLI (+/-0.1%): Wq 90.7,90.9,91.1,90.7,90.7; Wq,Wv 91.3,91.4,91.3,91.6,91.4; Wq,Wk,Wv,Wo 91.2,91.7,91.7,91.5,91.4."
+    },
+    {
+      "label": "Section 7.2 (continued) + footnote 6",
+      "page": 10,
+      "own_result_cells": 0,
+      "notes": "Qualitative discussion of Table 6 plus a hypothetical about small r failing on a hypothetical cross-lingual task (footnote 6); no printed value."
+    },
+    {
+      "label": "Subspace similarity between different r (prose) + Figure 3",
+      "page": 10,
+      "own_result_cells": 0,
+      "notes": "Defines phi(Ar=8, Ar=64, i, j) and Figure 3's four heat-maps (subspace overlap between r=8 and r=64 for Wq/Wv at layer 48). Axis ticks (i=1..8, j=1..58) and colour scale (0.0-1.0) only; no per-cell numeric value is printed in the figure or its caption."
+    },
+    {
+      "label": "Subspace similarity between random seeds (prose) + Section 7.3 intro + Figure 4",
+      "page": 11,
+      "own_result_cells": 0,
+      "notes": "Prose interpreting Figure 3, then Figure 4 (subspace overlap between two random seeds at r=64, plus a random-Gaussian control), then Section 7.3's opening question. Figure 4 again prints only axis ticks and a colour scale, no per-cell value; no other number in this span."
+    },
+    {
+      "label": "Table 7",
+      "page": 12,
+      "own_result_cells": 9,
+      "notes": "'The Frobenius norm of U^T Wq V^T where U and V are the left/right top r singular vector directions of either (1) DeltaWq, (2) Wq, or (3) a random matrix. The weight matrices are taken from the 48th layer of GPT-3.' No baseline/citation applies to this analysis table -- it is entirely the authors' own computation over their own trained model. Grid (||U^T Wq V^T||_F): r=4 group [DeltaWq 0.32, Wq 21.67, Random 0.02], r=64 group [DeltaWq 1.90, Wq 37.71, Random 0.33]; plus ||Wq||_F = 61.95 (printed once, shared across both r groups since Wq itself does not depend on r), ||DeltaWq||_F = 6.91 (r=4) and ||DeltaWq||_F = 3.57 (r=64). Total 6 + 3 = 9. This is the frame's least certain role call (see sampling_method) -- every cell drawn from here is confident:false. No task dataset or split applies."
+    },
+    {
+      "label": "Section 7.3 (continued discussion)",
+      "page": 12,
+      "own_result_cells": 0,
+      "notes": "'the amplification factor is rather huge: 21.5 ~= 6.91/0.32 for r=4' is arithmetic entirely over two values already counted in Table 7 (an explicit division shown inline), so it is treated like the ratio exclusions elsewhere in this file rather than a new measurement; no other value in this span."
+    },
+    {
+      "label": "Section 8, Conclusion and Future Work",
+      "page": 12,
+      "own_result_cells": 0,
+      "notes": "Summary and four future-work directions. No numeric value."
+    },
+    {
+      "label": "Appendix A, Large Language Models Still Need Parameter Updates (prose)",
+      "page": 16,
+      "own_result_cells": 0,
+      "notes": "Motivates Table 8 (Appendix A): 'fine-tuning improves the model performance drastically compared to few-shot learning ... We take the GPT-3 few-shot result on RTE from the GPT-3 paper (Brown et al., 2020). For MNLI-matched, we use two demonstrations per class and six in-context examples in total.' This is the basis for Table 8's per-cell (not per-row) ownership split. No value printed in this prose itself."
+    },
+    {
+      "label": "Table 8 (Appendix A)",
+      "page": 17,
+      "own_result_cells": 3,
+      "notes": "'Fine-tuning significantly outperforms few-shot learning on GPT-3 (Brown et al., 2020).' 2 rows x 2 columns (MNLI-m, RTE) = 4 total, 3 own. GPT-3 Few-Shot: MNLI-m 40.6 (own -- the authors' own few-shot eval per the Appendix A intro), RTE 69.0 (excluded -- explicitly 'taken ... from the GPT-3 paper', a citation). GPT-3 Fine-Tuned: MNLI-m 89.5 (own; the same digits as Table 4's and Table 15's GPT-3 (FT)/Fine-Tune MNLI-m cells, counted again here as a separate printed table per this file's restated-value rule), RTE 85.4 (own, printed nowhere else in the paper)."
+    },
+    {
+      "label": "Appendix B, Inference Latency Introduced by Adapter Layers + Figure 5",
+      "page": 17,
+      "own_result_cells": 0,
+      "notes": "Extends Table 1's latency study; Figure 5 plots percentage slow-down vs batch size/sequence length/adapter rank r for AdapterH and AdapterL. Axis ticks (0-35%, batch sizes 1-32, r in {0,10,100,250}) only, no per-point value printed or captioned."
+    },
+    {
+      "label": "Appendix C, Dataset Details",
+      "page": 17,
+      "own_result_cells": 0,
+      "notes": "GLUE, WikiSQL (56,355/8,421 train/val), SAMSum (14,732/819 train/test), E2E (~42,000/4,600/4,600), DART (82K), WebNLG (22K, 14 categories). All dataset statistics, not results."
+    },
+    {
+      "label": "Appendix D, Hyperparameters Used in Experiments (Tables 9-12)",
+      "page": 18,
+      "own_result_cells": 0,
+      "notes": "D.1 RoBERTa (Table 9: optimizer, batch size, epochs, LR, LoRA config per GLUE task), D.2 DeBERTa XXL (Table 10, same shape plus weight decay/dropout), D.3 GPT-2 (Table 11: E2E/WebNLG/DART training and inference hyperparameters), D.4 GPT-3 (prose plus Table 12: per-method learning rate). Every cell in Tables 9-12 is a training hyperparameter (batch size, epochs, learning rate, LoRA rank/alpha, sequence length, warmup, dropout, beam size); none is a result."
+    },
+    {
+      "label": "Appendix E, Combining LoRA with Prefix Tuning",
+      "page": 20,
+      "own_result_cells": 0,
+      "notes": "Defines LoRA+PrefixEmbed and LoRA+PrefixLayer and points forward to Table 15 ('In Table 15, we show the evaluation results of LoRA+PE and LoRA+PL on WikiSQL and MultiNLI'). No value printed in this prose; Table 15's cells are counted at Table 15 itself."
+    },
+    {
+      "label": "Appendix F.1, Additional Experiments on GPT-2 (intro)",
+      "page": 21,
+      "own_result_cells": 0,
+      "notes": "'We also repeat our experiment on DART (Nan et al., 2020) and WebNLG (Gardent et al., 2017) following the setup of Li & Liang (2021). The result is shown in Table 13.' No value in the intro itself."
+    },
+    {
+      "label": "Table 13",
+      "page": 21,
+      "own_result_cells": 33,
+      "notes": "'GPT-2 with different adaptation methods on DART.' No '*' or dagger anywhere (confirmed against the page image, p21 -- bolding marks the best score per column and does not indicate a citation). 11 rows (6 Medium + 5 Large) x 3 columns (BLEU, MET, TER) = 33. GPT-2 Medium: Fine-Tune (354M) 46.2, 0.39, 0.46; AdapterL (0.37M) 42.4, 0.36, 0.48; AdapterL (11M) 45.2, 0.38, 0.46; FTTop2 (24M) 41.0, 0.34, 0.56; PrefLayer (0.35M) 46.4, 0.38, 0.46; LoRA (0.35M) 47.1+/-.2, 0.39, 0.46. GPT-2 Large: Fine-Tune (774M) 47.0, 0.39, 0.46; AdapterL (0.88M) 45.7+/-.1, 0.38, 0.46; AdapterL (23M) 47.1+/-.1, 0.39, 0.45; PrefLayer (0.77M) 46.7, 0.38, 0.45; LoRA (0.77M) 47.5+/-.1, 0.39, 0.45. '# Trainable Parameters' excluded as hyperparameter."
+    },
+    {
+      "label": "Table 14",
+      "page": 22,
+      "own_result_cells": 99,
+      "notes": "'GPT-2 with different adaptation methods on WebNLG. The variances of MET and TER are less than 0.01 for all the experiments we ran.' No '*' or dagger anywhere (confirmed against the page image, p22). 11 rows x 9 columns (BLEU, MET, TER each split into U/S/A -- unseen/seen/all categories, already three separate printed cells per the caption's own definition) = 99. GPT-2 Medium: Fine-Tune (354M) 27.7/64.2/46.5, .30/.45/.38, .76/.33/.53. AdapterL (0.37M) 45.1/54.5/50.2, .36/.39/.38, .46/.40/.43. AdapterL (11M) 48.3/60.4/54.9, .38/.43/.41, .45/.35/.39. FTTop2 (24M) 18.9/53.6/36.0, .23/.38/.31, .99/.49/.72. Prefix (0.35M) 45.6/62.9/55.1, .38/.44/.41, .49/.35/.40. LoRA (0.35M) 46.7+/-.4/62.1+/-.2/55.3+/-.2, .38/.44/.41, .46/.33/.39. GPT-2 Large: Fine-Tune (774M) 43.1/65.3/55.5, .38/.46/.42, .53/.33/.42. AdapterL (0.88M) 49.8+/-.0/61.1+/-.0/56.0+/-.0, .38/.43/.41, .44/.35/.39. AdapterL (23M) 49.2+/-.1/64.7+/-.2/57.7+/-.1, .39/.46/.43, .46/.33/.39. Prefix (0.77M) 47.7/63.4/56.3, .39/.45/.42, .48/.34/.40. LoRA (0.77M) 48.4+/-.3/64.0+/-.3/57.0+/-.1, .39/.45/.42, .45/.32/.38."
+    },
+    {
+      "label": "Appendix F.2, Additional Experiments on GPT-3 (prose)",
+      "page": 22,
+      "own_result_cells": 0,
+      "notes": "'We present additional runs on GPT-3 with different adaptation methods in Table 15. The focus is on identifying the trade-off between performance and the number of trainable parameters.' No value in the intro; Table 15's cells are counted at Table 15."
+    },
+    {
+      "label": "Appendix F.3, Low-Data Regime (prose)",
+      "page": 22,
+      "own_result_cells": 1,
+      "notes": "'PrefixEmbed and PrefixLayer performs very poorly on MNLI-100 dataset, with PrefixEmbed performing only slightly better than random chance (37.6% vs. 33.3%).' 37.6 restates Table 16's PrefixEmbed/MNLI-100 cell (own, per this file's restated-value rule -- see sampling_method) and is counted again at this location, which is physically earlier (page 22) than Table 16 itself (page 23). 33.3% is 1/3 restated as 'random chance' for a 3-way NLI label space; it has no producing run and is not own-result, so it is excluded outright rather than indexed."
+    },
+    {
+      "label": "Section G, Measuring Similarity Between Subspaces (intro)",
+      "page": 22,
+      "own_result_cells": 0,
+      "notes": "Defines the phi(A,B,i,j) subspace-similarity measure used throughout Section 7 and Section H; pure math, no reported outcome."
+    },
+    {
+      "label": "Table 15",
+      "page": 23,
+      "own_result_cells": 60,
+      "notes": "'Hyperparameter analysis of different adaptation approaches on WikiSQL and MNLI ... Performance is measured in validation accuracy.' No '*' or dagger anywhere (confirmed against the page image, p23); despite the table's own title calling it a hyperparameter analysis, the reported quantity in each cell is validation accuracy (a result) at a stated hyperparameter configuration -- the configuration column itself (e.g. 'rq=rv=8') and '# Trainable Parameters' are excluded as hyperparameter, not the accuracy values beside them. 30 rows x 2 columns (WikiSQL, MNLI-m) = 60. Fine-Tune: 73.8, 89.5. PrefixEmbed: lp=32 55.9/84.9, lp=64 58.7/88.1, lp=128 60.6/88.0, lp=256 63.1/88.6, lp=512 55.9/85.8. PrefixLayer: lp=2,li=2 68.5/89.2, lp=8,li=0 69.8/88.2, lp=8,li=8 70.1/89.5, lp=32,li=4 66.4/89.6, lp=64,li=0 64.9/87.9. AdapterH: r=1 71.9/89.8, r=4 73.2/91.0, r=8 73.2/91.5, r=16 73.2/91.5, r=64 72.6/91.5. LoRA: rv=2 73.4/91.7, rq=rv=1 73.4/91.3, rq=rv=2 73.3/91.4, rq=rk=rv=ro=1 74.1/91.2, rq=rv=4 73.7/91.3, rq=rk=rv=ro=2 73.7/91.7, rq=rv=8 73.8/91.6, rq=rk=rv=ro=4 74.0/91.7, rq=rv=64 73.6/91.4, rq=rk=rv=ro=64 73.9/91.4. LoRA+PE: rq=rv=8 75.0/91.4, rq=rv=32 75.9/91.1, rq=rv=64 76.2/91.3. LoRA+PL: rq=rv=8 72.9/90.2."
+    },
+    {
+      "label": "Table 16",
+      "page": 23,
+      "own_result_cells": 16,
+      "notes": "'Validation accuracy of different methods on subsets of MNLI using GPT-3 175B. ... We evaluate with the full validation set.' No '*' or dagger. 4 rows x 4 columns (MNLI(m)-100, -1k, -10k, -392K) = 16. GPT-3 (Fine-Tune): 60.2, 85.8, 88.9, 89.5 (the 392K/full-set MNLI-m figure, 89.5, is the same digits as Table 4's and Table 8's GPT-3 (FT) MNLI-m cells, counted again here per the restated-value rule). GPT-3 (PrefixEmbed): 37.6, 75.2, 79.5, 88.6 (the 100-shot figure, 37.6, is restated in Appendix F.3's prose and counted there too). GPT-3 (PrefixLayer): 48.3, 82.5, 85.9, 89.6. GPT-3 (LoRA): 63.8, 85.6, 89.2, 91.7."
+    },
+    {
+      "label": "Section G (continued, Projection Metric definition)",
+      "page": 23,
+      "own_result_cells": 0,
+      "notes": "Defines the Projection Metric d(U,V) and its relation to phi(A,B,i,j); pure math, no reported outcome."
+    },
+    {
+      "label": "Section H, Additional Experiments on Low-Rank Matrices (intro)",
+      "page": 24,
+      "own_result_cells": 0,
+      "notes": "One-sentence pointer to the subsections that follow. No value."
+    },
+    {
+      "label": "Section H.1, Correlation Between LoRA Modules + Figure 6",
+      "page": 24,
+      "own_result_cells": 0,
+      "notes": "Points to Figure 6 as an extension of Figure 3 to layers 1/32/64/96. Figure 6 prints only axis ticks (i, j, layer indices) and a colour scale (0.0-1.0), no per-cell value."
+    },
+    {
+      "label": "Section H.2, Effect of r on GPT-2 (intro)",
+      "page": 24,
+      "own_result_cells": 0,
+      "notes": "'We repeat our experiment on the effect of r ... in GPT-2. Using the E2E NLG Challenge dataset as an example, we report the validation loss and test metrics achieved by different choices of r after training for 26,000 steps. We present our result in Table 18.' No value in the intro itself; '26,000 steps' is a training-budget hyperparameter."
+    },
+    {
+      "label": "Section H.3, Correlation Between W and Delta W",
+      "page": 24,
+      "own_result_cells": 0,
+      "notes": "Points to Figure 8 for the normalized subspace similarity between W and Delta W with varying r; no value printed in this prose span (Figure 8 itself, on page 26, likewise prints only axis ticks and a colour scale)."
+    },
+    {
+      "label": "Figure 7",
+      "page": 25,
+      "own_result_cells": 0,
+      "notes": "Normalized subspace similarity between two randomly seeded r=64 runs, for DeltaWq and DeltaWv at layers 1/32/64/96. Axis ticks (i, j) and a colour scale (0.0-0.8) only, no per-cell value; confirmed against the page image (p26, top of page)."
+    },
+    {
+      "label": "Section H.4, Amplification Factor",
+      "page": 25,
+      "own_result_cells": 0,
+      "notes": "'for r=4, this amplification factor is as large as 20 ... for r=64, this amplification factor is only around 2' -- both figures are rounded restatements of ratios directly computable from Table 7's already-counted values (6.91/0.32 ~= 21.5, 3.57/1.90 ~= 1.88), matching Section 7.3's identical treatment; excluded as derived arithmetic, not a new measurement."
+    },
+    {
+      "label": "Table 18",
+      "page": 26,
+      "own_result_cells": 66,
+      "notes": "'Validation loss and test set metrics on E2E NLG Challenge achieved by LoRA with different rank r using GPT-2 Medium.' No baseline row -- entirely the authors' own rank ablation (Section H.2: 'We repeat our experiment on the effect of r ... in GPT-2'). 11 rows (r=1,2,4,8,16,32,64,128,256,512,1024) x 6 columns (val_loss -- validation split per the caption; BLEU, NIST, METEOR, ROUGE_L, CIDEr -- test split per the caption's 'test set metrics') = 66. r=1: 1.23, 68.72, 8.7215, 0.4565, 0.7052, 2.4329. r=2: 1.21, 69.17, 8.7413, 0.4590, 0.7052, 2.4639. r=4: 1.18, 70.38, 8.8439, 0.4689, 0.7186, 2.5349. r=8: 1.17, 69.57, 8.7457, 0.4636, 0.7196, 2.5196. r=16: 1.16, 69.61, 8.7483, 0.4629, 0.7177, 2.4985. r=32: 1.16, 69.33, 8.7736, 0.4642, 0.7105, 2.5255. r=64: 1.16, 69.24, 8.7174, 0.4651, 0.7180, 2.5070. r=128: 1.16, 68.73, 8.6718, 0.4628, 0.7127, 2.5030. r=256: 1.16, 68.92, 8.6982, 0.4629, 0.7128, 2.5012. r=512: 1.16, 68.78, 8.6857, 0.4637, 0.7128, 2.5025. r=1024: 1.17, 69.37, 8.7495, 0.4659, 0.7149, 2.5090. 'Rank r' itself is excluded as hyperparameter."
+    },
+    {
+      "label": "Figure 8",
+      "page": 26,
+      "own_result_cells": 0,
+      "notes": "Normalized subspace similarity between the singular directions of Wq and those of DeltaWq (r=4, 8, 64) and a random baseline. Axis ticks (i, j) and a colour scale (0.100-0.200) only, no per-cell value printed or captioned."
+    }
+  ],
+  "labels": [
+    {
+      "id": "L1",
+      "frame_index": 1,
+      "metric": "inference latency",
+      "value": 1449.4,
+      "units": "ms",
+      "dataset": null,
+      "split": null,
+      "role": "result",
+      "is_own_result": true,
+      "confident": true,
+      "location": {
+        "kind": "table",
+        "label": "Table 1",
+        "page": 4,
+        "row": "Fine-Tune/LoRA",
+        "column": "Batch Size 32, Sequence Length 512"
+      },
+      "notes": "Table 1: 'Inference latency of a single forward pass in GPT-2 medium measured in milliseconds, averaged over 100 trials.' The row 'Fine-Tune/LoRA' is a single combined row because the two methods add no extra layers and so share one latency figure by construction ('No Additional Inference Latency', Section 4.1). Own result: no citation marker anywhere in this table, and the prose ('we see a noticeable increase in latency when using adapters ... Table 1') frames it as the authors' own measurement on an NVIDIA Quadro RTX8000. Printed as '1449.4+/-0.8'; the point value is the cell per this file's mean+/-std convention. No NLP dataset or split applies -- this is a synthetic latency probe, not a task benchmark. Row and column confirmed against the page image (p04)."
+    },
+    {
+      "id": "L2",
+      "frame_index": 3,
+      "metric": "inference latency",
+      "value": 19.8,
+      "units": "ms",
+      "dataset": null,
+      "split": null,
+      "role": "result",
+      "is_own_result": true,
+      "confident": true,
+      "location": {
+        "kind": "table",
+        "label": "Table 1",
+        "page": 4,
+        "row": "Fine-Tune/LoRA",
+        "column": "Batch Size 1, Sequence Length 128"
+      },
+      "notes": "Same row as L1, third of its three columns -- the small-batch, short-sequence setting the paper singles out as the scenario where adapter latency 'can be significant' (Table 1's caption). Printed as '19.8+/-2.7'; point value is the cell. Row and column confirmed against the page image (p04)."
+    },
+    {
+      "id": "L3",
+      "frame_index": 25,
+      "metric": "MNLI",
+      "value": 90.6,
+      "units": "%",
+      "dataset": "MNLI (GLUE)",
+      "split": "dev",
+      "role": "result",
+      "is_own_result": true,
+      "confident": true,
+      "location": {
+        "kind": "table",
+        "label": "Table 2",
+        "page": 6,
+        "row": "RoBERTa large (LoRA), 0.8M",
+        "column": "MNLI"
+      },
+      "notes": "Table 2: 'RoBERTabase, RoBERTalarge, and DeBERTaXXL with different adaptation methods on the GLUE benchmark.' This is the RoBlarge (LoRA) row printed WITHOUT the dagger (there is a second RoBlarge (LoRA) row further down, marked with a dagger, that reports different digits under a more restricted evaluation protocol -- Section 5.2 explains the two protocols; see sampling_method). No '*' on this row, so it is own, not a citation. Split is not stated verbatim for Table 2; inferred as dev because GLUE test-set labels are hidden and require leaderboard submission, and no such submission process is described anywhere for RoBERTa/DeBERTa in this paper (unlike WikiSQL/SAMSum, which the paper calls 'validation accuracy' explicitly). Caption: 'accuracy for other tasks' (MNLI is not CoLA or STS-B), hence units '%'. Row and column confirmed against the page image (p06)."
+    },
+    {
+      "id": "L4",
+      "frame_index": 28,
+      "metric": "CoLA",
+      "value": 68.2,
+      "units": null,
+      "dataset": "CoLA (GLUE)",
+      "split": "dev",
+      "role": "result",
+      "is_own_result": true,
+      "confident": true,
+      "location": {
+        "kind": "table",
+        "label": "Table 2",
+        "page": 6,
+        "row": "RoBERTa large (LoRA), 0.8M",
+        "column": "CoLA"
+      },
+      "notes": "Same row as L3 (the undaggered RoBlarge (LoRA), 0.8M row), fourth of its nine score columns. Table 2's caption: 'Matthew's correlation for CoLA' -- not a percentage, so units is null, matching this set's treatment of CoLA elsewhere. Printed as '68.2+/-1.9'; point value is the cell. Row and column confirmed against the page image (p06)."
+    },
+    {
+      "id": "L5",
+      "frame_index": 49,
+      "metric": "RTE",
+      "value": 80.1,
+      "units": "%",
+      "dataset": "RTE (GLUE)",
+      "split": "dev",
+      "role": "result",
+      "is_own_result": true,
+      "confident": true,
+      "location": {
+        "kind": "table",
+        "label": "Table 2",
+        "page": 6,
+        "row": "RoBERTa large (AdapterP), 0.8M, dagger",
+        "column": "RTE"
+      },
+      "notes": "RoBlarge (AdptP) dagger, 0.8M row (the second of Table 2's two AdptP rows). The dagger marks 'runs configured in a setup similar to Houlsby et al. (2019) for a fair comparison' (Table 2's caption) -- this is the authors' own reimplementation/rerun of Pfeiffer et al. (2021)'s adapter design under a matched protocol, so it is an own result despite naming a prior method, per this file's rule that the authors' own rerun of prior work counts. Printed as '80.1+/-2.9'. Row and column confirmed against the page image (p06)."
+    },
+    {
+      "id": "L6",
+      "frame_index": 57,
+      "metric": "QQP",
+      "value": 92.1,
+      "units": "%",
+      "dataset": "QQP (GLUE)",
+      "split": "dev",
+      "role": "result",
+      "is_own_result": true,
+      "confident": true,
+      "location": {
+        "kind": "table",
+        "label": "Table 2",
+        "page": 6,
+        "row": "RoBERTa large (AdapterH), 6.0M, dagger",
+        "column": "QQP"
+      },
+      "notes": "RoBlarge (AdptH) dagger, 6.0M row (the first of Table 2's two AdptH rows), sixth of nine score columns. Own for the same dagger reason as L5 -- the authors' own rerun of Houlsby et al. (2019)'s original adapter design in the fair-comparison protocol. Printed as '92.1+/-.1'. Row and column confirmed against the page image (p06)."
+    },
+    {
+      "id": "L7",
+      "frame_index": 166,
+      "metric": "MultiNLI",
+      "value": 91.7,
+      "units": "%",
+      "dataset": "MultiNLI",
+      "split": "validation",
+      "role": "result",
+      "is_own_result": true,
+      "confident": true,
+      "location": {
+        "kind": "table",
+        "label": "Table 5",
+        "page": 10,
+        "row": "MultiNLI (+/-0.1%)",
+        "column": "Wq, Wk, Wv, Wo"
+      },
+      "notes": "Table 5: 'Validation accuracy on WikiSQL and MultiNLI after applying LoRA to different types of attention weights in GPT-3, given the same number of trainable parameters.' No baseline row exists in this table at all -- it is entirely the authors' own weight-type ablation on GPT-3 175B, so own by construction. Last (seventh) column, corresponding to rank r=2 (from the table's own 'Rank r' row) since adapting all four weight types at the fixed 18M parameter budget halves the per-matrix rank again; r is a hyperparameter and not part of this cell. Bolded in the table as the best MultiNLI result. Row and column confirmed against the page image (p10)."
+    },
+    {
+      "id": "L8",
+      "frame_index": 182,
+      "metric": "MultiNLI",
+      "value": 90.7,
+      "units": "%",
+      "dataset": "MultiNLI",
+      "split": "validation",
+      "role": "result",
+      "is_own_result": true,
+      "confident": true,
+      "location": {
+        "kind": "table",
+        "label": "Table 6",
+        "page": 10,
+        "row": "MultiNLI (+/-0.1%) / Wq",
+        "column": "r = 1"
+      },
+      "notes": "Table 6: 'Validation accuracy on WikiSQL and MultiNLI with different rank r.' No baseline row -- entirely the authors' own rank ablation, restricting LoRA to Wq alone (the first of the table's three weight-type rows under the MultiNLI group). First of five rank columns (r=1,2,4,8,64). This is the smallest-rank, single-weight-type configuration the table reports, part of the finding that 'training Wq alone needs a larger r' (Table 6's caption). Row and column confirmed against the page image (p10)."
+    },
+    {
+      "id": "L9",
+      "frame_index": 197,
+      "metric": "Frobenius norm of U^T Wq V^T (projection onto DeltaWq's top-r directions)",
+      "value": 0.32,
+      "units": null,
+      "dataset": null,
+      "split": null,
+      "role": "result",
+      "is_own_result": true,
+      "confident": false,
+      "location": {
+        "kind": "table",
+        "label": "Table 7",
+        "page": 12,
+        "row": "||U^T Wq V^T||_F =",
+        "column": "r = 4, DeltaWq"
+      },
+      "notes": "Table 7: 'The Frobenius norm of U^T Wq V^T where U and V are the left/right top r singular vector directions of either (1) DeltaWq, (2) Wq, or (3) a random matrix. The weight matrices are taken from the 48th layer of GPT-3.' This is the first of the table's six grid cells, projecting Wq onto the top-4 singular directions of its own trained update matrix DeltaWq. Own by construction (their own trained GPT-3+LoRA weights; no citation applies to an internal analysis table). Marked confident:false because role is genuinely unclear: the schema limits role to result/hyperparameter/dataset_statistic, and a matrix-norm diagnostic used to support an interpretability claim ('DeltaW amplifies some features that are already in W') does not sit as comfortably under 'result' as a benchmark accuracy does -- see sampling_method for the full reasoning and the ELECTRA footnote-10 precedent this follows. No task dataset or split applies. Confirmed against the page image (p12)."
+    },
+    {
+      "id": "L10",
+      "frame_index": 214,
+      "metric": "TER",
+      "value": 0.48,
+      "units": null,
+      "dataset": "DART",
+      "split": null,
+      "role": "result",
+      "is_own_result": true,
+      "confident": true,
+      "location": {
+        "kind": "table",
+        "label": "Table 13",
+        "page": 21,
+        "row": "GPT-2 Medium / AdapterL (0.37M)",
+        "column": "TER"
+      },
+      "notes": "Table 13: 'GPT-2 with different adaptation methods on DART.' No '*' or dagger printed anywhere in this table (confirmed against the page image, p21), and the intro prose ('We also repeat our experiment on DART ... following the setup of Li & Liang (2021)') together with the total absence of citation markers on rows that carry '*' in Table 3 (Fine-Tune, AdapterL, FTTop2, PrefLayer) supports reading this whole appendix table as own reruns -- see sampling_method for the full argument, since this is the file's largest single judgement call. Third of three metric columns (BLEU, MET, TER); TER is printed with a down-arrow in the header ('TER-down-arrow') meaning lower is better, and with no leading zero ('.48'), stored here as 0.48. No unit glyph printed, so units is null. Row and column confirmed against the page image (p21)."
+    },
+    {
+      "id": "L11",
+      "frame_index": 216,
+      "metric": "MET",
+      "value": 0.38,
+      "units": null,
+      "dataset": "DART",
+      "split": null,
+      "role": "result",
+      "is_own_result": true,
+      "confident": true,
+      "location": {
+        "kind": "table",
+        "label": "Table 13",
+        "page": 21,
+        "row": "GPT-2 Medium / AdapterL (11M)",
+        "column": "MET"
+      },
+      "notes": "Same table and ownership reasoning as L10. Second of three metric columns for the 11M-parameter AdapterL row (the second of Table 13's two AdapterL rows for GPT-2 Medium). Printed as '.38', stored as 0.38. Row and column confirmed against the page image (p21)."
+    },
+    {
+      "id": "L12",
+      "frame_index": 244,
+      "metric": "BLEU",
+      "value": 46.5,
+      "units": null,
+      "dataset": "WebNLG",
+      "split": "all categories",
+      "role": "result",
+      "is_own_result": true,
+      "confident": true,
+      "location": {
+        "kind": "table",
+        "label": "Table 14",
+        "page": 22,
+        "row": "GPT-2 Medium / Fine-Tune (354M)",
+        "column": "BLEU (A)"
+      },
+      "notes": "Table 14: 'GPT-2 with different adaptation methods on WebNLG. The variances of MET and TER are less than 0.01 for all the experiments we ran.' The explicit 'experiments we ran' plus the total absence of any '*'/dagger on this table (confirmed against the page image, p22) is why Fine-Tune here is own, unlike Table 3's Fine-Tune row, which carries '*'. Column 'A' is one of the three printed sub-columns under BLEU ('U' unseen, 'S' seen, 'A' all categories, per the caption); these are three already-separate printed cells, not a combined token. Row and column confirmed against the page image (p22)."
+    },
+    {
+      "id": "L13",
+      "frame_index": 295,
+      "metric": "TER",
+      "value": 0.39,
+      "units": null,
+      "dataset": "WebNLG",
+      "split": "all categories",
+      "role": "result",
+      "is_own_result": true,
+      "confident": true,
+      "location": {
+        "kind": "table",
+        "label": "Table 14",
+        "page": 22,
+        "row": "GPT-2 Medium / LoRA (0.35M)",
+        "column": "TER (A)"
+      },
+      "notes": "Same table as L12. LoRA (0.35M) row, the 'A' (all categories) sub-column of TER (the ninth and last of this row's nine score columns). Printed without a leading zero, as '.39' (bolded, the best TER-A among GPT-2 Medium methods); stored as 0.39 since JSON numeric literals require the leading zero. Row and column confirmed against the page image (p22)."
+    },
+    {
+      "id": "L14",
+      "frame_index": 305,
+      "metric": "BLEU",
+      "value": 49.8,
+      "units": null,
+      "dataset": "WebNLG",
+      "split": "unseen categories",
+      "role": "result",
+      "is_own_result": true,
+      "confident": true,
+      "location": {
+        "kind": "table",
+        "label": "Table 14",
+        "page": 22,
+        "row": "GPT-2 Large / AdapterL (0.88M)",
+        "column": "BLEU (U)"
+      },
+      "notes": "Same table as L12/L13, GPT-2 Large section. AdapterL (0.88M) row (the first of Table 14's two GPT-2 Large AdapterL rows), 'U' (unseen categories) sub-column of BLEU. Printed as '49.8+/-.0' (bolded, the best BLEU-U among GPT-2 Large methods); point value 49.8 is the cell per this file's mean+/-std convention. Row and column confirmed against the page image (p22)."
+    },
+    {
+      "id": "L15",
+      "frame_index": 481,
+      "metric": "METEOR",
+      "value": 0.4659,
+      "units": null,
+      "dataset": "E2E NLG Challenge",
+      "split": "test",
+      "role": "result",
+      "is_own_result": true,
+      "confident": true,
+      "location": {
+        "kind": "table",
+        "label": "Table 18",
+        "page": 26,
+        "row": "r = 1024",
+        "column": "METEOR"
+      },
+      "notes": "Table 18: 'Validation loss and test set metrics on E2E NLG Challenge achieved by LoRA with different rank r using GPT-2 Medium.' No baseline row -- entirely the authors' own rank ablation (Section H.2: 'We repeat our experiment on the effect of r ... in GPT-2 ... after training for 26,000 steps'). The caption splits val_loss (validation split) from 'BLEU, NIST, METEOR, ROUGE_L, CIDEr' (explicitly 'test set metrics'), so this METEOR cell's split is test, not validation, despite the table sharing a caption with a validation-split column. Last (eleventh) row, r=1024, the largest rank swept. Row and column confirmed against the page image (p26)."
+    }
+  ]
+}
