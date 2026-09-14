@@ -1,0 +1,869 @@
+{
+  "schema": "adduce-dev-labels/1",
+  "pair_id": "segment-anything",
+  "arxiv_id": "2304.02643",
+  "arxiv_version": "1",
+  "labelled_from": "pdf",
+  "labeller_passes": 1,
+  "sampled": true,
+  "sampling_seed": 20260810,
+  "target_sample_size": 15,
+  "sampling_method": "This is the CVPR two-column layout with a 15-page appendix (30 pages in all). Reading order is page order and, within a page, the left column in full and then the right column in full; a float is read at the top of the column it occupies, before the body text below it, and a float that spans the full page width (Table 2, Figures 8, 9 and 18) is read before both columns of that page. Two places where that convention decides something: on page 10 Table 3 sits in the left column and Table 4 at the top of the right column, so all of Table 3 precedes all of Table 4; and on page 11 Table 5 precedes Figure 11, both in the left column, while the Section 7.6 text that follows them is in the right column. Table 2, Table 6 and Table 8 are each printed as side-by-side blocks under one caption and are read block by block, left block first, rows top-to-bottom and, within a row, left-to-right across its own-result columns only. Figure 18's four-entry legends are read as printed, left-to-right then top-to-bottom, i.e. RITM, SAM, SAM - single output, GT. The appendix sits where it is printed: after the references (pages 13-15, which carry nothing), so appendix cells occupy the tail of the population, indices 100-159, and no main-text cell is displaced by it. Every own-result cell in frame_locations was assigned a contiguous 1-based index in that order, giving a population of 1..159. Ownership was settled per cell, from citation brackets first and from stated provenance where a bracket conflicts with the text. Tables 2 and 6 (SAM's performance segmenting people and clothing) contain no baseline at all -- every row is SAM -- so ownership there is not a judgement call, and the same is true of Figures 9a, 11 and 18 and of Table 8, where the numbers reported are the authors' own measurements even where what was measured belongs to someone else: the ratings of RITM's and ViTDet-H's masks, and of the LVIS and COCO ground truth, were all produced by this paper's human study, which is the ConvNeXt case of a caption claiming the measurement while the method stays quoted. Table 4's ViTDet-H [62] row is counted as an own result on the strength of Appendix D.3, which describes the authors rerunning and modifying cascade ViTDet-H to emit 1000 proposals -- the authors' own rerun of a prior model is an own result. Table 5's ViTDet-H [62] row is the one place where the evidence genuinely conflicts: the row carries a citation, yet Appendix D.4 says the authors ran a fully-supervised ViTDet-H on both validation splits for the box prompts and Appendix E says they rated its masks, so the AP values may be their measurement or may be quoted. The row is kept in the frame and the one cell the sample drew from it (frame_index 83) is recorded with confident: false rather than guessed. Table 3's uncited 'Sobel filter, 1968, .539' row is excluded as a baseline: the Results prose attributes that whole block to 'prior, though admittedly outdated, zero-shot transfer methods', its two companions in the block are cited, and the paper never claims to have run the operator. Counting it would make Table 3 5 and N 160. Excluded as dataset_statistic, which is what keeps this paper's frame small relative to its length: the SA-1B size figures wherever they appear (abstract, Figures 1, 2 and 6, Sections 1, 4 and 5, the Dataset Card) -- 11M images, 1.1B masks, ~100 masks per image, 99.1% automatic, 3300x4950 resolution; all 48 cells of Table 1, which reports how many countries, images and masks fall in each region and income band for SA-1B, COCO and Open Images; and all 46 '# images sampled' / '# masks sampled' cells of Table 7. Excluded as hyperparameter: the whole of Appendix A's architecture and training recipe, Appendix B's pipeline thresholds, and Appendix D's evaluation protocol. The line drawn between the two roles and 'result' is that a number describing what the dataset or the configuration contains is not a result, while a number describing how well something performed -- mIoU, AP, AR, ODS/OIS/R50, a human mask-quality rating, a p-value, a runtime, an annotation time, an error rate, a training cost -- is. That line is what admits the 34/14/34-second annotation times, the 90-second rating time, the 0.83 rater standard deviation, the two 4% postprocessing error rates and the Model Card's 68 hours / 6963 kWh / 2.8 metric tons, and it is the judgement in this file a reviewer is most likely to want to check. Deltas: the paper prints few, and the rule cuts both ways. Figure 9a's 23 signed per-dataset deltas count, because no absolute per-dataset mIoU is printed anywhere in the paper; Section 7.1's '~47 IoU' counts as a fresh printed instance at a new location; Section 7.6's '~0.5 mIoU' counts because Figure 13, where its absolutes would live, prints only axis ticks. Against that, '6.5x faster than mask annotation for COCO' and '2x slower than bounding-box labeling' are not counted because the absolute 14 seconds is printed in the same breath, and the Model Card's '~7k miles driven' is not counted because it is the 2.8 metric tons restated in equivalent units in the same breath. Not counted as cells for other reasons: ranges and intervals -- 'inter-annotator consistency at 85-91% IoU' (also a citation), 'ratings fall between 7 and 9', '94-108 masks per image', and all 16 CI99 columns of Table 8, which print pairs such as '(1.40, 1.84)'; the bound 'less than 1% of the image encoder's compute'; and the tally '16 of the 23 datasets', which counts datasets rather than reporting a metric. Approximations that do carry a printed digit are counted ('~50ms', '~0.5 mIoU', 'an estimated 4%'), unlike the worked example's digit-free 'around half'. Much of this paper's evidence is in figures that print nothing: Figures 5, 6, 7, 9b, 9c, 9d, 10, 12, 13, 15, 16, 17, 19 and 20 carry only axis-tick calibration, legend text, method names or qualitative image panels, so every one of them counts 0, exactly as in the worked example. The three exceptions are Figure 9a, whose bars are labelled with their values, and Figures 11 and 18, whose legends print rating means. random.seed(20260810); random.sample(range(1, 160), 15) drew {1, 2, 13, 14, 25, 29, 70, 83, 91, 99, 107, 108, 122, 148, 153}; each label below records its draw as frame_index. Three draws (1, 2, 99) are prose values with no row or column to attribute and needed no image. The other twelve land on five pages, and exactly those five were rendered as page images to attribute each value to the right row and column: page 8 (Table 2; draws 13, 14, 25, 29), page 10 (Table 4; draw 70), page 11 (Table 5; draws 83, 91), page 19 (Table 6; draws 107, 108) and page 24 (Figure 18 and Table 8; draws 122, 148, 153). No other page was rendered; the frame itself was enumerated from the page text. The page images also corrected one ordering assumption: the text dump lists each Figure 18 legend as RITM, SAM - single output, SAM, GT, whereas the legend is printed in two columns and reads RITM, SAM, SAM - single output, GT. The printed order is the one used for indexing; draw 122 is the first entry of panel (c) either way.",
+  "frame": {
+    "Abstract": 0,
+    "Figure 1, task / model / data overview (caption)": 0,
+    "Section 1, Introduction -- opening (prose)": 0,
+    "Section 1, Task (§2) paragraph (prose)": 0,
+    "Section 1, Model (§3) paragraph (prose)": 1,
+    "Section 1, Data engine (§4) paragraph (prose)": 0,
+    "Section 1, Dataset (§5) paragraph (prose)": 0,
+    "Section 1, Responsible AI / Experiments / Release paragraphs (prose)": 0,
+    "Figure 2, SA-1B example images (caption)": 0,
+    "Section 2, Segment Anything Task (prose)": 0,
+    "Figure 3, ambiguous point prompt masks (caption)": 0,
+    "Figure 4, SAM overview (caption)": 0,
+    "Section 3, Segment Anything Model -- encoder / prompt encoder / decoder / ambiguity (prose)": 0,
+    "Section 3, Efficiency (prose)": 1,
+    "Section 3, Losses and training (prose)": 0,
+    "Section 4, Data engine -- assisted-manual stage (prose)": 2,
+    "Section 4, Data engine -- semi-automatic stage (prose)": 1,
+    "Section 4, Data engine -- fully automatic stage (prose)": 0,
+    "Figure 5, image-size normalized mask center distributions (caption)": 0,
+    "Section 5, Dataset -- Images and Masks (prose)": 0,
+    "Section 5, Mask quality (prose)": 2,
+    "Figure 6, dataset mask properties (legend + caption)": 0,
+    "Figure 7, estimated geographic distribution of SA-1B (caption)": 0,
+    "Section 5, Mask properties (prose)": 0,
+    "Section 6, RAI -- geographic and income representation (prose)": 0,
+    "Table 1, comparison of geographic and income representation (SA-1B, COCO, Open Images)": 0,
+    "Table 2, SAM's performance segmenting people across perceived gender presentation, age group and skin tone": 22,
+    "Section 6, Fairness in segmenting people (prose)": 0,
+    "Section 7, Zero-Shot Transfer Experiments -- intro and Implementation (prose)": 0,
+    "Section 7.1, Task and Datasets (prose)": 0,
+    "Figure 8, samples from the 23 evaluation datasets (caption)": 0,
+    "Figure 9a, SAM vs. RITM [92], IoU delta at 1 center point on 23 datasets": 23,
+    "Figure 9b, mask quality ratings by human annotators (bar chart)": 0,
+    "Figure 9c and 9d, mIoU vs. number of points (center points / random points)": 0,
+    "Section 7.1, Results (prose)": 1,
+    "Figure 10, zero-shot edge prediction examples on BSDS500 (caption)": 0,
+    "Table 3, zero-shot transfer to edge detection on BSDS500": 4,
+    "Section 7.2, Zero-Shot Edge Detection (prose)": 0,
+    "Table 4, object proposal generation on LVIS v1": 21,
+    "Section 7.3, Zero-Shot Object Proposals (prose)": 0,
+    "Section 7.4, Zero-Shot Instance Segmentation (prose)": 0,
+    "Table 5, instance segmentation results on COCO and LVIS v1": 16,
+    "Figure 11, mask quality rating distribution for ViTDet and SAM on LVIS ground truth boxes (legend)": 4,
+    "Section 7.5, Zero-Shot Text-to-Mask (prose)": 0,
+    "Figure 12, zero-shot text-to-mask examples (caption)": 0,
+    "Section 7.6, Ablations (prose)": 1,
+    "Figure 13, ablations of data engine stages, data volume and image encoder scale": 0,
+    "Section 8, Discussion (foundation models, compositionality, limitations, conclusion)": 0,
+    "References": 0,
+    "Appendix A, Segment Anything Model and Task Details -- image encoder, prompt encoder, mask decoder (prose)": 0,
+    "Figure 14, details of the lightweight mask decoder (caption)": 0,
+    "Appendix A, losses, training algorithm and training recipe (prose)": 0,
+    "Appendix B, Automatic Mask Generation -- cropping and filtering (prose)": 0,
+    "Appendix B, Postprocessing (prose)": 2,
+    "Appendix B, Automatic mask generation model (prose)": 0,
+    "Appendix C, RAI Additional Details -- inferring geographic and income information (prose)": 0,
+    "Table 6, SAM's performance segmenting clothing across perceived gender presentation and age group": 10,
+    "Appendix C, Fairness in segmenting people and in segmenting clothing (prose)": 0,
+    "Appendix D.1, Zero-Shot Single Point Valid Mask Evaluation (prose)": 0,
+    "Table 7, the 23 segmentation datasets used to evaluate zero-shot transfer": 0,
+    "Figure 15, additional zero-shot edge predictions on BSDS500 (caption)": 0,
+    "Appendix D.2, Zero-Shot Edge Detection (prose)": 0,
+    "Appendix D.3, Zero-Shot Object Proposals (prose)": 0,
+    "Figure 16, zero-shot instance segmentation on LVIS v1 (caption)": 0,
+    "Appendix D.4, Zero-Shot Instance Segmentation (prose)": 0,
+    "Appendix D.5, Zero-Shot Text-to-Mask (prose)": 0,
+    "Figure 17, thresholded similarities of SAM mask embeddings (caption)": 0,
+    "Appendix D.6, Probing the Latent Space of SAM (prose)": 0,
+    "Appendix E, Human Study Experimental Design (prose)": 2,
+    "Figure 18, mask quality rating distributions by dataset (seven panel legends)": 28,
+    "Table 8, statistical tests of the mask-quality rating differences": 15,
+    "Appendix E, Results (prose)": 0,
+    "Appendix F.1, Dataset Card for SA-1B": 0,
+    "Appendix F.2, Data Annotation Card": 0,
+    "Table 9, Model Card for SAM": 3,
+    "Appendix G, Annotation Guidelines (Figures 19 and 20)": 0
+  },
+  "frame_locations": [
+    {
+      "label": "Abstract",
+      "page": 1,
+      "own_result_cells": 0,
+      "notes": "'over 1 billion masks on 11M licensed and privacy respecting images' and '(SA-1B) of 1B masks and 11M images'. Both are dataset statistics (the size of the released dataset), not measured outcomes; the abstract states SAM's zero-shot performance only qualitatively ('often competitive with or even superior to prior fully supervised results') and prints no metric value. Unusually for this set, this paper's abstract carries no result cell."
+    },
+    {
+      "label": "Figure 1, task / model / data overview (caption)",
+      "page": 1,
+      "own_result_cells": 0,
+      "notes": "'our dataset of over 1 billion masks' -- dataset statistic. The panel labels ('1+ billion masks', '11 million images') are the same statistic."
+    },
+    {
+      "label": "Section 1, Introduction -- opening (prose)",
+      "page": 1,
+      "own_result_cells": 0,
+      "notes": "Motivation for foundation models; cites [10, 82, 55, 83] without restating any of their numbers."
+    },
+    {
+      "label": "Section 1, Task (§2) paragraph (prose)",
+      "page": 2,
+      "own_result_cells": 0,
+      "notes": "Qualitative description of promptable segmentation."
+    },
+    {
+      "label": "Section 1, Model (§3) paragraph (prose)",
+      "page": 2,
+      "own_result_cells": 1,
+      "frame_index_range": "1",
+      "notes": "'the prompt encoder and mask decoder predict a mask from a prompt in ~50ms in a web browser'. One own-result cell: a runtime presented as an outcome, with a printed digit. The '~' is an approximation marker, not a range."
+    },
+    {
+      "label": "Section 1, Data engine (§4) paragraph (prose)",
+      "page": 2,
+      "own_result_cells": 0,
+      "notes": "'yielding on average ~100 high-quality masks per image' -- a property of the collected dataset, counted as a dataset statistic."
+    },
+    {
+      "label": "Section 1, Dataset (§5) paragraph (prose)",
+      "page": 2,
+      "own_result_cells": 0,
+      "notes": "'more than 1B masks from 11M ... images', '400x more masks than any existing segmentation dataset' -- dataset statistics and a dataset-size ratio."
+    },
+    {
+      "label": "Section 1, Responsible AI / Experiments / Release paragraphs (prose)",
+      "page": 2,
+      "own_result_cells": 0,
+      "notes": "'a diverse new suite of 23 segmentation datasets' is a benchmark-suite size; all performance statements here are qualitative."
+    },
+    {
+      "label": "Figure 2, SA-1B example images (caption)",
+      "page": 3,
+      "own_result_cells": 0,
+      "notes": "'11M diverse ... images and 1.1B high-quality segmentation masks', '~100 masks per image on average' -- dataset statistics. The mask-count bucket labels ('<50 masks', '50-100 masks', ...) are visualization bins."
+    },
+    {
+      "label": "Section 2, Segment Anything Task (prose)",
+      "page": 4,
+      "own_result_cells": 0,
+      "notes": "Entirely qualitative; no printed number."
+    },
+    {
+      "label": "Figure 3, ambiguous point prompt masks (caption)",
+      "page": 4,
+      "own_result_cells": 0,
+      "notes": "'3 valid masks ... from a single ambiguous point prompt' -- a count of displayed panels."
+    },
+    {
+      "label": "Figure 4, SAM overview (caption)",
+      "page": 5,
+      "own_result_cells": 0,
+      "notes": "No printed number."
+    },
+    {
+      "label": "Section 3, Segment Anything Model -- encoder / prompt encoder / decoder / ambiguity (prose)",
+      "page": 5,
+      "own_result_cells": 0,
+      "notes": "'3 mask outputs is sufficient' and 'nested masks are often at most three deep' are design choices, i.e. hyperparameters."
+    },
+    {
+      "label": "Section 3, Efficiency (prose)",
+      "page": 5,
+      "own_result_cells": 1,
+      "frame_index_range": "2",
+      "notes": "'the prompt encoder and mask decoder run in a web browser, on CPU, in ~50ms'. One own-result cell; a second printed instance of the runtime, at a new location, counted per the restatement convention."
+    },
+    {
+      "label": "Section 3, Losses and training (prose)",
+      "page": 5,
+      "own_result_cells": 0,
+      "notes": "'11 rounds per mask' -- a training hyperparameter."
+    },
+    {
+      "label": "Section 4, Data engine -- assisted-manual stage (prose)",
+      "page": 6,
+      "own_result_cells": 2,
+      "frame_index_range": "3-4",
+      "notes": "'Average annotation time per mask decreased from 34 to 14 seconds as the model improved.' Two own-result cells (34, 14): annotation speed reported as an outcome of the model improving. The same breath's '6.5x faster than mask annotation for COCO' and 'only 2x slower than bounding-box labeling with extreme points' are ratios printed beside their absolute (14 seconds) and are not counted. 'in total we retrained our model 6 times' is a process count; 'from 20 to 44 masks' per image and '4.3M masks from 120k images' are dataset statistics."
+    },
+    {
+      "label": "Section 4, Data engine -- semi-automatic stage (prose)",
+      "page": 6,
+      "own_result_cells": 1,
+      "frame_index_range": "5",
+      "notes": "'Average annotation time per mask went back up to 34 seconds (excluding the automatic masks)'. One own-result cell. '5.9M masks in 180k images', 'a total of 10.2M masks' and 'from 44 to 72 masks' are dataset statistics; 'retrained ... (5 times)' is a process count."
+    },
+    {
+      "label": "Section 4, Data engine -- fully automatic stage (prose)",
+      "page": 6,
+      "own_result_cells": 0,
+      "notes": "'32x32 regular grid', 'thresholding ... at 0.5 - d and 0.5 + d' are hyperparameters; '11M images', '1.1B high-quality masks' are dataset statistics."
+    },
+    {
+      "label": "Figure 5, image-size normalized mask center distributions (caption)",
+      "page": 6,
+      "own_result_cells": 0,
+      "notes": "Density plots; no printed per-point value."
+    },
+    {
+      "label": "Section 5, Dataset -- Images and Masks (prose)",
+      "page": 6,
+      "own_result_cells": 0,
+      "notes": "'11M images', '3300x4950 pixels on average', 'shortest side set to 1500 pixels', 'COCO images are ~480x640 pixels', '1.1B masks, 99.1% of which were generated fully automatically' -- all dataset statistics (composition and resolution of SA-1B and of COCO)."
+    },
+    {
+      "label": "Section 5, Mask quality (prose)",
+      "page": 6,
+      "own_result_cells": 2,
+      "frame_index_range": "6-7",
+      "notes": "'We computed IoU between each pair and found that 94% of pairs have greater than 90% IoU (and 97% of pairs have greater than 75% IoU).' Two own-result cells: 94 and 97. The 90% and 75% are the IoU thresholds that name each metric, not separately measured outcomes. 'prior work estimates inter-annotator consistency at 85-91% IoU [44, 60]' is both a citation and a range, so it is not a cell. 'randomly sampled 500 images (~50k masks)' is the study's setup."
+    },
+    {
+      "label": "Figure 6, dataset mask properties (legend + caption)",
+      "page": 7,
+      "own_result_cells": 0,
+      "notes": "The legend prints image and mask counts for SA-1B, LVIS v1, COCO, ADE20K and Open Images ('11M images / 1129M (1.1B) masks', '0.120M images / 1.5M masks', ...) -- dataset statistics, and for four of the five, other people's datasets. The three panels carry axis-tick calibration only ('<10 11-50 51-100 101-200 >200', '0 40 80', '0.00 0.25 0.50 0.75') and no per-point value. Caption's '11x more images and 400x more masks' is a dataset-size ratio."
+    },
+    {
+      "label": "Figure 7, estimated geographic distribution of SA-1B (caption)",
+      "page": 7,
+      "own_result_cells": 0,
+      "notes": "Choropleth plus a 50-country bar chart with axis ticks ('0 200k 400k 600k 800k') and ISO country codes only; no per-bar value is printed. Legend thresholds ('>= 100k', '< 100k', '< 10k', '< 1k') are visualization bins over a dataset statistic."
+    },
+    {
+      "label": "Section 5, Mask properties (prose)",
+      "page": 7,
+      "own_result_cells": 0,
+      "notes": "'11x more images and 400x more masks', '36x more masks per image', '3.5x fewer masks per image' -- ratios between dataset statistics."
+    },
+    {
+      "label": "Section 6, RAI -- geographic and income representation (prose)",
+      "page": 7,
+      "own_result_cells": 0,
+      "notes": "'at least 28 million masks, 10x more than the total number of masks of any previous dataset' and '(94-108 per image)' -- dataset statistics, the second also a range."
+    },
+    {
+      "label": "Table 1, comparison of geographic and income representation (SA-1B, COCO, Open Images)",
+      "page": 7,
+      "own_result_cells": 0,
+      "notes": "48 printed cells (8 rows x '# countries', '#imgs', '#masks', '% images' for SA-1B, COCO and O.I.). Every one describes the composition of a dataset -- how many countries, images and masks fall in each region or income band -- so all are dataset statistics under role, and the COCO and Open Images columns are other people's datasets besides. No performance outcome appears in this table, so it contributes 0 own-result cells."
+    },
+    {
+      "label": "Table 2, SAM's performance segmenting people across perceived gender presentation, age group and skin tone",
+      "page": 8,
+      "own_result_cells": 22,
+      "frame_index_range": "8-29",
+      "notes": "Two side-by-side blocks under a shared 'mIoU at | 1 point | 3 points' header: left block = perceived gender presentation (feminine, masculine) then perceived age group (older, middle, young); right block = perceived skin tone 1-6. 11 rows x 2 columns = 22 cells, every one SAM's own measurement. Values carry 95% confidence intervals ('54.4 +/-1.7'); the interval is the uncertainty on the same measurement, not a second cell. Verified against the page image."
+    },
+    {
+      "label": "Section 6, Fairness in segmenting people (prose)",
+      "page": 8,
+      "own_result_cells": 0,
+      "notes": "Reads Table 2 qualitatively ('SAM performs similarly across groups'); '1 (lightest skin tone) to 6 (darkest skin tone)' is the Fitzpatrick scale definition."
+    },
+    {
+      "label": "Section 7, Zero-Shot Transfer Experiments -- intro and Implementation (prose)",
+      "page": 8,
+      "own_result_cells": 0,
+      "notes": "'five tasks, four of which differ significantly' -- experiment counts."
+    },
+    {
+      "label": "Section 7.1, Task and Datasets (prose)",
+      "page": 8,
+      "own_result_cells": 0,
+      "notes": "'rate mask quality from 1 (nonsense) to 10 (pixel-perfect)' is the rating scale definition; '23 datasets' is a suite size."
+    },
+    {
+      "label": "Figure 8, samples from the 23 evaluation datasets (caption)",
+      "page": 9,
+      "own_result_cells": 0,
+      "notes": "Image grid with dataset names only."
+    },
+    {
+      "label": "Figure 9a, SAM vs. RITM [92], IoU delta at 1 center point on 23 datasets",
+      "page": 9,
+      "own_result_cells": 23,
+      "frame_index_range": "30-52",
+      "notes": "The only figure in the paper that prints its data: one signed delta per dataset, printed at the end of each bar, from -21.4 (GTEA) to +46.9 (PPDLS), 23 in all. These are deltas, but no absolute per-dataset mIoU is printed anywhere in the paper, so under the delta rule each is the reported number and counts. They are own results: both sides of the difference were measured by the authors (SAM and their run of RITM). Counted from the page text; no draw landed here, so the value-to-dataset pairing was not verified against a page image and no cell from this location is transcribed below."
+    },
+    {
+      "label": "Figure 9b, mask quality ratings by human annotators (bar chart)",
+      "page": 9,
+      "own_result_cells": 0,
+      "notes": "Axis ticks '5 7 9' and a four-entry method legend; no per-bar value is printed. The same ratings are printed as digits in Figure 18, where they are counted."
+    },
+    {
+      "label": "Figure 9c and 9d, mIoU vs. number of points (center points / random points)",
+      "page": 9,
+      "own_result_cells": 0,
+      "notes": "Axis ticks only ('1 2 3 5 9' points, '50 75' mIoU); no per-point value is printed."
+    },
+    {
+      "label": "Section 7.1, Results (prose)",
+      "page": 9,
+      "own_result_cells": 1,
+      "frame_index_range": "53",
+      "notes": "'SAM yields higher results on 16 of the 23 datasets, by as much as ~47 IoU.' One own-result cell: the ~47 IoU maximum delta, a fresh printed digit string at a new location (Figure 9a prints +46.9). '16 of the 23 datasets' is a tally of datasets, not a metric value, and is not counted. 'SAM's mean ratings fall between 7 and 9' is a range, and 'A high score (7-9)' quotes the rating guideline."
+    },
+    {
+      "label": "Figure 10, zero-shot edge prediction examples on BSDS500 (caption)",
+      "page": 10,
+      "own_result_cells": 0,
+      "notes": "Qualitative image triptychs."
+    },
+    {
+      "label": "Table 3, zero-shot transfer to edge detection on BSDS500",
+      "page": 10,
+      "own_result_cells": 4,
+      "frame_index_range": "54-57",
+      "notes": "Six rows x ODS, OIS, AP, R50. Only SAM's row (.768, .786, .794, .928) is counted. HED [108] and EDETR [79] are cited state-of-the-art baselines. Under the 'zero-shot transfer methods:' rule, Canny [13] and Felz-Hutt [35] are cited. The 'Sobel filter, 1968, .539' row carries no citation bracket, which is the one genuine ownership call in this table: it is excluded as a baseline because the Results prose attributes the whole block to prior work ('significantly better than prior, though admittedly outdated, zero-shot transfer methods'), the paper never says it ran the Sobel operator as an edge detector, and the row's remaining three columns are dashes. A reviewer who reads that row as the authors' own run would raise this table to 5 and N to 160."
+    },
+    {
+      "label": "Section 7.2, Zero-Shot Edge Detection (prose)",
+      "page": 10,
+      "own_result_cells": 0,
+      "notes": "'16x16 regular grid ... 768 predicted masks (3 per point)' and 'recall at 50% precision (R50)' are the method setup and a metric definition; the R50 result itself is Table 3's."
+    },
+    {
+      "label": "Table 4, object proposal generation on LVIS v1",
+      "page": 10,
+      "own_result_cells": 21,
+      "frame_index_range": "58-78",
+      "notes": "Three rows x seven 'mask AR@1000' columns (all, small, med., large, freq., com., rare) = 21 cells, all counted as own results. SAM and 'SAM - single out.' are the authors' models. The ViTDet-H [62] row is also an own result despite its citation: §D.3 states the authors ran cascade ViTDet-H themselves and modified it for this table ('we disable score thresholding in the three cascade stages and ... raise the maximum number of predictions per stage to 1000'), and AR@1000 as a proposal metric is not something [62] reports. This is the per-cell ownership case the labelling rules warn about, applied here at row granularity because the whole row comes from that one rerun. Verified against the page image."
+    },
+    {
+      "label": "Section 7.3, Zero-Shot Object Proposals (prose)",
+      "page": 10,
+      "own_result_cells": 0,
+      "notes": "Reads Table 4 qualitatively; '1000 proposals' is the metric's definition."
+    },
+    {
+      "label": "Section 7.4, Zero-Shot Instance Segmentation (prose)",
+      "page": 10,
+      "own_result_cells": 0,
+      "notes": "Qualitative; '1 to 10 quality scale' is the rating scale."
+    },
+    {
+      "label": "Table 5, instance segmentation results on COCO and LVIS v1",
+      "page": 11,
+      "own_result_cells": 16,
+      "frame_index_range": "79-94",
+      "notes": "Two rows x eight columns (COCO AP/APS/APM/APL, LVIS v1 AP/APS/APM/APL). SAM's eight are unambiguously own. The ViTDet-H [62] row is counted in the frame but is the paper's genuinely unclear ownership case: the row carries a citation, yet §D.4 says the authors ran a fully-supervised ViTDet-H on the COCO and LVIS v1 validation splits to obtain the box prompts, and §E says they rated ViTDet-H's masks in their own human study, so those AP values may be their own measurement or may be quoted from [62]. The sample drew one of them (frame_index 83), and it is recorded with confident: false rather than guessed. Verified against the page image."
+    },
+    {
+      "label": "Figure 11, mask quality rating distribution for ViTDet and SAM on LVIS ground truth boxes (legend)",
+      "page": 11,
+      "own_result_cells": 4,
+      "frame_index_range": "95-98",
+      "notes": "The legend prints four means with 95% confidence intervals: 8.6 +/- 0.06 LVIS GT, 8.1 +/- 0.07 SAM, 7.9 +/- 0.08 ViTDet-H, 7.6 +/- 0.12 COCO GT. All four are own results: every rating in them was produced by the authors' human study, including the ratings of ViTDet-H's masks and of the LVIS and COCO ground truth. The histogram bars themselves print no value."
+    },
+    {
+      "label": "Section 7.5, Zero-Shot Text-to-Mask (prose)",
+      "page": 11,
+      "own_result_cells": 0,
+      "notes": "Proof-of-concept, entirely qualitative; 'area larger than 100^2' is a training filter."
+    },
+    {
+      "label": "Figure 12, zero-shot text-to-mask examples (caption)",
+      "page": 11,
+      "own_result_cells": 0,
+      "notes": "Qualitative panels with text prompts."
+    },
+    {
+      "label": "Section 7.6, Ablations (prose)",
+      "page": 11,
+      "own_result_cells": 1,
+      "frame_index_range": "99",
+      "notes": "'With this data, SAM performs only marginally lower than using all data (~0.5 mIoU).' One own-result cell: a delta whose absolutes are not printed anywhere -- Figure 13 (left), where the comparison lives, prints only axis ticks -- so under the delta rule the delta is the reported number. 'oversampling ... by 10x' is a training hyperparameter; '11M images ... subsample to 1M and 0.1M', 'about 10% of the full dataset' and 'approximately 100M masks' are dataset statistics."
+    },
+    {
+      "label": "Figure 13, ablations of data engine stages, data volume and image encoder scale",
+      "page": 12,
+      "own_result_cells": 0,
+      "notes": "Three line plots with axis-tick calibration only ('50 60 70', '70 75 80', '60 65 70' mIoU; '0.1M 1M 11M' training images; '91M ViT-B, 308M ViT-L, 636M ViT-H' parameter counts, which are model sizes rather than outcomes). No per-point value is printed, so this location counts 0 exactly as the worked example's figures do."
+    },
+    {
+      "label": "Section 8, Discussion (foundation models, compositionality, limitations, conclusion)",
+      "page": 12,
+      "own_result_cells": 0,
+      "notes": "'the release of over 1B masks' -- dataset statistic; everything else is qualitative."
+    },
+    {
+      "label": "References",
+      "page": 13,
+      "own_result_cells": 0,
+      "notes": "Bibliography; the trailing page-number lists are cross-references."
+    },
+    {
+      "label": "Appendix A, Segment Anything Model and Task Details -- image encoder, prompt encoder, mask decoder (prose)",
+      "page": 16,
+      "own_result_cells": 0,
+      "notes": "Architecture specification throughout: ViT-H/16, 14x14 windowed attention, 1024x1024 input, 64x64 embedding, 256 channels, 2048 MLP dimension, 8 heads, two decoder layers, dropout 0.1. All hyperparameters. 'our lightweight mask decoder requires less than 1% of the image encoder's compute' is a bound rather than a point measurement, so it is not counted; a reviewer who counts bounds would add 1."
+    },
+    {
+      "label": "Figure 14, details of the lightweight mask decoder (caption)",
+      "page": 16,
+      "own_result_cells": 0,
+      "notes": "Architecture diagram; the printed numbers are tensor shapes."
+    },
+    {
+      "label": "Appendix A, losses, training algorithm and training recipe (prose)",
+      "page": 17,
+      "own_result_cells": 0,
+      "notes": "20:1 focal-to-dice ratio, AdamW betas, lr 8e-4, 90k iterations, batch size 256, wd 0.1, drop path 0.4, layer-wise decay 0.8, 256 GPUs, 64 masks per GPU, 180k iterations for ViT-B/L. All hyperparameters. '8 iteratively sampled points ... 11 total iterations' is likewise the training protocol."
+    },
+    {
+      "label": "Appendix B, Automatic Mask Generation -- cropping and filtering (prose)",
+      "page": 18,
+      "own_result_cells": 0,
+      "notes": "32x32 point grid, 20 crops, NMS threshold 0.7, predicted-IoU threshold 88.0, stability threshold 95.0, 95% image-coverage filter -- all hyperparameters of the generation pipeline."
+    },
+    {
+      "label": "Appendix B, Postprocessing (prose)",
+      "page": 18,
+      "own_result_cells": 2,
+      "frame_index_range": "100-101",
+      "notes": "'an estimated 4% of masks include small, spurious components' and 'another estimated 4% of masks include small, spurious holes'. Two own-result cells: measured error rates of the authors' own automatic masks, the same kind of quality outcome as §5's 94%/97%. The 100-pixel area thresholds are hyperparameters."
+    },
+    {
+      "label": "Appendix B, Automatic mask generation model (prose)",
+      "page": 18,
+      "own_result_cells": 0,
+      "notes": "'177656 iterations instead of 90k', '4 points per mask', '3 layers instead of 2' -- hyperparameters of the data-generation variant."
+    },
+    {
+      "label": "Appendix C, RAI Additional Details -- inferring geographic and income information (prose)",
+      "page": 18,
+      "own_result_cells": 0,
+      "notes": "'locations for 24% of the COCO training set (19,562 images)' and '18% of the training set (493,517 images)' for Open Images -- dataset statistics about other people's datasets, describing metadata coverage rather than an outcome."
+    },
+    {
+      "label": "Table 6, SAM's performance segmenting clothing across perceived gender presentation and age group",
+      "page": 19,
+      "own_result_cells": 10,
+      "frame_index_range": "102-111",
+      "notes": "Two side-by-side blocks under a shared 'mIoU at | 1 point | 3 points' header: left block = perceived gender presentation (feminine, masculine), right block = perceived age group (older, middle, young). 5 rows x 2 columns = 10 cells, all SAM's own. Verified against the page image."
+    },
+    {
+      "label": "Appendix C, Fairness in segmenting people and in segmenting clothing (prose)",
+      "page": 19,
+      "own_result_cells": 0,
+      "notes": "'within a 1% margin ... resulting in 3.9k masks' and 'all 6.5k ground truth masks from Open Images' -- evaluation-set construction, i.e. dataset statistics; the results themselves are Table 6's."
+    },
+    {
+      "label": "Appendix D.1, Zero-Shot Single Point Valid Mask Evaluation (prose)",
+      "page": 19,
+      "own_result_cells": 0,
+      "notes": "Point sampling, N = {1,2,3,5,9}, subsampling to ~10k masks, and the three baselines' checkpoints -- protocol and setup, no measured value."
+    },
+    {
+      "label": "Table 7, the 23 segmentation datasets used to evaluate zero-shot transfer",
+      "page": 20,
+      "own_result_cells": 0,
+      "notes": "23 rows x '# images sampled' and '# masks sampled' = 46 printed numbers, every one a count of the evaluation data drawn from someone else's dataset. Dataset statistics under role, so 0 own-result cells."
+    },
+    {
+      "label": "Figure 15, additional zero-shot edge predictions on BSDS500 (caption)",
+      "page": 21,
+      "own_result_cells": 0,
+      "notes": "Qualitative image grid."
+    },
+    {
+      "label": "Appendix D.2, Zero-Shot Edge Detection (prose)",
+      "page": 21,
+      "own_result_cells": 0,
+      "notes": "'the 200 image test subset', '16x16 regular grid ... 768 predicted masks' -- evaluation setup; the four metrics are defined here and reported in Table 3."
+    },
+    {
+      "label": "Appendix D.3, Zero-Shot Object Proposals (prose)",
+      "page": 21,
+      "own_result_cells": 0,
+      "notes": "'1203 object classes' is LVIS's size; '64x64 point grid', 'NMS threshold of 0.9', '128x128 and 0.95' are pipeline hyperparameters, and the '~900 masks per image' and '~950 masks per image' they produce describe how the pipeline was tuned to the 1000-proposal budget rather than a performance outcome."
+    },
+    {
+      "label": "Figure 16, zero-shot instance segmentation on LVIS v1 (caption)",
+      "page": 22,
+      "own_result_cells": 0,
+      "notes": "Qualitative comparison panels."
+    },
+    {
+      "label": "Appendix D.4, Zero-Shot Instance Segmentation (prose)",
+      "page": 22,
+      "own_result_cells": 0,
+      "notes": "States that SAM is prompted with 'the boxes output by a fully-supervised ViTDet-H on COCO and LVIS v1 validation splits' -- the provenance evidence used above for Table 5's ViTDet-H row, but no number of its own."
+    },
+    {
+      "label": "Appendix D.5, Zero-Shot Text-to-Mask (prose)",
+      "page": 22,
+      "own_result_cells": 0,
+      "notes": "CLIP ViT-L/14@336px, 120k iterations, batch size 128, 336x336 crops, 50% zero-out probability -- hyperparameters."
+    },
+    {
+      "label": "Figure 17, thresholded similarities of SAM mask embeddings (caption)",
+      "page": 22,
+      "own_result_cells": 0,
+      "notes": "Qualitative retrieval examples."
+    },
+    {
+      "label": "Appendix D.6, Probing the Latent Space of SAM (prose)",
+      "page": 22,
+      "own_result_cells": 0,
+      "notes": "Qualitative; '3 examples' is a panel count."
+    },
+    {
+      "label": "Appendix E, Human Study Experimental Design (prose)",
+      "page": 23,
+      "own_result_cells": 2,
+      "frame_index_range": "112-113",
+      "notes": "'the average standard deviation in score over the five annotators was 0.83' and 'Average time spent per annotator per job was 90 seconds'. Two own-result cells: a measured rater-agreement statistic and a measured annotation speed, both outcomes of the authors' own study. The '30 seconds' in the same sentence is the target, not a measurement. '1000 masks per dataset', '4000 total rating jobs', '3000 total jobs', '30 annotators', 'masks smaller than 24^2 pixels excluded' and 'max side-length of 2000' are study setup; the 1-10 score bands quote the guideline."
+    },
+    {
+      "label": "Figure 18, mask quality rating distributions by dataset (seven panel legends)",
+      "page": 24,
+      "own_result_cells": 28,
+      "frame_index_range": "114-141",
+      "notes": "Seven panels (a) LVIS v0.5, (b) VISOR, (c) DRAM, (d) IBD, (e) NDD20, (f) OVIS, (g) iShape, each legend printing four means with 95% confidence intervals for RITM, SAM - single output, SAM and GT: 28 cells. All are own results -- every rating was produced by the authors' human study, including the ratings of RITM's masks and of each dataset's ground truth. The histogram bars print no value. Legend entries are indexed left-to-right then top-to-bottom as printed, i.e. RITM, SAM, SAM - single output, GT. Verified against the page image."
+    },
+    {
+      "label": "Table 8, statistical tests of the mask-quality rating differences",
+      "page": 24,
+      "own_result_cells": 15,
+      "frame_index_range": "142-156",
+      "notes": "Eight rows x ('SAM > baseline' p-value, CI99, 'SAM > SAM single out.' p-value, CI99). The 15 printed p-values (the eighth row's second pair is 'N/A') are counted as own results: each is an outcome the paper reports about its own experiment, and role offers no better bucket than result. The 16 CI99 columns are intervals such as '(1.40, 1.84)', which are ranges rather than single values and so are not cells, exactly as 'adds 1-2 AP' would not be. Verified against the page image."
+    },
+    {
+      "label": "Appendix E, Results (prose)",
+      "page": 24,
+      "own_result_cells": 0,
+      "notes": "'794 ratings of COCO ground truth masks', 'the full 1000 ratings', '10k samples' -- study setup; the outcomes are in Figure 18 and Table 8."
+    },
+    {
+      "label": "Appendix F.1, Dataset Card for SA-1B",
+      "page": 25,
+      "own_result_cells": 0,
+      "notes": "'11 million images', '~100 masks' per image, '~1.1B masks', '~2k randomly selected images' withheld -- dataset statistics throughout; the rest is prose about licensing, privacy and maintenance."
+    },
+    {
+      "label": "Appendix F.2, Data Annotation Card",
+      "page": 27,
+      "own_result_cells": 0,
+      "notes": "'130 annotators', '30 annotation tasks', 'a 1-day training session' -- process descriptions, no measured outcome."
+    },
+    {
+      "label": "Table 9, Model Card for SAM",
+      "page": 28,
+      "own_result_cells": 3,
+      "frame_index_range": "157-159",
+      "notes": "'SAM was trained on 256 A100 GPUS for 68 hours ... approximately 6963 kWh resulting in an estimated 2.8 metric tons of carbon dioxide.' Three own-result cells: training wall-clock time, energy and emitted CO2, all cost figures reported as outcomes. '256 A100 GPUS' is the training configuration. The trailing '~7k miles driven by the average gasoline-powered passenger vehicle' is the 2.8 metric tons restated in equivalent units in the same breath, so counting it would double-count one measurement, the same principle that excludes a delta printed beside its absolute."
+    },
+    {
+      "label": "Appendix G, Annotation Guidelines (Figures 19 and 20)",
+      "page": 29,
+      "own_result_cells": 0,
+      "notes": "The rating rubric handed to annotators ('A score of 1', 'a low score (2-4)', 'a high score (7-9)', 'a score of 10', 'up to 30 seconds per job'): scale definitions and instructions, not measurements."
+    }
+  ],
+  "labels": [
+    {
+      "id": "L1",
+      "frame_index": 1,
+      "metric": "time to predict a mask from a prompt in a web browser",
+      "value": 50,
+      "units": "ms",
+      "dataset": null,
+      "split": null,
+      "role": "result",
+      "is_own_result": true,
+      "confident": true,
+      "location": {
+        "kind": "prose",
+        "label": "Section 1, Model (§3) paragraph",
+        "page": 2,
+        "row": null,
+        "column": null
+      },
+      "notes": "'Given an image embedding, the prompt encoder and mask decoder predict a mask from a prompt in ~50ms in a web browser.' A runtime presented as an outcome, so a result under the labelling rules, and the paper's own measurement of its own model. Printed with a tilde; the value is transcribed as the printed digit 50 and the approximation is recorded here rather than in the value. No dataset or split is named -- the figure is a property of the model on a precomputed image embedding, not of an evaluation set. Restated at Section 3, Efficiency (frame_index 2), which adds 'on CPU'."
+    },
+    {
+      "id": "L2",
+      "frame_index": 2,
+      "metric": "prompt encoder and mask decoder runtime in a web browser, on CPU",
+      "value": 50,
+      "units": "ms",
+      "dataset": null,
+      "split": null,
+      "role": "result",
+      "is_own_result": true,
+      "confident": true,
+      "location": {
+        "kind": "prose",
+        "label": "Section 3, Efficiency",
+        "page": 5,
+        "row": null,
+        "column": null
+      },
+      "notes": "'Given a precomputed image embedding, the prompt encoder and mask decoder run in a web browser, on CPU, in ~50ms.' The second printed instance of the runtime claim, counted at its own location per the restatement convention the worked example applies to bit's abstract; this one names the CPU. Own result, no baseline in the sentence."
+    },
+    {
+      "id": "L3",
+      "frame_index": 13,
+      "metric": "mIoU at 3 points",
+      "value": 92.6,
+      "units": null,
+      "dataset": "MIAP (More Inclusive Annotations for People) annotations over Open Images",
+      "split": "test",
+      "role": "result",
+      "is_own_result": true,
+      "confident": true,
+      "location": {
+        "kind": "table",
+        "label": "Table 2",
+        "page": 8,
+        "row": "perceived age group: older",
+        "column": "3 points"
+      },
+      "notes": "Printed as '92.6 +/-1.3'; the +/- is the 95% confidence interval on this same measurement (caption: '95% confidence intervals are shown'), not a second cell, so only 92.6 is recorded. Metric taken from the header as printed, 'mIoU at' over '3 points'. Table 2 has no baseline row: every cell is SAM's own measurement, here on the ground-truth masks Appendix C builds from MIAP test set annotations for Open Images. Row and column read off the page image, which shows perceived age group as the lower half of the left-hand block."
+    },
+    {
+      "id": "L4",
+      "frame_index": 14,
+      "metric": "mIoU at 1 point",
+      "value": 54.5,
+      "units": null,
+      "dataset": "MIAP (More Inclusive Annotations for People) annotations over Open Images",
+      "split": "test",
+      "role": "result",
+      "is_own_result": true,
+      "confident": true,
+      "location": {
+        "kind": "table",
+        "label": "Table 2",
+        "page": 8,
+        "row": "perceived age group: middle",
+        "column": "1 point"
+      },
+      "notes": "Printed as '54.5 +/-1.3'. The 1-point and 3-point columns are two separately claimed metrics, so the 'middle' row contributes two cells and this is the first of them. The caption's one comparative remark ('all confidence intervals overlap except older vs. middle') concerns this row but prints no further number. Own result; verified against the page image."
+    },
+    {
+      "id": "L5",
+      "frame_index": 25,
+      "metric": "mIoU at 3 points",
+      "value": 91.7,
+      "units": null,
+      "dataset": "proprietary dataset annotated with perceived Fitzpatrick skin type",
+      "split": null,
+      "role": "result",
+      "is_own_result": true,
+      "confident": true,
+      "location": {
+        "kind": "table",
+        "label": "Table 2",
+        "page": 8,
+        "row": "perceived skin tone: 4",
+        "column": "3 points"
+      },
+      "notes": "Printed as '91.7 +/-1.0'. The skin-tone block is the right-hand half of Table 2 and is evaluated on a different dataset from the gender and age blocks: Section 6 says MIAP carries no skin tone annotation, so 'we use a proprietary dataset that contains annotations for the perceived Fitzpatrick skin type [36], which ranges from 1 (lightest skin tone) to 6 (darkest skin tone)'. No split is stated for it. The six skin-tone rows print six 3-point values within 1.5 points of each other (91.0, 91.1, 91.4, 91.7, 92.5, 91.2), so the page image was needed to attribute this one to row 4; its 1-point neighbour in the same row is 51.5 +/-2.7, which is the cell at frame_index 24."
+    },
+    {
+      "id": "L6",
+      "frame_index": 29,
+      "metric": "mIoU at 3 points",
+      "value": 91.2,
+      "units": null,
+      "dataset": "proprietary dataset annotated with perceived Fitzpatrick skin type",
+      "split": null,
+      "role": "result",
+      "is_own_result": true,
+      "confident": true,
+      "location": {
+        "kind": "table",
+        "label": "Table 2",
+        "page": 8,
+        "row": "perceived skin tone: 6",
+        "column": "3 points"
+      },
+      "notes": "Printed as '91.2 +/-2.4', the last cell of Table 2. The identical value 91.2 also appears at 'young / 3 points' in the age block with a different interval (+/-0.7), so the page image was needed to attribute this instance to the darkest skin tone row. Own result."
+    },
+    {
+      "id": "L7",
+      "frame_index": 70,
+      "metric": "mask AR@1000",
+      "value": 59.8,
+      "units": null,
+      "dataset": "LVIS v1",
+      "split": "validation",
+      "role": "result",
+      "is_own_result": true,
+      "confident": true,
+      "location": {
+        "kind": "table",
+        "label": "Table 4",
+        "page": 10,
+        "row": "SAM – single out.",
+        "column": "com."
+      },
+      "notes": "'SAM - single out.' is the authors' own ablated, ambiguity-unaware SAM that emits one mask instead of three (Section 7.3, Appendix D.3), so this is an own result, not a baseline. Metric as printed: the spanning header reads 'mask AR@1000' and this column is headed 'com.', average recall measured against a ground truth restricted to LVIS's common categories. Split from Appendix D.3, 'the LVIS v1 validation set'. The row's seven columns were checked against the page image; the 'com.' column is the sixth of seven and its neighbours (54.7 freq., 62.0 rare) are close enough that the image was worth rendering."
+    },
+    {
+      "id": "L8",
+      "frame_index": 83,
+      "metric": "AP",
+      "value": 46.6,
+      "units": null,
+      "dataset": "LVIS v1",
+      "split": "validation",
+      "role": "result",
+      "is_own_result": true,
+      "confident": false,
+      "location": {
+        "kind": "table",
+        "label": "Table 5",
+        "page": 11,
+        "row": "ViTDet-H [62]",
+        "column": "LVIS v1 AP"
+      },
+      "notes": "Mask AP for the fully-supervised baseline. Recorded unconfident because ownership is genuinely unclear rather than because the transcription is: the row carries the citation [62], which by the usual rule makes it a quoted baseline, but Appendix D.4 states the authors ran 'a fully-supervised ViTDet-H on COCO and LVIS v1 validation splits' to produce the box prompts for SAM, and Appendix E states they rated ViTDet-H's masks in their own human study, so this AP may equally be their own measurement of that run -- which would make it an own result under the rerun rule. Nothing on the page resolves it. The reading recorded above (is_own_result true) is the one the appendix evidence supports, and confident: false keeps the cell out of the recall denominator so the ambiguity cannot become a silent miss. Value and column verified against the page image."
+    },
+    {
+      "id": "L9",
+      "frame_index": 91,
+      "metric": "AP",
+      "value": 44.7,
+      "units": null,
+      "dataset": "LVIS v1",
+      "split": "validation",
+      "role": "result",
+      "is_own_result": true,
+      "confident": true,
+      "location": {
+        "kind": "table",
+        "label": "Table 5",
+        "page": 11,
+        "row": "SAM",
+        "column": "LVIS v1 AP"
+      },
+      "notes": "SAM's zero-shot mask AP on LVIS v1, prompted with ViTDet boxes; the row sits under 'zero-shot transfer methods (segmentation module only):' and is unambiguously the paper's own. Metric printed as plain 'AP' under the 'LVIS v1 [44]' group header, with APS/APM/APL as separate columns beside it. The COCO half of the same row prints 46.5, close enough to 44.7 that the page image was used to confirm this value belongs to the LVIS group."
+    },
+    {
+      "id": "L10",
+      "frame_index": 99,
+      "metric": "mIoU",
+      "value": 0.5,
+      "units": null,
+      "dataset": "the 23 dataset suite",
+      "split": null,
+      "role": "result",
+      "is_own_result": true,
+      "confident": true,
+      "location": {
+        "kind": "prose",
+        "label": "Section 7.6, Ablations",
+        "page": 11,
+        "row": null,
+        "column": null
+      },
+      "notes": "'We therefore tested a fourth setup that uses only the automatically generated masks. With this data, SAM performs only marginally lower than using all data (~0.5 mIoU).' A delta: the gap between training on automatic masks only and on all three data-engine stages, measured on the 23 dataset suite with the single centre point protocol. It counts because no absolute is printed beside it or anywhere else -- Figure 13 (left), which plots this comparison, prints only the axis ticks 50/60/70. Recorded as the printed 0.5 with the tilde noted here; the sign is a decrease, stated in words rather than symbols."
+    },
+    {
+      "id": "L11",
+      "frame_index": 107,
+      "metric": "mIoU at 3 points",
+      "value": 92.8,
+      "units": null,
+      "dataset": "Open Images clothing-superclass masks lying within a MIAP person box",
+      "split": null,
+      "role": "result",
+      "is_own_result": true,
+      "confident": true,
+      "location": {
+        "kind": "table",
+        "label": "Table 6",
+        "page": 19,
+        "row": "perceived age group: older",
+        "column": "3 points"
+      },
+      "notes": "Printed as '92.8 +/-1.6'. Table 6 measures SAM on clothing rather than on people; Appendix C describes the evaluation set as 'all 6.5k ground truth masks from Open Images that have a category under the clothing superclass and reside within a person box from MIAP'. No split is named for that construction, so split is left null. In Table 6 the age block is the right-hand half (in Table 2 it was the lower left), which is why the page image was rendered; every row here is SAM's own."
+    },
+    {
+      "id": "L12",
+      "frame_index": 108,
+      "metric": "mIoU at 1 point",
+      "value": 78.2,
+      "units": null,
+      "dataset": "Open Images clothing-superclass masks lying within a MIAP person box",
+      "split": null,
+      "role": "result",
+      "is_own_result": true,
+      "confident": true,
+      "location": {
+        "kind": "table",
+        "label": "Table 6",
+        "page": 19,
+        "row": "perceived age group: middle",
+        "column": "1 point"
+      },
+      "notes": "Printed as '78.2 +/-0.8'. Same table and evaluation set as frame_index 107, one row down and in the 1-point column. The caption's claim about this block is a null result ('Confidence intervals for age group overlap'), and no delta is printed anywhere in it."
+    },
+    {
+      "id": "L13",
+      "frame_index": 122,
+      "metric": "mask quality rating",
+      "value": 5.9,
+      "units": null,
+      "dataset": "DRAM",
+      "split": "test",
+      "role": "result",
+      "is_own_result": true,
+      "confident": true,
+      "location": {
+        "kind": "figure",
+        "label": "Figure 18(c), DRAM",
+        "page": 24,
+        "row": "RITM",
+        "column": "mean rating (legend)"
+      },
+      "notes": "Printed in the panel legend as '5.9 +/- 0.14, RITM'; the mean of 1000 annotator ratings on a 1-10 scale, with a 95% confidence interval that is not a separate cell. The mask being rated is RITM's [92], a baseline model, but the number is the authors' own measurement -- Appendix E describes their human study, their annotators and their rubric -- so ownership is theirs per the rule that ownership is per cell and a caption may claim the measurement while the method stays quoted. Split from Table 7, which lists DRAM's source split as Test. The page image was needed because the legend is printed in two columns and the text dump reorders it; 5.9 is the top-left entry of panel (c)."
+    },
+    {
+      "id": "L14",
+      "frame_index": 148,
+      "metric": "p-value",
+      "value": 2e-57,
+      "units": null,
+      "dataset": "IBD",
+      "split": null,
+      "role": "result",
+      "is_own_result": true,
+      "confident": true,
+      "location": {
+        "kind": "table",
+        "label": "Table 8",
+        "page": 24,
+        "row": "point input (RITM [92] baseline): IBD [17]",
+        "column": "SAM > baseline p-value"
+      },
+      "notes": "Printed as '2e-57'. The paired t-test that SAM's mean mask quality rating exceeds RITM's on IBD, from the authors' own human study; the caption states 'P-values are calculated by paired t-test'. Recorded as role result because it is a number the paper reports as an outcome of its own experiment and neither hyperparameter nor dataset_statistic fits; a reviewer who holds that a significance test is not a claim about performance would drop this cell and the other 14 p-values, taking N from 159 to 144. The CI99 column beside it, '(1.03, 1.39)', is an interval and is deliberately not a cell. Row and column verified against the page image."
+    },
+    {
+      "id": "L15",
+      "frame_index": 153,
+      "metric": "p-value",
+      "value": 3e-10,
+      "units": null,
+      "dataset": "OVIS",
+      "split": null,
+      "role": "result",
+      "is_own_result": true,
+      "confident": true,
+      "location": {
+        "kind": "table",
+        "label": "Table 8",
+        "page": 24,
+        "row": "point input (RITM [92] baseline): OVIS [81]",
+        "column": "SAM > SAM single out. p-value"
+      },
+      "notes": "Printed as '3e-10'. The second of the two hypotheses tested per row -- that SAM outranks its own ablated single-output variant -- so both models in this comparison are the authors'. Same role reading as frame_index 148. OVIS is the one panel of Figure 18 where SAM's mean (7.2) is below single-output SAM's (7.7), which makes this row worth a careful read: the p-value is nonetheless printed in the 'SAM > SAM single out.' column with CI99 (0.27, 0.63), and the caption asserts all intervals exclude zero. Transcribed as printed from the page image without attempting to reconcile that tension, which is the paper's to explain."
+    }
+  ]
+}

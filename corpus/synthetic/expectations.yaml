@@ -111,6 +111,21 @@
   forbid:
     R-DRIFT-001: fail
 
+- case: synthetic_quoted_baseline_rows
+  # This case's cited rows decide how confidently each cell is read, which
+  # reaches the claims package alone, and no rule reads a drafted claim. The
+  # case carries no results file either, so the two reconciliation rules
+  # abstain on that ground as well. What this file pins is that a paper whose
+  # cells reach no rule yields no verdict rather than a wrong one. The demotion
+  # itself is asserted by tests/test_claims_extraction.py and by
+  # tests/test_bench_dev_manifest_identity.py; see the README.
+  expect:
+    R-RES-001: not-applicable
+  forbid:
+    R-RES-001: pass
+    R-RES-002: pass
+    R-DRIFT-001: fail
+
 - case: synthetic_printed_precision
   # The paper prints 0.30 and the config holds 0.34, which disagree to the
   # hundredth the paper printed. Inferring the tolerance from the parsed float
