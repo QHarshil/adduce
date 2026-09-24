@@ -123,9 +123,12 @@ knowing:
   repository containing nothing. When git is unavailable, the call fails, or the
   directory is not a repository, the whole tree is scanned.
 
-Ambient git configuration cannot change the answer: system and global config
-are suppressed for the query, so a user's `core.excludesFile` cannot silently
-shrink an audit.
+System and global git configuration cannot change the answer: they are
+suppressed for the query, so a user's `core.excludesFile` cannot silently
+shrink an audit. Repository-local config is not suppressed. Values such as
+`core.ignorecase` and `core.precomposeunicode` are written by `git init` from
+the host filesystem and can change which paths a scan drops, so two machines
+auditing the same tree can still see different inventories.
 
 `bench/runner.py finding-diff` enumerates every rule status that honouring the
 ignore file moves on a given tree. Run it rather than quoting a figure from

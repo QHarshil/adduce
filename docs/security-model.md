@@ -50,7 +50,13 @@ an untrusted repository.
 
 The built-in offline pipeline inventories regular, non-symlinked files, reads
 selected content as data, parses supported formats, and invokes read-only Git
-commands for repository metadata. It does not import or launch Python files
+commands for repository metadata. Those Git invocations drop ambient
+`GIT_*` variables and suppress system and global config so a user's
+`core.excludesFile` cannot steer a scan. Repository-local config is left
+intact because it records host filesystem properties (`core.ignorecase`,
+`core.precomposeunicode`); overriding it would make Adduce disagree with
+Git on the machine it is running on. Two hosts can therefore still produce
+different inventories of the same tree. It does not import or launch Python files
 from the target repository. `adduce check` does not call the online resolver or
 the dynamic runner unless the user selects a separate opt-in mode.
 
