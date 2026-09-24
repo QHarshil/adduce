@@ -177,6 +177,11 @@ existing issue that you are working on it. Maintainers coordinate on the issue
 when two people are heading for the same change, so the duplicated effort costs
 a comment rather than a discarded branch.
 
+Issues labelled `good first issue` or `help wanted` are open to outside
+contributors. Other issues are maintainer-tracked by default. Ask on one if you
+want it and a maintainer will say whether it can be assigned; some overlap work
+already in progress.
+
 Say so on the issue and wait to be assigned before you open a pull request. An
 issue with an assignee is taken: opening a competing pull request against it
 wastes your evening and puts a maintainer in the position of choosing between
