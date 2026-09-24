@@ -47,11 +47,11 @@ class UnpinnedDependencyRule(Rule):
         floating = [d for d in ev.deps.dependencies if d.pin is PinLevel.UNBOUNDED]
         if not floating:
             return self.finding(Status.PASS, confidence=0.85, message="Every declared dependency carries a version constraint.")
-        names = ", ".join(sorted(d.name for d in floating)[:8])
+        names = ", ".join(sorted(f"{d.name}{d.specifier}" for d in floating)[:8])
         return self.finding(
             Status.PARTIAL if len(floating) < len(ev.deps.dependencies) else Status.FAIL,
             confidence=0.85,
-            message=f"{len(floating)} dependency declaration(s) have no version constraint: {names}.",
+            message=f"{len(floating)} dependency declaration(s) admit an unbounded range of future versions: {names}.",
             remediation="Pin each to the version used for the reported results.",
         )
 
@@ -90,7 +90,7 @@ class LooseRangeRule(Rule):
         return self.finding(
             Status.PARTIAL,
             confidence=0.8,
-            message=f"Result-affecting libraries declared with ranges instead of exact versions: {names}.",
+            message=f"Result-affecting libraries are not pinned exactly: {names}.",
             remediation="Pin numerics-bearing libraries (torch, numpy, transformers, ...) to exact versions.",
         )
 

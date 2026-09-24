@@ -1,0 +1,4 @@
+torch
+scipy>=1.10.0
+requests<=2.32.0
+numpy==1.26.4

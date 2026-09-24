@@ -2,7 +2,12 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
+from adduce.engine import run_check
 from adduce.evidence.dependencies import PinLevel
+from adduce.rules.base import Status
+from adduce.rules.deps import LooseRangeRule, UnpinnedDependencyRule
 
 
 def test_requirements_pin_levels(make_evidence):
@@ -108,3 +113,101 @@ def test_pinned_git_dependency(make_evidence):
         }
     )
     assert ev.deps.dependencies[0].pin is PinLevel.EXACT
+
+
+def test_unpinned_dependency_rule_message(make_evidence):
+    rule = UnpinnedDependencyRule()
+
+    # Mixed declarations: lower bound, upper bound, bare name, exact pin
+    ev = make_evidence(
+        {
+            "requirements.txt": (
+                "apache-tvm-ffi<=0.1.12\n"
+                "quack-kernels>=0.3.4\n"
+                "torch\n"
+                "numpy==1.26.0\n"
+            ),
+            "main.py": "pass\n",
+        }
+    )
+    finding = rule.evaluate(ev)
+    assert finding.status is Status.PARTIAL
+    assert "admit an unbounded range of future versions" in finding.message
+    assert "apache-tvm-ffi<=0.1.12" in finding.message
+    assert "quack-kernels>=0.3.4" in finding.message
+    assert "torch" in finding.message
+    assert "numpy" not in finding.message
+
+    # Fully bounded / exact declarations pass
+    ev_pass = make_evidence(
+        {
+            "requirements.txt": (
+                "numpy==1.26.0\n"
+                "pandas>=2.0,<3.0\n"
+            ),
+            "main.py": "pass\n",
+        }
+    )
+    finding_pass = rule.evaluate(ev_pass)
+    assert finding_pass.status is Status.PASS
+
+
+def test_loose_range_rule_message(make_evidence):
+    rule = LooseRangeRule()
+
+    # Numerics-bearing libraries with bare name, range, and exact pin, plus non-numeric lib
+    ev = make_evidence(
+        {
+            "requirements.txt": (
+                "torch\n"
+                "scipy>=1.0\n"
+                "numpy==1.26.0\n"
+                "requests>=2.0\n"
+            ),
+            "main.py": "pass\n",
+        }
+    )
+    finding = rule.evaluate(ev)
+    assert finding.status is Status.PARTIAL
+    assert "Result-affecting libraries are not pinned exactly" in finding.message
+    assert "torch" in finding.message
+    assert "scipy>=1.0" in finding.message
+    # requests is not in _NUMERIC_DISTS and numpy is exact
+    assert "requests" not in finding.message
+    assert "numpy" not in finding.message
+
+    # Exact pins on numerics-bearing libraries pass
+    ev_pass = make_evidence(
+        {
+            "requirements.txt": (
+                "torch==2.1.0\n"
+                "numpy==1.26.0\n"
+                "requests>=2.0\n"
+            ),
+            "main.py": "pass\n",
+        }
+    )
+    finding_pass = rule.evaluate(ev_pass)
+    assert finding_pass.status is Status.PASS
+
+
+def test_synthetic_dep_ranges_regression_case():
+    synthetic_dir = Path(__file__).resolve().parent.parent / "corpus" / "synthetic" / "synthetic_dep_ranges"
+    result = run_check(synthetic_dir)
+    findings = {f.rule_id: f for f in result.card.findings}
+
+    r_dep_001 = findings["R-DEP-001"]
+    assert r_dep_001.status is Status.PARTIAL
+    assert "admit an unbounded range of future versions" in r_dep_001.message
+    assert "requests<=2.32.0" in r_dep_001.message
+    assert "scipy>=1.10.0" in r_dep_001.message
+    assert "torch" in r_dep_001.message
+    assert "numpy" not in r_dep_001.message
+
+    r_dep_002 = findings["R-DEP-002"]
+    assert r_dep_002.status is Status.PARTIAL
+    assert "Result-affecting libraries are not pinned exactly" in r_dep_002.message
+    assert "scipy>=1.10.0" in r_dep_002.message
+    assert "torch" in r_dep_002.message
+    assert "requests" not in r_dep_002.message
+    assert "numpy" not in r_dep_002.message

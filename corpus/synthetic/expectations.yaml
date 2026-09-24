@@ -163,3 +163,13 @@
     R-DRIFT-003: pass
   forbid:
     R-DRIFT-003: partial
+
+- case: synthetic_dep_ranges
+  # Mixed manifest: bare name (torch), lower bound (scipy>=1.10.0), upper bound
+  # (requests<=2.32.0), exact pin (numpy==1.26.4).
+  expect:
+    R-DEP-001: partial
+    R-DEP-002: partial
+  forbid:
+    R-DEP-001: pass
+    R-DEP-002: pass
