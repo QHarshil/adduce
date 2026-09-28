@@ -176,8 +176,9 @@ There is no `adduce claims` command. Claim drafting is reached through
 `manifest_builder.py` from the LaTeX and Markdown evidence the collectors
 gathered.
 
-The dedicated candidate-extraction, normalisation and duplicate-clustering layer
-is in development and is not part of this line. Also undelivered: author
+The candidate-extraction, normalisation and duplicate-clustering layer is
+`src/adduce/claims/` (`candidates.py`, `cluster.py`, `reconcile.py`), described
+in [claims.md](claims.md). Drafting reads it. Still undelivered: author
 confirmation of extracted candidates, lexical retrieval, symbol and config-graph
 retrieval, semantic rerank, four-way link classification, calibrated abstention,
 and source-located explanation.
@@ -222,7 +223,7 @@ you trust.
 | Claim graph | `IMPLEMENTED` | `graph.py`, built on the check path |
 | Artifact Evidence Graph | `PARTIALLY IMPLEMENTED` | diagnostic only; 10 of 19 node types |
 | AEG producer plugins | `PROPOSED` | no `plugin:*` owner is ever constructed |
-| Claim drafting into the manifest | `PARTIALLY IMPLEMENTED` | dedicated extraction and clustering layer not on this line |
+| Claim drafting into the manifest | `PARTIALLY IMPLEMENTED` | extraction and clustering in `src/adduce/claims/`; developmental, acceptance criterion not met |
 | Claim–artifact retrieval, rerank, link classification, abstention | `DEFERRED TO 0.3` | open-ended research, out of scope for 0.2 |
 | Reviewer-time estimate | `IMPLEMENTED` | `reviewer_time.py` |
 | Online resolution, `pin-remotes`, `reproduce` | `IMPLEMENTED` | opt-in and fenced; [security-model.md](security-model.md) |

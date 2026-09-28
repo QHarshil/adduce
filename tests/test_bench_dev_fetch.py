@@ -1,7 +1,7 @@
 """Tests for the development-set fetcher.
 
 Nothing here touches the network. The two behaviours that matter most are
-exercised without it: a locked evaluation repository is refused before any
+exercised without it: a frozen-truth repository is refused before any
 fetch is attempted, and untrusted archive content is refused before it is
 written to disk.
 """

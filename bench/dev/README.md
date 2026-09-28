@@ -1,10 +1,11 @@
 # bench/dev — the development set
 
-The set claim extraction is measured on during iteration. It is deliberately **not** the
-evaluation set: the ten claim-carrying repositories behind the r6/r7 truth are read for the
-final effectiveness report and never during development, so iterating against them would
-spend the holdout. Nothing here may name one of those repositories, and `fetch.py` refuses a
-holdout URL rather than trusting the roster to be right.
+The set claim extraction is measured on during iteration. It is kept apart from the ten
+claim-carrying repositories behind the pilot's frozen truth. Protocol amendment 8 restricts
+that truth to integrity checks while the development interval is open, so iterating against
+those repositories is not allowed. ADR 0010 makes the pilot itself a development set, so
+neither set is a holdout. Nothing here may name one of those repositories, and `fetch.py`
+refuses their URLs rather than trusting the roster to be right.
 
 `bench/` is outside the preregistration hash, so this tree can evolve continuously without an
 amendment.
@@ -165,8 +166,8 @@ values silently.
 
 Labels are produced in a single pass by one labeller, so no inter-rater agreement estimate
 exists for this set and none is reported. That is acceptable for a development set and would
-not be for the evaluation set, where `claim_review_metrics.py` already computes Cohen's kappa
-over independent reviewers.
+not be for the pilot's human study, where `claim_review_metrics.py` already computes Cohen's
+kappa over independent reviewers.
 
 **The draws are not independent across pairs.** One seed is shared by the whole set, and
 `random.sample` on a small `k` draws `_randbelow(N)`, which consumes
