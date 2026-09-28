@@ -5,7 +5,7 @@ pattern. A lab rule pack is an ordinary package:
 
 ```python
 # my_lab_rules.py
-from adduce.rules import Category, Rule, Status
+from adduce.api import Category, Rule, Status
 
 class SlurmScriptRule(Rule):
     id = "R-LAB-001"
@@ -40,7 +40,7 @@ collapsing them into one message. The parent `Finding` stays the scored unit;
 items only explain it:
 
 ```python
-from adduce.rules import Category, FindingItem, Rule, Status
+from adduce.api import Category, FindingItem, Rule, Status
 
 class DeclaredArtifactsRule(Rule):
     id = "R-LAB-002"

@@ -121,6 +121,10 @@ except Exception:
     _warn_discovery()
     _REPORTER_ENTRY_POINTS = ()
 
-RENDERERS = _discover_renderers(_REPORTER_ENTRY_POINTS)
+# Bound before discovery runs, so a reporter plugin that imports this name (or
+# adduce.api) while this module is still initialising finds it. Discovery then
+# fills the same dict.
+RENDERERS: dict[str, Callable[[CheckResult], str]] = {}
+RENDERERS.update(_discover_renderers(_REPORTER_ENTRY_POINTS))
 
 __all__ = ["RENDERERS", "ReporterPluginWarning"]
