@@ -163,3 +163,29 @@
     R-DRIFT-003: pass
   forbid:
     R-DRIFT-003: partial
+
+- case: synthetic_coincident_values
+  # One value stated as three different measurements, and once more as a
+  # restatement of one of them. Clustering decides this case and no rule reads
+  # a drafted claim; with no results file, both reconciliation rules abstain.
+  # This entry pins only that the paper yields no wrong verdict. The clustering
+  # is asserted in tests/test_synthetic_claim_fixtures.py.
+  expect:
+    R-RES-001: not-applicable
+  forbid:
+    R-RES-001: pass
+    R-RES-002: pass
+    R-DRIFT-001: fail
+
+- case: synthetic_metric_vocabulary
+  # Result columns headed by names only the extended metric vocabulary reads.
+  # Canonicalising a header reaches the claims package alone, which no rule
+  # reads, so this entry pins only that the paper yields no wrong verdict. Each
+  # name, and the distinctness of the ROUGE variants and the two correlations,
+  # is asserted in tests/test_synthetic_claim_fixtures.py.
+  expect:
+    R-RES-001: not-applicable
+  forbid:
+    R-RES-001: pass
+    R-RES-002: pass
+    R-DRIFT-001: fail
