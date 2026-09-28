@@ -10,6 +10,7 @@ shapes of ML papers; everything extracted here feeds probabilistic rules
 from __future__ import annotations
 
 import re
+from collections.abc import Callable
 from dataclasses import dataclass, field
 
 from ..model import Repo
@@ -346,6 +347,34 @@ for _alias, _canonical in HYPERPARAM_SYNONYMS.items():
         _HYPERPARAM_PATTERNS[_canonical] = (*_HYPERPARAM_PATTERNS[_canonical], re.escape(_alias).replace(r"\ ", r"[\s~-]+"))
 
 
+#: A verbatim-like environment prints its contents, so a command inside one is
+#: text the paper shows rather than markup it uses.
+_VERBATIM_RE = re.compile(
+    r"\\begin\{(verbatim\*?|lstlisting|minted|alltt)\}.*?\\end\{\1\}", re.DOTALL
+)
+
+#: Commands that set a counter or a length, with the number of brace groups each
+#: takes. A counter is not a measurement: its arguments name a piece of
+#: typesetting state and the number it is set to, and neither is printed. A
+#: counter or length named ``layers`` or ``headsep`` carries a hyperparameter
+#: keyword, and the keyword scan then reads the next number in the prose as its
+#: value: ``\newlength{\headsep}`` ahead of a sentence mentioning 4 reads as
+#: ``num_heads = 4``.
+_STATE_COMMANDS: dict[str, int] = {
+    "setcounter": 2,
+    "addtocounter": 2,
+    "stepcounter": 1,
+    "refstepcounter": 1,
+    "setlength": 2,
+    "addtolength": 2,
+    "newcounter": 1,
+    "newlength": 1,
+}
+_STATE_COMMAND_RE = re.compile(
+    r"\\(" + "|".join(sorted(_STATE_COMMANDS, key=len, reverse=True)) + r")\s*(?![a-zA-Z])"
+)
+
+
 def _brace_group(text: str, start: int) -> tuple[str, int] | None:
     r"""Contents of the ``{...}`` group at *start*, and the index just past it.
 
@@ -469,6 +498,78 @@ def _parse_tables(text: str, file: str) -> list[TableCell]:
     return cells
 
 
+def _state_command_spans(text: str) -> list[tuple[int, int]]:
+    r"""The source span of every counter- and length-setting command call.
+
+    Arguments included, because the arguments are the whole problem: the number
+    a counter is set to, or the prose right after its name, is what gets read as
+    a measurement. Brace-matched, because a length is routinely set from another
+    length (``\setlength{\tabcolsep}{\dimexpr\columnsep/2}``), and a call whose
+    groups do not match is left alone rather than guessed at.
+
+    Every argument the command declares must be present for the call to be
+    removed. One that takes two and is written with one is malformed, and
+    removing the name alone would leave its arguments behind as text, which is
+    the failure this exists to prevent rather than a lesser version of it.
+    """
+    spans: list[tuple[int, int]] = []
+    for match in _STATE_COMMAND_RE.finditer(text):
+        end = match.end()
+        for _ in range(_STATE_COMMANDS[match.group(1)]):
+            group = _brace_group(text, end)
+            if group is None:
+                end = -1
+                break
+            end = group[1]
+        if end < 0:
+            continue
+        if spans and match.start() <= spans[-1][1]:
+            spans[-1] = (spans[-1][0], max(spans[-1][1], end))
+            continue
+        spans.append((match.start(), end))
+    return spans
+
+
+def _strip_state_commands(text: str) -> str:
+    r"""The document with every counter and length assignment removed.
+
+    ``\setcounter{tocdepth}{2}`` sets how deep a table of contents goes;
+    ``\setlength{\tabcolsep}{6pt}`` sets how wide a column gutter is. Neither
+    prints anything, so neither states a number the paper reports, but a name
+    such as ``layers`` or ``headsep`` puts a hyperparameter keyword in front of
+    whatever number comes next.
+
+    Removed rather than guarded against at the point of reading. A guard would
+    have to recognise the shape from inside a short window, while the command is
+    unambiguous where it is written. Line breaks are kept, so no locator moves,
+    and verbatim regions are skipped, because a command a paper prints is text
+    rather than markup.
+    """
+    return _remove_spans(text, _state_command_spans)
+
+
+def _remove_spans(text: str, finder: Callable[[str], list[tuple[int, int]]]) -> str:
+    """*text* with each span *finder* reports replaced by its own line breaks.
+
+    Verbatim regions are passed through untouched and never searched.
+    """
+    parts: list[str] = []
+    position = 0
+    for protected in (*_VERBATIM_RE.finditer(text), None):
+        end = protected.start() if protected is not None else len(text)
+        segment = text[position:end]
+        cursor = 0
+        for start, stop in finder(segment):
+            parts.append(segment[cursor:start])
+            parts.append("\n" * segment.count("\n", start, stop))
+            cursor = stop
+        parts.append(segment[cursor:])
+        if protected is not None:
+            parts.append(protected.group(0))
+            position = protected.end()
+    return "".join(parts)
+
+
 def collect_latex(repo: Repo) -> LatexEvidence:
     evidence = LatexEvidence()
     tex_entries = [f for f in repo.files if f.suffix == ".tex"]
@@ -480,7 +581,7 @@ def collect_latex(repo: Repo) -> LatexEvidence:
         text = repo.read_text(entry.path)
         if text is None:
             continue
-        clean = strip_comments(text)
+        clean = _strip_state_commands(strip_comments(text))
         rel = str(entry.path)
         if "\\documentclass" in clean and evidence.main_file is None:
             evidence.main_file = rel
