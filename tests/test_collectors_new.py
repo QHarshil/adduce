@@ -547,3 +547,158 @@ def test_a_counter_assignment_a_paper_prints_is_left_in_place():
     assert _strip_state_commands(text) == (
         "\n\\begin{verbatim}\n\\setcounter{tocdepth}{2}\n\\end{verbatim}\n"
     )
+
+
+def _table(column: str, value: str) -> str:
+    """A minimal two-row ``tabular``: one header, one numeric cell."""
+    return (
+        "\\begin{tabular}{lc}\n"
+        "Model & " + column + " \\\\\n"
+        "Ours & " + value + " \\\\\n"
+        "\\end{tabular}\n"
+    )
+
+
+_ROOT_TEX = r"""
+\documentclass{article}
+\begin{document}
+\input{sections/results}
+\end{document}
+"""
+
+_NESTING_SECTION_TEX = "\\input{tables/main_table}\n" + _table("Accuracy", "92.4")
+_NESTED_TABLE_TEX = _table("F1", "89.1")
+#: A superseded draft, left in the tarball, reachable from no document.
+_ORPHAN_TEX = _table("Accuracy", "71.2")
+
+
+def test_a_tex_file_no_document_reaches_is_not_read(make_evidence):
+    """A source tree keeps drafts the paper does not compile.
+
+    Their numbers appear in no rendered document, so extracting them states a
+    claim the paper never made -- with the same confidence as one it did.
+    """
+    latex = make_evidence(
+        {
+            "paper/main.tex": _ROOT_TEX,
+            "paper/sections/results.tex": _table("Accuracy", "92.4"),
+            "paper/ablations.tex": _ORPHAN_TEX,
+        }
+    ).latex
+    assert latex.tex_files == ["paper/main.tex", "paper/sections/results.tex"]
+    assert latex.main_file == "paper/main.tex"
+    assert [c.value for c in latex.table_cells] == [92.4]
+
+
+def test_an_include_is_followed_through_every_level(make_evidence):
+    """Papers nest: a section inputs its tables, which is where the numbers are."""
+    latex = make_evidence(
+        {
+            "paper/main.tex": _ROOT_TEX,
+            "paper/sections/results.tex": _NESTING_SECTION_TEX,
+            "paper/sections/tables/main_table.tex": _NESTED_TABLE_TEX,
+            "paper/ablations.tex": _ORPHAN_TEX,
+        }
+    ).latex
+    assert latex.tex_files == [
+        "paper/main.tex",
+        "paper/sections/results.tex",
+        "paper/sections/tables/main_table.tex",
+    ]
+    assert [c.value for c in latex.table_cells] == [92.4, 89.1]
+
+
+def test_a_commented_out_include_is_not_an_include(make_evidence):
+    r"""``% \input{ablations}`` is how a draft is taken out of a paper."""
+    latex = make_evidence(
+        {
+            "paper/main.tex": _ROOT_TEX.replace(
+                "\\end{document}", "% \\input{ablations}\n\\end{document}"
+            ),
+            "paper/sections/results.tex": _table("Accuracy", "92.4"),
+            "paper/ablations.tex": _ORPHAN_TEX,
+        }
+    ).latex
+    assert "paper/ablations.tex" not in latex.tex_files
+    assert not any(c.value == 71.2 for c in latex.table_cells)
+
+
+def test_an_include_resolves_against_the_including_file_then_the_tree_root(make_evidence):
+    """Both of LaTeX's search paths, and the implied ``.tex`` extension."""
+    root = (
+        "\\documentclass{article}\n"
+        "\\input{tables/scores.tex}\n"
+        "\\input{shared/appendix}\n"
+    )
+    latex = make_evidence(
+        {
+            "src/main.tex": root,
+            "src/tables/scores.tex": _table("Accuracy", "88.1"),
+            "shared/appendix.tex": _table("F1", "77.3"),
+            "src/old.tex": _ORPHAN_TEX,
+        }
+    ).latex
+    assert latex.tex_files == ["shared/appendix.tex", "src/main.tex", "src/tables/scores.tex"]
+    assert sorted(c.value for c in latex.table_cells) == [77.3, 88.1]
+
+
+def test_a_nested_include_resolves_against_the_root_documents_directory(make_evidence):
+    """LaTeX runs in the root document's directory, so paths are relative to it.
+
+    A section file under ``sec/`` that inputs ``tables/results`` means the
+    ``tables`` directory beside the root, not one inside ``sec/``. Resolving it
+    against the including file alone dropped every table such a paper keeps in
+    its own directory.
+    """
+    latex = make_evidence(
+        {
+            "src/main.tex": "\\documentclass{article}\n\\input{sec/experiments}\n",
+            "src/sec/experiments.tex": "\\input{tables/results.tex}\n",
+            "src/tables/results.tex": _table("Accuracy", "81.2"),
+            "src/old.tex": _ORPHAN_TEX,
+        }
+    ).latex
+    assert latex.tex_files == ["src/main.tex", "src/sec/experiments.tex", "src/tables/results.tex"]
+    assert [c.value for c in latex.table_cells] == [81.2]
+
+
+def test_a_circular_include_terminates_and_reads_each_file_once(make_evidence):
+    """Two sections inputting each other must not loop or double-count."""
+    latex = make_evidence(
+        {
+            "paper/main.tex": "\\documentclass{article}\n\\input{a}\n",
+            "paper/a.tex": "\\input{b}\n" + _table("Accuracy", "1.5"),
+            "paper/b.tex": "\\input{a}\n\\input{b}\n" + _table("F1", "2.5"),
+        }
+    ).latex
+    assert latex.tex_files == ["paper/a.tex", "paper/b.tex", "paper/main.tex"]
+    assert [c.value for c in latex.table_cells] == [1.5, 2.5]
+
+
+def test_a_paper_with_no_documentclass_is_read_whole(make_evidence):
+    """A directory of fragments has no root to resolve, and must still report.
+
+    Scoping to an include graph that cannot be found would turn every such
+    paper into no evidence at all, which is the worse failure of the two.
+    """
+    latex = make_evidence(
+        {
+            "paper/results.tex": _table("Accuracy", "92.4"),
+            "paper/ablations.tex": _ORPHAN_TEX,
+        }
+    ).latex
+    assert latex.tex_files == ["paper/ablations.tex", "paper/results.tex"]
+    assert latex.main_file is None
+    assert sorted(c.value for c in latex.table_cells) == [71.2, 92.4]
+
+
+def test_a_root_that_reaches_nothing_is_read_whole(make_evidence):
+    """An inclusion mechanism this does not follow reads as no graph at all."""
+    latex = make_evidence(
+        {
+            "paper/main.tex": "\\documentclass{article}\n\\subfile{sections/results}\n",
+            "paper/sections/results.tex": _table("Accuracy", "92.4"),
+        }
+    ).latex
+    assert latex.tex_files == ["paper/main.tex", "paper/sections/results.tex"]
+    assert [c.value for c in latex.table_cells] == [92.4]

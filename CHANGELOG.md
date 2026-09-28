@@ -17,6 +17,18 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - A reporter plugin that imports from `adduce.api` or `adduce.report` at module
   level now loads. `RENDERERS` was bound only after reporter discovery finished,
   so such a plugin failed with an import error and was skipped with a warning.
+- A metric's rank cutoff is no longer read as its value. `recall@1` and `B@4`
+  name the rank a metric was measured at, and the prose extractor read the rank
+  as the result, so R-RES-002 could report a paper contradicting its own logs.
+- A LaTeX counter or length named for a hyperparameter no longer reads as one.
+  `\newcounter{layers}` and `\newlength{\headsep}` put a keyword in front of the
+  next number in the prose, so drift rules judged hyperparameters the paper
+  never states. Counter and length assignments are removed before extraction.
+- A `.tex` file the paper never compiles is no longer read. The collector took
+  every `.tex` file in the tree, so a superseded draft left in an e-print
+  tarball produced claims about numbers in no rendered document. It now follows
+  the include graph from `\documentclass`, and reads every file when the graph
+  explains nothing.
 
 ## [0.2.0] - 2026-08-31
 
