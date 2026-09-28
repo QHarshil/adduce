@@ -1,6 +1,7 @@
 ## What changed, and why
 
-<!-- Two or three sentences. Link the issue if there is one. -->
+<!-- Two or three sentences. Reference the issue assigned to you, for example
+     "Fixes #64"; a pull request without one is closed automatically. -->
 
 - [ ] This targets `dev`. `main` is the release line and moves only at a release.
 
