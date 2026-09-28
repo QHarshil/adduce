@@ -28,9 +28,9 @@ from pathlib import Path
 
 import pytest
 
+from adduce.api import RENDERERS, Finding, FindingItem, Location, Status, discover_rules
 from adduce.engine import CheckResult, run_check
-from adduce.report import RENDERERS, json_report
-from adduce.rules import Finding, FindingItem, Location, Status, discover_rules
+from adduce.report import json_report
 
 DISTRIBUTION = "adduce-contract-plugin"
 RULE_ID = "X-CONTRACT-PLUGIN-001"

@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-from adduce.evidence import Evidence
-from adduce.rules import Category, Finding, Rule, Status
+from adduce.api import Category, Evidence, Finding, Rule, Status
 
 
 class ContractProbeRule(Rule):

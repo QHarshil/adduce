@@ -22,9 +22,21 @@ interpreter has no effect until the next process.
 
 ## Public surface
 
-Import these names from the paths given. Every one except `__version__` appears
-in its module's `__all__`; `adduce` declares no `__all__`, and `__version__` is
-covered by the ordinary convention for that attribute.
+Import these names from `adduce.api`. It re-exports each one unchanged, with an
+explicit `__all__` and no logic of its own, so the surface this page promises is
+the surface the contract test imports. The table gives the module that defines
+each name; those paths keep working. Every name except `__version__` appears in
+its defining module's `__all__`; `adduce` declares no `__all__`, and
+`__version__` is covered by the ordinary convention for that attribute.
+
+```python
+from adduce.api import Category, Evidence, Finding, Rule, Status
+```
+
+A reporter module should not import `RENDERERS` at import time. Reporters load
+while that mapping is being filled, and depending on import order the name may
+not be bound yet. Types such as `Finding` and `Status` are safe to import at
+module level.
 
 | Symbol | Import from |
 |---|---|
@@ -373,16 +385,3 @@ See [Security model](security-model.md#extension-and-supply-chain-risk).
 - A rule of the shape `applies_to` plus `evaluate(ev) -> Finding` keeps working
   without a rewrite. Any child-result model is additive.
 - Uncovered modules change without notice and without a deprecation window.
-
-## Decided but not built
-
-`PROPOSED` means designed and accepted, not built. None of the following exists
-today; do not write a plugin against it.
-
-**A stable public facade, `adduce.api` — `PROPOSED`.** A module that re-exports
-the covered names with an explicit `__all__` and no logic of its own, so the
-surface promised is the surface a contract test imports. Existing import paths
-would keep working; it adds a namespace rather than moving one. Deferred to
-after this release by the project's own sequencing, not because anything in
-the model it would export is still unfinished.
-See [ADR 0003](adr/0003-public-extension-api-stability.md).

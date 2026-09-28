@@ -6,6 +6,18 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- `adduce.api`, one import location for the covered plugin surface. It
+  re-exports every name listed in the plugin API contract unchanged. The
+  existing import paths keep working.
+
+### Fixed
+
+- A reporter plugin that imports from `adduce.api` or `adduce.report` at module
+  level now loads. `RENDERERS` was bound only after reporter discovery finished,
+  so such a plugin failed with an import error and was skipped with a warning.
+
 ## [0.2.0] - 2026-08-31
 
 ### Validation status
