@@ -189,3 +189,17 @@
     R-RES-001: pass
     R-RES-002: pass
     R-DRIFT-001: fail
+
+- case: synthetic_metric_cutoff
+  # The paper writes metric names that end in a rank (`recall@1`, `R@1`, `B@4`)
+  # and states its recall in prose after one. The results file logs that recall.
+  # Reading a rank as a value makes R-RES-002 report that the paper contradicts
+  # its logs (recall 1 against 82.5) and R-RES-004 report three unlogged
+  # metrics read out of cutoffs. The claim-side facts are asserted in
+  # tests/test_collectors_new.py.
+  expect:
+    R-RES-002: pass
+    R-RES-004: pass
+  forbid:
+    R-RES-002: partial
+    R-RES-004: partial

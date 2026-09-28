@@ -260,6 +260,25 @@ def _line_of(text: str, position: int) -> int:
     return text.count("\n", 0, position) + 1
 
 
+def _is_cutoff(tail: str, number: re.Match[str], keyword: str) -> bool:
+    r"""Whether *number* is the rank an ``@`` binds to a metric's name.
+
+    ``Recall@1`` and ``B@4`` name the rank a retrieval metric was measured at,
+    never a value it took, and the ``@`` falls either side of the keyword's own
+    boundary: the pattern ``\brecall\b`` leaves it ahead of the number, and the
+    pattern ``recall@`` takes it into the match, where nothing at all separates
+    the keyword from the number. Both are read here, because a guard holding on
+    one side only leaves the same sentence stating the same false number.
+
+    Only ``@`` binds a rank. Other characters ahead of a number carry values a
+    paper does state: ``$H/64`` gives a head count and ``$\geq\!$~1024`` a
+    batch size.
+    """
+    if number.start() == 0:
+        return keyword.endswith("@")
+    return tail[number.start() - 1] == "@"
+
+
 def _extract_keyword_values(
     text: str, file: str, keywords: dict[str, tuple[str, ...]], kind: str, window: int = 80
 ) -> list[PaperValue]:
@@ -287,7 +306,11 @@ def _extract_keyword_values(
                     tail = text[kw_match.end() : kw_match.end() + window]
                     connector = re.match(r"[\s\S]{0,24}?(?:of|is|was|to|=|at|:)?\s*\$?", tail)
                     search_from = connector.end() if connector else 0
+                    # A cutoff is passed over rather than refused, because the
+                    # number the sentence states comes after it.
                     num_match = _NUMBER_RE.search(tail, search_from)
+                    while num_match is not None and _is_cutoff(tail, num_match, kw_match.group(0)):
+                        num_match = _NUMBER_RE.search(tail, num_match.end())
                     if (
                         num_match
                         and num_match.start() <= search_from + 16
