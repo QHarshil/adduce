@@ -14,8 +14,8 @@ Nothing here is vendored into git: ``bench/dev/pairs/`` is gitignored, exactly
 like ``corpus/clones/``. What ``pairs.csv`` tracks is the pin -- identity, and
 after a fetch its digest -- never the fetched content itself.
 
-Ten repositories are the locked evaluation holdout and must never enter the
-dev set. A row naming one is refused outright, compared case-insensitively on
+Ten repositories carry the pilot's frozen claim truth, which amendment 8
+restricts to integrity checks, so they must never enter the dev set. A row naming one is refused outright, compared case-insensitively on
 its ``owner/repo`` path so a URL variant (scheme, a trailing slash, a trailing
 ``.git``) cannot slip past the check.
 
@@ -84,7 +84,7 @@ ARXIV_USER_AGENT = "adduce-bench-dev-fetch/1 (+https://github.com/QHarshil/adduc
 ARXIV_MIN_INTERVAL_SECONDS = 3.0
 _VERSION_SUFFIX_RE = re.compile(r"v(\d+)(?:\.pdf)?/?$")
 
-#: The locked evaluation set (bench/dev spec S7). None of these may ever be
+#: The pilot's frozen-truth repositories (bench/dev spec S7). None of these may ever be
 #: fetched into the dev set; the fetcher refuses the row outright rather than
 #: trusting the roster to be right.
 HOLDOUT_REPOSITORIES: frozenset[str] = frozenset(
@@ -249,7 +249,7 @@ def _repository_key(repo_url: str) -> str:
 
 
 def is_holdout_repository(repo_url: str) -> bool:
-    """Whether *repo_url* names one of the ten locked evaluation repositories."""
+    """Whether *repo_url* names one of the ten frozen-truth repositories."""
     return _repository_key(repo_url) in HOLDOUT_REPOSITORIES
 
 

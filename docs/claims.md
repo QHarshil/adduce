@@ -132,7 +132,7 @@ Three constraints hold:
 
 **A caption-derived metric is never certain.** The column did not state the
 metric; another part of the document did. A header naming no known metric may
-be a cost column — `hours`, `speedup`, `p-value` — rather than a dataset, and
+be a cost column (`GPU days`, `memory (GB)`, `wall-clock time`) rather than a dataset, and
 nothing in a header alone separates the two, so this class cannot be eliminated
 here. What it must not be is confident, so a caption-derived metric is emitted
 as `lexical_match` at `0.5`. Reporting a wrong metric confidently is the
@@ -154,20 +154,22 @@ the confidence. The demotion moves the method and the confidence and nothing
 else: it does not choose a different metric, does not drop the cell, and cannot
 revive one the header filter refused.
 
-Only one attribution signal is detected: a citation command in the row's
-leading cell, which names the paper the whole row came from. A citation beside
-a number is a note on that number and is not read as an attribution of the row.
+Two attribution signals are detected, both in the row's leading cell, which
+names what the whole row reports. One is a citation command. The other is
+credit written as prose: `et al.`, a parenthesised year such as `(2019)`, or an
+author-year pair such as `(He et al., 2016)`. The prose pattern is deliberately
+loose, which is safe only because it demotes: a false match costs confidence,
+never a claim. A citation beside a number is a note on that number and is not
+read as an attribution of the row.
 
 Everything else is **not** detected, and a cell it would have covered reads as
-unattributed — the conservative answer, because the consumer demotes on a
-positive and never promotes on a negative, so a missed attribution costs
+unattributed. That is the conservative answer, because the consumer demotes on
+a positive and never promotes on a negative, so a missed attribution costs
 confidence that was not earned. Two shapes are known to be missed. A table
 partitioned into published and own results by a full-width section header
-needs a table parser that tracks column spans, which this one does not have. A
-row label that credits another paper in plain text rather than through a
-citation command — `ResNet-50 (He et al.)` — reads as an ordinary row name, so
-a related-work table of competitors' numbers under a header naming a metric is
-drafted at full confidence. Both are why the
+needs a table parser that tracks column spans, which this one does not have.
+Credit stated outside the leading cell, such as a caption saying the top rows
+are quoted from another paper, is not read either. Both are why the
 zero-high-confidence-false-positive acceptance criterion is not met, and a
 drafted claim is `status: draft` for exactly this reason.
 
