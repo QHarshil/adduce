@@ -188,6 +188,12 @@ wastes your evening and puts a maintainer in the position of choosing between
 two people who both did the work. If nobody has answered you within a few days,
 say so again on the issue rather than assuming it is free.
 
+Reference the assigned issue in the pull request's title or description, for
+example `Fixes #64`. A pull request from an outside contributor that references
+no issue assigned to its author is closed automatically
+(`.github/workflows/pr-claim-gate.yml`). Once the issue is assigned to you,
+open a new one.
+
 Saying so records intent; it does not reserve the work. Release gates are
 capability-based: the gate is that the capability exists, is tested, and is
 correct, never that a particular contributor opened a pull request. Maintainers

@@ -1,0 +1,29 @@
+name: pr claim gate
+
+# Closes a pull request from an outside contributor that does not reference an
+# issue assigned to its author, as CONTRIBUTING.md asks. pull_request_target
+# runs the base branch's copy of this workflow and script with a token that can
+# close the pull request. It never checks out or runs the pull request's code:
+# the checkout below takes the base branch, and nothing reads the head ref.
+on:
+  pull_request_target:
+    types: [opened, reopened]
+
+permissions:
+  contents: read
+  issues: read
+  pull-requests: write
+
+jobs:
+  gate:
+    name: Claim gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Close a pull request without an assigned issue
+        run: python3 scripts/pr_claim_gate.py
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
