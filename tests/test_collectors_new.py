@@ -394,3 +394,50 @@ def test_a_paper_value_records_the_precision_it_was_printed_at(make_evidence):
     ev = make_evidence({"paper/main.tex": "We use a learning rate of 0.30 in every run.\n"})
     rates = ev.latex.hyperparameter_values()["learning_rate"]
     assert [(v.value, v.decimals) for v in rates] == [(0.3, 2)]
+
+
+def test_a_cutoff_glued_to_a_metric_name_is_not_a_value(make_evidence):
+    r"""``Recall@1`` is the metric's name, and the 1 is the rank, not the recall.
+
+    The guard rejecting a number glued to a word did not hold for ``@``, so
+    these were read as a recall of 1, a BLEU of 4 and an MRR of 1. The cutoff
+    sits either side of the keyword boundary -- the pattern ``\brecall\b``
+    leaves the ``@`` ahead of the number and the pattern ``recall@`` takes it
+    into the match -- so both sides are refused, and the sentence's own +2.7 is
+    not a result either.
+    """
+    tex = (
+        "Our model improves image-text retrieval by +2.7\\% in average recall@1,\n"
+        "and captioning by +2.8\\% in CIDEr.\n"
+        "Method & MRR$\\uparrow$ & R@1$\\uparrow$ & R@5$\\uparrow$ \\\\\n"
+        "C: CIDEr, S: SPICE, B@4: BLEU@4.\n"
+    )
+    metrics = make_evidence({"paper/main.tex": tex}).latex.metrics
+    assert [(m.name, m.value) for m in metrics] == []
+
+
+def test_the_number_after_a_cutoff_is_the_one_the_sentence_states(make_evidence):
+    r"""A cutoff is passed over, not treated as the end of the search.
+
+    "Recall@1 of 82.5" is how a retrieval paper states a result, and refusing
+    the candidate outright rather than skipping the rank would lose the 82.5,
+    turning a false positive into a miss on the commonest shape in the class.
+
+    Both of the vocabulary's patterns for this metric match the one phrase, so
+    the collector reads it twice and clustering merges them; the assertion is
+    over the pair read, not over how many times one pattern list matched it.
+    """
+    tex = "We reach a recall@1 of 82.5 on the COCO test split.\n"
+    metrics = make_evidence({"paper/main.tex": tex}).latex.metrics
+    assert {(m.name, m.value) for m in metrics} == {("recall", 82.5)}
+
+
+def test_a_number_glued_to_a_name_by_a_hyphen_is_still_refused(make_evidence):
+    """The characters the guard already rejected keep being rejected.
+
+    ``CIFAR-10`` is a dataset and ``top-1`` a column: neither states a value,
+    and the ``@`` case is added beside them rather than in place of them.
+    """
+    tex = "We report accuracy on CIFAR-10 and follow the top-1 protocol.\n"
+    metrics = make_evidence({"paper/main.tex": tex}).latex.metrics
+    assert [(m.name, m.value) for m in metrics] == []
