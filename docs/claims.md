@@ -55,8 +55,15 @@ dissolved to the text it wraps. The first cell of each row is taken as the row
 label; the rest are read as values, and a cell is a value only when what
 remains after markup is dissolved is exactly a number.
 
-Every `.tex` file in the repository is read, with comments stripped first, so a
-commented-out table states nothing.
+The `.tex` files read are the ones the paper compiles. The collector follows
+`\input` and `\include` from each file holding `\documentclass`, resolving a
+path against the root document's directory first, as LaTeX does, then the
+including file's directory, then the tree root. A file nothing reaches, such as
+a superseded draft left in an e-print tarball, is not read. When the graph
+explains nothing (no root, or a root that includes nothing) every `.tex` file is
+read. Comments are stripped first, so a commented-out table or include states
+nothing, and counter and length assignments (`\setcounter`, `\newlength` and
+their siblings) are removed before any number is read.
 
 ### Markdown tables
 

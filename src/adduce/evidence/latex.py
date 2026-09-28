@@ -9,6 +9,7 @@ shapes of ML papers; everything extracted here feeds probabilistic rules
 
 from __future__ import annotations
 
+import posixpath
 import re
 from collections.abc import Callable
 from dataclasses import dataclass, field
@@ -570,19 +571,71 @@ def _remove_spans(text: str, finder: Callable[[str], list[tuple[int, int]]]) -> 
     return "".join(parts)
 
 
+def _resolve_include(target: str, including: str, root_dir: str, known: set[str]) -> str | None:
+    """The file an include names, resolved the way LaTeX resolves it.
+
+    LaTeX resolves ``\\input`` against the directory it runs in, which is the
+    root document's, so a section file under ``sec/`` that inputs
+    ``tables/x`` means ``<root dir>/tables/x``. The including file's own
+    directory and the tree root are tried after it, because e-print tarballs
+    also reference each other that way. A missing ``.tex`` extension is
+    implied.
+    """
+    if not target:
+        return None
+    bases = dict.fromkeys((root_dir, posixpath.dirname(including), ""))
+    for base in bases:
+        for name in (target, f"{target}.tex"):
+            candidate = posixpath.normpath(posixpath.join(base, name))
+            if candidate in known:
+                return candidate
+    return None
+
+
+def _compiled_sources(sources: dict[str, str]) -> set[str]:
+    """The files reachable from a ``\\documentclass`` root, that root included.
+
+    A ``.tex`` file no include reaches is not part of the paper: an e-print
+    tarball often carries a superseded draft with different numbers, and
+    reading it reports numbers that appear in no rendered document. Repeated
+    and circular includes are visited once. When the graph explains nothing
+    (no root, or a root that reaches no other file), every source is returned
+    instead, so a tree using an inclusion mechanism this does not follow keeps
+    yielding evidence.
+    """
+    known = set(sources)
+    roots = {path for path, text in sources.items() if "\\documentclass" in text}
+    if not roots:
+        return known
+    reachable: set[str] = set()
+    pending = [(root, posixpath.dirname(root)) for root in sorted(roots)]
+    while pending:
+        current, root_dir = pending.pop()
+        if current in reachable:
+            continue
+        reachable.add(current)
+        for match in _INPUT_RE.finditer(sources[current]):
+            resolved = _resolve_include(match.group(1).strip(), current, root_dir, known)
+            if resolved is not None:
+                pending.append((resolved, root_dir))
+    return known if reachable == roots else reachable
+
+
 def collect_latex(repo: Repo) -> LatexEvidence:
     evidence = LatexEvidence()
     tex_entries = [f for f in repo.files if f.suffix == ".tex"]
     if not tex_entries:
         return evidence
-    evidence.tex_files = [str(f.path) for f in tex_entries]
-
+    sources: dict[str, str] = {}
     for entry in tex_entries:
         text = repo.read_text(entry.path)
-        if text is None:
-            continue
-        clean = _strip_state_commands(strip_comments(text))
-        rel = str(entry.path)
+        if text is not None:
+            sources[str(entry.path)] = strip_comments(text)
+    compiled = _compiled_sources(sources)
+    evidence.tex_files = [str(f.path) for f in tex_entries if str(f.path) in compiled]
+
+    for rel in evidence.tex_files:
+        clean = _strip_state_commands(sources[rel])
         if "\\documentclass" in clean and evidence.main_file is None:
             evidence.main_file = rel
         if evidence.title is None:
