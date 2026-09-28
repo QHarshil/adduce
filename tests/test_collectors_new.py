@@ -702,3 +702,61 @@ def test_a_root_that_reaches_nothing_is_read_whole(make_evidence):
     ).latex
     assert latex.tex_files == ["paper/main.tex", "paper/sections/results.tex"]
     assert [c.value for c in latex.table_cells] == [92.4]
+
+
+#: Every environment a results table is written in, with the arguments each
+#: takes: a width for the two that size themselves, an optional placement for
+#: ``longtable``, and a column spec whose own braces nest.
+_TABLE_OPENINGS = [
+    (r"\begin{tabular}{l@{\hskip 6pt}cc}", r"\end{tabular}"),
+    (r"\begin{tabularx}{\textwidth}{l@{\hskip 6pt}XX}", r"\end{tabularx}"),
+    (r"\begin{tabular*}{\linewidth}{@{\extracolsep{\fill}}lcc}", r"\end{tabular*}"),
+    (r"\begin{longtable}[c]{l@{\hskip 6pt}cc}", r"\end{longtable}"),
+]
+
+
+@pytest.mark.parametrize(("opening", "closing"), _TABLE_OPENINGS)
+def test_every_table_environment_yields_its_cells(make_evidence, opening, closing):
+    """A results table is written in whichever of these the layout wanted.
+
+    Matching the name ``tabular`` alone leaves a paper that sizes its tables to
+    the text width with no tables at all.
+    """
+    tex = opening + "\nModel & Top-1 & F1 \\\\\nOurs & 92.4 & 89.1 \\\\\n" + closing + "\n"
+    cells = make_evidence({"paper/main.tex": tex}).latex.table_cells
+    assert [(c.row_label, c.column_label, c.value) for c in cells] == [
+        ("Ours", "Top-1", 92.4),
+        ("Ours", "F1", 89.1),
+    ]
+
+
+def test_a_longtable_is_not_closed_by_a_stray_end_tabular(make_evidence):
+    r"""The environment that closes a table must be the one that opened it.
+
+    Closing on any ``\end`` ends the table at the first environment to finish
+    inside it, and every row after that point is lost.
+    """
+    tex = (
+        "\\begin{longtable}{lcc}\n"
+        "Model & Top-1 & F1 \\\\\n"
+        "Ours & 92.4 & 89.1 \\\\\n"
+        "\\end{tabular}\n"
+        "Baseline & 90.2 & 87.0 \\\\\n"
+        "\\end{longtable}\n"
+    )
+    cells = make_evidence({"paper/main.tex": tex}).latex.table_cells
+    assert [(c.row_label, c.value) for c in cells] == [
+        ("Ours", 92.4),
+        ("Ours", 89.1),
+        ("Baseline", 90.2),
+        ("Baseline", 87.0),
+    ]
+
+
+def test_a_table_environments_own_arguments_are_stripped_by_brace_matching():
+    r"""A width and a nested column spec are not the first row's content."""
+    from adduce.evidence.latex import _table_body
+
+    body = "{\\linewidth}{@{\\extracolsep{\\fill}}lcc}\nModel & Top-1 \\\\"
+    assert _table_body("tabular*", body) == "\nModel & Top-1 \\\\"
+    assert _table_body("tabular", "{p{3cm}c}\nModel & F1 \\\\") == "\nModel & F1 \\\\"
