@@ -8,6 +8,7 @@ from pathlib import Path
 
 import pytest
 
+from adduce.evidence.latex import _STATE_COMMANDS, _strip_state_commands
 from adduce.evidence.portability import secret_kind
 from adduce.rules.base import Status
 from adduce.rules.remote import RawUrlRule
@@ -441,3 +442,108 @@ def test_a_number_glued_to_a_name_by_a_hyphen_is_still_refused(make_evidence):
     tex = "We report accuracy on CIFAR-10 and follow the top-1 protocol.\n"
     metrics = make_evidence({"paper/main.tex": tex}).latex.metrics
     assert [(m.name, m.value) for m in metrics] == []
+
+def test_a_counter_is_not_a_measurement(make_evidence):
+    r"""A counter or length named for a hyperparameter states no hyperparameter.
+
+    ``\newcounter{layers}`` and ``\newlength{\headsep}`` print nothing, but each
+    puts a hyperparameter keyword in front of whatever number the prose states
+    next, and the keyword scan read that number as its value: here a layer count
+    of 4 and a head count of 2. This is a *use* of a command rather than a
+    definition of one.
+    """
+    tex = (
+        "\\documentclass{article}\n"
+        "\\newcounter{layers}\n"
+        "\\begin{document}\n"
+        "\\stepcounter{layers} Table 4 restates the main results.\n"
+        "\\newlength{\\headsep} Appendix 2 lists every run.\n"
+        "Our model reaches an accuracy of 91.4 on the held-out split.\n"
+        "\\end{document}\n"
+    )
+    latex = make_evidence({"paper/main.tex": tex}).latex
+    assert latex.hyperparameters == []
+    assert [(m.name, m.value) for m in latex.metrics] == [("accuracy", 91.4)]
+
+
+#: One call per command the guard covers, each named for a hyperparameter and
+#: followed by a number close enough to be read. On this line the one-argument
+#: commands (``stepcounter``, ``refstepcounter``, ``newcounter``, ``newlength``)
+#: yield a phantom hyperparameter without the guard. The two-argument ones are
+#: also refused by ``_crosses_group_boundary``, because their number sits in the
+#: next brace group; the guard removes them anyway, so neither guard alone holds
+#: that line.
+_STATE_COMMAND_PROBES = {
+    "setcounter": r"\setcounter{layers}{2}",
+    "addtocounter": r"\addtocounter{layers}{1}",
+    "stepcounter": r"\stepcounter{layers}",
+    "refstepcounter": r"\refstepcounter{layers}",
+    "setlength": r"\setlength{\layersep}{4pt}",
+    "addtolength": r"\addtolength{\layersep}{2pt}",
+    "newcounter": r"\newcounter{layers}",
+    "newlength": r"\newlength{\headsep}",
+}
+
+
+def test_every_covered_state_command_has_a_probe():
+    """A command added to the guard without a probe would be an unexercised guard."""
+    assert set(_STATE_COMMAND_PROBES) == set(_STATE_COMMANDS)
+
+
+@pytest.mark.parametrize("command", sorted(_STATE_COMMAND_PROBES))
+def test_a_typesetting_assignment_states_no_hyperparameter(command, make_evidence):
+    """Each covered command, on its own, against a number close enough to be read."""
+    tex = (
+        "\\documentclass{article}\n"
+        "\\begin{document}\n"
+        + _STATE_COMMAND_PROBES[command]
+        + " We report 4 configurations.\n"
+        "Our model reaches an accuracy of 91.4 on the held-out split.\n"
+        "\\end{document}\n"
+    )
+    latex = make_evidence({"paper/main.tex": tex}).latex
+    assert latex.hyperparameters == []
+    assert [(m.name, m.value) for m in latex.metrics] == [("accuracy", 91.4)]
+
+
+def test_removing_a_counter_assignment_does_not_move_the_line_beneath_it(make_evidence):
+    """A locator is what sends a reader to a number, so the line count is kept.
+
+    The first assignment's argument spans two lines, so removing it without
+    keeping its line break would move every locator beneath it up by one.
+    """
+    tex = (
+        "\\documentclass{article}\n"
+        "\\setlength{\\tabcolsep}{\n"
+        "  6pt}\n"
+        "\\setcounter{tocdepth}{2}\n"
+        "\\begin{document}\n"
+        "Our model reaches an accuracy of 91.4 on the held-out split.\n"
+        "\\end{document}\n"
+    )
+    latex = make_evidence({"paper/main.tex": tex}).latex
+    assert [(m.value, m.line) for m in latex.metrics] == [(91.4, 6)]
+
+
+def test_a_malformed_counter_assignment_is_left_alone():
+    r"""Every argument the command declares must be there for the call to go.
+
+    ``\setcounter`` takes two groups. One written with one is malformed, and
+    removing the name alone would leave its arguments standing as text, which is
+    the failure the removal exists to prevent rather than a lesser version of it.
+    """
+    text = "\\setcounter{tocdepth 2} and the depth is 4 layers\n"
+    assert _strip_state_commands(text) == text
+
+
+def test_a_counter_assignment_a_paper_prints_is_left_in_place():
+    """Inside a verbatim block the assignment is what the page displays."""
+    text = (
+        "\\setcounter{tocdepth}{2}\n"
+        "\\begin{verbatim}\n"
+        "\\setcounter{tocdepth}{2}\n"
+        "\\end{verbatim}\n"
+    )
+    assert _strip_state_commands(text) == (
+        "\n\\begin{verbatim}\n\\setcounter{tocdepth}{2}\n\\end{verbatim}\n"
+    )

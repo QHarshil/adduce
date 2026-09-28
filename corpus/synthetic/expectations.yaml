@@ -196,6 +196,15 @@
   # Reading a rank as a value makes R-RES-002 report that the paper contradicts
   # its logs (recall 1 against 82.5) and R-RES-004 report three unlogged
   # metrics read out of cutoffs. The claim-side facts are asserted in
+
+- case: synthetic_counter_assignment
+  # A counter or length named for a hyperparameter states no hyperparameter.
+  # `\newcounter{layers}`, `\stepcounter{layers}` and `\newlength{\headsep}`
+  # print nothing, but each puts a keyword in front of the next number in the
+  # prose. Read that way, the paper states `num_layers = 4` and `num_heads = 2`,
+  # R-DRIFT-003 reports a partial, R-DRIFT-002 a pass and R-DRIFT-001 an
+  # unknown, all about hyperparameters the paper never states.
+  # `\setlength{\tabcolsep}{6pt}` is the control. Per-command coverage is in
   # tests/test_collectors_new.py.
   expect:
     R-RES-002: pass
@@ -203,3 +212,11 @@
   forbid:
     R-RES-002: partial
     R-RES-004: partial
+
+    R-DRIFT-001: not-applicable
+    R-DRIFT-002: not-applicable
+    R-DRIFT-003: not-applicable
+  forbid:
+    R-DRIFT-001: unknown
+    R-DRIFT-002: pass
+    R-DRIFT-003: partial
