@@ -18,6 +18,25 @@ from ..model import Repo
 from ..naming import HYPERPARAM_SYNONYMS, METRIC_PATTERNS
 
 _INPUT_RE = re.compile(r"\\(?:input|include)\{([^}]+)\}")
+
+#: The row-bearing table environments, each with the number of brace groups it
+#: takes before its body. ``tabularx`` and ``tabular*`` size themselves, so a
+#: width precedes the column spec; ``longtable`` and ``tabular`` take the spec
+#: alone. A paper that writes its results in ``tabularx`` has no tables at all
+#: unless every name here is recognised.
+_TABLE_ENVIRONMENTS: dict[str, int] = {
+    "tabular": 1,
+    "tabular*": 2,
+    "tabularx": 2,
+    "longtable": 1,
+}
+_ENVIRONMENTS_PATTERN = "|".join(re.escape(name) for name in _TABLE_ENVIRONMENTS)
+#: The closing environment is a back-reference, so a stray ``\end{tabular}``
+#: inside a ``longtable`` cannot end it and truncate the rows that follow.
+_TABLE_RE = re.compile(
+    r"\\begin\{(" + _ENVIRONMENTS_PATTERN + r")\}(\s*\[[^\]]*\])?(.*?)\\end\{\1\}",
+    re.DOTALL,
+)
 _COMMENT_RE = re.compile(r"(?<!\\)%.*$", re.MULTILINE)
 
 #: value patterns: 0.001 · 1e-4 · 3E-5 · $10^{-3}$ · 1\times10^{-4} · 5\cdot10^{-3} · 92.4\%
@@ -441,13 +460,27 @@ def _caption_at(spans: list[tuple[int, int, str]], position: int) -> str | None:
     return None if best is None else best[1]
 
 
+def _table_body(environment: str, body: str) -> str:
+    """The rows of a table environment, without the arguments of its opening.
+
+    A width and a column spec are not cell content: left in place they are
+    split with the first row. The groups are brace-matched because a column
+    spec nests (``p{3cm}``, ``@{\\extracolsep{\\fill}}``).
+    """
+    index = 0
+    for _ in range(_TABLE_ENVIRONMENTS[environment]):
+        group = _brace_group(body, index)
+        if group is None:
+            break
+        index = group[1]
+    return body[index:]
+
+
 def _parse_tables(text: str, file: str) -> list[TableCell]:
     cells: list[TableCell] = []
     caption_spans = _float_captions(text)
-    for table_index, tab_match in enumerate(
-        re.finditer(r"\\begin\{tabular\}.*?\\end\{tabular\}", text, re.DOTALL)
-    ):
-        body = tab_match.group(0)
+    for table_index, tab_match in enumerate(_TABLE_RE.finditer(text)):
+        body = _table_body(tab_match.group(1), tab_match.group(3))
         caption = _caption_at(caption_spans, tab_match.start())
         base_line = _line_of(text, tab_match.start())
         rows: list[list[str]] = []

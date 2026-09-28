@@ -352,9 +352,9 @@ the table states it.
 - **A second header row is not read.** A table that heads its columns with
   datasets and names the metric one row lower is read from the first row alone,
   so its columns canonicalise to nothing unless the caption names the metric.
-- **Only `tabular` is read.** `tabularx`, `longtable` and `tabular*` state no
-  claims, and neither do the rows of a paper that ends them with a macro it
-  defined itself, because macros are not expanded.
+- **Macros are not expanded.** A table whose rows end in a macro the paper
+  defined itself (`\tsep` in place of `\\`) reads as one row, and a row label
+  written as a macro (`\bertlarge (Single)`) loses the macro's text.
 - **Units are recorded for a markdown cell's percent sign only.** A LaTeX
   cell's `\%` is stripped, and nothing then records that the column was a
   percentage.

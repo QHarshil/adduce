@@ -29,6 +29,10 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   tarball produced claims about numbers in no rendered document. It now follows
   the include graph from `\documentclass`, and reads every file when the graph
   explains nothing.
+- Results tables written in `tabularx`, `tabular*` or `longtable` are now read.
+  Only `tabular` was, so a paper that sized its tables to the text width stated
+  no table claims. A table now closes only on the environment that opened it,
+  and its width and column spec are stripped by brace matching.
 
 ## [0.2.0] - 2026-08-31
 
