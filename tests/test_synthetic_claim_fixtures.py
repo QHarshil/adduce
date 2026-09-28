@@ -57,3 +57,12 @@ def test_a_result_restated_in_a_second_table_is_one_claim_with_both_locations() 
     }
     assert restated.restated
     assert len({m.location.line for m in restated.members}) == 2
+
+
+def test_a_wrapped_spanning_header_names_every_column_it_covers() -> None:
+    clusters = _clusters("synthetic_wrapped_table_header")
+    assert sorted((c.metric, c.value) for c in clusters) == [
+        ("accuracy", 79.2),
+        ("accuracy", 81.4),
+        ("f1", 88.0),
+    ]

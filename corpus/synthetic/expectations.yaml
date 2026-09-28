@@ -220,3 +220,15 @@
     R-DRIFT-001: unknown
     R-DRIFT-002: pass
     R-DRIFT-003: partial
+
+- case: synthetic_wrapped_table_header
+  # The table's metric is named only inside a \multicolumn wrapping a
+  # \rotatebox. No rule reads a table cell or a drafted claim, so this entry
+  # pins only that the paper yields no wrong verdict. The three claims the
+  # header gives are asserted in tests/test_synthetic_claim_fixtures.py.
+  expect:
+    R-RES-001: not-applicable
+  forbid:
+    R-RES-001: pass
+    R-RES-002: pass
+    R-DRIFT-001: fail

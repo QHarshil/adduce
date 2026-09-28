@@ -829,14 +829,14 @@ def test_a_row_label_citing_a_paper_marks_the_row_as_somebody_elses():
 
 
 def test_a_spanning_header_does_not_lend_its_name_to_the_column_beside_it():
-    r"""An offset header names a metric confidently and names the wrong one.
+    r"""A spanning header names the columns it covers, and only those.
 
-    ``\multicolumn{2}{c}{Accuracy}`` collapses to one header cell rather than
-    repeating across the span, so the body row beneath it is one cell wider and
-    every positional lookup slides: the accuracy column reads ``F1`` and the F1
-    column runs off the end. A miss here is cheap and a confident wrong metric
-    is not, so where the widths disagree the columns are labelled positionally
-    and the header filter then refuses them.
+    ``\multicolumn{2}{c}{Accuracy}`` in the first header cell covers the label
+    column and the first value column, so the first value is an accuracy and the
+    second is the ``F1`` beside it. Collapsing the span to one cell slid every
+    positional lookup by one, which is why an offset header used to be labelled
+    positionally; with the span expanded the widths agree and each column takes
+    the name the page gives it.
     """
     tex = (
         "\\begin{tabular}{lcc}\n"
@@ -844,8 +844,10 @@ def test_a_spanning_header_does_not_lend_its_name_to_the_column_beside_it():
         "Ours & 92.4 & 88.1 \\\\\n"
         "\\end{tabular}\n"
     )
-    assert [c.column_label for c in _parse_tables(tex, "main.tex")] == ["col1", "col2"]
-    assert from_latex_tables(_parse_tables(tex, "main.tex")) == []
+    assert [c.column_label for c in _parse_tables(tex, "main.tex")] == ["Accuracy", "F1"]
+    assert sorted(
+        (c.metric, c.value) for c in from_latex_tables(_parse_tables(tex, "main.tex"))
+    ) == [("accuracy", 92.4), ("f1", 88.1)]
 
 
 def test_a_header_that_lines_up_with_its_body_still_names_the_columns():

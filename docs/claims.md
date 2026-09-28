@@ -342,13 +342,16 @@ the table states it.
 - **A LaTeX cell that carries a spread is dropped.** `5.6$\pm$0.2` is not
   exactly a number once markup is dissolved. A markdown cell writing the same
   thing is kept, at the point value.
-- **A spanning header is not expanded.** A `\multicolumn` header collapses to
-  one column here rather than repeating across the columns it covers, so the
-  body rows beneath it are wider than the header and every positional lookup
-  would slide by one. Where a body row's width does not match the header's, its
-  columns are labelled positionally instead, and the header requirement then
-  refuses them — a whole table of numbers lost, deliberately, rather than a
-  table of confident wrong metric names.
+- **A span the parser cannot read leaves a table positional.** A
+  `\multicolumn` header is expanded across the columns it covers, and a body
+  cell spanning several columns states its number once. Where the header and a
+  body row still differ in width after that (a malformed span, or one a macro
+  builds), the columns are labelled positionally and the header requirement
+  refuses them. That loses the table rather than stating confident wrong metric
+  names.
+- **A sub-header row stating numbers reads as data.** A row under a spanning
+  header that splits it by condition (`1\% & 10\%`) is read as a body row, so
+  its percentages become values under the spanned metric.
 - **A second header row is not read.** A table that heads its columns with
   datasets and names the metric one row lower is read from the first row alone,
   so its columns canonicalise to nothing unless the caption names the metric.

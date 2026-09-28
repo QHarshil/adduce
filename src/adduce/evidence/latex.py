@@ -37,6 +37,14 @@ _TABLE_RE = re.compile(
     r"\\begin\{(" + _ENVIRONMENTS_PATTERN + r")\}(\s*\[[^\]]*\])?(.*?)\\end\{\1\}",
     re.DOTALL,
 )
+#: The two wrappers whose arguments would otherwise be read as cell content.
+#: Both take their text as the last of several arguments, so the generic cell
+#: cleanup cannot dissolve them: it keeps every argument and concatenates them.
+_ROTATEBOX_RE = re.compile(r"\\rotatebox\s*(?:\[[^\]]*\])?\s*")
+_MULTICOLUMN_RE = re.compile(r"\\multicolumn\s*")
+#: How many wrappers deep a cell is unwrapped. Paper sources are untrusted
+#: input, so the loop is bounded.
+_MAX_MARKUP_NESTING = 8
 _COMMENT_RE = re.compile(r"(?<!\\)%.*$", re.MULTILINE)
 
 #: value patterns: 0.001 · 1e-4 · 3E-5 · $10^{-3}$ · 1\times10^{-4} · 5\cdot10^{-3} · 92.4\%
@@ -460,6 +468,65 @@ def _caption_at(spans: list[tuple[int, int, str]], position: int) -> str | None:
     return None if best is None else best[1]
 
 
+def _dissolve_rotatebox(field: str) -> str:
+    """``\\rotatebox[origin=rc]{270}{TED-LIUM3}`` reads as ``TED-LIUM3``.
+
+    The generic cleanup strips a command name and its opening brace without
+    regard to argument structure, which glues the rotation arguments to the text
+    they rotate: a column named ``TED-LIUM3`` arrives as
+    ``[origin=rc]270TED-LIUM3``, names no metric, and is dropped.
+    """
+    for _ in range(_MAX_MARKUP_NESTING):
+        match = _ROTATEBOX_RE.search(field)
+        if match is None:
+            break
+        angle = _brace_group(field, match.end())
+        content = _brace_group(field, angle[1]) if angle is not None else None
+        if content is None:  # malformed; leave it to the generic cleanup
+            break
+        field = field[: match.start()] + content[0] + field[content[1] :]
+    return field
+
+
+def _dissolve_multicolumn(field: str) -> tuple[str, int]:
+    """``\\multicolumn{2}{c}{ImageNet}`` reads as ``ImageNet`` spanning 2 columns.
+
+    The span is returned rather than discarded, because dropping it leaves the
+    header row shorter than the body rows, so every column after the spanned one
+    is attributed to the wrong header. A wrapper that cannot be parsed is left
+    alone and spans one column: guessing a span would shift every later column.
+    """
+    match = _MULTICOLUMN_RE.search(field)
+    if match is None:
+        return field, 1
+    span_group = _brace_group(field, match.end())
+    alignment = _brace_group(field, span_group[1]) if span_group is not None else None
+    content = _brace_group(field, alignment[1]) if alignment is not None else None
+    if span_group is None or content is None:
+        return field, 1
+    try:
+        span = int(span_group[0].strip())
+    except ValueError:
+        return field, 1
+    if span < 1:
+        return field, 1
+    return field[: match.start()] + content[0] + field[content[1] :], span
+
+
+def _split_spans(row: str) -> list[tuple[str, int]]:
+    """One tabular row as ``(cell text, column span)`` pairs."""
+    columns: list[tuple[str, int]] = []
+    for raw in row.split("&"):
+        content, span = _dissolve_multicolumn(_dissolve_rotatebox(raw))
+        columns.append((re.sub(r"\\[a-zA-Z]+\{?|[{}$]", "", content).strip(), span))
+    return columns
+
+
+def _expand_spans(row: list[tuple[str, int]]) -> list[str]:
+    """One entry per column: a spanning header names every column it covers."""
+    return [cell for cell, span in row for _ in range(span)]
+
+
 def _table_body(environment: str, body: str) -> str:
     """The rows of a table environment, without the arguments of its opening.
 
@@ -483,12 +550,12 @@ def _parse_tables(text: str, file: str) -> list[TableCell]:
         body = _table_body(tab_match.group(1), tab_match.group(3))
         caption = _caption_at(caption_spans, tab_match.start())
         base_line = _line_of(text, tab_match.start())
-        rows: list[list[str]] = []
+        rows: list[list[tuple[str, int]]] = []
         cited: list[bool] = []
         for raw_row in body.split("\\\\"):
             cleaned = re.sub(r"\\(?:hline|toprule|midrule|bottomrule|cline\{[^}]*\}|begin\{tabular\}\{[^}]*\}|end\{tabular\})", "", raw_row)
-            columns = [re.sub(r"\\[a-zA-Z]+\{?|[{}$]", "", c).strip() for c in cleaned.split("&")]
-            if any(columns):
+            columns = _split_spans(cleaned)
+            if any(cell for cell, _ in columns):
                 rows.append(columns)
                 # The label only, and before the cleanup: a citation beside a
                 # number is a note on that number, while a citation in the row
@@ -496,8 +563,16 @@ def _parse_tables(text: str, file: str) -> list[TableCell]:
                 cited.append(_attributes_to_others(cleaned.split("&")[0]))
         if len(rows) < 2:
             continue
-        header = rows[0]
-        for row_index, row in enumerate(rows[1:], start=1):
+        # A spanning header names every column it covers, so it repeats across
+        # the span. A spanning body cell states one number, so only its first
+        # column carries it and the rest are placeholders keeping the row in
+        # step with the header.
+        header = _expand_spans(rows[0])
+        for row_index, spanned in enumerate(rows[1:], start=1):
+            row: list[str] = []
+            for cell, span in spanned:
+                row.append(cell)
+                row.extend([""] * (span - 1))
             if not row:
                 continue
             row_label = row[0]
@@ -506,14 +581,13 @@ def _parse_tables(text: str, file: str) -> list[TableCell]:
                 if not num:
                     continue
                 # The header names this row's columns only when the two rows
-                # have the same width. A spanning header cell collapses to one
-                # cell here rather than repeating across the span, so a body
-                # row wider than the header is offset against it and
-                # ``header[col_index]`` would name some other column's metric
-                # -- a confident wrong name, which is worse than none. Where
-                # the widths disagree the columns are labelled positionally,
-                # which is what the parser already reports for a column the
-                # header does not reach.
+                # have the same width once spans are expanded. A span this
+                # parser cannot read (a malformed ``\\multicolumn``, or one
+                # built by a macro) leaves the rows offset, and
+                # ``header[col_index]`` would then name some other column's
+                # metric: a confident wrong name, which is worse than none.
+                # Where the widths disagree the columns are labelled
+                # positionally, as for a column the header does not reach.
                 column_label = (
                     header[col_index] if len(row) == len(header) else f"col{col_index}"
                 )
