@@ -760,3 +760,113 @@ def test_a_table_environments_own_arguments_are_stripped_by_brace_matching():
     body = "{\\linewidth}{@{\\extracolsep{\\fill}}lcc}\nModel & Top-1 \\\\"
     assert _table_body("tabular*", body) == "\nModel & Top-1 \\\\"
     assert _table_body("tabular", "{p{3cm}c}\nModel & F1 \\\\") == "\nModel & F1 \\\\"
+
+
+#: A rotated header, and one wrapped in a single-column span, over two body
+#: columns.
+_WRAPPED_HEADERS_TEX = r"""
+\begin{tabular}{lcc}
+Model & \multicolumn{1}{c}{\rotatebox[origin=rc]{270}{LibriSpeech}} & \rotatebox{270}{TED-LIUM3} \\
+Ours & 3.4 & 4.5 \\
+\end{tabular}
+"""
+
+_SPANNING_HEADER_TEX = r"""
+\begin{tabular}{lccc}
+Model & \multicolumn{2}{c}{ImageNet} & Params \\
+Ours & 84.5 & 97.3 & 88 \\
+\end{tabular}
+"""
+
+
+def test_rotated_and_spanned_headers_are_dissolved_to_their_text(make_evidence):
+    r"""A wrapper's arguments are not part of the column's name.
+
+    ``\multicolumn`` and ``\rotatebox`` take their text as the last of several
+    arguments, so stripping command names blindly concatenates the rest onto it
+    and a column named ``LibriSpeech`` arrives as ``1c[origin=rc]270LibriSpeech``,
+    which names no metric, so the whole column is dropped downstream.
+    """
+    cells = make_evidence({"paper/main.tex": _WRAPPED_HEADERS_TEX}).latex.table_cells
+    by_value = {c.value: c.column_label for c in cells}
+    assert by_value == {3.4: "LibriSpeech", 4.5: "TED-LIUM3"}
+
+
+def test_a_spanning_header_names_every_column_it_covers(make_evidence):
+    """The span is kept, not just the text.
+
+    Dropping it leaves the header row shorter than the body rows, so every
+    column after the spanned one is read against the wrong header, or named
+    positionally.
+    """
+    cells = make_evidence({"paper/main.tex": _SPANNING_HEADER_TEX}).latex.table_cells
+    by_value = {c.value: c.column_label for c in cells}
+    assert by_value == {84.5: "ImageNet", 97.3: "ImageNet", 88.0: "Params"}
+
+
+def test_a_spanning_body_cell_states_one_number_not_several(make_evidence):
+    """A body cell spanning two columns is one reported number, not two.
+
+    The header repeats across its span because it names both columns; a value
+    must not, or one measurement would be counted twice.
+    """
+    tex = r"""
+\begin{tabular}{lcc}
+Model & Top-1 & Top-5 \\
+Ours & \multicolumn{2}{c}{91.2} \\
+\end{tabular}
+"""
+    cells = make_evidence({"paper/main.tex": tex}).latex.table_cells
+    assert [(c.column_label, c.value) for c in cells] == [("Top-1", 91.2)]
+
+
+@pytest.mark.parametrize(
+    "field",
+    [
+        r"\multicolumn{2}{c}{Unclosed",  # no closing brace
+        r"\multicolumn{x}{c}{A}",  # span is not a number
+        r"\multicolumn{0}{c}{A}",  # span covers no column
+    ],
+)
+def test_a_malformed_span_falls_back_rather_than_being_guessed(field):
+    """A wrapper it cannot parse is left alone and spans one column.
+
+    Guessing a span would silently shift every later column onto the wrong
+    header.
+    """
+    from adduce.evidence.latex import _dissolve_multicolumn
+
+    assert _dissolve_multicolumn(field) == (field, 1)
+
+
+def test_a_span_it_cannot_read_leaves_the_columns_positional(make_evidence):
+    r"""Where the widths still disagree after expansion, no header is lent.
+
+    A malformed span counts as one column, so the header stays one column
+    short of the body. Reading ``header[col_index]`` would then name the wrong
+    metric with confidence, so the columns are labelled positionally instead.
+    """
+    tex = r"""
+\begin{tabular}{lcc}
+\multicolumn{x}{c}{Accuracy} & F1 \\
+Ours & 92.4 & 88.1 \\
+\end{tabular}
+"""
+    cells = make_evidence({"paper/main.tex": tex}).latex.table_cells
+    assert [c.column_label for c in cells] == ["col1", "col2"]
+
+
+@pytest.mark.parametrize(("opening", "closing"), _TABLE_OPENINGS)
+def test_an_environments_own_arguments_are_not_table_content(make_evidence, opening, closing):
+    """A width and a column spec state a layout, not a row.
+
+    Read as the first row they are concatenated onto the header, so every value
+    beneath a spanned header is attributed to a column named after an alignment
+    string.
+    """
+    tex = (
+        opening + "\n\\multicolumn{2}{c}{ImageNet} & F1 \\\\\n"
+        "Ours & 92.4 & 89.1 \\\\\n" + closing + "\n"
+    )
+    cells = make_evidence({"paper/main.tex": tex}).latex.table_cells
+    assert [(c.column_label, c.value) for c in cells] == [("ImageNet", 92.4), ("F1", 89.1)]

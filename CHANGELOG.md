@@ -33,6 +33,11 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   Only `tabular` was, so a paper that sized its tables to the text width stated
   no table claims. A table now closes only on the environment that opened it,
   and its width and column spec are stripped by brace matching.
+- A `\multicolumn` header now names every column it covers, and a
+  `\rotatebox` header reads as its text. The span was dropped, so the header
+  row was shorter than its body rows and every column was labelled
+  positionally and refused. A table whose widths still disagree after expansion
+  stays positional.
 
 ## [0.2.0] - 2026-08-31
 
