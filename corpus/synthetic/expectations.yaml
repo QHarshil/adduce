@@ -196,6 +196,13 @@
   # Reading a rank as a value makes R-RES-002 report that the paper contradicts
   # its logs (recall 1 against 82.5) and R-RES-004 report three unlogged
   # metrics read out of cutoffs. The claim-side facts are asserted in
+  # tests/test_collectors_new.py.
+  expect:
+    R-RES-002: pass
+    R-RES-004: pass
+  forbid:
+    R-RES-002: partial
+    R-RES-004: partial
 
 - case: synthetic_counter_assignment
   # A counter or length named for a hyperparameter states no hyperparameter.
@@ -207,12 +214,6 @@
   # `\setlength{\tabcolsep}{6pt}` is the control. Per-command coverage is in
   # tests/test_collectors_new.py.
   expect:
-    R-RES-002: pass
-    R-RES-004: pass
-  forbid:
-    R-RES-002: partial
-    R-RES-004: partial
-
     R-DRIFT-001: not-applicable
     R-DRIFT-002: not-applicable
     R-DRIFT-003: not-applicable
