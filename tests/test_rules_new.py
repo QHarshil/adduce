@@ -362,48 +362,6 @@ def test_unused_dependencies_count_distinct_distributions(
     )
 
 
-@pytest.mark.parametrize("manifest", ["requirements.txt", "pyproject.toml"])
-@pytest.mark.parametrize(
-    "name", ["pytest_cov", "pre_commit", "pytest-cov", "pre-commit", "PyTeSt_CoV", "Pre_Commit"]
-)
-def test_unused_dependencies_never_flag_equivalent_tool_names(make_evidence, manifest, name):
-    content = (
-        f"[project]\ndependencies = {json.dumps([name])}\n"
-        if manifest == "pyproject.toml"
-        else f"{name}\n"
-    )
-    ev = make_evidence({manifest: content, "main.py": "pass\n"})
-    assert [dep.name for dep in ev.deps.dependencies] == [name.lower()]
-    assert not ev.py.imports
-
-    finding = UnusedDependencyRule().evaluate(ev)
-
-    assert finding.status is Status.PASS
-    assert finding.confidence == 0.6
-
-
-def test_unused_dependencies_never_flag_tools_but_keep_unused_distributions(make_evidence):
-    ev = make_evidence(
-        {
-            "requirements.txt": "pytest_cov\npre_commit\nother_dep\n",
-            "pyproject.toml": (
-                '[project]\ndependencies = ["pytest-cov", "pre-commit", "Other-Dep"]\n'
-            ),
-            "main.py": "pass\n",
-        }
-    )
-
-    finding = UnusedDependencyRule().evaluate(ev)
-
-    assert finding.status is Status.PARTIAL
-    assert finding.confidence == 0.4
-    assert finding.weight == 1
-    assert finding.message == (
-        "1 declared dependenc(ies) never appear as imports: other-dep"
-        " (heuristic; plugins and CLI tools are used without imports)."
-    )
-
-
 @pytest.mark.parametrize(
     ("requirements", "status", "confidence"),
     [

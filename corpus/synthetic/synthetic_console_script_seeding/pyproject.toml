@@ -1,0 +1,7 @@
+[project]
+name = "mypkg"
+version = "0.1.0"
+dependencies = ["numpy==1.26.0"]
+
+[project.scripts]
+mypkg-train = "mypkg.commands:train"
