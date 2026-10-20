@@ -870,3 +870,650 @@ def test_an_environments_own_arguments_are_not_table_content(make_evidence, open
     )
     cells = make_evidence({"paper/main.tex": tex}).latex.table_cells
     assert [(c.column_label, c.value) for c in cells] == [("ImageNet", 92.4), ("F1", 89.1)]
+
+
+def _keyword_values(text: str, kind: str = "hyperparameter") -> dict[str, list[float]]:
+    from adduce.evidence.latex import (
+        _HYPERPARAM_PATTERNS,
+        _METRIC_KEYWORDS,
+        _extract_keyword_values,
+    )
+
+    vocabulary = _HYPERPARAM_PATTERNS if kind == "hyperparameter" else _METRIC_KEYWORDS
+    read: dict[str, list[float]] = {}
+    for value in _extract_keyword_values(text, "main.tex", vocabulary, kind):
+        read.setdefault(value.name, []).append(value.value)
+    return read
+
+
+@pytest.mark.parametrize(
+    ("prose", "name", "expected"),
+    [
+        (r"setting the learning rate to $10^{-4}$, the backbone's", "learning_rate", 1e-4),
+        (r"and the backbone learning rate to $10^{-5}$.", "learning_rate", 1e-5),
+        (r"a learning rate of $10^4$ for the head.", "learning_rate", 1e4),
+        (r"a learning rate of $10^-4$ for the head.", "learning_rate", 1e-4),
+        (r"a learning rate of 10^{-4} for the head.", "learning_rate", 1e-4),
+        (r"a learning rate of 10^-4 for the head.", "learning_rate", 1e-4),
+        (r"with a weight decay of $10^{-4}$ and", "weight_decay", 1e-4),
+        # Spacing, a typographic minus, an explicit plus and a braced base.
+        (r"a learning rate of $10^{ -4}$ for the head.", "learning_rate", 1e-4),
+        (r"a learning rate of $10 ^{-4}$ for the head.", "learning_rate", 1e-4),
+        ("a learning rate of $10^{\u22124}$ for the head.", "learning_rate", 1e-4),
+        ("a learning rate of 10^\u22124 for the head.", "learning_rate", 1e-4),
+        (r"a learning rate of ${10}^{-4}$ for the head.", "learning_rate", 1e-4),
+        (r"a learning rate of $10^{+4}$ for the head.", "learning_rate", 1e4),
+        (r"a learning rate of 10^+4 for the head.", "learning_rate", 1e4),
+        (r"a learning rate of 1e+4 for the head.", "learning_rate", 1e4),
+        ("a learning rate of 1e\u22124 for the head.", "learning_rate", 1e-4),
+        # The forms that already parsed keep parsing.
+        (r"a learning rate of $1\times10^{-4}$ for the head.", "learning_rate", 1e-4),
+        (r"a learning rate of $5\cdot10^{-3}$ for the head.", "learning_rate", 5e-3),
+        (r"a learning rate of 1e-4 for the head.", "learning_rate", 1e-4),
+    ],
+)
+def test_a_bare_power_of_ten_is_read_as_a_power(prose, name, expected, make_evidence):
+    r"""``$10^{-4}$`` is 0.0001, not the 10 the mantissa branch stopped at.
+
+    Read as 10, a paper and a config stating the same learning rate were
+    reported as disagreeing. A power prints no fractional digits, so its
+    precision is left to the caller, as for ``1e-4``.
+    """
+    read = make_evidence({"paper/main.tex": prose}).latex.hyperparameter_values()[name]
+    assert [(v.value, v.decimals) for v in read] == [(pytest.approx(expected), None)]
+
+
+def test_a_plain_ten_is_still_ten(make_evidence):
+    """Only a caret makes ``10`` a base; the number on its own is unchanged."""
+    ev = make_evidence({"paper/main.tex": "We use a learning rate of 10 for the head.\n"})
+    rates = ev.latex.hyperparameter_values()["learning_rate"]
+    assert [(v.value, v.decimals) for v in rates] == [(10.0, 0)]
+
+
+@pytest.mark.parametrize(
+    "prose",
+    [
+        r"a learning rate of $10^{-4.5}$ for the head.",
+        r"a learning rate of $10^{-3.5}$ for the head.",
+        r"a learning rate of $10^{+4.5}$ for the head.",
+        r"a learning rate of 10^-4.5 for the head.",
+        r"a learning rate of $1\times10^{-4.5}$ for the head.",
+        r"a learning rate of 1e-4.5 for the head.",
+        r"a learning rate of $10^{\text{-}4}$ for the head.",
+        r"a learning rate of $10^\mathrm{-4}$ for the head.",
+        r"a learning rate of $2^{10}$ for the head.",
+        r"a learning rate of $10.5^{2}$ for the head.",
+        r"a learning rate of $224^2$ for the head.",
+        r"a learning rate of $\mathbf{2}^{11}$ for the head.",
+        # A digit glued after the exponent.
+        r"a learning rate of 10^{-1}0 for the head.",
+        "a learning rate of 10^",
+        # Split by math delimiters, which join a base of 10 to its power.
+        r"a learning rate of 10$^{-4.5}$ for the head.",
+        # A mantissa with a power this does not read.
+        r"a learning rate of $5\times10^{*}$ for the head.",
+        # A symbol raised to a sign is a power, not a marker.
+        r"a learning rate of $10^{-k}$ for the head.",
+        r"a learning rate of $10^{+k}$ for the head.",
+        "a learning rate of $10^{\u2212k}$ for the head.",
+        # An interval on 10 is neither the power nor plainly 10.
+        r"a learning rate of $10^{+2}_{-1}$ for the head.",
+        r"a learning rate of $10^{\pm 0.2}$ for the head.",
+    ],
+)
+def test_a_power_it_cannot_read_yields_no_value(prose, make_evidence):
+    r"""A number followed by a caret is never read as the bare number.
+
+    ``$1\times10^{-4.5}$`` and ``1e-4.5`` were read as 0.0001, so a paper
+    stating a different rate from its config was reported as agreeing. The
+    others were read as the number before the caret or ``\times``: 10, 5, 224,
+    or 2 for ``$2^{10}$``.
+    """
+    hp = make_evidence({"paper/main.tex": prose}).latex.hyperparameter_values()
+    assert "learning_rate" not in hp
+
+
+def test_an_unreadable_power_leaves_the_drift_rule_nothing_to_compare(make_evidence):
+    r"""``$10^{-4.5}$`` beside a config of 0.0001 is not an agreement."""
+    from adduce.rules.drift import HyperparameterDriftRule
+
+    ev = make_evidence(
+        {
+            "paper/main.tex": "We train with a learning rate of $10^{-4.5}$ for the head.\n",
+            "configs/train.yaml": "learning_rate: 0.0001\n",
+        }
+    )
+    assert HyperparameterDriftRule().evaluate(ev).status is Status.NOT_APPLICABLE
+
+
+def test_a_number_after_a_caret_is_not_a_count(make_evidence):
+    """``10^4 steps`` states ten thousand steps, not four."""
+    hp = make_evidence({"paper/main.tex": "We train for 10^4 steps.\n"}).latex.hyperparameter_values()
+    assert "steps" not in hp
+
+
+@pytest.mark.parametrize(
+    "prose",
+    [
+        r"Running the iterations $10^{400}$ is infeasible.",
+        "Running the iterations 1e400 is infeasible.",
+        r"Running the iterations $5\times10^{400}$ is infeasible.",
+        r"Running the iterations $10^{-400}$ is infeasible.",
+        "Running the iterations 1e-400 is infeasible.",
+    ],
+)
+def test_a_value_a_float_cannot_hold_yields_no_value(prose):
+    """An overflow raised out of the collector; an underflow was read as 0."""
+    assert "steps" not in _keyword_values(prose)
+
+
+def test_check_survives_a_paper_stating_an_unrepresentable_number(tmp_path):
+    """``1e400`` in a paper made ``adduce check`` exit with a traceback."""
+    from typer.testing import CliRunner
+
+    from adduce.cli import app
+
+    paper = tmp_path / "paper" / "main.tex"
+    paper.parent.mkdir()
+    paper.write_text(
+        "\\documentclass{article}\n\\begin{document}\n"
+        "Running the iterations $10^{400}$ is infeasible, and so are 1e400 iterations\n"
+        "or a learning rate of 1e400.\n\\end{document}\n",
+        encoding="utf-8",
+    )
+    result = CliRunner().invoke(app, ["check", str(tmp_path), "--format", "json"])
+    assert result.exit_code == 0, result.output
+    assert result.exception is None
+
+
+@pytest.mark.parametrize(
+    "prose",
+    [
+        "for 900 epochs with learning rate drops by 2 every 50 epochs",
+        "for 500 epochs with learning rate drop after 400 epochs.",
+        "for 300 epochs with a learning rate drop by 10 after 200 epochs,",
+        "with the learning rate multiplied by 0.1 at 120 and 160 epochs.",
+        "a layer-wise learning rate decay of 0.8 is applied.",
+        # The change verb ahead of the keyword: only ``by`` marks the factor.
+        r"and increasing the predictor's learning rate by 10$\times$.",
+        "for 90 epochs and decay the learning rate by a factor of 10 at 30, 60 and 80",
+        r"we increase the learning rates by $2\times$ for the larger models.",
+    ],
+)
+def test_a_schedule_phrase_states_no_learning_rate(prose, make_evidence):
+    """A number introduced by ``by``, ``after`` or ``every`` is not the value.
+
+    ``learning rate drops by 2`` and ``learning rate drop after 400`` were read
+    as learning rates of 2 and 400, and ``increasing the predictor's learning
+    rate by 10`` as 10, and reported as drift against a config holding the
+    real one.
+    """
+    hp = make_evidence({"paper/main.tex": prose}).latex.hyperparameter_values()
+    assert "learning_rate" not in hp
+
+
+@pytest.mark.parametrize(
+    ("prose", "name", "expected"),
+    [
+        ("for 500 epochs with learning rate drop after 400 epochs.", "epochs", [500.0]),
+        ("The model is evaluated every 5 epochs.", "epochs", []),
+        ("We shorten the schedule by 10 epochs.", "epochs", []),
+        ("We save a checkpoint every 1000 steps.", "steps", []),
+    ],
+)
+def test_a_schedule_point_before_its_keyword_is_not_the_value(prose, name, expected):
+    """``after 400 epochs`` is when the schedule moves, not how long it runs."""
+    assert _keyword_values(prose).get(name, []) == expected
+
+
+def test_a_value_stated_before_its_schedule_is_kept(make_evidence):
+    """Only the gap before the number is read, so a later verb refuses nothing."""
+    tex = "We use a learning rate of 0.001, dropped by 10x at epoch 30.\n"
+    rates = make_evidence({"paper/main.tex": tex}).latex.hyperparameter_values()["learning_rate"]
+    assert [v.value for v in rates] == [0.001]
+
+
+@pytest.mark.parametrize(
+    ("prose", "name", "expected"),
+    [
+        ("the learning rate is reduced from 0.01 when the loss plateaus.", "learning_rate", 0.01),
+        # A ``to`` that takes no number ends no range.
+        ("the learning rate starts from 0.1 to match prior work.", "learning_rate", 0.1),
+        # ``by`` ends a phrase only where it introduces the number.
+        ("the learning rate (by default 0.1) is kept for all runs.", "learning_rate", 0.1),
+    ],
+)
+def test_the_starting_value_of_a_change_is_read(prose, name, expected):
+    """A bare ``from N`` is where the change starts, which is the configured value."""
+    assert _keyword_values(prose) == {name: [pytest.approx(expected)]}
+
+
+@pytest.mark.parametrize(
+    "prose",
+    [
+        "the learning rate is increased to 0.1 over five epochs.",
+        "the learning rate is decreased to 0.01 at epoch 60.",
+        "the learning rate is reduced to 0.001 for the last epochs.",
+        "the learning rate is halved to 0.05 at epoch 60.",
+        "the learning rate is annealed to 0 by a cosine schedule.",
+        "the learning rate is decayed to 1e-5 by a cosine schedule.",
+    ],
+)
+def test_the_final_value_of_a_hyperparameter_change_is_refused(prose):
+    """``to N`` after a change verb is a final or peak value, not the configured one."""
+    assert "learning_rate" not in _keyword_values(prose)
+
+
+@pytest.mark.parametrize(
+    ("prose", "name", "expected"),
+    [
+        (r"the top-1 accuracy increased to 76.1\% with the new head.", "accuracy", 76.1),
+        ("the WER is reduced to 4.2 on the test set.", "wer", 4.2),
+        ("BLEU drops to 26.1 when attention is removed.", "bleu", 26.1),
+    ],
+)
+def test_the_result_a_metric_changes_to_is_read(prose, name, expected):
+    """For a metric, ``to N`` after a change verb is the result the paper states."""
+    assert _keyword_values(prose, "metric")[name] == [pytest.approx(expected)]
+
+
+@pytest.mark.parametrize(
+    ("prose", "name"),
+    [
+        (r"the top-1 accuracy drops by 14 points without the predictor.", "accuracy"),
+        ("We observe WER drops of up to 50 percent on two datasets.", "wer"),
+        (r"the top-1 accuracy reduction of 2.3\% is small.", "accuracy"),
+        (r"the validation accuracy after 300 epochs of training.", "accuracy"),
+        ("on CoVoST2, improving over mSLAM by 6.7 BLEU.", "bleu"),
+    ],
+)
+def test_a_metric_delta_or_bound_is_refused(prose, name):
+    """A metric that drops by N, by up to N, or after N epochs states no value."""
+    assert name not in _keyword_values(prose, "metric")
+
+
+@pytest.mark.parametrize(
+    "prose",
+    [
+        r"With this learning rate, accuracy is 76.1\%.",
+        "we use a learning rate warmup of 1000 steps",
+        "with linear learning rate warmup over 10k steps",
+        "learning rate schedule with 4000 warmup steps",
+        "a cosine learning rate schedule for 300 epochs",
+        "a cosine learning rate scheduler with 20 epochs of linear warm-up",
+    ],
+)
+def test_another_keyword_in_the_gap_owns_the_number(prose):
+    """The nearer keyword owns the number, so these state no learning rate."""
+    assert "learning_rate" not in _keyword_values(prose)
+
+
+@pytest.mark.parametrize(
+    ("prose", "read"),
+    [
+        (r"$(\beta_1, \beta_2) = (0.9, 0.95)$, no dropout, weight decay $0.1$.", {"weight_decay": [0.1]}),
+        # A slash list pairs by position, which a window cannot read. The nearer
+        # keyword takes the first number and dropout takes nothing.
+        ("dropout/weight decay 0.1/0.05", {"weight_decay": [0.1]}),
+    ],
+)
+def test_a_weight_decay_after_dropout_is_not_a_dropout(prose, read):
+    """``no dropout, weight decay 0.1`` was read as a dropout of 0.1."""
+    hp = _keyword_values(prose)
+    assert "dropout" not in hp
+    assert {name: hp[name] for name in read} == read
+
+
+def test_a_word_continuing_the_keywords_own_name_is_not_another_quantity():
+    """``warmup steps of 4000`` is a warmup length, though ``steps`` is a keyword."""
+    assert _keyword_values("warmup steps of 4000")["warmup_steps"] == [4000.0]
+
+
+def test_a_name_for_the_same_quantity_does_not_take_the_number():
+    """``top-1 accuracy`` is one metric, so both of its keywords read the number."""
+    from adduce.evidence.latex import _METRIC_KEYWORDS, _extract_keyword_values
+
+    read = _extract_keyword_values("a top-1 accuracy of 76.1", "main.tex", _METRIC_KEYWORDS, "metric")
+    assert sorted(v.raw for v in read) == ["accuracy of 76.1", "top-1 accuracy of 76.1"]
+
+
+def test_a_keyword_inside_another_word_is_not_another_quantity():
+    """``temp`` is a temperature keyword, and ``attempt`` names no temperature."""
+    assert _keyword_values("the learning rate per attempt: 0.1")["learning_rate"] == [0.1]
+
+
+@pytest.mark.parametrize(
+    ("gap", "expected"),
+    [
+        (" drops by ", True),
+        (" is decayed by ", True),
+        (" is decreased to ", True),
+        (" increases to ", True),
+        (" is reduced to ", True),
+        (" is divided at ", True),
+        (" is halved at ", True),
+        (" is annealed to ", True),
+        (" DROPS by ", True),
+        (" with dropout ", False),
+        (" subdivided into ", False),
+        (" nondecreasing ", False),
+        (" of ", False),
+    ],
+)
+def test_a_change_verb_is_matched_as_a_whole_word(gap, expected):
+    """``dropout`` names a hyperparameter; it says nothing changes."""
+    from adduce.evidence.latex import _describes_a_change
+
+    assert _describes_a_change(gap) is expected
+
+
+@pytest.mark.parametrize(
+    ("lead", "expected"),
+    [
+        (" by ", "by"),
+        (" BY ", "by"),
+        (" by a factor of ", "by"),
+        (" after $", "after"),
+        (" every~", "every"),
+        (" from ", "from"),
+        (" is set to ", "to"),
+        (" up to ", None),
+        (" up  to ", None),
+        (" up~ to ", None),
+        (" thereafter ", None),
+        (" nearby ", None),
+        (" by default ", None),
+    ],
+)
+def test_the_introducing_word_is_the_last_one_before_the_number(lead, expected):
+    """Only a whole word at the end of the gap introduces the number."""
+    from adduce.evidence.latex import _introducer
+
+    assert _introducer(lead) == expected
+
+
+def test_the_power_of_ten_fixture_agrees_with_its_own_config():
+    """The synthetic case reads only the stated rates, at the values its config holds."""
+    from adduce.evidence.latex import _HYPERPARAM_PATTERNS, _extract_keyword_values
+
+    case = Path(__file__).resolve().parent.parent / "corpus" / "synthetic"
+    text = (case / "synthetic_power_of_ten" / "paper" / "main.tex").read_text(encoding="utf-8")
+    values = _extract_keyword_values(text, "main.tex", _HYPERPARAM_PATTERNS, "hyperparameter")
+    read = sorted((v.name, v.value) for v in values)
+    assert read == [
+        ("learning_rate", pytest.approx(1e-4)),
+        ("learning_rate", pytest.approx(1e-4)),
+        ("weight_decay", pytest.approx(1e-4)),
+    ]
+
+
+def _readings(text: str, kind: str = "hyperparameter"):
+    from adduce.evidence.latex import (
+        _HYPERPARAM_PATTERNS,
+        _METRIC_KEYWORDS,
+        _extract_keyword_values,
+    )
+
+    vocabulary = _HYPERPARAM_PATTERNS if kind == "hyperparameter" else _METRIC_KEYWORDS
+    return _extract_keyword_values(text, "main.tex", vocabulary, kind)
+
+
+@pytest.mark.parametrize(
+    ("prose", "name"),
+    [
+        ("We report results after 300 epochs on 8 GPUs.", "epochs"),
+        ("We pretrain after 300 epochs (about 3 days) of warmup.", "epochs"),
+        ("The model converges after 50 epochs, 2 hours on one GPU.", "epochs"),
+        ("We evaluate every 1000 iterations, 4 times per run.", "steps"),
+    ],
+)
+def test_a_refused_number_before_a_keyword_ends_the_search(prose, name):
+    """A keyword whose own number is refused states nothing.
+
+    Dev read the refused numbers: 300, 300, 50 and 1000. Searching on past the
+    refused number would read the next one in the sentence instead: ``after
+    300 epochs on 8 GPUs`` as a training length of 8.
+    """
+    assert name not in _keyword_values(prose)
+
+
+def test_a_refused_number_does_not_hand_its_keyword_the_next_one():
+    """In ``after 30 epochs, 60 epochs`` the first keyword reads neither number.
+
+    Dev read the 30. Searching on past it would read the 60.
+    """
+    read = _readings("We drop the rate after 30 epochs, 60 epochs and 90 epochs.")
+    assert not any(v.raw.startswith("epochs") for v in read)
+    assert 30.0 not in [v.value for v in read]
+
+
+def test_a_refused_metric_number_does_not_hand_its_keyword_the_next_one():
+    """``by 2 BLEU on 3 language pairs`` states a gain, and 3 is a count."""
+    assert "bleu" not in _keyword_values("improves by 2 BLEU on 3 language pairs.", "metric")
+
+
+def test_a_refused_run_length_leaves_the_drift_rule_nothing_to_compare(make_evidence):
+    """``after 300 epochs`` states the run length here, and is refused.
+
+    Dev read the 300 and passed beside ``epochs: 300``. Every number introduced
+    by ``after`` is refused, because ``drop after 400 epochs`` states a schedule
+    point, not the run length, so a run length stated this way is not read.
+    """
+    from adduce.rules.drift import HyperparameterDriftRule
+
+    ev = make_evidence(
+        {
+            "paper/main.tex": "We report results after 300 epochs on 8 GPUs.\n",
+            "configs/train.yaml": "epochs: 300\n",
+        }
+    )
+    assert HyperparameterDriftRule().evaluate(ev).status is Status.NOT_APPLICABLE
+
+
+@pytest.mark.parametrize(
+    ("prose", "expected"),
+    [
+        (r"a learning rate of 10$^{-4}$ for all runs.", 1e-4),
+        (r"a learning rate of 1$\times$10$^{-4}$ for all runs.", 1e-4),
+        (r"a learning rate of 1 $\times$ 10$^{-4}$ for all runs.", 1e-4),
+        (r"a learning rate of $1{\times}10^{-4}$ for all runs.", 1e-4),
+        (r"a learning rate of $5~\times~10^{-4}$ for all runs.", 5e-4),
+        (r"a learning rate of $5\,\times\,10^{-4}$ for all runs.", 5e-4),
+        (r"a learning rate of $5\!\times\!10^{-4}$ for all runs.", 5e-4),
+        (r"a learning rate of $5\;\times\;10^{-4}$ for all runs.", 5e-4),
+        (r"a learning rate of $5\:\times\:10^{-4}$ for all runs.", 5e-4),
+        (r"a learning rate of $5\ \times\ 10^{-4}$ for all runs.", 5e-4),
+        (r"a learning rate of $10^{- 4}$ for all runs.", 1e-4),
+        (r"a learning rate of $10^{\,-4}$ for all runs.", 1e-4),
+    ],
+)
+def test_a_power_of_ten_split_by_markup_is_read_as_a_power(prose, expected):
+    r"""``10$^{-4}$`` and ``$5\,\times\,10^{-4}$`` were read as 10 and 5.
+
+    Math delimiters, braces and spacing commands split the source, not the
+    number on the page.
+    """
+    assert _keyword_values(prose) == {"learning_rate": [pytest.approx(expected)]}
+
+
+@pytest.mark.parametrize(
+    ("prose", "value"),
+    [
+        (r"at a batch size of 224$^2$ for all runs.", 224.0),
+        (r"at a batch size of 256 $^2$ for all runs.", 256.0),
+    ],
+)
+def test_a_base_other_than_ten_is_not_joined_across_math(prose, value):
+    """Control: ``224$^2$`` is a resolution, and dev read 224 as here."""
+    assert [(v.value, v.decimals) for v in _readings(prose)] == [(value, 0)]
+
+
+@pytest.mark.parametrize(
+    ("prose", "name", "expected", "decimals"),
+    [
+        (r"achieves an accuracy of $76.1^{*}$ on ImageNet.", "accuracy", 76.1, 1),
+        (r"achieves an accuracy of $76.1^*$ on ImageNet.", "accuracy", 76.1, 1),
+        (r"achieves an accuracy of $76.1^\dagger$ on ImageNet.", "accuracy", 76.1, 1),
+        (r"a BLEU score of $28.4^{\ddagger}$ on WMT.", "bleu", 28.4, 1),
+        (r"an F1 of $89.1^{a}$ in Table 2.", "f1", 89.1, 1),
+        (r"an F1 of $89.1^a$ in Table 2.", "f1", 89.1, 1),
+        (r"an F1 of $89.1^{\textrm{a}}$ in Table 2.", "f1", 89.1, 1),
+        (r"a top-1 accuracy of $\mathbf{76.1}^{*}$ on ImageNet.", "accuracy", 76.1, 1),
+        (r"an accuracy of $76.1^{\pm 0.2}$ over seeds.", "accuracy", 76.1, 1),
+        (r"an accuracy of $76.1^{\mp 0.2}$ over seeds.", "accuracy", 76.1, 1),
+        ("an accuracy of $76.1^{± 0.2}$ over seeds.", "accuracy", 76.1, 1),
+        ("an accuracy of $76.1^{∓ 0.2}$ over seeds.", "accuracy", 76.1, 1),
+        (r"a BLEU of $28.4^{+0.3}$ on WMT.", "bleu", 28.4, 1),
+        (r"a BLEU of $28.4^{-0.3}$ on WMT.", "bleu", 28.4, 1),
+        ("a BLEU of $28.4^{−0.3}$ on WMT.", "bleu", 28.4, 1),
+        (r"a BLEU of $28.4^{+0.3}_{-0.2}$ on WMT.", "bleu", 28.4, 1),
+        (r"a BLEU of $28.4^{+1}_{-2}$ on WMT.", "bleu", 28.4, 1),
+    ],
+)
+def test_a_marked_result_reads_as_its_base(prose, name, expected, decimals):
+    r"""Control: dev read the base here. A marker or an uncertainty leaves the result.
+
+    The power parser does not refuse ``$76.1^{*}$`` or ``$28.4^{+0.3}_{-0.2}$``,
+    and the base keeps its printed precision.
+    """
+    read = [(v.value, v.decimals) for v in _readings(prose, "metric") if v.name == name]
+    assert read == [(pytest.approx(expected), decimals)]
+
+
+@pytest.mark.parametrize(
+    ("prose", "expected", "decimals"),
+    [
+        (r"a learning rate of $10^\dagger$ for the head.", 10.0, 0),
+        (r"a learning rate of $0.001^{*}$ for all runs.", 0.001, 3),
+    ],
+)
+def test_a_marked_hyperparameter_reads_as_its_base(prose, expected, decimals):
+    """A marker carries no power, so ``10^\\dagger`` is 10 and ``0.001^{*}`` 0.001."""
+    assert [(v.value, v.decimals) for v in _readings(prose)] == [(pytest.approx(expected), decimals)]
+
+
+@pytest.mark.parametrize(
+    "prose",
+    [
+        r"an accuracy of $76.1^{1}$ in Table 2.",
+        r"an accuracy of $76.1^{0.4}$ in Table 2.",
+        r"an accuracy of $76.1^{-4}$ in Table 2.",
+    ],
+)
+def test_a_result_raised_to_a_number_states_nothing(prose):
+    """A whole or unsigned exponent on a result could be a power, so it yields nothing."""
+    assert "accuracy" not in _keyword_values(prose, "metric")
+
+
+@pytest.mark.parametrize(
+    "prose",
+    [
+        r"We use AdamW and then decay the learning rate to $10^{-5}$ with a cosine schedule.",
+        "We use AdamW and linearly decay the learning rate to 0 over training.",
+        # A decimal point does not end the sentence the verb is in.
+        "We decay the weights by 0.5 and the learning rate to 1e-5.",
+        # Nor does a comma.
+        "We decay, with a cosine schedule, the learning rate to 1e-5.",
+    ],
+)
+def test_a_change_verb_ahead_of_the_keyword_refuses_its_final_value(prose):
+    """``decay the learning rate to $10^{-5}$`` states where the schedule ends."""
+    assert "learning_rate" not in _keyword_values(prose)
+
+
+@pytest.mark.parametrize(
+    "prose",
+    [
+        "We decay the weights. We set the learning rate to 0.001.",
+        "We decay the weights; we set the learning rate to 0.001.",
+        "\\section{Learning rate decay}\n\nThe learning rate is set to 0.001.",
+        "We use a weight decay of 0.05 and set the learning rate to 0.001.",
+    ],
+)
+def test_a_change_verb_outside_the_sentence_refuses_nothing(prose):
+    """Control: dev read 0.001 here. Another sentence, or another quantity's name, is not a change."""
+    assert _keyword_values(prose)["learning_rate"] == [pytest.approx(0.001)]
+
+
+def test_a_metric_changed_to_a_value_by_a_verb_ahead_of_it_is_read():
+    """Control: for a metric, ``reduce the WER to 4.2`` states the result."""
+    assert _keyword_values("We reduce the WER to 4.2 on the test set.", "metric") == {"wer": [4.2]}
+
+
+@pytest.mark.parametrize(
+    ("prose", "name"),
+    [
+        ("We linearly warm up the learning rate from 1e-6 to 1e-3 and keep it fixed.", "learning_rate"),
+        ("We increase the batch size from 256 to 4096 during training.", "batch_size"),
+        ("the learning rate decays from 1e-3 to 1e-5 over training.", "learning_rate"),
+        ("momentum increased from 0.85 to 0.95 during warmup.", "momentum"),
+        (r"the learning rate is ramped from $10^{-6}$ to $10^{-3}$.", "learning_rate"),
+        ("the learning rate goes from 0.1~to~0.01.", "learning_rate"),
+        ("we warm up the learning rate from 0 up to 0.1.", "learning_rate"),
+        # The keyword between the two ends, or after both.
+        ("We increase training from 100 epochs to 300 epochs.", "epochs"),
+        ("We increase training from 100 to 300 epochs.", "epochs"),
+        (r"We increase training from $100$ to 300 epochs.", "epochs"),
+        ("We increase training from 100 up to 300 epochs.", "epochs"),
+        ("We increase training from~100 to 300 epochs.", "epochs"),
+    ],
+)
+def test_a_hyperparameter_range_yields_nothing(prose, name):
+    """Neither end of ``from X to Y`` need be the configured value.
+
+    ``warm up the learning rate from 1e-6 to 1e-3`` was read as 1e-6, and
+    ``increase the batch size from 256 to 4096`` as 256.
+    """
+    assert name not in _keyword_values(prose)
+
+
+@pytest.mark.parametrize(
+    ("prose", "name", "expected", "decimals"),
+    [
+        ("The WER is reduced from 5.1 to 4.2 on the test set.", "wer", 4.2, 1),
+        ("accuracy increases from 76.1 to 78.40 with the new head", "accuracy", 78.4, 2),
+        ("improves from 26.1 BLEU to 28.4 on WMT.", "bleu", 28.4, 1),
+        # Control: dev read 28.4 here, the number before the keyword.
+        ("improves from 26.1 to 28.4 BLEU on WMT.", "bleu", 28.4, 1),
+    ],
+)
+def test_a_metric_range_reads_the_stated_result(prose, name, expected, decimals):
+    """``WER is reduced from 5.1 to 4.2`` states 4.2, and was read as 5.1."""
+    read = [(v.value, v.decimals) for v in _readings(prose, "metric") if v.name == name]
+    assert read == [(pytest.approx(expected), decimals)]
+
+
+@pytest.mark.parametrize(
+    "prose",
+    [
+        "pre-training is followed by 100 epochs of fine-tuning.",
+        "pre-training is preceded by 100 epochs of warmup.",
+        "pre-training is accompanied by 100 epochs of distillation.",
+        "pre-training is followed by~100 epochs of fine-tuning.",
+    ],
+)
+def test_the_next_stage_after_a_sequence_word_is_read(prose):
+    """Control: dev read 100 here. ``followed by 100 epochs`` is a stage, not a delta."""
+    assert _keyword_values(prose)["epochs"] == [100.0]
+
+
+def test_a_keyword_followed_by_a_number_does_not_own_it():
+    """``the warmup is followed by 1000 steps`` states no warmup length."""
+    read = _keyword_values("the warmup is followed by 1000 steps of training.")
+    assert "warmup_steps" not in read
+    assert read["steps"] == [1000.0]
+
+
+def test_a_number_between_the_ends_is_not_a_range():
+    """Control: dev read 300 here. ``from 8 to 64 GPUs`` ends before ``to 300 epochs``."""
+    assert _keyword_values("Moving from 8 to 64 GPUs cuts training to 300 epochs.")["epochs"] == [300.0]
+
+
+def test_a_bound_spaced_out_is_still_a_bound():
+    """``drops of up  to 50 percent`` was read as a WER of 50."""
+    assert "wer" not in _keyword_values("We observe WER drops of up  to 50 percent.", "metric")
+
+
+def test_a_multiplied_rate_without_by_is_refused():
+    """``multiplied 0.1 times`` states a factor, with no ``by`` to refuse it."""
+    assert "learning_rate" not in _keyword_values("the learning rate is multiplied 0.1 times.")
