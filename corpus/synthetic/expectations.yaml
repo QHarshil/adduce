@@ -307,3 +307,21 @@
     R-DET-001: pass
   forbid:
     R-DET-001: fail
+
+- case: synthetic_notebook_metadata_localhost
+  # Colab writes "base_uri": "https://localhost:8080/" into the metadata of
+  # each cell it ran and of that cell's outputs. R-PORT-002 counted each one as
+  # a hardcoded endpoint, on a notebook whose code names none. The walk over
+  # code-cell source is covered in tests/test_collectors_new.py.
+  expect:
+    R-PORT-002: pass
+  forbid:
+    R-PORT-002: partial
+
+- case: synthetic_notebook_code_localhost
+  # Positive control for the case above: the same notebook plus one code cell
+  # that posts to localhost:8000. That endpoint still counts.
+  expect:
+    R-PORT-002: partial
+  forbid:
+    R-PORT-002: pass
