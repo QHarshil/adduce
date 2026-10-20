@@ -265,10 +265,11 @@ def test_a_confidence_only_change_moves_the_case_that_carries_the_signal(tmp_pat
 
     Two cases carry the signal and both are driven here, because they carry it
     by different markup. ``synthetic_quoted_baseline_rows`` marks two of its
-    five rows with a citation command, so four of its ten cells are demoted and
-    six are read at full confidence either way. ``synthetic_metric_unrelated_
-    table`` names its prior work in plain text -- ``ResNet-50 (He et al.)`` --
-    and every claim it drafts sits in that row, so it moves on all of them.
+    five rows with a citation command and a third with a ``Published`` section
+    row above it, so six of its ten cells are demoted and four are read at full
+    confidence either way. ``synthetic_metric_unrelated_table`` names its prior
+    work in plain text -- ``ResNet-50 (He et al.)`` -- and every claim it
+    drafts sits in that row, so it moves on all of them.
     Both are named rather than counted for, so a corpus that gains a third
     carrier does not quietly change what this asserts.
 
@@ -298,7 +299,7 @@ def test_a_confidence_only_change_moves_the_case_that_carries_the_signal(tmp_pat
     assert moved.before.loaded_from != moved.after.loaded_from
     assert moved.identical is False
     assert moved.moved_fields == ("confidence", "resolution_method")
-    assert moved.moved_claims == 4
+    assert moved.moved_claims == 6
     assert len(moved.before.claims) == len(moved.after.claims) == 10
 
     plain_text = by_case[_CITED_ROW_LABEL]
@@ -309,7 +310,7 @@ def test_a_confidence_only_change_moves_the_case_that_carries_the_signal(tmp_pat
     assert by_case[_CONTROL_CASE].identical is True
 
     demoted = [claim for claim in moved.before.claims if claim.get("confidence") == 0.5]
-    assert len(demoted) == 4
+    assert len(demoted) == 6
     assert all(claim.get("confidence") == 1.0 for claim in moved.after.claims)
 
 

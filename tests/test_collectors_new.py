@@ -4,12 +4,17 @@ precision, results, run history, portability."""
 from __future__ import annotations
 
 import json
+import time
 from pathlib import Path
 
 import pytest
 
+from adduce.aeg.schema import ResolutionMethod
+from adduce.claims.candidates import from_latex_tables
+from adduce.evidence import collect
 from adduce.evidence.latex import _STATE_COMMANDS, _strip_state_commands
 from adduce.evidence.portability import secret_kind
+from adduce.model import scan_repository
 from adduce.rules.base import Status
 from adduce.rules.remote import RawUrlRule
 
@@ -1517,3 +1522,485 @@ def test_a_bound_spaced_out_is_still_a_bound():
 def test_a_multiplied_rate_without_by_is_refused():
     """``multiplied 0.1 times`` states a factor, with no ``by`` to refuse it."""
     assert "learning_rate" not in _keyword_values("the learning rate is multiplied 0.1 times.")
+
+
+# --- section rows naming prior work ----------------------------------------
+
+
+_SECTION_TABLE_TEX = r"""
+\begin{tabular}{lcc}
+System & Accuracy & F1 \\
+\multicolumn{3}{c}{Top Leaderboard Systems (Dec 10th, 2018)} \\
+Human & 82.3 & 91.2 \\
+\multicolumn{3}{c}{Published} \\
+BiDAF+ELMo & 85.6 & 85.8 \\
+\multicolumn{3}{c}{Ours} \\
+TinyNet & 91.3 & 93.7 \\
+\end{tabular}
+"""
+
+
+def _sectioned(label: str, own: str = "Ours") -> str:
+    """A table whose first section is ``label`` and whose second is ``own``."""
+    return (
+        "\\begin{tabular}{lcc}\n"
+        "System & Accuracy & F1 \\\\\n"
+        "\\multicolumn{3}{c}{" + label + "} \\\\\n"
+        "BiDAF & 85.6 & 85.8 \\\\\n"
+        "\\multicolumn{3}{c}{" + own + "} \\\\\n"
+        "TinyNet & 91.3 & 93.7 \\\\\n"
+        "\\end{tabular}\n"
+    )
+
+
+def _flags(make_evidence, tex: str) -> list[tuple[float, bool]]:
+    return [(c.value, c.prior_work) for c in make_evidence({"paper/main.tex": tex}).latex.table_cells]
+
+
+def test_a_full_width_section_row_marks_the_rows_beneath_it(make_evidence):
+    """BERT's SQuAD shape: one table, partitioned into prior work and its own.
+
+    The rows carry no citation, so the section heading is the only thing on
+    the page that says whose numbers these are. The trailing date qualifies the
+    heading rather than naming it.
+    """
+    cells = make_evidence({"paper/main.tex": _SECTION_TABLE_TEX}).latex.table_cells
+    assert [(c.row_label, c.value, c.prior_work) for c in cells] == [
+        ("Human", 82.3, True),
+        ("Human", 91.2, True),
+        ("BiDAF+ELMo", 85.6, True),
+        ("BiDAF+ELMo", 85.8, True),
+        ("TinyNet", 91.3, False),
+        ("TinyNet", 93.7, False),
+    ]
+
+
+@pytest.mark.parametrize(
+    "label",
+    [
+        "Published",
+        "Published results",
+        "Published methods",
+        "Published systems",
+        "Top Leaderboard Systems",
+        "Leaderboard systems",
+        "Prior work",
+        "Prior art",
+        "Prior methods",
+        "Previous work",
+        "Previous methods",
+        "Related work",
+        "Concurrent work",
+        "Existing methods",
+        "Other methods",
+    ],
+)
+def test_each_prior_work_heading_marks_the_rows_beneath_it(make_evidence, label):
+    """Every heading in the list, spelled as a paper would print it."""
+    assert _flags(make_evidence, _sectioned(label)) == [
+        (85.6, True),
+        (85.8, True),
+        (91.3, False),
+        (93.7, False),
+    ]
+
+
+@pytest.mark.parametrize(
+    "label",
+    [
+        "Published:",
+        "Published.",
+        "Published,",
+        "Published;",
+        "Published -",
+        "Published*",
+        "\\textit{Published}",
+        "PUBLISHED",
+        "Prior~work",
+        "Prior   work",
+        "Published (as of 2019)",
+    ],
+)
+def test_a_prior_work_heading_is_read_through_its_decoration(make_evidence, label):
+    """Punctuation, emphasis, case, a tie and a trailing qualifier name nothing."""
+    assert _flags(make_evidence, _sectioned(label))[:2] == [(85.6, True), (85.8, True)]
+
+
+@pytest.mark.parametrize(
+    "label",
+    [
+        "ImageNet-22K pre-trained",  # ConvNeXt partitions by pre-training corpus
+        "Self-supervised",  # DINO, by supervision regime
+        "zero-shot",  # BLIP, by evaluation setting
+        "our supervised training baselines",  # MAE: the authors' own baselines
+        "Baselines",  # off the list on purpose, see _PRIOR_WORK_SECTIONS
+        "Ours",
+        "This work",
+        "Proposed",
+        "Proposed method",
+        "Our method",
+        "Ours with published hyperparameters",  # matched whole, never searched within
+    ],
+)
+def test_a_section_row_naming_no_prior_work_clears_the_mark(make_evidence, label):
+    """An unlisted heading clears the sense above it, and own work is unlisted.
+
+    A full-width section row far more often names a corpus, a regime or a
+    setting than an owner. Reading one as prior work, or letting the
+    ``Published`` above it carry on, would demote a paper's own results.
+    """
+    assert _flags(make_evidence, _sectioned("Published", own=label)) == [
+        (85.6, True),
+        (85.8, True),
+        (91.3, False),
+        (93.7, False),
+    ]
+
+
+@pytest.mark.parametrize("label", ["Ours", "This work", "Proposed"])
+def test_a_section_naming_the_papers_own_work_demotes_nothing(make_evidence, label):
+    """Control: base read these as unattributed too, and they must stay so."""
+    tex = (
+        "\\begin{tabular}{lcc}\n"
+        "System & Accuracy & F1 \\\\\n"
+        "\\multicolumn{3}{c}{" + label + "} \\\\\n"
+        "TinyNet & 91.3 & 93.7 \\\\\n"
+        "\\end{tabular}\n"
+    )
+    cells = make_evidence({"paper/main.tex": tex}).latex.table_cells
+    assert [(c.value, c.prior_work) for c in cells] == [(91.3, False), (93.7, False)]
+    assert [(c.method, c.confidence) for c in from_latex_tables(cells)] == [
+        (ResolutionMethod.DIRECT_PARSE, 1.0),
+        (ResolutionMethod.DIRECT_PARSE, 1.0),
+    ]
+
+
+def test_a_row_under_prior_work_is_demoted_and_never_dropped(make_evidence):
+    """The claim survives at the same metric, value and location; only certainty moves."""
+    cells = make_evidence({"paper/main.tex": _SECTION_TABLE_TEX}).latex.table_cells
+    candidates = from_latex_tables(cells)
+    assert len(candidates) == len(cells) == 6
+    assert [(c.row_label, c.metric, c.value, c.method, c.confidence) for c in candidates] == [
+        ("Human", "accuracy", 82.3, ResolutionMethod.LEXICAL_MATCH, 0.5),
+        ("Human", "f1", 91.2, ResolutionMethod.LEXICAL_MATCH, 0.5),
+        ("BiDAF+ELMo", "accuracy", 85.6, ResolutionMethod.LEXICAL_MATCH, 0.5),
+        ("BiDAF+ELMo", "f1", 85.8, ResolutionMethod.LEXICAL_MATCH, 0.5),
+        ("TinyNet", "accuracy", 91.3, ResolutionMethod.DIRECT_PARSE, 1.0),
+        ("TinyNet", "f1", 93.7, ResolutionMethod.DIRECT_PARSE, 1.0),
+    ]
+
+
+def test_a_spanning_row_that_states_a_number_is_data_not_a_section(make_evidence):
+    """A full-width number is not a heading, so it does not clear ``Published``."""
+    tex = (
+        "\\begin{tabular}{lcc}\n"
+        "System & Accuracy & F1 \\\\\n"
+        "\\multicolumn{3}{c}{Published} \\\\\n"
+        "\\multicolumn{3}{c}{88.5} \\\\\n"
+        "BiDAF & 85.6 & 85.8 \\\\\n"
+        "\\end{tabular}\n"
+    )
+    assert _flags(make_evidence, tex) == [(85.6, True), (85.8, True)]
+
+
+def test_a_heading_spanning_all_but_one_column_is_a_section(make_evidence):
+    """A heading may leave the label column empty and span the value columns."""
+    tex = (
+        "\\begin{tabular}{lccc}\n"
+        "System & Accuracy & F1 & EM \\\\\n"
+        "& \\multicolumn{3}{c}{Published} \\\\\n"
+        "BiDAF & 85.6 & 85.8 & 80.1 \\\\\n"
+        "\\end{tabular}\n"
+    )
+    assert _flags(make_evidence, tex) == [(85.6, True), (85.8, True), (80.1, True)]
+
+
+def test_a_partial_span_is_a_group_label_rather_than_a_section(make_evidence):
+    """Control: base marked nothing here. A heading over two of five columns heads those two."""
+    tex = (
+        "\\begin{tabular}{lcccc}\n"
+        "System & Dev & Dev & Test & Test \\\\\n"
+        "\\multicolumn{2}{c}{Published} & & & \\\\\n"
+        "BiDAF & 85.6 & 85.8 & 84.1 & 90.9 \\\\\n"
+        "\\end{tabular}\n"
+    )
+    assert _flags(make_evidence, tex) == [
+        (85.6, False),
+        (85.8, False),
+        (84.1, False),
+        (90.9, False),
+    ]
+
+
+def test_a_span_two_short_of_the_width_is_not_a_section(make_evidence):
+    """Control: base marked nothing here. The bound is one column short, not two."""
+    tex = (
+        "\\begin{tabular}{lccc}\n"
+        "System & Accuracy & F1 & EM \\\\\n"
+        "\\multicolumn{2}{c}{Published} & & \\\\\n"
+        "BiDAF & 85.6 & 85.8 & 80.1 \\\\\n"
+        "\\end{tabular}\n"
+    )
+    assert _flags(make_evidence, tex) == [(85.6, False), (85.8, False), (80.1, False)]
+
+
+def test_a_label_alone_in_its_row_without_a_span_is_not_a_section(make_evidence):
+    """Control: base marked nothing here. Only a ``\\multicolumn`` heading partitions."""
+    tex = (
+        "\\begin{tabular}{lc}\n"
+        "System & Accuracy \\\\\n"
+        "Published & \\\\\n"
+        "BiDAF & 85.6 \\\\\n"
+        "\\end{tabular}\n"
+    )
+    assert _flags(make_evidence, tex) == [(85.6, False)]
+
+
+def test_a_spanning_label_beside_a_number_is_a_row_and_keeps_its_number(make_evidence):
+    """Control: base kept this number. A heading row is skipped, so it must state none."""
+    tex = (
+        "\\begin{tabular}{lcc}\n"
+        "System & Accuracy & F1 \\\\\n"
+        "\\multicolumn{2}{c}{Published} & 88.5 \\\\\n"
+        "\\end{tabular}\n"
+    )
+    assert _flags(make_evidence, tex) == [(88.5, False)]
+
+
+def test_the_quoted_baseline_case_reads_its_uncited_published_row_as_prior_work():
+    """``R.M. Reader`` carries no citation; only the ``Published`` above it says whose it is.
+
+    ``TinyNet (ours)`` follows it after a bare rule and names itself as the
+    paper's own, so the heading above does not reach it.
+    """
+    case = Path(__file__).resolve().parents[1] / "corpus" / "synthetic" / "synthetic_quoted_baseline_rows"
+    cells = collect(scan_repository(case)).latex.table_cells
+    read = [(c.row_label.split("~")[0], c.value, c.method, c.confidence) for c in from_latex_tables(cells)]
+    lexical, direct = ResolutionMethod.LEXICAL_MATCH, ResolutionMethod.DIRECT_PARSE
+    assert read == [
+        ("BiDAF", 82.3, lexical, 0.5),
+        ("BiDAF", 88.5, lexical, 0.5),
+        ("R.M. Reader", 84.1, lexical, 0.5),
+        ("R.M. Reader", 90.9, lexical, 0.5),
+        ("TinyNet (ours)", 91.3, direct, 1.0),
+        ("TinyNet (ours)", 93.7, direct, 1.0),
+        ("Swin-T", 81.3, lexical, 0.5),
+        ("Swin-T", 85.2, lexical, 0.5),
+        ("TinyNet", 88.9, direct, 1.0),
+        ("TinyNet", 90.4, direct, 1.0),
+    ]
+
+
+def test_a_heading_is_collapsed_before_the_qualifier_pattern_runs(monkeypatch):
+    """A long run of spaces makes the qualifier pattern quadratic, and a label is paper content."""
+    from adduce.evidence import latex
+
+    seen: list[str] = []
+    pattern = latex._SECTION_QUALIFIER_RE
+
+    class Recording:
+        def sub(self, replacement: str, text: str) -> str:
+            seen.append(text)
+            return pattern.sub(replacement, text)
+
+    monkeypatch.setattr(latex, "_SECTION_QUALIFIER_RE", Recording())
+    assert latex._section_marks_prior_work("Published" + " " * 5000 + "(as of 2019)")
+    assert latex._section_marks_prior_work("Prior\n\twork") is True
+    assert seen and all("  " not in text and "\n" not in text for text in seen)
+
+
+def _under(heading_row: str, label: str = "BiDAF") -> str:
+    """A table whose one section row is ``heading_row``, written out in full."""
+    return (
+        "\\begin{tabular}{lcc}\n"
+        "System & Accuracy & F1 \\\\\n"
+        + heading_row
+        + " \\\\\n"
+        + label
+        + " & 85.6 & 85.8 \\\\\n"
+        "\\end{tabular}\n"
+    )
+
+
+@pytest.mark.parametrize(
+    "heading_row",
+    [
+        r"\multicolumn{3}{c}{Published$^\dagger$}",
+        r"\multicolumn{3}{c}{Published$^{1}$}",
+        r"\multicolumn{3}{c}{Published$^1$}",
+        r"\multicolumn{3}{c}{Published\textsuperscript{a}}",
+        "\\multicolumn{3}{c}{Published\u2020}",
+        "\\multicolumn{3}{c}{Published\u2021}",
+        "\\multicolumn{3}{c}{Published\u00a7}",
+        "\\multicolumn{3}{c}{Published\u00b6}",
+        "\\multicolumn{3}{c}{Published \u2020}",
+        r"\multicolumn{3}{c}{Published!}",
+        "\\multicolumn{3}{c}{\u201cPublished\u201d}",
+        "\\multicolumn{3}{c}{\u2018Published\u2019}",
+        r'\multicolumn{3}{c}{"Published"}',
+        r"\multicolumn{3}{c}{``Published''}",
+        r"\multicolumn{3}{c}{Prior-work}",
+        r"\cmidrule(lr){1-3} \multicolumn{3}{c}{Published}",
+        r"\cmidrule{1-3}\multicolumn{3}{c}{Published}",
+        r"\cline{2-3} \multicolumn{3}{c}{Published}",  # read after the row cleanup drops the rule
+        r"\rowcolor{gray!10} \multicolumn{3}{c}{Published}",
+        r"\rowcolor[gray]{0.9}\multicolumn{3}{c}{Published}",
+        r"\multicolumn{3}{c}{\cellcolor{gray}Published}",
+        r"\multicolumn{3}{c}{Published\,results}",
+        r"\multicolumn{3}{c}{Published\;results}",
+        r"\multicolumn{3}{c}{Published\:results}",
+        r"\multicolumn{3}{c}{Published\ results}",
+        r"\multicolumn{3}{c}{Published~\cite{devlin2019}}",
+        r"\multicolumn{3}{c}{Published \citep[see][]{seo2017, chen2017}}",
+        r"\multicolumn{3}{c}{Published \parencite{seo2017}}",
+        r"\multicolumn{3}{c}{Published\cite*{seo2017}}",
+    ],
+)
+def test_a_heading_is_read_through_the_markup_printed_around_it(make_evidence, heading_row):
+    """Marks, quotes, shading, rules, thin spaces and citations name nothing.
+
+    Each is removed before the whole-heading match, which still holds: what is
+    left must be a listed heading, not merely contain one.
+    """
+    assert _flags(make_evidence, _under(heading_row)) == [(85.6, True), (85.8, True)]
+
+
+@pytest.mark.parametrize(
+    "unit",
+    [
+        r"\cite[",
+        r"\cite{",
+        r"\cmidrule(",
+        r"\cmidrule{",
+        r"\rowcolor[",
+        r"\rowcolor{",
+        r"\textsuperscript{",
+        "^{",
+    ],
+)
+def test_an_unclosed_argument_in_a_heading_row_is_read_in_linear_time(unit):
+    """A row is paper content, and an argument scanned to the row's end per command is quadratic."""
+    from adduce.evidence import latex
+
+    started = time.perf_counter()
+    latex._section_heading("Published " + unit * (400_000 // len(unit)))
+    assert time.perf_counter() - started < 1.0
+
+
+@pytest.mark.parametrize(
+    "heading_row",
+    [
+        r"\multicolumn{3}{c}{Published~\cite[\S 2]{devlin2019}}",
+        r"\multicolumn{3}{c}{Published~\cite{\bertkey,seo2017}}",
+        r"\cmidrule(l\,r){1-3} \multicolumn{3}{c}{Published}",
+        r"\cmidrule{1-\ncols} \multicolumn{3}{c}{Published}",
+        r"\rowcolor[\colmodel]{0.9} \multicolumn{3}{c}{Published}",
+        r"\rowcolor{blue!\shade} \multicolumn{3}{c}{Published}",
+    ],
+)
+def test_markup_whose_argument_holds_a_command_stays_in_the_heading(make_evidence, heading_row):
+    """Control: base marked nothing here. The markup pattern reads no command inside an argument.
+
+    A citation, rule or colour argument holding one is left in the row, so the
+    heading reads as unlisted. That costs the reading of a heading such as
+    ``Published~\\cite[\\S 2]{devlin2019}``, and a missed mark is the
+    conservative side.
+    """
+    assert _flags(make_evidence, _under(heading_row)) == [(85.6, False), (85.8, False)]
+
+
+def test_a_heading_mark_cannot_turn_an_unlisted_heading_into_a_listed_one(make_evidence):
+    """Control: base marked nothing here. Stripping a mark keeps the match whole."""
+    tex = _under(r"\multicolumn{3}{c}{Ours with published$^\dagger$ hyperparameters}")
+    assert _flags(make_evidence, tex) == [(85.6, False), (85.8, False)]
+
+
+def test_the_section_mark_ends_with_its_table(make_evidence):
+    """A table that ends under ``Published`` does not carry it into the next one."""
+    tex = (
+        "\\begin{tabular}{lcc}\n"
+        "System & Accuracy & F1 \\\\\n"
+        "\\multicolumn{3}{c}{Published} \\\\\n"
+        "BiDAF & 85.6 & 85.8 \\\\\n"
+        "\\end{tabular}\n"
+        "\\begin{tabular}{lcc}\n"
+        "System & Accuracy & F1 \\\\\n"
+        "TinyNet & 91.3 & 93.7 \\\\\n"
+        "\\end{tabular}\n"
+    )
+    assert _flags(make_evidence, tex) == [
+        (85.6, True),
+        (85.8, True),
+        (91.3, False),
+        (93.7, False),
+    ]
+
+
+def test_a_bare_rule_does_not_end_a_prior_work_stretch(make_evidence):
+    """Only a section row changes the sense; a rule between rows is layout."""
+    tex = (
+        "\\begin{tabular}{lcc}\n"
+        "System & Accuracy & F1 \\\\\n"
+        "\\multicolumn{3}{l}{Published} \\\\\n"
+        "BiDAF & 85.6 & 85.8 \\\\\n"
+        "\\midrule\n"
+        "R.M. Reader & 84.1 & 90.9 \\\\\n"
+        "\\end{tabular}\n"
+    )
+    assert _flags(make_evidence, tex) == [
+        (85.6, True),
+        (85.8, True),
+        (84.1, True),
+        (90.9, True),
+    ]
+
+
+@pytest.mark.parametrize(
+    "label",
+    [
+        "Ours",
+        "TinyNet (ours)",
+        "Ours (large)",
+        "OURS",
+        "Our method",
+        "Our  method",
+        "This work",
+        "This  work",
+        "Proposed",
+        "TinyNet-proposed",
+    ],
+)
+def test_a_row_labelled_as_the_papers_own_is_not_demoted_by_a_heading(make_evidence, label):
+    """Own rows can follow ``Published`` after a bare rule, with no heading of their own."""
+    tex = (
+        "\\begin{tabular}{lcc}\n"
+        "System & Accuracy & F1 \\\\\n"
+        "\\multicolumn{3}{l}{Published} \\\\\n"
+        "BiDAF & 85.6 & 85.8 \\\\\n"
+        "\\midrule\n"
+        + label
+        + " & 91.3 & 93.7 \\\\\n"
+        "\\end{tabular}\n"
+    )
+    cells = make_evidence({"paper/main.tex": tex}).latex.table_cells
+    assert [(c.row_label, c.value, c.prior_work) for c in cells] == [
+        ("BiDAF", 85.6, True),
+        ("BiDAF", 85.8, True),
+        (label, 91.3, False),
+        (label, 93.7, False),
+    ]
+
+
+@pytest.mark.parametrize("label", ["Contours", "Oursler"])
+def test_an_own_work_word_must_stand_alone_in_the_label(make_evidence, label):
+    """``ours`` inside another word names nobody's work, so the heading still applies."""
+    assert _flags(make_evidence, _under(r"\multicolumn{3}{c}{Published}", label)) == [
+        (85.6, True),
+        (85.8, True),
+    ]
+
+
+def test_an_own_work_label_does_not_cancel_its_own_citation(make_evidence):
+    """Control: base demoted this too. The label outranks the heading, not the citation."""
+    tex = _under(r"\multicolumn{3}{c}{Published}", r"Our method~\cite{prior2020}")
+    assert _flags(make_evidence, tex) == [(85.6, True), (85.8, True)]
