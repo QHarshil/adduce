@@ -11,9 +11,9 @@ import pytest
 
 from adduce.aeg.schema import ResolutionMethod
 from adduce.claims.candidates import from_latex_tables
-from adduce.evidence import collect
+from adduce.evidence import collect, portability
 from adduce.evidence.latex import _STATE_COMMANDS, _strip_state_commands
-from adduce.evidence.portability import secret_kind
+from adduce.evidence.portability import collect_portability, secret_kind
 from adduce.model import scan_repository
 from adduce.rules.base import Status
 from adduce.rules.remote import RawUrlRule
@@ -281,6 +281,388 @@ def test_portability_collector(make_evidence):
     assert kinds == {"abs_path", "localhost", "secret"}
     secret = ev.portability.of_kind("secret")[0]
     assert "AKIA" not in secret.detail  # never echo the value
+
+
+def _localhost(ev) -> list[tuple[str, int, str]]:
+    return [(h.file, h.line, h.detail) for h in ev.portability.of_kind("localhost")]
+
+
+def test_a_notebook_endpoint_is_read_only_from_code_cell_source(make_evidence):
+    """Colab cell metadata, outputs and non-code cells name no endpoint to run."""
+    notebook = json.dumps(
+        {
+            "cells": [
+                {
+                    "cell_type": "markdown",
+                    "metadata": {},
+                    "source": ["Start the server, then open http://localhost:8888\n"],
+                },
+                {
+                    "cell_type": "code",
+                    "execution_count": 1,
+                    "metadata": {
+                        "colab": {"base_uri": "https://localhost:8080/", "height": 34},
+                        "id": "c1",
+                    },
+                    "outputs": [
+                        {
+                            "output_type": "stream",
+                            "name": "stdout",
+                            "text": ["Running on http://127.0.0.1:5000\n"],
+                        },
+                        {
+                            "output_type": "display_data",
+                            "data": {"text/plain": ["<IFrame>"]},
+                            "metadata": {"url": "http://localhost:6006/"},
+                        },
+                    ],
+                    # Double quotes, so the JSON holds escaped quotes around the endpoint.
+                    "source": ["import requests\n", 'r = requests.get("http://0.0.0.0:7860/api")\n'],
+                },
+                {"cell_type": "raw", "metadata": {}, "source": ["localhost:9000\n"]},
+            ],
+            "metadata": {"colab": {"base_uri": "https://localhost:8080/"}},
+            "nbformat": 4,
+            "nbformat_minor": 5,
+        },
+        indent=1,
+    )
+    code_line = notebook.split("\n").index('    "r = requests.get(\\"http://0.0.0.0:7860/api\\")\\n"') + 1
+    ev = make_evidence({"nb.ipynb": notebook, "serve.py": "URL = 'http://localhost:8000'\n"})
+
+    assert sorted(_localhost(ev)) == [
+        ("nb.ipynb", code_line, "0.0.0.0:7860"),
+        ("serve.py", 1, "localhost:8000"),
+    ]
+
+
+def test_a_notebook_cell_type_may_follow_its_source(make_evidence):
+    """Key order is the writer's choice; the cell's type decides once it closes."""
+    notebook = json.dumps(
+        {
+            "cells": [
+                {"source": ["see localhost:8888\n"], "cell_type": "markdown"},
+                {"source": ["u = 'localhost:8080'\n"], "cell_type": "code"},
+            ]
+        },
+        indent=1,
+    )
+    line = notebook.split("\n").index('    "u = \'localhost:8080\'\\n"') + 1
+
+    assert _localhost(make_evidence({"nb.ipynb": notebook})) == [("nb.ipynb", line, "localhost:8080")]
+
+
+def test_a_notebook_source_held_as_one_string_is_read(make_evidence):
+    """Control: passes on the branch base. nbformat allows a bare string source."""
+    notebook = json.dumps(
+        {"cells": [{"cell_type": "code", "source": "a = 1\nu = 'http://localhost:8080'\n"}]},
+        indent=1,
+    )
+    line = next(i for i, text in enumerate(notebook.split("\n"), 1) if "localhost" in text)
+
+    assert _localhost(make_evidence({"nb.ipynb": notebook})) == [("nb.ipynb", line, "localhost:8080")]
+
+
+def test_a_minified_notebook_reports_one_endpoint_per_line(make_evidence):
+    """Control: passes on the branch base. Every other file reports once per line."""
+    notebook = json.dumps(
+        {"cells": [{"cell_type": "code", "source": ["a = 'localhost:8080'\n", "b = 'localhost:8081'\n"]}]}
+    )
+
+    assert _localhost(make_evidence({"nb.ipynb": notebook})) == [("nb.ipynb", 1, "localhost:8080")]
+
+
+def test_an_nbformat_3_notebook_is_read_from_its_worksheets(make_evidence):
+    """nbformat 3 kept cells in worksheets and a code cell's text in ``input``."""
+    notebook = json.dumps(
+        {
+            "metadata": {"name": ""},
+            "nbformat": 3,
+            "nbformat_minor": 0,
+            "worksheets": [
+                {
+                    "cells": [
+                        {"cell_type": "markdown", "metadata": {}, "source": ["Open http://localhost:8888\n"]},
+                    ],
+                    "metadata": {},
+                },
+                {
+                    "cells": [
+                        {
+                            "cell_type": "code",
+                            "collapsed": False,
+                            "input": ["import requests\n", "r = requests.get('http://localhost:8080/api')\n"],
+                            "language": "python",
+                            "metadata": {},
+                            "outputs": [
+                                {
+                                    "output_type": "stream",
+                                    "stream": "stdout",
+                                    "text": ["Running on http://127.0.0.1:5000\n"],
+                                }
+                            ],
+                        },
+                        {"cell_type": "code", "input": "s = requests.get('http://localhost:8081/api')\n"},
+                    ],
+                    "metadata": {},
+                },
+            ],
+        },
+        indent=1,
+    )
+    lines = notebook.split("\n")
+
+    assert _localhost(make_evidence({"nb.ipynb": notebook})) == [
+        ("nb.ipynb", next(i for i, text in enumerate(lines, 1) if "8080/api" in text), "localhost:8080"),
+        ("nb.ipynb", next(i for i, text in enumerate(lines, 1) if "8081/api" in text), "localhost:8081"),
+    ]
+
+
+def _conflicted(notebook: dict[str, object], counter: str) -> str:
+    """``notebook`` as git leaves it when both sides re-ran its code cell."""
+    lines = json.dumps(notebook, indent=1).split("\n")
+    (at,) = [i for i, line in enumerate(lines) if f'"{counter}": 1,' in line]
+    lines[at : at + 1] = ["<<<<<<< HEAD", lines[at], "=======", lines[at].replace("1", "2"), ">>>>>>> rerun"]
+    return "\n".join(lines)
+
+
+@pytest.mark.parametrize("nbformat", [4, 3])
+def test_an_unreadable_notebook_reports_its_code_endpoints_and_its_secrets(make_evidence, nbformat):
+    """A merge conflict breaks the JSON and leaves its strings whole, so code still reads as code.
+
+    Markdown, metadata and outputs stay out, as they do in a notebook that loads.
+    """
+    counter, code = ("execution_count", "source") if nbformat == 4 else ("prompt_number", "input")
+    cells = [
+        {"cell_type": "markdown", "metadata": {}, "source": ["Open http://localhost:8888\n"]},
+        {
+            "cell_type": "code",
+            counter: 1,
+            "metadata": {"colab": {"base_uri": "https://localhost:8080/"}},
+            "outputs": [{"output_type": "stream", "text": ["Running on http://127.0.0.1:5000\n"]}],
+            code: [
+                "import requests\n",
+                "a = requests.get('http://localhost:8000/a')\n",
+                "k = 'ghp_" + "a" * 36 + "'\n",
+                "b = requests.get('http://localhost:8001/b')\n",
+            ],
+        },
+    ]
+    layout: dict[str, object] = (
+        {"cells": cells, "metadata": {}, "nbformat": 4, "nbformat_minor": 5}
+        if nbformat == 4
+        else {"metadata": {}, "nbformat": 3, "nbformat_minor": 0, "worksheets": [{"cells": cells}]}
+    )
+    notebook = _conflicted(layout, counter)
+    with pytest.raises(ValueError):
+        json.loads(notebook)
+    lines = notebook.split("\n")
+
+    ev = make_evidence({"nb.ipynb": notebook})
+
+    assert _localhost(ev) == [
+        ("nb.ipynb", next(i for i, text in enumerate(lines, 1) if "8000/a" in text), "localhost:8000"),
+        ("nb.ipynb", next(i for i, text in enumerate(lines, 1) if "8001/b" in text), "localhost:8001"),
+    ]
+    assert [h.file for h in ev.portability.of_kind("secret")] == ["nb.ipynb"]
+
+
+_ENDPOINT = "u = 'localhost:8080'"
+
+
+@pytest.mark.parametrize(
+    "notebook",
+    [
+        # json.loads keeps the last of two equal keys, and so must the walk.
+        '{"cells": [{"cell_type": "code", "source": ["' + _ENDPOINT + '"]}], "cells": []}',
+        '{"cells": [{"cell_type": "code", "source": ["' + _ENDPOINT + '"], "source": ["u = 1"]}]}',
+        '{"cells": [{"cell_type": "code", "cell_type": null, "source": ["' + _ENDPOINT + '"]}]}',
+        # Cells sit under the root "cells" array and nowhere else.
+        '{"cells": [], "history": [{"cell_type": "code", "source": ["' + _ENDPOINT + '"]}]}',
+        '{"cells": {"c": {"cell_type": "code", "source": ["' + _ENDPOINT + '"]}}}',
+        '{"cells": [{"cell_type": ["code"], "source": ["' + _ENDPOINT + '"]}]}',
+        # Neither a cell's type nor its source carries over to the next cell.
+        '{"cells": [{"cell_type": "markdown", "source": ["' + _ENDPOINT + '"]}, {"cell_type": "code"}]}',
+        '{"cells": [{"cell_type": "code", "source": []}, {"source": ["' + _ENDPOINT + '"]}]}',
+        # Source is a string or an array of strings, under "source", or under
+        # "input" in a cell with no "source".
+        '{"cells": [{"cell_type": "code", "source": {"s": "' + _ENDPOINT + '"}}]}',
+        '{"cells": [{"cell_type": "code", "source": {"' + _ENDPOINT + '": 1}}]}',
+        '{"cells": [{"cell_type": "code", "source": 5, "metadata": {"u": "' + _ENDPOINT + '"}}]}',
+        '{"cells": [{"cell_type": "code", "source": [], "id": "' + _ENDPOINT + '"}]}',
+        '{"cells": [{"cell_type": "code", "source": [], "tags": ["' + _ENDPOINT + '"]}]}',
+        '{"cells": [{"cell_type": "code", "source": [null], "metadata": {"u": "' + _ENDPOINT + '"}}]}',
+        '{"cells": [{"cell_type": "code", "source": [["' + _ENDPOINT + '"]]}]}',
+        '{"cells": [{"cell_type": "code", "source": [], "input": ["' + _ENDPOINT + '"]}]}',
+        # A notebook with cells reads none of its worksheets.
+        '{"cells": [], "worksheets": [{"cells": [{"cell_type": "code", "input": ["' + _ENDPOINT + '"]}]}]}',
+        '{"history": [{"cell_type": "code", "source": ["' + _ENDPOINT + '"]}], "cells": [{"cell_type": "code"}]}',
+        # A document of another shape holds no cells, and reading it does not raise.
+        '"localhost:8080"',
+        '["' + _ENDPOINT + '"]',
+        '{"cells": 1, "metadata": {"u": "' + _ENDPOINT + '"}}',
+        '{"cells": ["' + _ENDPOINT + '"]}',
+        '{"worksheets": 1, "metadata": {"u": "' + _ENDPOINT + '"}}',
+        '{"worksheets": ["' + _ENDPOINT + '"]}',
+        '{"worksheets": [{"cells": 1}], "metadata": {"u": "' + _ENDPOINT + '"}}',
+    ],
+    ids=[
+        "duplicate-cells",
+        "duplicate-source",
+        "duplicate-cell-type",
+        "other-root-array",
+        "cells-object",
+        "cell-type-array",
+        "source-carried-over",
+        "type-carried-over",
+        "source-object",
+        "source-object-keyed-by-endpoint",
+        "source-number",
+        "other-cell-string",
+        "other-cell-array",
+        "non-string-source",
+        "source-nested-twice",
+        "input-beside-source",
+        "worksheets-beside-cells",
+        "other-root-array-first",
+        "root-string",
+        "root-array",
+        "cells-number",
+        "cell-string",
+        "worksheets-number",
+        "sheet-string",
+        "sheet-cells-number",
+    ],
+)
+def test_a_notebook_string_outside_code_cell_source_names_no_endpoint(make_repo, notebook):
+    json.loads(notebook)  # each probe is a notebook json accepts
+    # The portability collector alone: the notebook collector raises on a
+    # non-string source entry, and this test is about what the walk reads.
+    hits = collect_portability(make_repo({"nb.ipynb": notebook})).of_kind("localhost")
+
+    assert hits == []
+
+
+def _notebook_hits(make_repo, notebook: str) -> list[tuple[int, str]]:
+    hits = collect_portability(make_repo({"nb.ipynb": notebook})).of_kind("localhost")
+    return [(h.line, h.detail) for h in hits]
+
+
+@pytest.mark.parametrize(
+    "notebook",
+    [
+        '{"cells": [{"cell_type": "code", "source": ["' + _ENDPOINT + '"]}], "metadata": {"cells": 1}}',
+        '{"cells": [{"cell_type": "code", "source": ["' + _ENDPOINT + '"], "metadata": {"source": 1}}]}',
+        '{"cells": [{"cell_type": "code", "source": ["' + _ENDPOINT + '"], "metadata": {"cell_type": "x"}}]}',
+        '{"cells": [{"cell_type": "code", "sou\\u0072ce": ["' + _ENDPOINT + '"]}]}',
+    ],
+    ids=["cells-in-metadata", "source-in-cell-metadata", "cell-type-in-cell-metadata", "escaped-key"],
+)
+def test_a_notebook_key_reused_below_a_cell_keeps_its_endpoint(make_repo, notebook):
+    """Control: passes on the branch base. A key counts at its own depth and no other."""
+    assert _notebook_hits(make_repo, notebook) == [(1, "localhost:8080")]
+
+
+@pytest.mark.parametrize(
+    "discarded", ['["a = \'localhost:8080\'"]', '[["a = \'localhost:8080\'"]]'], ids=["same-shape", "nested-deeper"]
+)
+def test_the_copy_json_keeps_of_a_duplicated_key_gives_the_line(make_repo, discarded):
+    """Both copies name an endpoint; the one ``json.loads`` keeps is the one reported."""
+    notebook = (
+        '{"cells": [{"cell_type": "code", "source": ' + discarded + "}],\n"
+        '"cells": [{"cell_type": "code", "source": ["b = \'localhost:9090\'"]}]}'
+    )
+
+    assert _notebook_hits(make_repo, notebook) == [(2, "localhost:9090")]
+
+
+@pytest.mark.parametrize("colab", [False, True], ids=["alone", "beside-colab-metadata"])
+def test_an_endpoint_after_an_escaped_newline_is_read_whatever_else_the_file_holds(make_repo, colab):
+    """The raw file holds ``\\nlocalhost``, with no word boundary; the source it decodes to has one."""
+    cell: dict[str, object] = {
+        "cell_type": "code",
+        "metadata": {"colab": {"base_uri": "https://localhost:8080/"}} if colab else {},
+        "outputs": [],
+        "source": "HOSTS = '''\nlocalhost:8000\n'''\n",
+    }
+    notebook = json.dumps({"cells": [cell], "metadata": {}, "nbformat": 4, "nbformat_minor": 5}, indent=1)
+    line = next(i for i, text in enumerate(notebook.split("\n"), 1) if "HOSTS" in text)
+
+    assert _notebook_hits(make_repo, notebook) == [(line, "localhost:8000")]
+
+
+def test_an_escaped_quote_does_not_end_a_string_in_the_walk(make_repo):
+    """Control: passes on the branch base. The comma after it is text, not a new array index."""
+    notebook = json.dumps(
+        {"cells": [{"cell_type": "code", "source": ['print("a, b")\n', "u = 'localhost:8080'\n"]}]},
+        indent=1,
+    )
+    line = next(i for i, text in enumerate(notebook.split("\n"), 1) if "localhost" in text)
+
+    assert _notebook_hits(make_repo, notebook) == [(line, "localhost:8080")]
+
+
+def test_a_notebook_naming_no_endpoint_in_code_is_not_walked(make_repo, monkeypatch):
+    """The token walk is the slow half; Colab metadata alone does not pay for it."""
+
+    def refuse(*args: object) -> None:
+        raise AssertionError("walked a notebook whose code names no endpoint")
+
+    monkeypatch.setattr(portability, "_offsets", refuse)
+    notebook = json.dumps(
+        {"cells": [{"cell_type": "code", "metadata": {"colab": {"base_uri": "https://localhost:8080/"}}, "source": []}]}
+    )
+
+    assert _notebook_hits(make_repo, notebook) == []
+
+
+def test_a_notebook_too_deep_for_json_still_reads_its_code(make_repo):
+    """Control: passes on the branch base. ``json.loads`` gives up on this depth with
+    RecursionError; its strings are still whole."""
+    notebook = (
+        '{"cells": [{"cell_type": "code", "source": ["' + _ENDPOINT + '"]}], "x": '
+        + "[" * 200_000
+        + "]" * 200_000
+        + "}"
+    )
+
+    assert _notebook_hits(make_repo, notebook) == [(1, "localhost:8080")]
+
+
+@pytest.mark.parametrize(
+    "notebook",
+    [
+        # A type that is not a string leaves the cell untyped, not of the type before it.
+        '{"cells": [{"cell_type": "code", "source": []}, {"cell_type": null, "source": ["' + _ENDPOINT + '"]}]',
+        # A literal json cannot decode reads as nothing, never as a fragment.
+        '{"cells": [{"cell_type": "code", "source": ["' + _ENDPOINT + ' \\q"]}]',
+    ],
+    ids=["untyped-cell", "undecodable-literal"],
+)
+def test_an_unreadable_notebook_reads_no_endpoint_it_cannot_place(make_repo, notebook):
+    with pytest.raises(ValueError):
+        json.loads(notebook)
+
+    assert _notebook_hits(make_repo, notebook) == []
+
+
+def test_an_unreadable_notebook_reads_code_holding_escaped_quotes(make_repo):
+    """Control: passes on the branch base. An escaped quote does not end the literal it sits in."""
+    cell = {
+        "cell_type": "code",
+        "execution_count": 1,
+        "metadata": {},
+        "outputs": [],
+        "source": ['r = requests.get("http://localhost:8000/a")\n'],
+    }
+    notebook = _conflicted(
+        {"cells": [cell], "metadata": {}, "nbformat": 4, "nbformat_minor": 5}, "execution_count"
+    )
+    with pytest.raises(ValueError):
+        json.loads(notebook)
+    line = next(i for i, text in enumerate(notebook.split("\n"), 1) if "localhost" in text)
+
+    assert _notebook_hits(make_repo, notebook) == [(line, "localhost:8000")]
 
 
 def test_the_secret_detector_names_a_kind_without_echoing_the_value():

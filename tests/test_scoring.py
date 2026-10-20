@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from adduce.profiles import load_profile
 from adduce.rules.base import Category, Finding, Status
+from adduce.rules.registry import discover_rules
 from adduce.scoring import (
     MINIMUM_ANALYSABLE_LINES,
     UNASSESSED_TIER,
@@ -68,6 +69,28 @@ def test_suppressed_partial_finding_retains_partial_score():
     ]
     card = score(findings, load_profile("default"))
     assert card.total == 50.0
+
+
+def test_every_built_in_defect_costs_its_category_points():
+    """Control: passes on the branch base.
+
+    A category row lists each PARTIAL and FAIL finding as a defect, so each one
+    has to hold its category below the maximum. A rule at weight 0 would list a
+    defect beside full marks.
+    """
+    profile = load_profile("default")
+    for rule in discover_rules(include_plugins=False):
+        assert rule.weight > 0, rule.id
+        for status in (Status.PARTIAL, Status.FAIL):
+            card = score(
+                [
+                    _finding(rule.id, rule.category, status, rule.weight),
+                    _finding("OTHER", rule.category, Status.PASS, 3),
+                ],
+                profile,
+            )
+            (category,) = card.categories
+            assert category.earned < category.possible, (rule.id, status)
 
 
 def test_top_fixes_ranked_by_points_gained():
