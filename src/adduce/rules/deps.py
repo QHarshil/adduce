@@ -167,7 +167,7 @@ class UnusedDependencyRule(Rule):
         unused = {
             d.name.lower().replace("_", "-")
             for d in ev.deps.dependencies
-            if d.name.lower() not in self._NEVER_FLAG
+            if d.name.lower().replace("_", "-") not in self._NEVER_FLAG
             and d.name.lower().replace("_", "-") not in imported_dists
             and d.name.lower().replace("_", "-") not in notebook_dists
             and not d.name.startswith(("git+", "http"))
