@@ -161,24 +161,45 @@ the confidence. The demotion moves the method and the confidence and nothing
 else: it does not choose a different metric, does not drop the cell, and cannot
 revive one the header filter refused.
 
-Two attribution signals are detected, both in the row's leading cell, which
-names what the whole row reports. One is a citation command. The other is
+Three attribution signals are detected. Two are in the row's leading cell,
+which names what the whole row reports. One is a citation command. The other is
 credit written as prose: `et al.`, a parenthesised year such as `(2019)`, or an
 author-year pair such as `(He et al., 2016)`. The prose pattern is deliberately
 loose, which is safe only because it demotes: a false match costs confidence,
 never a claim. A citation beside a number is a note on that number and is not
 read as an attribution of the row.
 
+The third is a section row: a `\multicolumn` spanning the table, or all of it
+but one column, that states a heading and no number. A heading naming prior
+work, such as BERT's `Published` or `Top Leaderboard Systems`, marks every row
+beneath it until the next section row or the end of the table. A rule between
+rows does not end the stretch. The heading is matched whole against a short
+list of such headings. Before the match, a citation command and its argument,
+a superscript written with `^` or `\textsuperscript`, `\cmidrule`, `\rowcolor`
+and `\cellcolor` are removed from the row. The spaces `\,` `\;` `\:` `\ `, a
+hyphen and a tie each read as a space, case is ignored, and a trailing
+parenthetical is dropped. Then the quote marks `"` `'` `` ` `` `“` `”` `‘` `’`,
+the footnote marks `*` `†` `‡` `§` `¶` and the punctuation `.` `:` `,` `;` `!`
+are stripped from either end. A heading the list does not name marks none of
+the rows beneath it and clears the mark above it, so `Ours` after `Published`
+ends the stretch, and a heading naming a pre-training corpus or an evaluation
+setting marks nothing. A row whose own label names the paper's work, with
+`ours`, `our method`, `this work` or `proposed` as a whole word in any case, is
+never marked by a heading. A citation in that label still marks it.
+
 Everything else is **not** detected, and a cell it would have covered reads as
 unattributed. That is the conservative answer, because the consumer demotes on
 a positive and never promotes on a negative, so a missed attribution costs
-confidence that was not earned. Two shapes are known to be missed. A table
-partitioned into published and own results by a full-width section header
-needs a table parser that tracks column spans, which this one does not have.
-Credit stated outside the leading cell, such as a caption saying the top rows
-are quoted from another paper, is not read either. Both are why the
-zero-high-confidence-false-positive acceptance criterion is not met, and a
-drafted claim is `status: draft` for exactly this reason.
+confidence that was not earned. Five shapes are known to be missed. A section
+heading the list does not name, such as `Baselines`, reads as naming no owner.
+A heading written in the first cell without a `\multicolumn` span is not read
+as a heading at all. A row that names a competitor without citing it, outside
+a listed section, carries no signal. A competitor under a listed section whose
+label carries one of the own-work words, such as `proposed`, reads as the
+paper's own. Credit stated outside the row and its section, such as a caption
+saying the top rows are quoted from another paper, is not read either. These
+are why the zero-high-confidence-false-positive acceptance criterion is not
+met, and a drafted claim is `status: draft` for exactly this reason.
 
 ## The same claim stated twice
 

@@ -162,6 +162,66 @@ def _attributes_to_others(leading_cell: str) -> bool:
         or _PROSE_ATTRIBUTION_RE.search(leading_cell) is not None
     )
 
+
+#: A trailing parenthetical qualifies a section heading rather than naming it:
+#: BERT heads one ``Top Leaderboard Systems (Dec 10th, 2018)``.
+_SECTION_QUALIFIER_RE = re.compile(r"\s*\([^()]*\)\s*$")
+#: Section headings that say the rows beneath them are somebody else's work.
+#: A full-width section row far more often names a training regime, a setting
+#: or an architecture family than an owner, so a heading is matched whole and
+#: never searched within. ``baselines`` is absent on purpose: MAE heads a
+#: section ``our supervised training baselines``, which are the authors' own.
+#: A heading naming the paper's own work (``Ours``, ``This work``) needs no
+#: list of its own, because an unlisted heading already marks nothing.
+_PRIOR_WORK_SECTIONS = frozenset(
+    {
+        "published",
+        "published results",
+        "published methods",
+        "published systems",
+        "top leaderboard systems",
+        "leaderboard systems",
+        "prior work",
+        "prior art",
+        "prior methods",
+        "previous work",
+        "previous methods",
+        "related work",
+        "concurrent work",
+        "existing methods",
+        "other methods",
+    }
+)
+#: Markup that decorates a section heading without naming it: a citation, a
+#: superscript, a partial rule or a shade printed beside it, and a spacing
+#: command such as ``\,`` inside it. Removed from the raw row because the cell
+#: cleanup keeps every argument, so ``\rowcolor{gray}`` would arrive glued to
+#: the heading as ``gray`` and ``\cite{devlin2019}`` as its key. Every
+#: argument stops at the next brace, and a bracket or parenthesis argument
+#: also at the next bracket or parenthesis. Each command opens its argument
+#: with that character, so an unclosed one ends by the next command of its
+#: kind and never scans to the end of the row once per command: the row is
+#: paper content, and that scan is quadratic. A citation, rule or colour
+#: argument also stops at a backslash. That bounds no scan. It keeps markup
+#: whose argument holds a command, such as ``\cite[\S 2]{devlin2019}``, in
+#: the row, because this pattern reads no command inside an argument. The
+#: heading then reads as unlisted, which is the conservative answer.
+_HEADING_MARKUP_RE = re.compile(
+    r"\\[a-zA-Z]*cite[a-zA-Z*]*(?:\[[^\[\]{}\\]*\]){0,2}\{[^{}\\]*\}"
+    r"|\\cmidrule(?:\([^(){}\\]*\))?\{[^{}\\]*\}"
+    r"|\\(?:row|cell)color(?:\[[^\[\]{}\\]*\])?\{[^{}\\]*\}"
+    r"|\\textsuperscript\{[^{}]*\}"
+    r"|\^(?:\{[^{}]*\}|\\[a-zA-Z]+|[^\s{}\\])"
+    r"|\\[,;: ]"
+)
+#: Footnote marks, quotes and closing punctuation, which sit at either end of a
+#: heading and are not part of what it says.
+_HEADING_MARKS = " .:,;*!\"'`\u201c\u201d\u2018\u2019\u2020\u2021\u00a7\u00b6"
+#: A row label naming the paper's own work. A table can follow its quoted rows
+#: with its own after a bare rule, with no heading to end the stretch, so the
+#: row's own word outranks the section above it.
+_OWN_WORK_LABEL_RE = re.compile(r"\b(?:ours|our\s+method|this\s+work|proposed)\b", re.IGNORECASE)
+
 _PRECISION_RE = re.compile(
     r"\b(fp16|bf16|bfloat16|float16|tf32|fp32|mixed[- ]precision|half[- ]precision|amp)\b", re.IGNORECASE
 )
@@ -195,14 +255,13 @@ class TableCell:
     #: Recorded, not interpreted: whether a caption names this cell's metric is
     #: a vocabulary question and belongs to :mod:`adduce.claims`.
     caption: str | None = None
-    #: Whether the markup around this cell attributes its row to somebody else.
+    #: Whether the markup around this cell attributes its row to somebody else:
+    #: the row label credits another paper, or the row sits under a section
+    #: heading naming prior work and its label does not name the paper's own.
     #: One flag rather than one per signal, because a reader distinguishes none
-    #: of them. Only the citation route sets it today: a row label citing a
-    #: paper names the paper the whole row came from. A section header
-    #: partitioning a table into published and own results is the other signal
-    #: and needs a span-aware table parser this collector does not have, so a
-    #: cell under one reads as ``False``, which is the conservative answer --
-    #: the consumer demotes on ``True`` and never promotes on ``False``.
+    #: of them. A cell neither marks reads as ``False``, which is the
+    #: conservative answer: the consumer demotes on ``True`` and never promotes
+    #: on ``False``.
     prior_work: bool = False
 
 
@@ -850,6 +909,61 @@ def _expand_spans(row: list[tuple[str, int]]) -> list[str]:
     return [cell for cell, span in row for _ in range(span)]
 
 
+_CELL_NUMBER_RE = re.compile(r"-?\d+(?:\.\d+)?")
+
+
+def _cell_number(cell: str) -> float | None:
+    """The value a table cell states, or ``None`` when it states no number.
+
+    One predicate serves the value reader and :func:`_section_label`, so a row
+    read as a section heading is always one the value reader yields nothing
+    from, and skipping it cannot delete a number.
+    """
+    number = _CELL_NUMBER_RE.fullmatch(cell.replace("\\%", "").strip())
+    return None if number is None else float(number.group(0))
+
+
+def _section_label(row: list[tuple[str, int]], width: int) -> str | None:
+    """The heading of a full-width section row, or ``None`` when this is not one.
+
+    A results table is often partitioned by a row that spans it and states a
+    heading rather than a measurement: BERT splits its SQuAD tables into
+    ``Top Leaderboard Systems``, ``Published`` and ``Ours``. One cell carries
+    the row, it spans every column or all but one, and it states no number.
+    A narrower span heads a group of columns, so the rows below it in the other
+    columns are not under it at all.
+    """
+    filled = [(cell, span) for cell, span in row if cell]
+    if len(filled) != 1:
+        return None
+    label, span = filled[0]
+    if span < 2 or span + 1 < width or _cell_number(label) is not None:
+        return None
+    return label
+
+
+def _section_marks_prior_work(label: str, /) -> bool:
+    """Whether a section heading says the rows beneath it are somebody else's.
+
+    False for a heading that says nothing about ownership, which is the common
+    case and the conservative one: ConvNeXt partitions a table by pre-training
+    corpus, DINO by supervision regime and BLIP by evaluation setting. Reading
+    an unlisted heading as prior work would demote a paper's own results across
+    whole tables, and a demotion is the only thing this flag can cause.
+
+    Whitespace is collapsed before the qualifier is removed: the label is paper
+    content, and a long run of spaces makes that pattern quadratic.
+    """
+    words = " ".join(label.replace("~", " ").replace("-", " ").lower().split())
+    return _SECTION_QUALIFIER_RE.sub("", words).strip(_HEADING_MARKS) in _PRIOR_WORK_SECTIONS
+
+
+def _section_heading(raw_row: str) -> str:
+    """A section row's heading, read from the row before its markup is dissolved."""
+    columns = _split_spans(_HEADING_MARKUP_RE.sub(" ", raw_row))
+    return " ".join(cell for cell, _ in columns if cell)
+
+
 def _table_body(environment: str, body: str) -> str:
     """The rows of a table environment, without the arguments of its opening.
 
@@ -874,12 +988,14 @@ def _parse_tables(text: str, file: str) -> list[TableCell]:
         caption = _caption_at(caption_spans, tab_match.start())
         base_line = _line_of(text, tab_match.start())
         rows: list[list[tuple[str, int]]] = []
+        raw_rows: list[str] = []
         cited: list[bool] = []
         for raw_row in body.split("\\\\"):
             cleaned = re.sub(r"\\(?:hline|toprule|midrule|bottomrule|cline\{[^}]*\}|begin\{tabular\}\{[^}]*\}|end\{tabular\})", "", raw_row)
             columns = _split_spans(cleaned)
             if any(cell for cell, _ in columns):
                 rows.append(columns)
+                raw_rows.append(cleaned)
                 # The label only, and before the cleanup: a citation beside a
                 # number is a note on that number, while a citation in the row
                 # label names the paper the whole row came from.
@@ -891,7 +1007,14 @@ def _parse_tables(text: str, file: str) -> list[TableCell]:
         # column carries it and the rest are placeholders keeping the row in
         # step with the header.
         header = _expand_spans(rows[0])
+        # A row takes the sense of the last section heading above it, and a
+        # heading naming no owner clears that sense rather than carrying one
+        # that no longer applies: BERT's ``Ours`` follows its ``Published``.
+        under_prior_work = False
         for row_index, spanned in enumerate(rows[1:], start=1):
+            if _section_label(spanned, len(header)) is not None:
+                under_prior_work = _section_marks_prior_work(_section_heading(raw_rows[row_index]))
+                continue
             row: list[str] = []
             for cell, span in spanned:
                 row.append(cell)
@@ -899,9 +1022,12 @@ def _parse_tables(text: str, file: str) -> list[TableCell]:
             if not row:
                 continue
             row_label = row[0]
+            prior_work = cited[row_index] or (
+                under_prior_work and _OWN_WORK_LABEL_RE.search(row_label) is None
+            )
             for col_index, cell in enumerate(row[1:], start=1):
-                num = re.fullmatch(r"-?\d+(?:\.\d+)?", cell.replace("\\%", "").strip())
-                if not num:
+                number = _cell_number(cell)
+                if number is None:
                     continue
                 # The header names this row's columns only when the two rows
                 # have the same width once spans are expanded. A span this
@@ -919,11 +1045,11 @@ def _parse_tables(text: str, file: str) -> list[TableCell]:
                         table_index=table_index,
                         row_label=row_label,
                         column_label=column_label,
-                        value=float(num.group(0)),
+                        value=number,
                         file=file,
                         line=base_line,
                         caption=caption,
-                        prior_work=cited[row_index],
+                        prior_work=prior_work,
                     )
                 )
     return cells

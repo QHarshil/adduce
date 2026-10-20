@@ -38,6 +38,16 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   row was shorter than its body rows and every column was labelled
   positionally and refused. A table whose widths still disagree after expansion
   stays positional.
+- A table row under a section heading naming prior work, such as `Published`
+  or `Top Leaderboard Systems`, is no longer drafted as a certain claim. The
+  heading is a `\multicolumn` row spanning the table, or all of it but one
+  column, and is matched whole against a short list of headings that name prior
+  work. Only credit in the row label demoted a quoted baseline, so an uncited
+  competitor under such a heading was a `direct_parse` claim at confidence 1.0.
+  Its cells stay claims, at `lexical_match` and 0.5. A heading not on the list,
+  such as `Ours`, marks nothing and ends the stretch above it. A row whose label
+  names the paper's own work, such as `TinyNet (ours)`, is not demoted by a
+  heading.
 
 ## [0.2.0] - 2026-08-31
 
