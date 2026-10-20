@@ -9,6 +9,7 @@ shapes of ML papers; everything extracted here feeds probabilistic rules
 
 from __future__ import annotations
 
+import math
 import posixpath
 import re
 from collections.abc import Callable
@@ -48,15 +49,45 @@ _MAX_MARKUP_NESTING = 8
 _COMMENT_RE = re.compile(r"(?<!\\)%.*$", re.MULTILINE)
 
 #: value patterns: 0.001 · 1e-4 · 3E-5 · $10^{-3}$ · 1\times10^{-4} · 5\cdot10^{-3} · 92.4\%
-_NUMBER_PATTERN = r"""
-    (?P<mant>\d+(?:\.\d+)?)
-    (?:
-        \s*(?:\\times|\\cdot|[xX*])\s*10\^\{?(?P<exp_times>-?\d+)\}?
-        | [eE](?P<exp_e>-?\d+)
-    )?
-    | 10\^\{?(?P<exp_only>-?\d+)\}?
-"""
-_NUMBER_RE = re.compile(_NUMBER_PATTERN, re.VERBOSE)
+#:
+#: A number followed by ``^`` is a base, so the power branches come first and
+#: match a base and caret with or without an exponent they can read.
+#: :func:`_parse_number` then decides whether it understands the power. A
+#: plain branch tried first, or after a power branch that cannot match the
+#: exponent, reads a fragment: ``10^{-4}`` was read as 10, and a paper
+#: agreeing with its config was reported as disagreeing by orders of magnitude.
+#:
+#: The first branch is base 10 only, and lets math delimiters, braces and
+#: spacing commands split the power, because ``10$^{-4}$``,
+#: ``1$\times$10$^{-4}$`` and ``$5\,\times\,10^{-4}$`` were read as 10, 1 and 5.
+#: The second takes any other base and joins nothing, so ``224$^2$`` is still a
+#: plain 224: a resolution, not a power. A brace may close between a base and
+#: its caret, for ``\mathbf{76.1}^{*}``.
+_SPACING = r"\\[,!;: ]|~"
+_JOIN = r"(?:[\s${}]|" + _SPACING + r")*"
+_EXPONENT_TOKEN = r"\{(?:[^{}]|\{[^{}]*\})*\}|[-+\u2212]?\d+(?:\.\d+)?|\\[A-Za-z]+(?:\{[^{}]*\})?|[*A-Za-z]"
+_NUMBER_PATTERN = (
+    r"(?:(?P<tmant>\d+(?:\.\d+)?)" + _JOIN + r"(?:\\times|\\cdot|[xX*])" + _JOIN + r")?"
+    r"(?P<ten>10)" + _JOIN + r"\^\s*(?P<texp>" + _EXPONENT_TOKEN + r")?"
+    r"|(?:(?P<mant>\d+(?:\.\d+)?)\s*(?:\\times|\\cdot|[xX*])\s*)?"
+    r"(?P<base>\d+(?:\.\d+)?)\s*\}?\s*\^\s*(?P<exp>" + _EXPONENT_TOKEN + r")?"
+    r"|(?P<emant>\d+(?:\.\d+)?)[eE](?P<exp_e>[-+\u2212]?\d+(?:\.\d+)?)"
+    r"|(?P<plain>\d+(?:\.\d+)?)"
+)
+_NUMBER_RE = re.compile(_NUMBER_PATTERN)
+#: An exponent this parser reads as a power: a whole integer, signed or not.
+#: ``-4.5`` is refused, never truncated to ``-4``.
+_EXPONENT_RE = re.compile(r"(?P<sign>[-+\u2212]?)\s*(?P<digits>\d+)")
+#: Spacing inside an exponent: ``10^{\,-4}`` is ``10^{-4}``.
+_EXPONENT_SPACING_RE = re.compile(_SPACING)
+#: Arithmetic in an exponent with no digit: ``10^{-k}`` is a power of a symbol,
+#: not a marker on 10.
+_EXPONENT_ARITHMETIC_RE = re.compile(r"[-+\u2212]")
+#: An exponent stating an uncertainty: ``76.1^{\pm 0.2}``, ``28.4^{+0.3}``.
+_UNCERTAINTY_RE = re.compile(r"\\pm|\\mp|[\u00b1\u2213]")
+_SIGNED_DECIMAL_RE = re.compile(r"[-+\u2212]\d+\.\d+")
+#: A subscript after the exponent makes the pair an interval: ``28.4^{+0.3}_{-0.2}``.
+_SUBSCRIPT_RE = re.compile(r"\s*_")
 
 #: The prose metric vocabulary, shared with claim extraction so a sentence, a
 #: ``tabular`` header and a markdown column canonicalise to the same name. The
@@ -267,18 +298,249 @@ def _crosses_group_boundary(gap: str) -> bool:
     return _SIBLING_GROUP_RE.search(gap) is not None
 
 
-def _parse_number(match: re.Match) -> float | None:
+#: A verb or noun saying the quantity changes. Whole words only, so ``dropout``
+#: is not ``drop``.
+_CHANGE_RE = re.compile(
+    r"\b(?:drop(?:s|ped|ping)?|decay(?:s|ed|ing)?|decreas(?:e|es|ed|ing)"
+    r"|increas(?:e|es|ed|ing)|reduc(?:e|es|ed|ing|tion)|divid(?:e|es|ed|ing)"
+    r"|multipl(?:y|ies|ied|ying)|halv(?:e|es|ed|ing)|anneal(?:s|ed|ing)?)\b",
+    re.IGNORECASE,
+)
+
+
+def _describes_a_change(gap: str) -> bool:
+    """Whether *gap* says the keyword's quantity changes before the number."""
+    return _CHANGE_RE.search(gap) is not None
+
+
+#: The word that introduces a number, at the end of the text before it. ``up
+#: to`` is a bound, so it does not count as ``to``, however it is spaced.
+_INTRODUCER_RE = re.compile(
+    r"(?<![A-Za-z])(?P<word>by(?:\s+a\s+factor(?:\s+of)?)?|after|every|from|(?:up[\s~]+)?to)"
+    r"[\s$~{(]*\Z",
+    re.IGNORECASE,
+)
+#: Introducers whose number is a delta, a factor or a schedule point.
+_SCHEDULE_WORDS = ("by", "after", "every")
+#: ``by`` after a word placing one stage next to another introduces the next
+#: stage, not a delta: ``followed by 100 epochs of fine-tuning``.
+_SEQUENCE_BY_RE = re.compile(r"(?:followed|preceded|accompanied)\s+by[\s~]*\Z", re.IGNORECASE)
+#: The ``to`` that ends a range, right after its first number, or after a
+#: word or two naming the quantity when the range comes before its keyword:
+#: ``from 100 epochs to 300 epochs``. Not across another number.
+_RANGE_TO = r"(?:up[\s~]+)?to[\s$~]*"
+_RANGE_TO_RE = re.compile(r"[\s$~]*" + _RANGE_TO, re.IGNORECASE)
+_RANGE_MIDDLE_RE = re.compile(r"\D{0,30}?" + _RANGE_TO + r"\Z", re.IGNORECASE)
+_RANGE_FROM_RE = re.compile(r"from[\s$~]*", re.IGNORECASE)
+#: The end of a sentence. A point before a digit is a decimal point.
+_SENTENCE_END_RE = re.compile(r"[.;](?!\d)|\n\s*\n")
+
+
+def _introducer(lead: str) -> str | None:
+    """The word introducing the number that follows *lead*, lowercased, or ``None``."""
+    match = _INTRODUCER_RE.search(lead)
+    if match is None:
+        return None
+    word = re.split(r"[\s~]+", match.group("word"))[0].lower()
+    return None if word == "up" else word
+
+
+def _range_end(text: str, start: int) -> re.Match[str] | None:
+    """The number a ``to`` at *start* takes a range to, or ``None``."""
+    to = _RANGE_TO_RE.match(text, start)
+    return None if to is None else _NUMBER_RE.match(text, to.end())
+
+
+def _ends_a_range(lead: str) -> bool:
+    """Whether *lead* ends with ``from X to``, so the next number ends a range."""
+    for start in _RANGE_FROM_RE.finditer(lead):
+        first = _NUMBER_RE.match(lead, start.end())
+        if first is not None and _RANGE_MIDDLE_RE.match(lead, first.end()) is not None:
+            return True
+    return False
+
+
+def _changes_before(lead: str) -> bool:
+    """Whether the sentence ahead of a keyword says its quantity changes.
+
+    A comma does not end the verb's reach: ``we decay, with a cosine schedule,
+    the learning rate to 1e-5``. A change word inside another quantity's name
+    says nothing changes: ``a weight decay of 0.05 and a learning rate set to
+    0.001``.
+    """
+    sentence = _SENTENCE_END_RE.split(lead)[-1]
+    for _kind, _name, pattern in _QUANTITY_NAMES:
+        sentence = pattern.sub(" ", sentence)
+    return _describes_a_change(sentence)
+
+
+def _names_another_quantity(gap: str, keyword: str, kind: str, canonical: str) -> bool:
+    """Whether a keyword for some other quantity sits between *keyword* and its number.
+
+    The nearer keyword owns the number. ``learning rate warmup of 1000 steps``
+    states a warmup length, ``learning rate schedule for 300 epochs`` a training
+    length and ``no dropout, weight decay 0.1`` a weight decay, and each was
+    read as the first keyword's value. A word that only continues the
+    keyword's own name is not another quantity: ``warmup steps of 4000`` is a
+    warmup length.
+
+    A leading boundary keeps ``auc`` out of ``because`` and ``temp`` out of
+    ``attempt``. No trailing one, so ``scheduler`` still names a schedule.
+    """
+    for name_kind, name, pattern in _QUANTITY_NAMES:
+        if (name_kind, name) == (kind, canonical):
+            continue
+        for match in pattern.finditer(gap):
+            spelled = re.sub(r"[\s~-]+", "_", (keyword + gap[: match.end()]).strip().lower())
+            if HYPERPARAM_SYNONYMS.get(spelled) == canonical:
+                continue
+            return True
+    return False
+
+
+def _refuses_the_number(gap: str, keyword: str, kind: str, canonical: str, lead: str = "") -> bool:
+    """Whether the number after *gap* is not the value of *keyword*'s quantity.
+
+    A keyword for another quantity in the gap takes the number first, for the
+    reason :func:`_names_another_quantity` gives. Otherwise the word that
+    introduces the number decides, because a schedule names its quantity and
+    then how it moves, and the number after the movement was read as the
+    value. ``learning rate drops by 2 every 50 epochs`` was a learning rate of
+    2, and a paper agreeing with its config was reported as drifting from it.
+
+    - ``by N``, ``after N``, ``every N``: a delta, a factor or a schedule
+      point. Refused for every keyword.
+    - ``from N``: decided by the caller, which sees what follows the number,
+      for the reason :func:`_extract_keyword_values` gives.
+    - ``to N`` with a change verb in the gap, or in the sentence *lead* ahead
+      of the keyword: for a hyperparameter a final or peak value, which is not
+      the configured one, so refused, because a false mismatch costs more than
+      a miss. ``then decay the learning rate to $10^{-5}$`` states no rate.
+      For a metric it is the stated result, so read: ``WER is reduced to 4.2``
+      states 4.2.
+    - Any other number after a change verb in the gap is refused: ``learning
+      rate decay of 0.8`` states a decay factor.
+
+    Nothing after the number is examined, for the reason
+    :func:`_crosses_group_boundary` gives: ``learning rate of 0.001, dropped
+    by 10x at epoch 30`` states its value before the verb.
+    """
+    if _names_another_quantity(gap, keyword, kind, canonical):
+        return True
+    word = _introducer(gap)
+    if word in _SCHEDULE_WORDS:
+        return True
+    if word == "to" and kind == "hyperparameter" and _changes_before(lead):
+        return True
+    if word == "from" or not _describes_a_change(gap):
+        return False
+    return not (word == "to" and kind == "metric")
+
+
+def _number_before_is_refused(lead: str, kind: str) -> bool:
+    """Whether the number ahead of a keyword is not that keyword's value.
+
+    ``after 400 epochs`` and ``every 50 epochs`` are schedule points and ``by
+    10 epochs`` a delta, for the reason :func:`_refuses_the_number` gives, but
+    ``followed by 100 epochs`` is the next stage, so it is read. A number after
+    a caret is an exponent: ``10^4 steps`` does not state 4. For a
+    hyperparameter, the end of a range is not the configured value:
+    ``increase from 100 to 300 epochs`` states neither.
+    """
+    if lead.rstrip().endswith("^"):
+        return True
+    word = _introducer(lead)
+    if word in _SCHEDULE_WORDS:
+        return not (word == "by" and _SEQUENCE_BY_RE.search(lead) is not None)
+    return kind == "hyperparameter" and _ends_a_range(lead)
+
+
+def _exponent(text: str) -> int | None:
+    """The whole-integer exponent *text* states, or ``None``."""
+    match = _EXPONENT_RE.fullmatch(text)
+    if match is None:
+        return None
+    digits = int(match.group("digits"))
+    return -digits if match.group("sign") in ("-", "\u2212") else digits
+
+
+def _reads_as_its_base(exponent: str, base: str, paired: bool) -> bool:
+    r"""Whether a power with this *exponent* states its base as the value.
+
+    An exponent with no digit and no arithmetic is a marker, a footnote or a
+    significance mark, so ``76.1^{*}``, ``28.4^\dagger`` and ``10^\dagger``
+    state their base. On a base other than 10, an uncertainty does too:
+    ``76.1^{\pm 0.2}``, ``28.4^{+0.3}``, ``28.4^{+0.3}_{-0.2}``. Anything else
+    with a digit is a power, and reading its base states a fragment: ``2^{11}``
+    is not 2, and ``10^{-4.5}`` is not 10.
+    """
+    if not any(character.isdigit() for character in exponent):
+        return _EXPONENT_ARITHMETIC_RE.search(exponent) is None
+    if base == "10":
+        return False
+    return (
+        paired
+        or _UNCERTAINTY_RE.search(exponent) is not None
+        or _SIGNED_DECIMAL_RE.fullmatch(exponent) is not None
+    )
+
+
+def _scaled(mantissa: str, exponent: int) -> float | None:
+    """``mantissa`` times ten to ``exponent``, or ``None`` if a float cannot hold it.
+
+    Every value is formed here, from a decimal string, because paper text is
+    untrusted: ``10.0 ** 400`` raised ``OverflowError`` out of the collector
+    and ``adduce check`` exited with a traceback. Parsing the string rounds to
+    infinity or to zero instead of raising, and neither is the value the paper
+    states.
+    """
+    value = float(f"{mantissa}e{exponent}")
+    if not math.isfinite(value) or (value == 0 and float(mantissa) != 0):
+        return None
+    return value
+
+
+def _parse_number(match: re.Match[str]) -> tuple[float, str] | None:
+    r"""The value *match* states and the literal it printed, or ``None``.
+
+    A power of ten with a whole-integer exponent reads as the power, with or
+    without a mantissa. A power whose exponent is a marker or, on another
+    base, an uncertainty reads as its base, for the reason
+    :func:`_reads_as_its_base` gives, and the base is the literal, so its
+    printed decimals still set the tolerance. Every other power yields
+    nothing, because reading part of it states a truncated number as the
+    paper's: ``2^{10}``, ``10^{-4.5}``, ``10^{\text{-}4}``, ``5\times10^{*}``.
+    """
     try:
-        if match.group("exp_only") is not None:
-            return 10.0 ** int(match.group("exp_only"))
-        mantissa = float(match.group("mant"))
-        if match.group("exp_times") is not None:
-            return mantissa * 10.0 ** int(match.group("exp_times"))
-        if match.group("exp_e") is not None:
-            return mantissa * 10.0 ** int(match.group("exp_e"))
-        return mantissa
+        if match.group("plain") is not None:
+            return _with_literal(_scaled(match.group("plain"), 0), match.group("plain"))
+        if match.group("emant") is not None:
+            exponent = _exponent(match.group("exp_e"))
+            return None if exponent is None else _with_literal(_scaled(match.group("emant"), exponent), match.group(0))
+        if match.group("ten") is not None:
+            mantissa, base, raised = match.group("tmant"), "10", match.group("texp")
+        else:
+            mantissa, base, raised = match.group("mant"), match.group("base"), match.group("exp")
+        # A digit glued after the exponent leaves a token this does not
+        # understand: ``10^{-1}0`` is not 0.1.
+        if raised is None or match.string[match.end() : match.end() + 1].isdigit():
+            return None
+        if raised.startswith("{"):
+            raised = raised[1:-1]
+        raised = _EXPONENT_SPACING_RE.sub("", raised).strip()
+        paired = _SUBSCRIPT_RE.match(match.string, match.end()) is not None
+        exponent = _exponent(raised)
+        if base == "10" and exponent is not None and not paired:
+            return _with_literal(_scaled(mantissa or "1", exponent), match.group(0))
+        if mantissa is None and _reads_as_its_base(raised, base, paired):
+            return _with_literal(_scaled(base, 0), base)
+        return None
     except (TypeError, ValueError):
         return None
+
+
+def _with_literal(value: float | None, literal: str) -> tuple[float, str] | None:
+    return None if value is None else (value, literal)
 
 
 def strip_comments(text: str) -> str:
@@ -311,7 +573,22 @@ def _is_cutoff(tail: str, number: re.Match[str], keyword: str) -> bool:
 def _extract_keyword_values(
     text: str, file: str, keywords: dict[str, tuple[str, ...]], kind: str, window: int = 80
 ) -> list[PaperValue]:
-    """Numbers appearing shortly after a keyword ("a learning rate of 1e-4")."""
+    r"""Numbers appearing shortly after a keyword ("a learning rate of 1e-4").
+
+    A number introduced by ``from`` is the start of a change, and what follows
+    it decides. ``from X to Y`` is a range: for a hyperparameter it yields
+    nothing, because neither end need be the configured value and ``warm up
+    the learning rate from 1e-6 to 1e-3`` was read as 1e-6. For a metric it
+    yields Y, the stated result: ``WER is reduced from 5.1 to 4.2`` states
+    4.2. A bare ``from X`` with no ``to`` after it still reads X: ``the
+    learning rate is reduced from 0.01`` states 0.01. This holds whichever
+    side of the keyword X is on.
+
+    Where the keyword comes before Y, ``to`` makes a range only if whitespace,
+    ``$`` and ``~`` are all that separate it from the X or keyword before it
+    and from Y. ``up to`` counts as ``to``. Anything else between them leaves
+    a bare ``from X``: ``WER is reduced from 5.1\% to 4.2`` states 5.1.
+    """
     values: list[PaperValue] = []
     for canonical, patterns in keywords.items():
         for pattern in patterns:
@@ -323,13 +600,32 @@ def _extract_keyword_values(
                 # ("3 seeds", "8 layers" for the "layer" alias) is a count of
                 # things, not the thing's value — skip those.
                 plural = text[kw_match.end() : kw_match.end() + 1] == "s" and not kw_match.group(0).endswith("s")
-                head = text[max(0, kw_match.start() - 16) : kw_match.start()]
+                head_start = max(0, kw_match.start() - 16)
+                head = text[head_start : kw_match.start()]
                 before = re.search(r"(?<![\w.-])(\d+(?:\.\d+)?)\s*$", head)
                 literal: str | None = None
                 if before and not plural:
-                    value = float(before.group(1))
-                    literal = before.group(1)
-                    raw = (before.group(1) + " " + kw_match.group(0)).strip()
+                    number_start = head_start + before.start(1)
+                    lead = text[max(0, number_start - 40) : number_start]
+                    # A refused number is the keyword's own, so the keyword
+                    # states nothing. Searching on past it would read the next
+                    # number in the sentence: "after 300 epochs on 8 GPUs" as a
+                    # training length of 8. The 300 is refused though it is
+                    # the run length here, because "after" also introduces
+                    # schedule points: "drop after 400 epochs".
+                    if _number_before_is_refused(lead, kind):
+                        continue
+                    end = _range_end(text, kw_match.end()) if _introducer(lead) == "from" else None
+                    if end is None:
+                        value = float(before.group(1))
+                        literal = before.group(1)
+                        raw = (before.group(1) + " " + kw_match.group(0)).strip()
+                    else:
+                        parsed = None if kind == "hyperparameter" else _parse_number(end)
+                        if parsed is None:
+                            continue
+                        value, literal = parsed
+                        raw = text[number_start : end.end()]
                 if value is None:
                     # "learning rate of 1e-4": number shortly after the keyword.
                     tail = text[kw_match.end() : kw_match.end() + window]
@@ -344,14 +640,27 @@ def _extract_keyword_values(
                         num_match
                         and num_match.start() <= search_from + 16
                         and not _crosses_group_boundary(tail[: num_match.start()])
+                        and not _refuses_the_number(
+                            tail[: num_match.start()],
+                            kw_match.group(0),
+                            kind,
+                            canonical,
+                            text[max(0, kw_match.start() - window) : kw_match.start()],
+                        )
                     ):
                         # Reject numbers glued to a word ("CIFAR-10") — those
                         # are names, not values.
                         preceding = tail[num_match.start() - 1 : num_match.start()]
                         if preceding == "" or not (preceding.isalpha() or preceding in "-_"):
-                            value = _parse_number(num_match)
-                            literal = num_match.group(0)
-                            raw = (kw_match.group(0) + tail[: num_match.end()]).strip()
+                            stated: re.Match[str] | None = num_match
+                            if _introducer(tail[: num_match.start()]) == "from":
+                                end = _range_end(tail, num_match.end())
+                                if end is not None:
+                                    stated = None if kind == "hyperparameter" else end
+                            parsed = None if stated is None else _parse_number(stated)
+                            if stated is not None and parsed is not None:
+                                value, literal = parsed
+                                raw = (kw_match.group(0) + tail[: stated.end()]).strip()
                 if value is None:
                     continue
                 values.append(
@@ -373,6 +682,20 @@ for _alias, _canonical in HYPERPARAM_SYNONYMS.items():
     if " " in _alias or len(_alias) >= 4:  # short aliases (lr, bs, k) are too noisy in prose
         _HYPERPARAM_PATTERNS.setdefault(_canonical, ())
         _HYPERPARAM_PATTERNS[_canonical] = (*_HYPERPARAM_PATTERNS[_canonical], re.escape(_alias).replace(r"\ ", r"[\s~-]+"))
+
+#: Every quantity a keyword names, with its kind, for
+#: :func:`_names_another_quantity`. Both vocabularies, because a metric's name
+#: between a hyperparameter and a number takes the number as surely as another
+#: hyperparameter's does.
+_QUANTITY_NAMES: tuple[tuple[str, str, re.Pattern[str]], ...] = tuple(
+    (_kind, _name, re.compile(r"(?<![A-Za-z])(?:" + _pattern + ")", re.IGNORECASE))
+    for _kind, _vocabulary in (
+        ("hyperparameter", _HYPERPARAM_PATTERNS),
+        ("metric", _METRIC_KEYWORDS),
+    )
+    for _name, _patterns in _vocabulary.items()
+    for _pattern in _patterns
+)
 
 
 #: A verbatim-like environment prints its contents, so a command inside one is
