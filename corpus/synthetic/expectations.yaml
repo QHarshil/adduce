@@ -246,3 +246,63 @@
     R-DRIFT-001: pass
   forbid:
     R-DRIFT-001: fail
+
+- case: synthetic_orphan_seed_helper
+  # The only seeding sits in a helper that just a test calls. It earns no
+  # credit, and the finding names the helper instead of reporting that no
+  # seeding was detected; the message is asserted in
+  # tests/test_rules_determinism.py.
+  expect:
+    R-DET-001: fail
+  forbid:
+    R-DET-001: pass
+
+- case: synthetic_notebook_seed_caller
+  # The helper's only caller is a notebook, which is project code.
+  expect:
+    R-DET-001: pass
+  forbid:
+    R-DET-001: fail
+
+- case: synthetic_console_script_seeding
+  # The seeding function's only caller is a declared console script.
+  expect:
+    R-DET-001: pass
+  forbid:
+    R-DET-001: fail
+
+- case: synthetic_class_seeding
+  # Seeding in __init__ of a class constructed at module scope.
+  expect:
+    R-DET-001: pass
+  forbid:
+    R-DET-001: fail
+
+- case: synthetic_test_module_seeding
+  # Module-scope seeding in a test earns no credit.
+  expect:
+    R-DET-001: fail
+  forbid:
+    R-DET-001: pass
+
+- case: synthetic_decorated_command_seeding
+  # The seeding function's only reference is the click decorator that
+  # registers it.
+  expect:
+    R-DET-001: pass
+  forbid:
+    R-DET-001: fail
+
+- case: synthetic_config_target_seeding
+  # The seeding function is named only by a Hydra _target_ in a config file.
+  expect:
+    R-DET-001: pass
+  forbid:
+    R-DET-001: fail
+
+- case: synthetic_script_seed_caller
+  # The helper's only caller is an extensionless script with a Python shebang.
+  expect:
+    R-DET-001: pass
+  forbid:
+    R-DET-001: fail

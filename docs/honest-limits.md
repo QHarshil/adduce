@@ -12,6 +12,16 @@
   repositories has not yet been established. Python's dynamism is not
   generally resolvable statically, so uncertain evidence is reported with
   confidence and can require a separately authorized dynamic check.
+- **Seeding counts only where something references it.** A seed or
+  determinism flag inside a function counts when non-test code calls, imports,
+  names or decorates that function or its class, or when its module is
+  imported or launches (a `__main__` guard, `fire.Fire`, `__main__.py`,
+  `hubconf.py`, a conventional script name, or a packaging entry point).
+  Non-test code means Python modules, notebook cells, extensionless Python
+  scripts, and the `_target_`, `class_path` and gin names in config files.
+  References are matched by name and never resolved, so an unrelated use of
+  the same name gives credit, and nothing else is seen: a helper reached only
+  through `getattr`, a computed import or a shell command gets none.
 - **The probabilistic rules are diagnostic.** LaTeX numeric extraction,
   result reconciliation, notebook staleness, and ablation matching will
   sometimes miss or over-flag; they carry confidence and stay off the

@@ -45,7 +45,12 @@ paper's 0.814 matches a logged 0.8137); nothing ever auto-edits the `.tex`.
 
 Call resolution goes through an import-alias map (`import torch as th` is
 handled) plus one hop of wrapper resolution: a project-local `set_seed()` that
-calls the primitives counts. Python's dynamism (`getattr`, dynamic import)
+calls the primitives counts. The determinism rules count seeding only when
+something outside the tests references the code that does it: a module,
+notebook, Python script or declared entry point that calls, imports, names or
+decorates it, or a config file that names it as a `_target_`, `class_path` or
+gin binding. References are matched by name, not resolved, and a shell command
+that runs a helper is not read. Python's dynamism (`getattr`, dynamic import)
 cannot be resolved statically — which is exactly why findings carry a
 confidence, never a verdict.
 
